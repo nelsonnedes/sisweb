@@ -60,11 +60,11 @@ modules/dashboard/
 
 ### Paleta de Cores
 ```css
---dashboard-primary: #3498db    /* Azul principal */
---dashboard-success: #27ae60    /* Verde sucesso */
---dashboard-warning: #f39c12    /* Amarelo alerta */
---dashboard-danger: #e74c3c     /* Vermelho erro */
---dashboard-info: #17a2b8       /* Azul informação */
+--dashboard-primary: #fe6a00    /* Laranja Sisweb (cores.md §3.1) */
+--dashboard-success: #16a34a    /* Verde sucesso */
+--dashboard-warning: #f59e0b    /* Amarelo alerta */
+--dashboard-danger: #dc2626     /* Vermelho erro */
+--dashboard-info: #2563eb       /* Azul informação */
 --dashboard-secondary: #6c757d  /* Cinza secundário */
 ```
 

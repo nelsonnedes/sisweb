@@ -163,7 +163,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    background-color: white;
+    background-color: var(--sw-surface) ;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -275,9 +275,9 @@
     display: block;
     margin-bottom: 15px;
     padding: 15px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--sw-border) ;
     border-radius: 8px;
-    background: white;
+    background: var(--sw-surface) ;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
@@ -453,7 +453,7 @@
     
     .container {
         box-shadow: none !important;
-        background: white !important;
+        background: var(--sw-surface) !important;
         max-width: 100% !important;
         padding: 0 !important;
     }

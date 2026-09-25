@@ -1040,6 +1040,8 @@ async function inicializarSistema() {
     verificarHashURL();
     
     atualizarDashboard();
+    // Fase 19: desenha o gráfico de 30 dias já na carga (antes só no showTab).
+    try { gerarGraficoFluxoCaixa(); } catch (_) {}
     try { cleanupTombstones(); } catch(_) {}
     try { 
         if (!window.financeCleanupTimer) { 
@@ -3304,15 +3306,9 @@ async function atualizarDashboard() {
     const hojeStr = formatISODateLocal(hoje);
     
     // ✅ CORREÇÃO: Calcular totais com filtros mais precisos
-    const contasReceberPendentes = contasReceber.filter(c => {
-        const status = (c.status || 'pendente').toLowerCase();
-        return status === 'pendente' || status === 'parcial';
-    });
-    
-    const contasPagarPendentes = contasPagar.filter(c => {
-        const status = (c.status || 'pendente').toLowerCase();
-        return status === 'pendente' || status === 'parcial';
-    });
+    const contasReceberPendentes = contasReceber.filter(isContaAbertaFluxo);
+
+    const contasPagarPendentes = contasPagar.filter(isContaAbertaFluxo);
     
     // Calcular valores considerando pagamentos parciais
     let totalReceber = contasReceberPendentes.reduce((total, conta) => {
@@ -3522,7 +3518,7 @@ function atualizarResumoFinanceiro() {
     
     // Contas vencidas (receber)
     let receberVencidas = contasReceber
-        .filter(c => ['pendente','parcial'].includes((c.status||'pendente').toLowerCase()) && getContaVencimentoISO(c) && getContaVencimentoISO(c) < hoje)
+        .filter(c => isContaAbertaFluxo(c) && getContaVencimentoISO(c) && getContaVencimentoISO(c) < hoje)
         .reduce((total, conta) => {
             const status = (conta.status||'pendente').toLowerCase();
             const restante = status === 'parcial' ? (conta.valorRestante || (conta.valor - (conta.valorPago || 0))) : (conta.valor || 0);
@@ -3531,7 +3527,7 @@ function atualizarResumoFinanceiro() {
     
     // Contas vencidas (pagar)
     let pagarVencidas = contasPagar
-        .filter(c => ['pendente','parcial'].includes((c.status||'pendente').toLowerCase()) && getContaVencimentoISO(c) && getContaVencimentoISO(c) < hoje)
+        .filter(c => isContaAbertaFluxo(c) && getContaVencimentoISO(c) && getContaVencimentoISO(c) < hoje)
         .reduce((total, conta) => {
             const status = (conta.status||'pendente').toLowerCase();
             const restante = status === 'parcial' ? (conta.valorRestante || (conta.valor - (conta.valorPago || 0))) : (conta.valor || 0);
@@ -3540,8 +3536,8 @@ function atualizarResumoFinanceiro() {
     
     // Vencendo hoje
     const vencendoHoje = [
-        ...contasReceber.filter(c => ['pendente','parcial'].includes((c.status||'pendente').toLowerCase()) && getContaVencimentoISO(c) === hoje),
-        ...contasPagar.filter(c => ['pendente','parcial'].includes((c.status||'pendente').toLowerCase()) && getContaVencimentoISO(c) === hoje)
+        ...contasReceber.filter(c => isContaAbertaFluxo(c) && getContaVencimentoISO(c) === hoje),
+        ...contasPagar.filter(c => isContaAbertaFluxo(c) && getContaVencimentoISO(c) === hoje)
     ].reduce((total, conta) => {
         const status = (conta.status||'pendente').toLowerCase();
         const restante = status === 'parcial' ? (conta.valorRestante || (conta.valor - (conta.valorPago || 0))) : (conta.valor || 0);
@@ -3550,8 +3546,8 @@ function atualizarResumoFinanceiro() {
     
     // Próximos 7 dias
     const proximos7DiasTotal = [
-        ...contasReceber.filter(c => ['pendente','parcial'].includes((c.status||'pendente').toLowerCase()) && getContaVencimentoISO(c) && getContaVencimentoISO(c) >= hoje && getContaVencimentoISO(c) <= proximos7DiasStr),
-        ...contasPagar.filter(c => ['pendente','parcial'].includes((c.status||'pendente').toLowerCase()) && getContaVencimentoISO(c) && getContaVencimentoISO(c) >= hoje && getContaVencimentoISO(c) <= proximos7DiasStr)
+        ...contasReceber.filter(c => isContaAbertaFluxo(c) && getContaVencimentoISO(c) && getContaVencimentoISO(c) >= hoje && getContaVencimentoISO(c) <= proximos7DiasStr),
+        ...contasPagar.filter(c => isContaAbertaFluxo(c) && getContaVencimentoISO(c) && getContaVencimentoISO(c) >= hoje && getContaVencimentoISO(c) <= proximos7DiasStr)
     ].reduce((total, conta) => {
         const status = (conta.status||'pendente').toLowerCase();
         const restante = status === 'parcial' ? (conta.valorRestante || (conta.valor - (conta.valorPago || 0))) : (conta.valor || 0);
@@ -3649,7 +3645,7 @@ function gerarDadosFluxoCaixa(dias) {
         
         // Calcular entradas do dia
         const entradasDia = contasReceber
-            .filter(c => getContaVencimentoISO(c) === dataStr && ['pendente','parcial'].includes((c.status||'pendente').toLowerCase()))
+            .filter(c => getContaVencimentoISO(c) === dataStr && isContaAbertaFluxo(c))
             .reduce((total, conta) => {
                 const status = (conta.status||'pendente').toLowerCase();
                 const restante = status === 'parcial' ? toNumber(conta.valorRestante || (toNumber(conta.valor) - toNumber(conta.valorPago || 0))) : toNumber(conta.valor || 0);
@@ -3658,7 +3654,7 @@ function gerarDadosFluxoCaixa(dias) {
         
         // Calcular saídas do dia
         const saidasDia = contasPagar
-            .filter(c => getContaVencimentoISO(c) === dataStr && ['pendente','parcial'].includes((c.status||'pendente').toLowerCase()))
+            .filter(c => getContaVencimentoISO(c) === dataStr && isContaAbertaFluxo(c))
             .reduce((total, conta) => {
                 const status = (conta.status||'pendente').toLowerCase();
                 const restante = status === 'parcial' ? toNumber(conta.valorRestante || (toNumber(conta.valor) - toNumber(conta.valorPago || 0))) : toNumber(conta.valor || 0);
@@ -7217,10 +7213,10 @@ async function excluirConta(id, tipo) {
 }
 
 // Funções de fluxo de caixa
-function gerarFluxoCaixa() {
+async function gerarFluxoCaixa() {
     const dataInicio = document.getElementById('fluxoDataInicio').value;
     const dataFim = document.getElementById('fluxoDataFim').value;
-    
+
     if (!dataInicio || !dataFim) {
         try {
             const msg = 'Selecione o período para gerar o fluxo de caixa';
@@ -7229,10 +7225,17 @@ function gerarFluxoCaixa() {
         } catch (_) {}
         return;
     }
-    
+
+    // Fase 19: garante meses do intervalo carregados (sem isso, meses fora do
+    // mês atual ficavam zerados mesmo com dados reais no banco).
+    try {
+        await ensureReceberDataForRange({ dataInicio, dataFim });
+        await ensurePagarDataForRange({ dataInicio, dataFim });
+    } catch (_) {}
+
     // Gerar gráfico detalhado
     gerarGraficoFluxoDetalhado(dataInicio, dataFim);
-    
+
     // Gerar tabela
     gerarTabelaFluxo(dataInicio, dataFim);
 }
@@ -7278,7 +7281,14 @@ function gerarGraficoFluxoDetalhado(dataInicio, dataFim) {
 function gerarTabelaFluxo(dataInicio, dataFim) {
     const tbody = document.getElementById('fluxoTable');
     const dados = calcularFluxoPeriodo(dataInicio, dataFim);
-    
+
+    const totalMovimento = dados.entradas.reduce((t, v) => t + v, 0)
+        + dados.saidas.reduce((t, v) => t + v, 0);
+    if (dados.labels.length === 0 || totalMovimento <= 0) {
+        tbody.innerHTML = '<tr><td colspan="5" data-label="Mensagem" style="text-align: center;">Sem movimentações no período (realizadas ou previstas).</td></tr>';
+        return;
+    }
+
     let saldoAcumulado = 0;
     
     tbody.innerHTML = dados.labels.map((label, index) => {
@@ -7303,32 +7313,39 @@ function gerarTabelaFluxo(dataInicio, dataFim) {
     }).join('');
 }
 
+/* Fase 19: Detalhado = realizado (data de pagamento/histórico) + previsto
+   (vencimento de pendente/parcial/vencido). Antes somava só 'pago' pelo
+   vencimento — zerava com razão social aberta e errava o dia do pago. */
 function calcularFluxoPeriodo(dataInicio, dataFim) {
-    const inicio = new Date(dataInicio);
-    const fim = new Date(dataFim);
+    const iniNorm = normalizeDateISOInput(dataInicio);
+    const fimNorm = normalizeDateISOInput(dataFim);
+    const inicio = parseDataISOLocal(iniNorm);
+    const fim = parseDataISOLocal(fimNorm);
     const labels = [];
     const entradas = [];
     const saidas = [];
-    
+    if (!inicio || !fim || fim < inicio) return { labels, entradas, saidas };
+
+    const porDia = new Map();
+    const add = (iso, valor, isEntrada) => {
+        if (!iso || iso < iniNorm || iso > fimNorm || !(valor > 0)) return;
+        let slot = porDia.get(iso);
+        if (!slot) { slot = { e: 0, s: 0 }; porDia.set(iso, slot); }
+        if (isEntrada) slot.e += valor; else slot.s += valor;
+    };
+    (Array.isArray(contasReceber) ? contasReceber : [])
+        .forEach((c) => eachMovimentoFluxo(c, 'receber', (iso, v) => add(iso, v, true)));
+    (Array.isArray(contasPagar) ? contasPagar : [])
+        .forEach((c) => eachMovimentoFluxo(c, 'pagar', (iso, v) => add(iso, v, false)));
+
     for (let data = new Date(inicio); data <= fim; data.setDate(data.getDate() + 1)) {
-        const dataStr = data.toISOString().split('T')[0];
-        
+        const dataStr = formatISODateLocal(data);
         labels.push(data.toLocaleDateString('pt-BR'));
-        
-        // Calcular entradas do dia
-        const entradasDia = contasReceber
-            .filter(c => c.dataVencimento === dataStr && c.status === 'pago')
-            .reduce((total, conta) => total + (conta.valorPago || conta.valor || 0), 0);
-        
-        // Calcular saídas do dia
-        const saidasDia = contasPagar
-            .filter(c => c.dataVencimento === dataStr && c.status === 'pago')
-            .reduce((total, conta) => total + (conta.valorPago || conta.valor || 0), 0);
-        
-        entradas.push(entradasDia);
-        saidas.push(saidasDia);
+        const slot = porDia.get(dataStr) || { e: 0, s: 0 };
+        entradas.push(slot.e);
+        saidas.push(slot.s);
     }
-    
+
     return { labels, entradas, saidas };
 }
 
@@ -8884,6 +8901,59 @@ async function normalizarFinanceiroCategoriasETipos({ dryRun = false } = {}) {
 function getContaVencimentoISO(conta) {
     const raw = (conta && (conta.dataVencimento ?? conta.vencimento)) || '';
     return normalizeDateISOInput(raw);
+}
+
+/* Fase 19: fluxo de caixa conta 'vencido' como aberto — carregarTabelaReceber/
+   carregarTabelaPagar mutam status p/ 'vencido' in-place, e sem isso o vencido
+   sumia do dashboard, do resumo e do gráfico de 30 dias. */
+function isContaAbertaFluxo(conta) {
+    return ['pendente', 'parcial', 'vencido'].includes(String((conta && conta.status) || 'pendente').toLowerCase());
+}
+
+function valorRestanteFluxo(conta) {
+    const status = String((conta && conta.status) || 'pendente').toLowerCase();
+    const restante = status === 'parcial'
+        ? toNumber(conta.valorRestante || (toNumber(conta.valor) - toNumber(conta.valorPago || 0)))
+        : toNumber(conta.valor || 0);
+    return Math.max(0, restante);
+}
+
+function parseDataISOLocal(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    if (!m) return null;
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+/* Fase 19: cada movimento da conta no fluxo — realizado pela data de pagamento
+   (ou histórico) e previsto pelo vencimento. Elimina dias vazios com dados reais. */
+function eachMovimentoFluxo(conta, origem, cb) {
+    if (!conta || typeof cb !== 'function') return;
+    const hist = Array.isArray(conta.historicosPagamento) ? conta.historicosPagamento : [];
+    if (hist.length > 0) {
+        hist.forEach((h) => {
+            const iso = normalizeDateISOInput(h && (h.data || h.dataPagamento));
+            const valor = toNumber(h && h.valor);
+            if (iso && valor > 0) cb(iso, valor);
+        });
+        return;
+    }
+    const status = String(conta.status || 'pendente').toLowerCase();
+    if (status === 'pago') {
+        const iso = normalizeDateISOInput(conta.dataPagamento || (origem === 'receber' ? conta.dataRecebimento : '') || getContaVencimentoISO(conta));
+        const valor = toNumber(conta.valorPago || conta.valor || 0);
+        if (iso && valor > 0) cb(iso, valor);
+        return;
+    }
+    if (!isContaAbertaFluxo(conta)) return;
+    const pagoParcial = toNumber(conta.valorPago || 0);
+    if (status === 'parcial' && pagoParcial > 0) {
+        const isoPag = normalizeDateISOInput(conta.dataPagamento || (origem === 'receber' ? conta.dataRecebimento : '') || getContaVencimentoISO(conta));
+        if (isoPag) cb(isoPag, pagoParcial);
+    }
+    const isoVenc = getContaVencimentoISO(conta);
+    const restante = valorRestanteFluxo(conta);
+    if (isoVenc && restante > 0) cb(isoVenc, restante);
 }
 
 function normalizeJurosTipoKey(value) {

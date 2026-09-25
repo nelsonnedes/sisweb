@@ -37,15 +37,15 @@
 
 /* Alternância de cores nas linhas */
 #romaneioTable tbody tr:nth-of-type(odd) td {
-    background-color: #f9f9f9;
+    background-color: var(--sw-surface-2) ;
 }
 
 #romaneioTable tbody tr:nth-of-type(even) td {
-    background-color: white;
+    background-color: var(--sw-surface);
 }
 
 #romaneioTable tbody tr:hover td {
-    background-color: #f5f5f5;
+    background-color: var(--sw-surface-2) ;
 }
 
 /* Mensagem "Nenhum item adicionado" */
@@ -53,9 +53,9 @@
     text-align: left;
     font-weight: normal !important;
     font-style: italic;
-    color: #666;
+    color: var(--sw-text-2);
     padding: 12px 8px;
-    background-color: white !important;
+    background-color: var(--sw-surface) !important;
     border-bottom: 1px solid #dee2e6;
 }
 
@@ -105,7 +105,7 @@
     border-top: 1px solid #dee2e6;
     padding-top: 10px;
     margin-top: 10px;
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
     padding: 15px;
     border-radius: 0 0 4px 4px;
 }
@@ -162,8 +162,8 @@
 }
 
 #romaneioTablePagination button {
-    background-color: #f8f9fa;
-    border: 1px solid #ddd;
+    background-color: var(--sw-surface-2) ;
+    border: 1px solid var(--sw-border) ;
     color: #0275d8;
     padding: 4px 8px;
     margin: 0 2px;
@@ -172,7 +172,7 @@
 }
 
 #romaneioTablePagination button:hover {
-    background-color: #e9ecef;
+    background-color: var(--sw-surface-2);
 }
 
 #romaneioTablePagination button.active {
@@ -196,7 +196,7 @@ section#romaneio-items-section h2 {
 /* Ajustes para garantir que os totais tenham o mesmo formato em ambas as telas */
 .totais-label {
     font-weight: normal;
-    color: #333;
+    color: var(--sw-text-1);
 }
 
 .totais-valor {
@@ -352,7 +352,7 @@ select,
 textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--sw-border) ;
     border-radius: 4px;
     font-size: 14px;
     transition: border-color 0.3s ease;
@@ -412,12 +412,12 @@ textarea:focus {
 /* ✅ ESTILOS PARA DROPDOWNS DE IMPRESSÃO - ADICIONADOS PARA CORRIGIR POSICIONAMENTO */
 .imprimir-options {
     position: fixed !important;
-    background-color: white;
+    background-color: var(--sw-surface);
     min-width: 220px;
     box-shadow: 0px 8px 24px 0px rgba(0,0,0,0.3);
     z-index: 99999 !important;
     border-radius: 6px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--sw-border) ;
     padding: 8px 0;
     margin-top: 4px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -438,11 +438,11 @@ textarea:focus {
     color: #6c757d;
     font-weight: 600;
     border-bottom: 1px solid #e9ecef;
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
 }
 
 .imprimir-options button {
-    color: #333;
+    color: var(--sw-text-1);
     padding: 8px 16px;
     text-decoration: none;
     display: block;
@@ -496,19 +496,19 @@ textarea:focus {
 
 /* ✅ DROPDOWN MENU GENÉRICO */
 .dropdown-menu {    position: fixed !important;
-    background-color: white;
+    background-color: var(--sw-surface);
     min-width: 200px;
     box-shadow: 0px 4px 12px 0px rgba(0,0,0,0.15);
     z-index: 9999 !important;
     border-radius: 4px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--sw-border) ;
     padding: 4px 0;
     display: none;
 }
 
 .dropdown-menu a,
 .dropdown-menu button {
-    color: #333;
+    color: var(--sw-text-1);
     padding: 8px 16px;
     text-decoration: none;
     display: block;
@@ -522,18 +522,18 @@ textarea:focus {
 
 .dropdown-menu a:hover,
 .dropdown-menu button:hover {
-    background-color: #f8f9fa;
+    background-color: var(--sw-surface-2) ;
 }
 
 /* ✅ PRINT MENU ESPECÍFICO */
 .print-menu {
     position: fixed !important;
-    background-color: white;
+    background-color: var(--sw-surface);
     min-width: 180px;
     box-shadow: 0px 6px 18px 0px rgba(0,0,0,0.2);
     z-index: 99999 !important;
     border-radius: 5px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--sw-border) ;
     padding: 6px 0;
     display: none;
 }
@@ -608,7 +608,7 @@ textarea:focus {
     justify-content: space-between;
     align-items: center;
     padding-bottom: 10px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--sw-border) ;
     margin-bottom: 20px;
     background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
@@ -763,7 +763,7 @@ textarea:focus {
 #speciesModal .modal-content {
     border-radius: 10px !important;
     overflow: hidden !important;
-    border: 1px solid #dbe3ee !important;
+    border: 1px solid var(--sw-border) !important;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2) !important;
 }
 
@@ -779,7 +779,7 @@ textarea:focus {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    border-bottom: 1px solid #223140 !important;
+    border-bottom: 1px solid var(--sw-border) !important;
     margin: 0 !important;
     border-radius: 10px 10px 0 0 !important;
 }
@@ -829,7 +829,7 @@ textarea:focus {
 #fornecedorModal .modal-body,
 #speciesModal .modal-body {
     padding: 16px !important;
-    background-color: #fff !important;
+    background-color: var(--sw-surface) !important;
     overflow-y: auto !important;
     flex: 1 1 auto !important;
 }
@@ -952,7 +952,7 @@ textarea:focus {
 #speciesListModal .table-container {
     border: 1px solid #dbe4ef !important;
     border-radius: 8px !important;
-    background: #fff !important;
+    background: var(--sw-surface) !important;
     /* overflow/max-height: definidos pelo modelo flex final no fim do arquivo */
 }
 
@@ -1241,7 +1241,7 @@ textarea:focus {
     border-radius: 6px !important;
     padding: 8px 12px !important;
     font-size: 14px !important;
-    background: #fff !important;
+    background: var(--sw-surface) !important;
     box-sizing: border-box !important;
 }
 
@@ -1270,7 +1270,7 @@ textarea:focus {
     align-items: center !important;
     padding: 14px 20px !important;
     background: #f8fafc !important;
-    border-top: 1px solid #e2e8f0 !important;
+    border-top: 1px solid var(--sw-border) !important;
     width: 100% !important;
     box-sizing: border-box !important;
     gap: 12px !important;
@@ -1407,9 +1407,9 @@ textarea:focus {
     max-height: none !important;
     overflow-y: auto !important;
     overflow-x: auto !important;
-    border: 1px solid #e2e8f0 !important;
+    border: 1px solid var(--sw-border) !important;
     border-radius: 6px !important;
-    background: #ffffff !important;
+    background: var(--sw-surface) !important;
 }
 
 #listaModal .table,
@@ -1463,7 +1463,7 @@ textarea:focus {
     gap: 8px 12px !important;
     padding: 12px 16px !important;
     background: #f8fafc !important;
-    border-top: 1px solid #e5e7eb !important;
+    border-top: 1px solid var(--sw-border) !important;
 }
 
 @media (max-width: 720px) {
@@ -2208,7 +2208,7 @@ textarea:focus {
     border-radius: 8px 8px 0 0 !important;
     margin: 0 !important;
     box-sizing: border-box !important;
-    border-bottom: 1px solid #ddd !important;
+    border-bottom: 1px solid var(--sw-border) !important;
 }
 
 /* 6. Corpo Padronizado com Rolagem Interna Limpa (Rolagem exclusiva no modal-body) */
@@ -2264,8 +2264,8 @@ textarea:focus {
     flex-wrap: wrap !important;
     gap: 8px 12px !important;
     padding: 14px 20px !important;
-    border-top: 1px solid #e5e7eb !important;
-    background-color: #fafafa !important;
+    border-top: 1px solid var(--sw-border) !important;
+    background-color: var(--sw-surface-2) !important;
     border-radius: 0 0 8px 8px !important;
     margin: 0 !important;
     box-sizing: border-box !important;
@@ -2451,7 +2451,7 @@ textarea:focus {
     border-radius: 6px !important;
     padding: 8px 12px !important;
     font-size: 14px !important;
-    background-color: #fff !important;
+    background-color: var(--sw-surface) !important;
     color: #1f2937 !important;
 }
 
@@ -2773,7 +2773,7 @@ button.btn-importar:hover,
     align-items: center !important;
     padding: 14px 20px !important;
     background: #f8fafc !important;
-    border-top: 1px solid #e2e8f0 !important;
+    border-top: 1px solid var(--sw-border) !important;
     box-sizing: border-box !important;
     gap: 10px !important;
     flex-wrap: wrap !important;
@@ -2889,7 +2889,7 @@ button.btn-importar:hover,
 /* Botão Configurar Impressão */
 .romaneio-print-config-trigger,
 .modal-footer .romaneio-print-config-trigger {
-    background-color: #f1f5f9 !important;
+    background-color: var(--sw-surface-2) !important;
     border: 1px solid #cbd5e1 !important;
     color: #334155 !important;
     height: 38px !important;
@@ -2926,7 +2926,7 @@ button.btn-importar:hover,
     body #clientListModal .modal-body, body #fornecedorListModal .modal-body, body #speciesListModal .modal-body, body #listaModal .modal-body, body #romaneioListModal .modal-body { overflow-y: auto !important; overflow-x: hidden !important; max-height: calc(100vh - 160px) !important; min-height: 0 !important; }
     body #clientListModal .table-container, body #fornecedorListModal .table-container, body #speciesListModal .table-container, body #listaModal .table-container, body #romaneioListModal .table-container { overflow: visible !important; max-height: none !important; }
     body #clientListModal .modal-content, body #fornecedorListModal .modal-content, body #speciesListModal .modal-content, body #listaModal .modal-content, body #romaneioListModal .modal-content { height: auto !important; max-height: calc(100vh - 20px) !important; min-height: 0 !important; }
-    body #clientListModal .table tbody tr, body #fornecedorListModal .table tbody tr, body #speciesListModal .table tbody tr, body #listaModal .table tbody tr, body #romaneioListModal .table tbody tr { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; max-height: none !important; margin: 0 !important; padding: 10px 8px !important; box-sizing: border-box !important; background: #fff !important; border: 1px solid #e2e8f0 !important; border-radius: 10px !important; box-shadow: 0 2px 8px rgba(15,23,42,.05) !important; }
+    body #clientListModal .table tbody tr, body #fornecedorListModal .table tbody tr, body #speciesListModal .table tbody tr, body #listaModal .table tbody tr, body #romaneioListModal .table tbody tr { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; max-height: none !important; margin: 0 !important; padding: 10px 8px !important; box-sizing: border-box !important; background: var(--sw-surface) !important; border: 1px solid var(--sw-border) !important; border-radius: 10px !important; box-shadow: 0 2px 8px rgba(15,23,42,.05) !important; }
     body #clientListModal .table tbody tr td, body #fornecedorListModal .table tbody tr td, body #speciesListModal .table tbody tr td, body #listaModal .table tbody tr td, body #romaneioListModal .table tbody tr td { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; max-height: none !important; box-sizing: border-box !important; padding: 8px 4px !important; margin: 0 !important; border: 0 !important; border-bottom: 1px solid #f0f0f0 !important; text-align: left !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
     /* Especies/Clientes: species-modal-standard.css / standardized-client-modal.js definem width
        via :nth-child (30%/18%...) que vence o generico acima; forcamos 100% em TODOS os td
@@ -2934,7 +2934,7 @@ button.btn-importar:hover,
     body #speciesListModal .table tbody tr td:nth-child(n) { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
     body #clientListModal .table tbody tr td:nth-child(n) { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
     body #fornecedorListModal .table tbody tr td:nth-child(n) { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
-    body #clientListModal .table tbody tr td:last-child, body #fornecedorListModal .table tbody tr td:last-child, body #speciesListModal .table tbody tr td:last-child, body #listaModal .table tbody tr td:last-child, body #romaneioListModal .table tbody tr td:last-child { border-bottom: 0 !important; border-top: 1px solid #e2e8f0 !important; margin-top: 4px !important; padding-top: 10px !important; min-width: 0 !important; max-width: 100% !important; width: 100% !important; }
+    body #clientListModal .table tbody tr td:last-child, body #fornecedorListModal .table tbody tr td:last-child, body #speciesListModal .table tbody tr td:last-child, body #listaModal .table tbody tr td:last-child, body #romaneioListModal .table tbody tr td:last-child { border-bottom: 0 !important; border-top: 1px solid var(--sw-border) !important; margin-top: 4px !important; padding-top: 10px !important; min-width: 0 !important; max-width: 100% !important; width: 100% !important; }
     body #clientListModal .table tbody tr td[data-label]::before, body #fornecedorListModal .table tbody tr td[data-label]::before, body #speciesListModal .table tbody tr td[data-label]::before, body #listaModal .table tbody tr td[data-label]::before, body #romaneioListModal .table tbody tr td[data-label]::before { content: attr(data-label) !important; display: block !important; position: static !important; width: 100% !important; max-width: none !important; margin: 0 0 4px !important; padding: 0 !important; transform: none !important; text-align: left !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; font-size: 11px !important; line-height: 1.2 !important; font-weight: 700 !important; color: #64748b !important; text-transform: uppercase !important; }
     body #clientListModal .table tbody tr td[data-label="Ações"]::before, body #fornecedorListModal .table tbody tr td[data-label="Ações"]::before, body #speciesListModal .table tbody tr td[data-label="Ações"]::before, body #listaModal .table tbody tr td[data-label="Ações"]::before, body #romaneioListModal .table tbody tr td[data-label="Ações"]::before { margin-bottom: 6px !important; }
     body #clientListModal .table tbody tr td[data-label="Ações"] .btn-group, body #fornecedorListModal .table tbody tr td[data-label="Ações"] .btn-group, body #speciesListModal .table tbody tr td[data-label="Ações"] .btn-group, body #listaModal .table tbody tr td[data-label="Ações"] .btn-group, body #romaneioListModal .table tbody tr td[data-label="Ações"] .btn-group { display: flex !important; flex-wrap: wrap !important; justify-content: flex-start !important; gap: 8px !important; width: 100% !important; max-width: 100% !important; }
@@ -3052,11 +3052,11 @@ body { overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scr
   .settings-dropdown .settings-panel { position: fixed !important; left: 12px !important; right: 12px !important; width: auto !important; max-width: none !important; transform: none !important; margin: 0 !important; top: 62px !important; max-height: calc(100vh - 80px) !important; overflow-y: auto !important; }
   .sisweb-menu-shell .alerts-panel { left: 12px !important; right: 12px !important; width: auto !important; max-width: none !important; }
   /* Paginação FIXA no rodapé - não acompanha scroll dos cards */
-  .rlc-pagination-bar { position: relative !important; background: #ffffff !important; border-top: 1px solid #e2e8f0 !important; box-shadow: none !important; padding: 10px 0 8px !important; margin-top: 0 !important; z-index: 2 !important; flex-shrink: 0 !important; }
+  .rlc-pagination-bar { position: relative !important; background: var(--sw-surface) !important; border-top: 1px solid var(--sw-border) !important; box-shadow: none !important; padding: 10px 0 8px !important; margin-top: 0 !important; z-index: 2 !important; flex-shrink: 0 !important; }
   .modal-body { padding-bottom: 0 !important; display: flex !important; flex-direction: column !important; gap: 0 !important; overflow: hidden !important; }
   #listaModal .modal-body, #romaneioListModal .modal-body, #clientListModal .modal-body, #fornecedorListModal .modal-body, #speciesListModal .modal-body { padding-bottom: 0 !important; display: flex !important; flex-direction: column !important; gap: 0 !important; overflow: hidden !important; }
   .table-responsive, .table-container { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overflow-x: auto !important; padding-bottom: 8px !important; -webkit-overflow-scrolling: touch !important; max-height: min(55vh, 420px) !important; }
-  #clientListPagination, #fornecedorListPagination, #speciesListPagination, #romaneioListPagination { margin-top: 0 !important; padding: 10px 0 8px !important; background: #ffffff !important; border-top: 1px solid #e2e8f0 !important; flex-shrink: 0 !important; position: relative !important; z-index: 2 !important; }
+  #clientListPagination, #fornecedorListPagination, #speciesListPagination, #romaneioListPagination { margin-top: 0 !important; padding: 10px 0 8px !important; background: var(--sw-surface) !important; border-top: 1px solid var(--sw-border) !important; flex-shrink: 0 !important; position: relative !important; z-index: 2 !important; }
   /* Garante que a tabela não vaze por baixo da paginação */
   #clientListModal .table-container, #fornecedorListModal .table-container, #speciesListModal .table-container, #listaModal .table-container, #romaneioListModal .table-container { padding-bottom: 8px !important; flex: 1 1 auto !important; overflow-y: auto !important; overflow-x: auto !important; max-height: min(55vh, 420px) !important; -webkit-overflow-scrolling: touch !important; }
 }
@@ -3140,8 +3140,8 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
     flex: 0 0 auto !important;
     position: relative !important;
     z-index: 2 !important;
-    background: #ffffff !important;
-    border-top: 1px solid #e2e8f0 !important;
+    background: var(--sw-surface) !important;
+    border-top: 1px solid var(--sw-border) !important;
     margin: 8px 0 0 !important;
     padding: 10px 0 4px !important;
     width: 100% !important;
@@ -3238,8 +3238,8 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         box-sizing: border-box !important;
         z-index: auto !important;
         box-shadow: none !important;
-        border-top: 1px solid #e2e8f0 !important;
-        background: #fff !important;
+        border-top: 1px solid var(--sw-border) !important;
+        background: var(--sw-surface) !important;
         margin: 12px 0 4px !important;
         padding: 12px 0 8px !important;
         display: flex !important;
@@ -3527,7 +3527,7 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         overflow: visible !important;
         min-height: 48px !important;
         border-bottom: 0 !important;
-        border-top: 1px solid #e2e8f0 !important;
+        border-top: 1px solid var(--sw-border) !important;
         margin-top: 6px !important;
         padding-top: 8px !important;
     }
@@ -3660,7 +3660,7 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         overflow: visible !important;
         min-height: 48px !important;
         border-bottom: 0 !important;
-        border-top: 1px solid #e2e8f0 !important;
+        border-top: 1px solid var(--sw-border) !important;
         margin-top: 6px !important;
         padding-top: 8px !important;
     }

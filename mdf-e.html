@@ -12,6 +12,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDF-e - Manifesto de Documentos Fiscais</title>
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="layout-comum.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="romaneio-comum.css">
@@ -36,7 +58,7 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
@@ -59,7 +81,7 @@
             display: flex;
             margin-bottom: 20px;
             border-bottom: 2px solid #ddd;
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             border-radius: 4px 4px 0 0;
         }
 
@@ -81,7 +103,7 @@
         .tab.active {
             color: var(--primary-color);
             border-bottom-color: var(--primary-color);
-            background-color: white;
+            background-color: var(--sw-surface);
         }
 
         .tab:hover {
@@ -92,7 +114,7 @@
         .tab-content {
             display: none;
             padding: 20px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-top: none;
             border-radius: 0 0 4px 4px;
         }
@@ -106,7 +128,7 @@
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             padding: 20px;
-            background-color: #fafafa;
+            background-color: var(--sw-surface-2) ;
         }
 
         .form-section h3 {
@@ -143,7 +165,7 @@
         .form-group select,
         .form-group textarea {
             padding: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             font-size: 14px;
             transition: border-color 0.3s ease;
@@ -228,7 +250,7 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            background-color: white;
+            background-color: var(--sw-surface);
         }
 
         .data-table th,
@@ -247,15 +269,15 @@
         }
 
         .data-table tr:hover {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
         }
 
         .data-table tr:nth-of-type(odd) {
-            background-color: #f9f9f9;
+            background-color: var(--sw-surface-2) ;
         }
 
         .data-table tr:nth-of-type(even) {
-            background-color: white;
+            background-color: var(--sw-surface);
         }
 
         .mdfe-table .mdfe-actions {
@@ -336,7 +358,7 @@
             align-items: center;
             margin-bottom: 8px;
             padding: 8px;
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             border-radius: 4px;
             border: 1px solid #e0e0e0;
         }
@@ -371,7 +393,7 @@
         }
 
         .modal-content {
-            background-color: white;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 30px;
             border-radius: 8px;
@@ -391,7 +413,7 @@
         }
 
         .close:hover {
-            color: #000;
+            color: var(--sw-text-1) ;
         }
 
         .number-cell {
@@ -473,7 +495,7 @@
             .mdfe-table tr {
                 margin-bottom: 12px;
                 padding: 10px;
-                background: white;
+                background: var(--sw-surface);
                 border: 1px solid #dee2e6;
                 border-radius: 6px;
                 box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -536,7 +558,7 @@
     <div class="container">
         <main-menu></main-menu>
         
-        <h1>
+        <h1 class="sw-page-title">
             <i class="fas fa-truck"></i> MDF-e - Manifesto de Documentos Fiscais
         </h1>
 
@@ -804,7 +826,7 @@
                     </thead>
                     <tbody id="mdfesTable">
                         <tr>
-                            <td colspan="8" style="text-align: center; color: #666; font-style: italic;">Nenhum MDF-e encontrado</td>
+                            <td colspan="8" style="text-align: center; color: var(--sw-text-2) ; font-style: italic;">Nenhum MDF-e encontrado</td>
                         </tr>
                     </tbody>
                 </table>
@@ -895,7 +917,8 @@
     </div>
 
     <script src="auth.js?v=4173d8da9343"></script>
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
     <!-- Legacy inline implementation kept as a non-executable migration reference. -->
     <script type="text/plain" id="legacy-mdfe-implementation">

@@ -20,10 +20,33 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
+<script src="js/sisweb-theme.js?v=1"></script>
 <script src="menu-component.js?v=6c70fd8f5206"></script>
     <style>
         * {
@@ -34,7 +57,7 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
@@ -151,8 +174,8 @@
             #movimentacao .table tbody tr,
             #produtos .table tbody tr {
                 display: block !important;
-                background: #ffffff !important;
-                border: 1px solid #e2e8f0 !important;
+                background: var(--sw-surface) !important;
+                border: 1px solid var(--sw-border) !important;
                 border-radius: 10px !important;
                 box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
                 padding: 12px 14px !important;
@@ -349,7 +372,7 @@
                 box-shadow: none !important;
                 padding-top: 10px !important;
                 margin-top: 6px !important;
-                border-top: 1px solid #e2e8f0 !important;
+                border-top: 1px solid var(--sw-border) !important;
                 border-bottom: none !important;
                 box-sizing: border-box !important;
             }
@@ -448,7 +471,7 @@
         .table thead th {
             position: sticky;
             top: 0;
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             color: #2c3e50;
             z-index: 10;
             box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
@@ -478,12 +501,12 @@
             max-width: 120px;
             text-align: center;
             white-space: nowrap;
-            background: #fff;
+            background: var(--sw-surface);
             box-shadow: -10px 0 14px -14px rgba(15, 23, 42, 0.55);
         }
         .table thead th.sticky-actions {
             z-index: 16;
-            background: #f8f9fa;
+            background: var(--sw-surface-2) ;
         }
         .table tbody tr:nth-child(even) td.sticky-actions {
             background: #fafcff;
@@ -568,7 +591,7 @@
 
         /* Offcanvas / Drawer Premium */
         .offcanvas-drawer {
-            background: #fff;
+            background: var(--sw-surface);
             border: 1px solid #e1e4e8;
             border-radius: 8px;
             padding: 15px;
@@ -730,8 +753,8 @@
             width: 100%;
             scrollbar-gutter: stable;
             border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            background: #ffffff;
+            border: 1px solid var(--sw-border) ;
+            background: var(--sw-surface);
         }
 
         #relatorioContent table,
@@ -841,7 +864,7 @@
 
         .rast-card {
             background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             padding: 10px 12px;
         }
@@ -865,7 +888,7 @@
 
         .rast-event {
             border-left: 4px solid #2c3e50;
-            background: #fff;
+            background: var(--sw-surface);
             border-radius: 6px;
             box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
             padding: 10px 12px;
@@ -913,9 +936,9 @@
             align-items: start;
             gap: 10px;
             padding: 10px 12px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--sw-border) ;
             border-radius: 8px;
-            background: #fff;
+            background: var(--sw-surface);
         }
 
         #reportColumnsConfigModal .report-col-label,
@@ -1090,7 +1113,7 @@
             margin: -4px 0 14px;
             border: 1px solid #dbe3ea;
             border-radius: 8px;
-            background: #fff;
+            background: var(--sw-surface);
             box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
             overflow: hidden;
         }
@@ -1182,7 +1205,7 @@
             z-index: 2;
             min-width: 118px;
             text-align: center;
-            background: #fff;
+            background: var(--sw-surface);
             box-shadow: -8px 0 12px -12px rgba(15, 23, 42, 0.45);
         }
 
@@ -1750,7 +1773,7 @@
             justify-content: flex-end;
             gap: 10px;
             padding: 12px 16px;
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid var(--sw-border) ;
             background: #f8fafc;
         }
 
@@ -1803,18 +1826,18 @@
             flex-direction: column !important;
             margin: 0 auto !important;
             border-radius: 8px !important;
-            background: #ffffff !important;
+            background: var(--sw-surface) !important;
             box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28) !important;
             overflow: hidden !important;
             box-sizing: border-box !important;
         }
 
         .summary-box {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             padding: 15px;
             border-radius: 8px;
             margin-top: 20px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--sw-border) ;
         }
 
         .summary-row {
@@ -1902,8 +1925,8 @@
         }
 
         .relatorio-profissional {
-            background: #fff;
-            border: 1px solid #e5e7eb;
+            background: var(--sw-surface);
+            border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             padding: 18px;
         }
@@ -1955,13 +1978,13 @@
 
         .relatorio-table th,
         .relatorio-table td {
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--sw-border) ;
             padding: 8px;
             font-size: 12px;
         }
 
         .relatorio-table th {
-            background: #f3f4f6;
+            background: var(--sw-surface-2) ;
             text-align: left;
         }
 
@@ -1976,7 +1999,7 @@
             }
         }
         .stock-entry {
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--sw-border) ;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
@@ -1991,10 +2014,10 @@
         }
 
         .stat-card {
-            background-color: white;
+            background-color: var(--sw-surface);
             padding: 15px;
             border-radius: 8px;
-            border: 1px solid #e5e7eb; /* Borda mais suave */
+            border: 1px solid var(--sw-border) ; /* Borda mais suave */
             text-align: center;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Sombra mais leve */
         }
@@ -2028,10 +2051,10 @@
             align-items: center;
             gap: 6px;
             padding: 6px 8px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--sw-border) ;
             border-radius: 6px;
             max-width: 320px;
-            background: #fff;
+            background: var(--sw-surface);
         }
 
         .romaneio-chip-label {
@@ -2154,7 +2177,7 @@
     <div class="container">
         <main-menu></main-menu>
 
-        <h1>Controle de Estoque de Toras</h1>
+        <h1 class="sw-page-title">Controle de Estoque de Toras</h1>
 
         <div class="tabs">
             <button class="tab active" onclick="showTab('entrada')">
@@ -2184,7 +2207,7 @@
         <div id="produtos" class="tab-content">
             <h2>Estoque de Almoxarifado (Produtos)</h2>
 
-            <div class="filters-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div class="filters-card" style="background: var(--sw-surface); border: 1px solid var(--sw-border) ; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; align-items: end;">
                     <div class="form-group" style="margin-bottom: 0;">
                         <label for="produtosDataInicio" style="font-size: 12px; font-weight: 600; color: #475569;">Data Inicial:</label>
@@ -2691,7 +2714,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div style="font-size:12px; color:#666; margin-top:6px;">
+                        <div style="font-size:12px; color: var(--sw-text-2) ; margin-top:6px;">
                             Tora manual entra no Histórico de Movimentações e no rendimento, sem baixar saldo do estoque.
                         </div>
                     </div>
@@ -3176,7 +3199,7 @@
             <div class="modal-body" style="padding: 20px; overflow-y: auto;">
                 <form id="formEditarProdutoAlmoxarifado" onsubmit="salvarEdicaoModalProdutoAlmoxarifado(event)">
                     <input type="hidden" id="editModalProdutoId">
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #475569;">
+                    <div style="background: #f8fafc; border: 1px solid var(--sw-border) ; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #475569;">
                         <strong>Modo de Edição Direta:</strong> Altere livremente qualquer campo cadastral, financeiro ou parâmetro de reposição. Se a quantidade for modificada, o sistema registrará uma movimentação de Ajuste no histórico.
                     </div>
                     
@@ -3253,7 +3276,7 @@
                         </div>
                     </div>
 
-                    <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid #e2e8f0;">
+                    <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--sw-border) ;">
                         <button type="button" class="btn btn-secondary" onclick="fecharModal('modalEditarProdutoAlmoxarifado')">
                             <i class="fas fa-times"></i> Cancelar
                         </button>
@@ -3292,7 +3315,7 @@
                         </div>
                     </div>
                     <div id="filtroTorasEspecieModalSuggestionsReserve" class="species-suggestions-reserve" aria-hidden="true"></div>
-                    <div style="font-size:12px; color:#666; margin-top:6px; white-space:nowrap;">
+                    <div style="font-size:12px; color: var(--sw-text-2) ; margin-top:6px; white-space:nowrap;">
                         Dica: no campo de busca, pressione Enter para selecionar os itens filtrados e limpar a busca.
                     </div>
                 </div>

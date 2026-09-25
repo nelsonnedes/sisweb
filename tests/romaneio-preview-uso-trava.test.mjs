@@ -410,6 +410,9 @@ test('TL sem botão duplicado; PCT com contraste nítido (só cores)', () => {
   assert.match(pct, /\.resumo-dimensoes-table th \{[\s\S]*?print-color-adjust: exact;/);
   assert.match(pct, /\.resumo-dimensoes-table td \{\s*\n\s*color: #000;/);
   assert.match(pct, /\.resumo-conama th, \.resumo-conama td \{[\s\S]*?color: #000;/);
+  assert.match(pct, /\.resumo-dimensoes-table th \{[\s\S]*?print-color-adjust: exact;/);
+  assert.match(pct, /\.resumo-dimensoes-table td \{\s*\n\s*color: #000;/);
+  assert.match(pct, /\.resumo-conama th, \.resumo-conama td \{[\s\S]*?color: #000;/);
 });
 
 test('PCT resumos com corpo em negrito padrão TL (dims + CONAMA + pills)', () => {

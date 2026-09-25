@@ -1,0 +1,702 @@
+/* Login — camada autoral Sisweb Madeireiras (Fase 1A).
+   Override de alta especificidade sobre o CSS legado inline: tudo escopado em
+   body.sw-auth (fundo/card) e html[data-theme] (claro/escuro). Zero seletores globais nus.
+   Referência: marqueting/lab-login-b.html + lab-pattern.css. */
+
+body.sw-auth {
+  font-family: var(--sw-font-sans);
+  background:
+    radial-gradient(900px 420px at 50% -10%, rgba(254, 106, 0, 0.12), transparent 60%),
+    linear-gradient(165deg, #1e2228 0%, #121417 60%, #0b0d0f 100%);
+}
+
+body.sw-auth::before {
+  background: var(--sw-gradient);
+  opacity: 0.08;
+}
+
+body.sw-auth .container {
+  background: var(--sw-surface);
+  border: 1px solid var(--sw-border);
+  border-radius: var(--sw-radius-card);
+  box-shadow: var(--sw-shadow-card);
+}
+
+/* Lockup oficial (ícone + wordmark) com fallback para o ícone do app */
+body.sw-auth .sw-lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+body.sw-auth .sw-lockup-icon {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 18px rgba(254, 106, 0, 0.4));
+}
+
+body.sw-auth .sw-lockup-name {
+  width: 220px;
+  max-width: 74%;
+  height: auto;
+}
+
+/* Lockup compacto nos modais (Fase 5: identidade em registro/recuperação/contato) */
+body.sw-auth .modal-content .sw-lockup {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+body.sw-auth .modal-content .sw-lockup-icon {
+  width: 56px;
+  height: 56px;
+}
+
+body.sw-auth .modal-content .sw-lockup-name {
+  width: 150px;
+}
+
+body.sw-auth .sw-visual-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Textos */
+body.sw-auth .auth-subtitle,
+body.sw-auth label {
+  color: var(--sw-text-2);
+  font-family: var(--sw-font-sans);
+}
+
+body.sw-auth .login-footer-note,
+body.sw-auth .register-link {
+  color: var(--sw-text-3);
+}
+
+body.sw-auth .register-link {
+  border-top: 1px solid var(--sw-border);
+}
+
+/* Campos */
+body.sw-auth input,
+body.sw-auth .input-group select {
+  background: var(--sw-input-bg);
+  border-color: var(--sw-input-border);
+  color: var(--sw-text-1);
+  border-radius: var(--sw-radius-control);
+  font-family: var(--sw-font-sans);
+}
+
+body.sw-auth input::placeholder {
+  color: var(--sw-input-placeholder);
+}
+
+body.sw-auth input:focus,
+body.sw-auth .input-group select:focus {
+  outline: 2px solid var(--sw-focus);
+  border-color: var(--sw-focus);
+  background: var(--sw-input-bg);
+  box-shadow: 0 0 0 3px var(--sw-focus-ring);
+}
+
+body.sw-auth .input-group i {
+  color: var(--sw-text-3);
+}
+
+body.sw-auth input:focus + i,
+body.sw-auth .input-group select:focus + i {
+  color: var(--sw-focus);
+}
+
+/* Ação primária */
+body.sw-auth button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--sw-font-sans);
+  font-weight: 700;
+  background: var(--sw-gradient);
+  color: var(--sw-on-brand);
+  border: 1px solid transparent;
+  border-radius: var(--sw-radius-control);
+  min-height: 52px;
+  width: 100%;
+  box-shadow: var(--sw-shadow-brand);
+}
+
+body.sw-auth button[type="submit"]:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+/* Ações fantasmas */
+body.sw-auth .forgot-password,
+body.sw-auth .register-link button {
+  background: none !important;
+  border: none;
+  box-shadow: none;
+  width: auto;
+  padding: 0;
+  font-family: var(--sw-font-sans);
+  font-weight: 700;
+  color: var(--sw-link) !important;
+}
+
+/* Código MFA em fonte mono oficial */
+body.sw-auth #mfaCode {
+  font-family: var(--sw-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Estados do sistema */
+body.sw-auth .system-health {
+  background: var(--sw-surface-2);
+  border-color: var(--sw-border);
+  color: var(--sw-text-2);
+}
+
+body.sw-auth .system-health.system-ok {
+  background: rgba(22, 163, 74, 0.14);
+  border-color: rgba(22, 163, 74, 0.4);
+  color: #4ade80;
+}
+
+body.sw-auth .system-health.system-warn {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+body.sw-auth .system-health.system-error {
+  background: rgba(220, 38, 38, 0.14);
+  border-color: rgba(220, 38, 38, 0.4);
+  color: #fca5a5;
+}
+
+body.sw-auth .error-message {
+  background: rgba(220, 38, 38, 0.14);
+  border-left-color: var(--sw-danger);
+  color: #fca5a5;
+}
+
+body.sw-auth .success-message {
+  background: rgba(22, 163, 74, 0.14);
+  border-left-color: var(--sw-success);
+  color: #4ade80;
+}
+
+body.sw-auth .success-message i {
+  color: inherit;
+}
+
+/* Manutenção */
+body.sw-auth .maintenance-message {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: var(--sw-text-2);
+}
+
+body.sw-auth .maintenance-btn {
+  background: var(--sw-gradient);
+  border-radius: 8px;
+  font-family: var(--sw-font-sans);
+}
+
+/* Modais */
+body.sw-auth .modal-content {
+  background: var(--sw-surface);
+  border: 1px solid var(--sw-border);
+  color: var(--sw-text-1);
+  border-radius: 16px;
+}
+
+body.sw-auth .modal-title {
+  color: var(--sw-text-1);
+  font-family: var(--sw-font-sans);
+}
+
+body.sw-auth .close {
+  color: var(--sw-text-3);
+}
+
+body.sw-auth .close:hover {
+  color: var(--sw-danger);
+  background: var(--sw-surface-2);
+}
+
+body.sw-auth .contact-option {
+  background: var(--sw-surface-2);
+  border-color: var(--sw-border);
+}
+
+body.sw-auth .contact-option i {
+  color: var(--sw-link);
+}
+
+body.sw-auth .contact-option strong {
+  color: var(--sw-text-1);
+}
+
+body.sw-auth .contact-option a {
+  color: var(--sw-link);
+}
+
+body.sw-auth .contact-option p {
+  color: var(--sw-text-2);
+}
+
+/* Rodapé */
+body.sw-auth .global-system-footer {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--sw-border);
+  color: var(--sw-text-2);
+}
+
+body.sw-auth .global-footer-contact-btn {
+  color: var(--sw-link) !important;
+}
+
+/* ---------- Tema Claro: só o que tokens não resolvem sozinhos ---------- */
+html[data-theme="light"] body.sw-auth {
+  background:
+    radial-gradient(900px 420px at 50% -10%, rgba(254, 106, 0, 0.1), transparent 60%),
+    linear-gradient(165deg, #fff7f0 0%, #f8f9fa 60%, #edf0f3 100%);
+}
+
+html[data-theme="light"] body.sw-auth::before {
+  opacity: 0.05;
+}
+
+html[data-theme="light"] body.sw-auth .system-health.system-ok {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+html[data-theme="light"] body.sw-auth .system-health.system-warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+html[data-theme="light"] body.sw-auth .system-health.system-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+html[data-theme="light"] body.sw-auth .error-message {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+html[data-theme="light"] body.sw-auth .success-message {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+html[data-theme="light"] body.sw-auth .global-system-footer {
+  background: rgba(17, 24, 39, 0.88);
+  color: #e5e7eb;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.sw-auth .container,
+  body.sw-auth button[type="submit"],
+  body.sw-auth button[type="submit"]:hover {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ---------- ESTRUTURA (Fase 1B: auth.css standalone) ----------
+   Layout portado do legado, escopado em body.sw-auth. Permite remover o
+   <style> inline do login.html sem nenhuma mudança visual. */
+
+/* Preflight escopado (exceção sancionada, Fase 4): sem o border-box global
+   legado, inputs/selects/modais com width:100% + padding transbordavam o card. */
+body.sw-auth *,
+body.sw-auth *::before,
+body.sw-auth *::after {
+  box-sizing: border-box;
+}
+
+body.sw-auth {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  padding: 24px;
+}
+
+body.sw-auth .container {
+  padding: 40px;
+  width: 100%;
+  max-width: 460px;
+  text-align: center;
+  animation: swFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes swFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes swSlideDown {
+  from { opacity: 0; transform: translateY(-50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes swSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+body.sw-auth .logo-container {
+  margin-bottom: 26px;
+}
+
+body.sw-auth .auth-subtitle {
+  font-size: 14px;
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+
+body.sw-auth .form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+body.sw-auth label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+body.sw-auth .input-group {
+  position: relative;
+  margin-bottom: 5px;
+}
+
+body.sw-auth .input-group i {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: color 0.3s;
+}
+
+body.sw-auth input,
+body.sw-auth .input-group select {
+  width: 100%;
+  padding: 12px 12px 12px 45px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+body.sw-auth button[type="submit"] {
+  padding: 14px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+body.sw-auth button:active {
+  transform: translateY(0);
+}
+
+body.sw-auth button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+body.sw-auth button:focus-visible,
+body.sw-auth a:focus-visible,
+body.sw-auth .close:focus-visible {
+  outline: 3px solid var(--sw-focus);
+  outline-offset: 2px;
+}
+
+body.sw-auth .forgot-password {
+  margin-top: 15px;
+  font-size: 14px;
+  display: inline-block;
+  transition: color 0.3s;
+}
+
+body.sw-auth .register-link {
+  margin-top: 25px;
+  padding-top: 20px;
+  font-size: 14px;
+}
+
+body.sw-auth .login-footer-note {
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+body.sw-auth .error-message,
+body.sw-auth .success-message {
+  font-size: 14px;
+  margin-top: 5px;
+  display: none;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+body.sw-auth .success-message i {
+  margin-right: 5px;
+}
+
+body.sw-auth .system-health {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-align: left;
+  border: 1px solid;
+  display: none;
+}
+
+body.sw-auth .system-health-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+body.sw-auth .system-health-text {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+body.sw-auth .modal {
+  display: none;
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  animation: swFadeIn 0.3s ease-out;
+}
+
+body.sw-auth .modal.open {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.sw-auth .modal-content {
+  padding: 40px;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  animation: swSlideDown 0.4s ease-out;
+  max-height: none;
+  overflow: visible;
+  margin: 5vh auto;
+}
+
+body.sw-auth .close {
+  position: absolute;
+  right: 20px;
+  top: 15px;
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.3s;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+body.sw-auth .modal-title {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+body.sw-auth .loading-spinner {
+  display: none;
+  margin: 15px auto;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--sw-brand);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: swSpin 1s linear infinite;
+}
+
+body.sw-auth .maintenance-message {
+  display: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  text-align: left;
+  border: 1px solid;
+}
+
+body.sw-auth .maintenance-message strong {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+body.sw-auth .maintenance-btn {
+  border: none;
+  border-radius: 5px;
+  padding: 7px 11px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.3s;
+  font-weight: 600;
+  width: auto;
+}
+
+body.sw-auth .maintenance-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+body.sw-auth .global-system-footer {
+  position: static;
+  width: min(100%, 460px);
+  margin: 16px auto 0;
+  border-radius: 10px;
+  font-size: 12px;
+  padding: 10px 12px;
+  text-align: center;
+  z-index: 1;
+}
+
+body.sw-auth .global-footer-contact-btn {
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  width: auto;
+  overflow: visible;
+}
+
+body.sw-auth .global-footer-contact-btn:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+body.sw-auth .contact-options {
+  margin-top: 24px;
+}
+
+body.sw-auth .contact-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+body.sw-auth .contact-option i {
+  font-size: 20px;
+  margin-top: 2px;
+}
+
+body.sw-auth .contact-option strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+body.sw-auth .contact-option a {
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+body.sw-auth .contact-option a:hover {
+  text-decoration: underline;
+}
+
+body.sw-auth .contact-option p {
+  font-size: 12px;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+body.sw-auth [aria-busy="true"] button[type="submit"] {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  body.sw-auth .container {
+    padding: 30px 20px;
+    width: 90%;
+    margin: 20px;
+  }
+
+  body.sw-auth .global-system-footer {
+    width: calc(100% - 24px);
+    margin-top: 12px;
+  }
+
+  body.sw-auth .modal-content {
+    padding: 25px 15px;
+    width: 100%;
+  }
+
+  body.sw-auth .sw-lockup-icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  body.sw-auth .sw-lockup-name {
+    width: 180px;
+  }
+}

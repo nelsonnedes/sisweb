@@ -1,0 +1,745 @@
+/* Sisweb — shell compartilhado Claro/Escuro (menu topo + canvas).
+   Carregado por todas as páginas com <main-menu>. Regras sempre prefixadas
+   com html[data-theme] — zero vazamento global.
+   Padrão da ilha: marqueting/lab-pattern.css §3. */
+
+html[data-theme] body {
+  font-family: var(--sw-font-sans);
+  margin: 0;
+  padding: 20px;
+}
+
+/* Exceção sancionada (preflight): páginas e módulos foram autorados sob
+   border-box global. Escopado a documentos com tema — sem reset de margin/padding. */
+html[data-theme] *,
+html[data-theme] *::before,
+html[data-theme] *::after {
+  box-sizing: border-box;
+}
+
+html[data-theme="dark"] body {
+  background-color: var(--sw-bg);
+  background-image: radial-gradient(1100px 340px at 85% -80px, rgba(254, 106, 0, 0.07), transparent 60%);
+  color: var(--sw-text-2);
+}
+
+html[data-theme="light"] body {
+  background-color: var(--sw-bg);
+  color: var(--sw-text-2);
+}
+
+/* Opção ativa no menu Tema (engrenagem) */
+html[data-theme] .settings-theme-section .theme-option.is-active {
+  color: var(--sw-brand);
+  font-weight: 700;
+}
+
+/* ---------- Ilha do menu topo (Fase 5: shell estendido sob os triggers) ----------
+   A ilha agora é o próprio .sisweb-menu-shell, cobrindo sininho + engrenagem;
+   os dropdowns (z-index alto, absolutos) pairam sobre ela. Superfície por tema.
+   Fase 17: fundo ajustável em Configurações > Menu do topo (--sw-chrome-bg). */
+html[data-theme] main-menu .sisweb-menu-shell {
+  background: var(--sw-chrome-bg);
+  border: 1px solid var(--sw-island-border);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 2px 10px rgba(17, 24, 39, 0.06);
+  margin-bottom: 20px;
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .menu {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .menu-item {
+  color: var(--sw-island-muted);
+  font-weight: 600;
+  border-radius: 8px;
+  font-family: var(--sw-font-sans);
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .menu-item i {
+  color: var(--sw-island-icon);
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .menu-item:hover,
+html[data-theme] main-menu .sisweb-menu-shell .menu-item:focus-visible {
+  color: var(--sw-brand);
+  background: var(--sw-hover);
+  text-decoration: none;
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .menu-item:hover i,
+html[data-theme] main-menu .sisweb-menu-shell .menu-item:focus-visible i {
+  color: var(--sw-brand);
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .menu-item.active,
+html[data-theme] main-menu .sisweb-menu-shell .menu-item[aria-current="page"] {
+  background: var(--sw-gradient);
+  color: #ffffff;
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .menu-item.active i,
+html[data-theme] main-menu .sisweb-menu-shell .menu-item[aria-current="page"] i {
+  color: #ffffff;
+}
+
+html[data-theme] main-menu .menu-item-trigger,
+html[data-theme] main-menu .alerts-icon,
+html[data-theme] main-menu .settings-icon {
+  color: var(--sw-island-muted);
+}
+
+html[data-theme] main-menu .menu-item-trigger:hover,
+html[data-theme] main-menu .alerts-icon:hover,
+html[data-theme] main-menu .settings-icon:hover {
+  background: var(--sw-hover);
+  color: var(--sw-brand);
+}
+
+html[data-theme] main-menu .alerts-badge {
+  background: var(--sw-brand);
+  color: #ffffff;
+  border: 2px solid var(--sw-chrome-bg);
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .dropdown-content {
+  background: var(--sw-chrome-bg);
+  background-color: var(--sw-chrome-bg);
+  border: 1px solid var(--sw-island-border);
+  border-radius: 12px;
+  box-shadow: var(--sw-shadow-pop);
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .dropdown-content a {
+  color: var(--sw-island-link);
+}
+
+html[data-theme] main-menu .sisweb-menu-shell .dropdown-content a:hover,
+html[data-theme] main-menu .sisweb-menu-shell .dropdown-content a:focus-visible {
+  background: var(--sw-hover);
+  color: var(--sw-brand);
+}
+
+html[data-theme] main-menu .user-info {
+  color: var(--sw-island-muted);
+  border-top: 1px solid var(--sw-island-border);
+  border-bottom: 1px solid var(--sw-island-border);
+}
+
+html[data-theme] main-menu .user-info span,
+html[data-theme] main-menu .user-info i {
+  color: var(--sw-island-ink);
+}
+
+html[data-theme] main-menu .settings-section-title {
+  font-family: var(--sw-font-sans);
+  color: var(--sw-island-muted);
+}
+
+/* ---------- Cartão de saudação (Fase 4: timber no dark) ---------- */
+html[data-theme="dark"] main-menu .settings-profile-card {
+  background: linear-gradient(135deg, #242b33, #1e2228);
+  border-color: var(--sw-border);
+}
+
+html[data-theme="dark"] main-menu .settings-dropdown .user-info .greeting-name,
+html[data-theme="dark"] main-menu .settings-profile-copy .greeting-name {
+  color: var(--sw-text-1);
+}
+
+html[data-theme="dark"] main-menu .subscription-inline {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--sw-border);
+  color: var(--sw-text-2);
+}
+
+/* ---------- Pill de assinatura estendida (Fase 5) ---------- */
+html[data-theme] main-menu .subscription-inline {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  font-weight: 700;
+  background: var(--sw-pill-bg);
+  border: 1px solid var(--sw-pill-border);
+  color: var(--sw-pill-ink);
+}
+
+html[data-theme] main-menu .greeting-email {
+  color: var(--sw-island-muted);
+}
+
+html[data-theme="dark"] main-menu .settings-section {
+  border-top-color: var(--sw-border);
+}
+
+/* ---------- Sininho (Fase 4: superfícies por tema, severidade preservada) ---------- */
+html[data-theme] main-menu .alerts-item {
+  background: var(--sw-alert-bg);
+  border-bottom: 1px solid var(--sw-island-border);
+  border-radius: 8px;
+}
+
+html[data-theme] main-menu .alerts-item.unread {
+  background: var(--sw-alert-unread);
+}
+
+html[data-theme] main-menu .alerts-item.sev-error {
+  border-left: 4px solid var(--sw-danger);
+  background: var(--sw-alert-error-bg);
+}
+
+html[data-theme] main-menu .alerts-item.sev-warning {
+  border-left: 4px solid var(--sw-warning);
+  background: var(--sw-alert-warning-bg);
+}
+
+html[data-theme] main-menu .alerts-item.sev-info {
+  border-left: 4px solid var(--sw-info);
+  background: var(--sw-alert-info-bg);
+}
+
+html[data-theme] main-menu .alerts-item.sev-success {
+  border-left: 4px solid var(--sw-success);
+  background: var(--sw-alert-success-bg);
+}
+
+html[data-theme] main-menu .alerts-item-title {
+  color: var(--sw-alert-title);
+}
+
+html[data-theme] main-menu .alerts-item-message {
+  color: var(--sw-alert-msg);
+}
+
+html[data-theme] main-menu a.alerts-item-message {
+  color: var(--sw-alert-link);
+}
+
+html[data-theme] main-menu .alerts-actions .btn {
+  background: var(--sw-chrome-bg);
+  border: 1px solid var(--sw-island-border);
+  color: var(--sw-island-ink);
+}
+
+html[data-theme] main-menu .alerts-actions .btn:hover {
+  border-color: var(--sw-brand);
+  color: var(--sw-brand);
+  background: var(--sw-hover);
+}
+
+html[data-theme] main-menu .alerts-empty {
+  color: var(--sw-island-muted);
+}
+
+@media (max-width: 1024px) {
+  html[data-theme] main-menu .sisweb-menu-shell .menu {
+    background: var(--sw-chrome-bg);
+    border: 1px solid var(--sw-island-border);
+  }
+
+  html[data-theme] main-menu .sisweb-menu-shell .menu-item {
+    color: var(--sw-island-muted);
+  }
+
+  html[data-theme] main-menu .sisweb-menu-shell .menu-item:hover {
+    background: var(--sw-hover);
+    color: var(--sw-brand);
+  }
+
+  html[data-theme] main-menu .sisweb-menu-shell .dropdown-content {
+    background: var(--sw-chrome-bg);
+    box-shadow: none;
+  }
+}
+
+/* ---------- Rodapé global (Fase 10: padrão em todas as páginas) ----------
+   Fase 11: contido na largura do conteúdo (1400px, igual às divs). */
+html[data-theme] .global-system-footer {
+  border: 1px solid var(--sw-island-border);
+  padding: 16px 12px 20px;
+  text-align: center;
+  font-size: 12px;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 12px;
+}
+
+html[data-theme="dark"] .global-system-footer {
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--sw-text-3);
+}
+
+html[data-theme="light"] .global-system-footer {
+  background: transparent;
+  color: var(--sw-text-3);
+}
+
+html[data-theme] .global-system-footer .global-footer-contact {
+  color: var(--sw-link);
+  font-weight: 700;
+}
+
+/* ---------- Impressão (Fase 13: nunca imprimir o dark) ----------
+   Papel é claro por definição; normaliza canvas e tinta no print. */
+@media print {
+  html[data-theme="dark"] {
+    color-scheme: light;
+  }
+
+  html[data-theme="dark"] body {
+    background: var(--sw-surface) !important;
+    background-image: none !important;
+    color: #111827 !important;
+  }
+}
+
+/* ---------- Modal Suporte (Fase 6: padrão Fale Conosco do login) ----------
+   Seletores com ID vencem o <style> injetado (#supportModal = 1,1,0).
+   Botões de ação mantêm hues semânticos; superfícies/textos/abas vão ao tema. */
+html[data-theme] #supportModal .support-mode-tab.active {
+  color: #ffffff;
+  background: var(--sw-gradient);
+  box-shadow: var(--sw-shadow-brand);
+}
+
+html[data-theme] #aboutModal .about-support-button {
+  background: var(--sw-gradient);
+}
+
+html[data-theme="dark"] #supportModal .support-content {
+  background: var(--sw-surface);
+  border: 1px solid var(--sw-border);
+}
+
+html[data-theme="dark"] #supportModal .close {
+  color: var(--sw-text-3);
+  background: var(--sw-surface-2);
+}
+
+html[data-theme="dark"] #supportModal .close:hover {
+  color: var(--sw-danger);
+  background: var(--sw-surface-2);
+}
+
+html[data-theme="dark"] #supportModal h2 {
+  color: var(--sw-text-1);
+  font-family: var(--sw-font-sans);
+}
+
+html[data-theme="dark"] #supportModal .support-lead {
+  color: var(--sw-text-2);
+}
+
+html[data-theme="dark"] #supportModal .support-mode-tabs {
+  background: var(--sw-surface-2);
+  border-color: var(--sw-border);
+}
+
+html[data-theme="dark"] #supportModal .support-mode-tab {
+  color: var(--sw-text-2);
+}
+
+html[data-theme="dark"] #supportModal .support-context {
+  background: var(--sw-surface-2);
+  border-color: var(--sw-border);
+}
+
+html[data-theme="dark"] #supportModal .support-context-row {
+  color: var(--sw-text-2);
+}
+
+html[data-theme="dark"] #supportModal .support-context-row strong {
+  color: var(--sw-text-1);
+}
+
+html[data-theme="dark"] #supportModal .support-label {
+  color: var(--sw-text-1);
+}
+
+html[data-theme="dark"] #supportModal textarea {
+  background: var(--sw-input-bg);
+  border-color: var(--sw-input-border);
+  color: var(--sw-text-1);
+  font-family: var(--sw-font-sans);
+}
+
+html[data-theme="dark"] #supportModal textarea::placeholder {
+  color: var(--sw-input-placeholder);
+}
+
+html[data-theme="dark"] #supportModal textarea:focus {
+  border-color: var(--sw-focus);
+  outline: 2px solid var(--sw-focus-ring);
+}
+
+html[data-theme="dark"] #supportModal .support-attachment-field {
+  background: var(--sw-surface-2);
+  border-color: var(--sw-input-border);
+}
+
+html[data-theme="dark"] #supportModal .support-attachment-field input[type="file"] {
+  color: var(--sw-text-2);
+}
+
+html[data-theme="dark"] #supportModal .support-attachment-list {
+  color: var(--sw-text-3);
+}
+
+html[data-theme="dark"] #supportModal .support-attachment-list.has-files span {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: rgba(37, 99, 235, 0.16);
+  color: #93c5fd;
+}
+
+html[data-theme="dark"] #supportModal .support-attachment-list small {
+  color: var(--sw-text-3);
+}
+
+html[data-theme="dark"] #supportModal .support-tickets-toolbar strong {
+  color: var(--sw-text-1);
+}
+
+html[data-theme="dark"] #supportModal .support-tickets-toolbar span {
+  color: var(--sw-text-3);
+}
+
+html[data-theme="dark"] #supportModal .support-ticket-card {
+  border-color: var(--sw-border);
+  background: var(--sw-surface-2);
+  color: var(--sw-text-1);
+}
+
+html[data-theme="dark"] #supportModal .support-ticket-card:hover {
+  border-color: var(--sw-brand);
+  background: var(--sw-surface-2);
+}
+
+html[data-theme="dark"] #supportModal .support-ticket-status.status-waiting_customer {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+}
+
+html[data-theme="dark"] #supportModal .support-ticket-status.status-waiting_support {
+  background: rgba(37, 99, 235, 0.2);
+  color: #93c5fd;
+}
+
+html[data-theme="dark"] #supportModal .support-ticket-status.status-closed,
+html[data-theme="dark"] #supportModal .support-ticket-status.status-resolved {
+  background: rgba(22, 163, 74, 0.16);
+  color: #4ade80;
+}
+
+html[data-theme="dark"] #supportModal .support-ticket-card small {
+  color: var(--sw-text-3);
+}
+
+html[data-theme="dark"] #supportModal .support-ticket-card-preview {
+  color: var(--sw-text-2);
+}
+
+html[data-theme="dark"] #supportModal .support-empty,
+html[data-theme="dark"] #supportModal .support-thread-panel {
+  border-color: var(--sw-border);
+  background: var(--sw-surface-2);
+  color: var(--sw-text-3);
+}
+
+html[data-theme="dark"] #supportModal .support-thread-header strong {
+  color: var(--sw-text-1);
+}
+
+html[data-theme="dark"] #supportModal .support-thread-header span {
+  color: var(--sw-text-3);
+}
+
+html[data-theme="dark"] #supportModal .support-link-button {
+  color: var(--sw-link);
+}
+
+html[data-theme="dark"] #supportModal .support-message {
+  border-color: var(--sw-border);
+  background: var(--sw-surface-2);
+}
+
+html[data-theme="dark"] #supportModal .support-message.support {
+  background: rgba(37, 99, 235, 0.14);
+  border-color: rgba(37, 99, 235, 0.4);
+}
+
+html[data-theme="dark"] #supportModal .support-message.customer {
+  background: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.4);
+}
+
+html[data-theme="dark"] #supportModal .support-message-meta {
+  color: var(--sw-text-3);
+}
+
+html[data-theme="dark"] #supportModal .support-message-text {
+  color: var(--sw-text-1);
+}
+
+html[data-theme="dark"] #supportModal .support-attachment-link {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: var(--sw-surface-2);
+  color: #93c5fd;
+}
+
+html[data-theme="dark"] #supportModal .support-attachment-link:hover {
+  background: rgba(37, 99, 235, 0.16);
+}
+
+html[data-theme="dark"] #supportModal .support-attachment-link small {
+  color: var(--sw-text-3);
+}
+
+html[data-theme="dark"] #supportModal .support-feedback {
+  color: var(--sw-text-2);
+}
+
+html[data-theme="dark"] #supportModal .support-feedback.success {
+  color: #4ade80;
+}
+
+html[data-theme="dark"] #supportModal .support-feedback.error {
+  color: #fca5a5;
+}
+
+/* ---------- Paleta de cores (Fase 16: Configurações) ----------
+   Modal injetado pelo theme manager; superfícies seguem o tema ativo. */
+html[data-theme] .sw-theme-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme] .sw-theme-dialog {
+  width: min(560px, 100%);
+  margin: auto;
+  background: var(--sw-island-bg);
+  border: 1px solid var(--sw-island-border);
+  border-radius: 16px;
+  box-shadow: var(--sw-shadow-pop);
+  padding: 20px;
+  font-family: var(--sw-font-sans);
+}
+
+html[data-theme] .sw-theme-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+html[data-theme] .sw-theme-dialog-head h2 {
+  font-size: 18px;
+  color: var(--sw-island-ink);
+  margin: 0;
+}
+
+html[data-theme] .sw-theme-close {
+  border: none;
+  background: transparent;
+  color: var(--sw-island-muted);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+html[data-theme] .sw-theme-close:hover {
+  background: var(--sw-hover);
+  color: var(--sw-brand);
+}
+
+html[data-theme] .sw-theme-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 4px;
+  border: 1px solid var(--sw-island-border);
+  border-radius: 12px;
+}
+
+html[data-theme] .sw-theme-tab {
+  border: none;
+  border-radius: 9px;
+  padding: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  color: var(--sw-island-muted);
+}
+
+html[data-theme] .sw-theme-tab.active {
+  background: var(--sw-gradient);
+  color: #ffffff;
+}
+
+html[data-theme] .sw-theme-hint {
+  font-size: 12px;
+  color: var(--sw-island-muted);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+html[data-theme] .sw-theme-rows {
+  display: grid;
+  gap: 10px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+html[data-theme] .sw-theme-row {
+  border: 1px solid var(--sw-island-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+html[data-theme] .sw-theme-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+html[data-theme] .sw-theme-row-head strong {
+  color: var(--sw-island-ink);
+  font-size: 14px;
+}
+
+html[data-theme] .sw-theme-reset {
+  border: 1px solid var(--sw-island-border);
+  background: transparent;
+  color: var(--sw-island-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 2px 8px;
+  font-size: 13px;
+}
+
+html[data-theme] .sw-theme-reset:hover {
+  border-color: var(--sw-brand);
+  color: var(--sw-brand);
+}
+
+html[data-theme] .sw-theme-affects {
+  font-size: 12px;
+  color: var(--sw-island-muted);
+  margin: 2px 0 8px;
+}
+
+html[data-theme] .sw-theme-controls {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+html[data-theme] .sw-theme-controls input[type="color"] {
+  width: 40px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--sw-island-border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+html[data-theme] .sw-theme-controls input[type="range"] {
+  width: 100%;
+  accent-color: var(--sw-brand);
+}
+
+html[data-theme] .sw-theme-hex {
+  font-family: var(--sw-font-mono);
+  font-size: 12px;
+  color: var(--sw-island-muted);
+  min-width: 58px;
+  text-align: right;
+}
+
+html[data-theme] .sw-theme-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+html[data-theme] .sw-theme-reset-all {
+  border: 1px solid var(--sw-island-border);
+  background: transparent;
+  color: var(--sw-island-muted);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+html[data-theme] .sw-theme-reset-all:hover {
+  border-color: var(--sw-brand);
+  color: var(--sw-brand);
+}
+
+html[data-theme] .sw-theme-done {
+  border: none;
+  background: var(--sw-gradient);
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---------- Paleta blindada (Fase 18) ----------
+   A paleta é injetada no body, exposta ao `button` global do legado
+   (company.html usa `button { width: 100% }`, que esticava o × e os botões).
+   `!important` cirúrgico documentado, só aqui. */
+html[data-theme] .sw-theme-dialog-head {
+  gap: 12px;
+}
+
+html[data-theme] .sw-theme-dialog-head h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html[data-theme] .sw-theme-close {
+  flex: 0 0 auto;
+  width: auto !important;
+  margin: 0 !important;
+  align-self: flex-start;
+}
+
+html[data-theme] .sw-theme-tab,
+html[data-theme] .sw-theme-reset,
+html[data-theme] .sw-theme-reset-all,
+html[data-theme] .sw-theme-done {
+  width: auto !important;
+  margin-top: 0 !important;
+}
+
+html[data-theme] .sw-theme-row-head strong {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html[data-theme] .sw-theme-reset {
+  flex: 0 0 auto;
+}

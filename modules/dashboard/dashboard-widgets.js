@@ -14,14 +14,14 @@
 window.DashboardWidgets = (function() {
     'use strict';
 
-    // ✅ CONFIGURAÇÕES
+    // ✅ CONFIGURAÇÕES (cores oficiais cores.md §3.3 — só dataset visual do Chart.js)
     const CHART_COLORS = {
-        primary: '#3498db',
-        success: '#27ae60', 
-        warning: '#f39c12',
-        danger: '#e74c3c',
-        info: '#17a2b8',
-        secondary: '#6c757d'
+        primary: '#fe6a00',
+        success: '#16a34a',
+        warning: '#f59e0b',
+        danger: '#dc2626',
+        info: '#2563eb',
+        secondary: '#6b7280'
     };
 
     // ✅ ESTADO DOS WIDGETS
@@ -110,18 +110,6 @@ window.DashboardWidgets = (function() {
             <!-- Cotação do Dólar -->
             <div class="dollar-widget" id="dollarWidget">
                 <div class="dashboard-placeholder">Cotação será carregada junto com o painel.</div>
-            </div>
-
-            <!-- Seção Financeira -->
-            <div class="data-tables">
-                <div class="table-container">
-                    <h3><i class="fas fa-arrow-down text-danger"></i> A Receber Vencidas</h3>
-                    <div id="contasReceberVencidasTable"><div class="dashboard-placeholder">Aguardando dados financeiros...</div></div>
-                </div>
-                <div class="table-container">
-                    <h3><i class="fas fa-arrow-up text-warning"></i> A Pagar Vencidas</h3>
-                    <div id="contasPagarVencidasTable"><div class="dashboard-placeholder">Aguardando dados financeiros...</div></div>
-                </div>
             </div>
             </section>
         `;
@@ -531,9 +519,13 @@ window.DashboardWidgets = (function() {
         paginationState.contasReceber.currentPage = 1;
         paginationState.contasPagar.currentPage = 1;
 
-        // Renderizar tabelas com paginação
-        renderPaginatedTable('contasReceberVencidasTable', receberVencidas, 'contasReceber', 'Contas a Receber');
-        renderPaginatedTable('contasPagarVencidasTable', pagarVencidas, 'contasPagar', 'Contas a Pagar');
+        // Renderizar tabelas com paginação (somente se os containers existirem)
+        if (document.getElementById('contasReceberVencidasTable')) {
+            renderPaginatedTable('contasReceberVencidasTable', receberVencidas, 'contasReceber', 'Contas a Receber');
+        }
+        if (document.getElementById('contasPagarVencidasTable')) {
+            renderPaginatedTable('contasPagarVencidasTable', pagarVencidas, 'contasPagar', 'Contas a Pagar');
+        }
         
         console.log('✅ Tabelas de contas vencidas atualizadas com paginação');
     }
@@ -737,11 +729,11 @@ window.DashboardWidgets = (function() {
             state.currentPage = newPage;
             console.log(`✅ Página alterada para: ${newPage}`);
             
-            // Renderizar com dados em cache
-            if (tableType === 'contasReceber') {
+            // Renderizar com dados em cache (somente se os containers existirem)
+            if (tableType === 'contasReceber' && document.getElementById('contasReceberVencidasTable')) {
                 console.log(`🔄 Renderizando contas a receber, ${cachedOverdueData.contasReceber.length} itens`);
                 renderPaginatedTable('contasReceberVencidasTable', cachedOverdueData.contasReceber, 'contasReceber', 'Contas a Receber');
-            } else if (tableType === 'contasPagar') {
+            } else if (tableType === 'contasPagar' && document.getElementById('contasPagarVencidasTable')) {
                 console.log(`🔄 Renderizando contas a pagar, ${cachedOverdueData.contasPagar.length} itens`);
                 renderPaginatedTable('contasPagarVencidasTable', cachedOverdueData.contasPagar, 'contasPagar', 'Contas a Pagar');
             }

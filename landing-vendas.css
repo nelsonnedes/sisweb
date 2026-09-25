@@ -325,7 +325,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-mini-cards i{flex:1;height:34px;border-radius:8px;background:#EFE4CE;border:1px solid var(--lv-areia)}
 .lv-mini-cards i:first-child{background:var(--lv-serragem)}
 .lv-mini-rows{display:flex;flex-direction:column;gap:6px;margin-top:2px}
-.lv-mini-rows i{display:block;height:12px;border-radius:6px;background:#fff;border:1px solid var(--lv-areia)}
+.lv-mini-rows i{display:block;height:12px;border-radius:6px;background: var(--sw-surface) ;border:1px solid var(--lv-areia)}
 .lv-mini-rows i:nth-child(even){background:#F3EAD3}
 
 /* Controles: setas + dots (compacto no iPhone para caber em 1 linha) */
@@ -490,15 +490,15 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 
 /* ---------- Contact box (unificado) ---------- */
 .lv-contact-box{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,var(--lv-mogno),#A05A1A);color:#fff;padding:16px 20px;border-radius:var(--lv-radius);box-shadow:0 12px 32px rgba(124,63,22,.28);flex-wrap:wrap}
-.lv-contact-icon{width:56px;height:56px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lv-contact-icon{width:56px;height:56px;border-radius:50%;background: var(--sw-surface) ;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .lv-contact-icon i{font-size:1.8rem;color:var(--lv-wa)}
 .lv-contact-content{flex:1;min-width:180px}
 .lv-contact-content strong{display:block;font-size:1rem;margin-bottom:2px}
 .lv-contact-phone{color:#fff;text-decoration:none;font-size:1.1rem;font-weight:800;font-family:var(--lv-font-display);transition:opacity .2s}
 .lv-contact-phone:hover{opacity:.85}
 .lv-contact-hint{display:block;font-size:.75rem;opacity:.9;margin-top:4px}
-.lv-btn-wa{background:#fff;color:var(--lv-wa);border-color:transparent;font-weight:800}
-.lv-btn-wa:hover{background:#fff;color:var(--lv-mogno);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.lv-btn-wa{background: var(--sw-surface) ;color:var(--lv-wa);border-color:transparent;font-weight:800}
+.lv-btn-wa:hover{background: var(--sw-surface) ;color:var(--lv-mogno);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15)}
 @media(max-width:480px){
   .lv-contact-box{flex-direction:column;align-items:stretch;text-align:center}
   .lv-btn-wa{width:100%}

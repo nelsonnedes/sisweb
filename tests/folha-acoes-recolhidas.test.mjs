@@ -271,8 +271,8 @@ test('coluna acoes da tabela principal fica sticky a direita', () => {
   assert.match(folhaCss, /#folhasTable\s*\{[\s\S]*overflow:\s*visible;/);
   assert.match(folhaCss, /#folhasTable \.actions-cell\s*\{[\s\S]*position:\s*sticky;[\s\S]*right:\s*0;[\s\S]*z-index:\s*12;/);
   assert.match(folhaCss, /#folhasTable th\[data-sort-key="acoes"\]\s*\{[\s\S]*position:\s*sticky;[\s\S]*right:\s*0;[\s\S]*z-index:\s*16;/);
-  assert.match(folhaCss, /#folhasTable tbody tr:hover td\.actions-cell\s*\{[\s\S]*background:\s*#f8f9fa;/);
-  assert.match(folhaCss, /#folhasTable tbody tr\.folha-fechada td\.actions-cell\s*\{[\s\S]*background:\s*#f8f9fa;/);
+  assert.match(folhaCss, /#folhasTable tbody tr:hover td\.actions-cell\s*\{[\s\S]*background:\s*(?:#f8f9fa|var\(--sw-surface-2\));/);
+  assert.match(folhaCss, /#folhasTable tbody tr\.folha-fechada td\.actions-cell\s*\{[\s\S]*background:\s*(?:#f8f9fa|var\(--sw-surface-2\));/);
   assert.match(folhaCss, /@media print\s*\{[\s\S]*#folhasTable th\[data-sort-key="acoes"\],[\s\S]*#folhasTable td\.actions-cell\s*\{[\s\S]*position:\s*static !important;/);
 });
 

@@ -20,7 +20,30 @@
     <script type="module" src="./modules/core/toast.js?v=4376b6ac2f84"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
@@ -49,7 +72,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         .container {
             max-width: 1180px;
             margin: 0 auto;
-            background-color: white;
+            background-color: var(--sw-surface);
             padding: 28px;
             border-radius: 14px;
             box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
@@ -84,7 +107,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             border: 1px solid #d0d7de;
             border-radius: 8px;
             font-size: 16px;
-            background: #fff;
+            background: var(--sw-surface);
         }
 
         .grid {
@@ -115,7 +138,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         button {
-            background-color: #2563eb;
+            background: var(--sw-gradient);
             color: white;
             padding: 11px 18px;
             border: none;
@@ -133,7 +156,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         button:hover {
-            background-color: #1d4ed8;
+            filter: brightness(1.08);
             transform: translateY(-1px);
         }
 
@@ -174,14 +197,14 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .table th, .table td {
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             padding: 8px;
             text-align: left;
         }
 
         .table th {
             background-color: #f2f2f2;
-            color: #333;
+            color: var(--sw-text-1) ;
         }
 
         .action-button {
@@ -210,11 +233,11 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         #saveBtn, button[type="submit"], button[onclick*="showCompanyList"] {
-            background-color: #2563eb;
+            background: var(--sw-gradient);
         }
 
         #saveBtn:hover, button[type="submit"]:hover, button[onclick*="showCompanyList"]:hover {
-            background-color: #1d4ed8;
+            filter: brightness(1.08);
         }
 
         button[onclick*="window.location"] {
@@ -298,7 +321,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             display: none;
             position: absolute;
             right: 0;
-            background-color: #f9f9f9;
+            background-color: var(--sw-surface-2) ;
             min-width: 200px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
             z-index: 1;
@@ -395,7 +418,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .developer-card {
-            background: #f8f9fa;
+            background: var(--sw-surface-2) ;
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -454,7 +477,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             color: #34495e;
             font-size: 16px;
             padding: 10px;
-            background: white;
+            background: var(--sw-surface);
             border-radius: 8px;
             transition: transform 0.2s;
         }
@@ -541,10 +564,10 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .company-card {
-            border: 1px solid #dbe3ef;
-            border-radius: 8px;
+            border: 1px solid var(--sw-border);
+            border-radius: 16px;
             padding: 16px;
-            background: #fff;
+            background: var(--sw-surface);
             box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
         }
 
@@ -563,7 +586,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             width: 60px;
             height: 60px;
             flex: 0 0 60px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             object-fit: contain;
             background: #f8fafc;
@@ -616,7 +639,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 <body>
     <div class="container">
         <main-menu></main-menu>
-        <h1><i class="fas fa-building"></i> Cadastro de Empresa</h1>
+        <h1 class="sw-page-title"><i class="fas fa-building"></i> Cadastro de Empresa</h1>
         <p class="page-subtitle">Cadastre, edite e selecione a empresa ativa com segurança e feedback visual claro.</p>
         <div class="company-context-grid" id="companySecurityNotice" style="margin-bottom: 20px;">
             <div><strong>Empresa</strong><br><span id="companyContextName">Não identificada</span></div>
@@ -700,7 +723,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                         <button type="button" onclick="document.getElementById('logo').click()" style="margin: 0; width: auto; height: auto;">
                             <i class="fas fa-image"></i> Selecionar Logo
                         </button>
-                        <span id="selectedFileName" style="color: #666;">Nenhuma imagem selecionada</span>
+                        <span id="selectedFileName" style="color: var(--sw-text-2) ;">Nenhuma imagem selecionada</span>
                     </div>
                 </div>
 
@@ -712,7 +735,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             <!-- Seção Dados Bancários / PIX para Cobrança -->
             <div style="margin-top: 25px; margin-bottom: 15px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;">
                 <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-university" style="color: #2563eb;"></i> Dados Bancários / PIX para Cobrança
+                    <i class="fas fa-university" style="color: var(--sw-brand);"></i> Dados Bancários / PIX para Cobrança
                 </h3>
                 <div class="grid" style="margin-bottom: 15px;">
                     <div class="form-group">
@@ -745,7 +768,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
             <div style="margin-top: 25px; margin-bottom: 15px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;">
                 <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-location-dot" style="color: #2563eb;"></i> <strong>Georeferenciamento</strong>
+                    <i class="fas fa-location-dot" style="color: var(--sw-brand);"></i> <strong>Georeferenciamento</strong>
                 </h3>
                 <div class="grid">
                     <div class="form-group">
@@ -1206,14 +1229,14 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                                     if (logoUrl) {
                                         logoHtml = `<img src="${escapeHtml(logoUrl)}" alt="Logo" style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px;">`;
                                     } else {
-                                        logoHtml = '<span style="color: #999; font-size: 12px;">Sem logo</span>';
+                                        logoHtml = '<span style="color: var(--sw-text-2) ; font-size: 12px;">Sem logo</span>';
                                     }
                                 } catch (error) {
                                     console.warn('⚠️ Erro ao carregar logo na lista:', error);
                                     logoHtml = '<span style="color: #e74c3c; font-size: 12px;">Erro</span>';
                                 }
                             } else {
-                                logoHtml = '<span style="color: #999; font-size: 12px;">Sem logo</span>';
+                                logoHtml = '<span style="color: var(--sw-text-2) ; font-size: 12px;">Sem logo</span>';
                             }
                             
                             const companyIdRaw = String(company.id || company.companyId || '');
@@ -1777,7 +1800,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             }
             try {
                 win.document.open();
-                win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relatório da Empresa</title><style>.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:"Segoe UI",Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}</style></head><body><div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>${html}</body></html>`);
+                win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relatório da Empresa</title><style>.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:"Segoe UI",Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}</style></head><body><div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background: var(--sw-surface);font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>${html}</body></html>`);
                 win.document.close();
             } catch (_) {
                 return;
@@ -2263,7 +2286,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
                 if (list.length === 0) {
                     companiesContainer.innerHTML = `
-                        <div style="text-align: center; padding: 20px; color: #666; background: #f8f9fa; border-radius: 8px; margin: 20px 0;">
+                        <div style="text-align: center; padding: 20px; color: var(--sw-text-2) ; background: var(--sw-surface-2) ; border-radius: 8px; margin: 20px 0;">
                             <i class="fas fa-building" style="font-size: 48px; margin-bottom: 10px; color: #ddd;"></i>
                             <p style="margin: 0; font-size: 16px;">Nenhuma empresa cadastrada ainda</p>
                             <p style="margin: 5px 0 0 0; font-size: 14px;">Use o formulário acima para cadastrar sua primeira empresa</p>
@@ -2348,7 +2371,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 const companiesContainer = document.getElementById('companiesContainer');
                 if (companiesContainer) {
                     companiesContainer.innerHTML = `
-                        <div style="text-align: center; padding: 20px; color: #e74c3c; background: #f8f9fa; border-radius: 8px; margin: 20px 0;">
+                        <div style="text-align: center; padding: 20px; color: #e74c3c; background: var(--sw-surface-2) ; border-radius: 8px; margin: 20px 0;">
                             <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 10px;"></i>
                             <p style="margin: 0; font-size: 16px;">Erro ao carregar empresas</p>
                             <p style="margin: 5px 0 0 0; font-size: 14px;">${error.message}</p>

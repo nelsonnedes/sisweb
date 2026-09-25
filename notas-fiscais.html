@@ -20,6 +20,28 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -45,7 +67,7 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
@@ -68,7 +90,7 @@
             display: flex;
             margin-bottom: 20px;
             border-bottom: 2px solid #ddd;
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             border-radius: 4px 4px 0 0;
         }
 
@@ -90,7 +112,7 @@
         .tab.active {
             color: var(--primary-color);
             border-bottom-color: var(--primary-color);
-            background-color: white;
+            background-color: var(--sw-surface);
         }
 
         .tab:hover {
@@ -101,7 +123,7 @@
         .tab-content {
             display: none;
             padding: 20px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-top: none;
             border-radius: 0 0 4px 4px;
         }
@@ -115,7 +137,7 @@
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             padding: 20px;
-            background-color: #fafafa;
+            background-color: var(--sw-surface-2) ;
         }
 
         .form-section h3 {
@@ -152,7 +174,7 @@
         .form-group select,
         .form-group textarea {
             padding: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             font-size: 14px;
             transition: border-color 0.3s ease;
@@ -179,7 +201,7 @@
             gap: 8px;
             margin: 0 0 18px;
             padding: 10px;
-            background: #f8f9fa;
+            background: var(--sw-surface-2) ;
             border: 1px solid #dee2e6;
             border-radius: 6px;
         }
@@ -189,7 +211,7 @@
             padding: 8px 10px;
             border: 1px solid #d8dee4;
             border-radius: 4px;
-            background: white;
+            background: var(--sw-surface);
             color: var(--primary-color);
             cursor: pointer;
             font-size: 13px;
@@ -229,7 +251,7 @@
             gap: 10px;
             margin: 0 0 18px;
             padding: 10px 12px;
-            background: #ffffff;
+            background: var(--sw-surface);
             border: 1px solid #dee2e6;
             border-left: 4px solid var(--primary-color);
             border-radius: 6px;
@@ -327,7 +349,7 @@
             overflow-x: auto;
             border: 1px solid #e8ecef;
             border-radius: 4px;
-            background: #fff;
+            background: var(--sw-surface);
         }
 
         .nf-volume-list table {
@@ -347,7 +369,7 @@
 
         .nf-volume-list th {
             color: #495057;
-            background: #f8f9fa;
+            background: var(--sw-surface-2) ;
             font-weight: 700;
         }
 
@@ -374,7 +396,7 @@
         .nf-review-card {
             border: 1px solid #dee2e6;
             border-radius: 6px;
-            background: white;
+            background: var(--sw-surface);
             padding: 12px;
         }
 
@@ -434,7 +456,7 @@
             align-items: center;
             flex-wrap: wrap;
             padding: 12px 0 0;
-            background: white;
+            background: var(--sw-surface);
             border-top: 1px solid #e9ecef;
         }
 
@@ -506,7 +528,7 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            background-color: white;
+            background-color: var(--sw-surface);
         }
 
         .data-table th,
@@ -525,15 +547,15 @@
         }
 
         .data-table tr:hover {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
         }
 
         .data-table tr:nth-of-type(odd) {
-            background-color: #f9f9f9;
+            background-color: var(--sw-surface-2) ;
         }
 
         .data-table tr:nth-of-type(even) {
-            background-color: white;
+            background-color: var(--sw-surface);
         }
 
         .status-badge {
@@ -603,7 +625,7 @@
             align-items: center;
             margin-bottom: 8px;
             padding: 8px;
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             border-radius: 4px;
             border: 1px solid #e0e0e0;
         }
@@ -626,7 +648,7 @@
         }
 
         .modal-content {
-            background-color: white;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 30px;
             border-radius: 8px;
@@ -646,7 +668,7 @@
         }
 
         .close:hover {
-            color: #000;
+            color: var(--sw-text-1) ;
         }
 
         .number-cell {
@@ -763,7 +785,7 @@
                 padding: 10px 12px !important;
                 border: 1px solid #dfe7ef !important;
                 border-radius: 8px !important;
-                background: #fff !important;
+                background: var(--sw-surface) !important;
                 box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
                 overflow: visible !important;
             }
@@ -996,7 +1018,7 @@
     <div class="container">
         <main-menu></main-menu>
         
-        <h1>
+        <h1 class="sw-page-title">
             <i class="fas fa-receipt"></i> Sistema de Notas Fiscais
         </h1>
 
@@ -1169,7 +1191,7 @@
 
             <div class="form-section nf-step-panel" id="nfTransporteSection" data-nf-step="transporte" hidden>
               <h3><i class="fas fa-truck"></i> Transporte e Volumes</h3>
-              <p style="margin:0 0 12px;color:#555;font-size:13px;">
+              <p style="margin:0 0 12px;color: var(--sw-text-2) ;font-size:13px;">
                 Preencha quando houver transporte da mercadoria. Estes dados alimentam o XML e o quadro Transportador/Volumes do DANFE.
               </p>
               <div class="nf-subsection-grid">
@@ -1411,7 +1433,7 @@
                   </thead>
                   <tbody id="itensContainer">
                     <tr id="trItensVazio">
-                      <td colspan="9" style="text-align:center;color:#999;font-style:italic;">Nenhum item adicionado</td>
+                      <td colspan="9" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">Nenhum item adicionado</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1461,7 +1483,7 @@
 
             <div class="form-section nf-step-panel" id="nfReviewSection" data-nf-step="revisao" hidden>
               <h3><i class="fas fa-clipboard-check"></i> Revisão Fiscal</h3>
-              <p style="margin:0 0 12px;color:#555;font-size:13px;">
+              <p style="margin:0 0 12px;color: var(--sw-text-2) ;font-size:13px;">
                 Confira os dados principais antes de liberar a senha do certificado e transmitir a NF-e.
               </p>
               <div id="nfReviewResumo">
@@ -1566,7 +1588,7 @@
               </thead>
               <tbody id="notasTable">
                 <tr>
-                  <td colspan="7" style="text-align:center;color:#666;font-style:italic;">Clique em Atualizar para carregar</td>
+                  <td colspan="7" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">Clique em Atualizar para carregar</td>
                 </tr>
               </tbody>
             </table>
@@ -1622,7 +1644,7 @@
         /* ── Accordion de Configuração ───────────────────────────────── */
         .cfg-accordion { margin-bottom: 0; }
         .cfg-panel {
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--sw-border) ;
           border-radius: 10px;
           margin-bottom: 10px;
           overflow: hidden;
@@ -1681,7 +1703,7 @@
           overflow: hidden;
           transition: max-height .3s ease, padding .3s ease;
           padding: 0 18px;
-          background: #fff;
+          background: var(--sw-surface);
         }
         .cfg-panel.open .cfg-panel-body {
           max-height: 2000px;
@@ -1836,9 +1858,9 @@
               <i class="fas fa-chevron-down cfg-panel-chevron"></i>
             </div>
             <div class="cfg-panel-body">
-            <p style="color:#666;font-size:13px;margin-bottom:12px;">Cadastre as naturezas usadas na emissão. Ao selecionar uma, o CFOP e CSOSN padrão são preenchidos automaticamente.</p>
+            <p style="color: var(--sw-text-2) ;font-size:13px;margin-bottom:12px;">Cadastre as naturezas usadas na emissão. Ao selecionar uma, o CFOP e CSOSN padrão são preenchidos automaticamente.</p>
             <div id="tabelaNaturezasContainer">
-              <p style="color:#999;font-style:italic;">Carregando naturezas...</p>
+              <p style="color: var(--sw-text-2) ;font-style:italic;">Carregando naturezas...</p>
             </div>
             </div><!-- cfg-panel-body -->
           </div><!-- panelNaturezas -->
@@ -1851,7 +1873,7 @@
               <i class="fas fa-chevron-down cfg-panel-chevron"></i>
             </div>
             <div class="cfg-panel-body">
-            <div id="certStatusBox" style="padding:10px;background:#f8f9fa;border-radius:6px;margin-bottom:14px;">
+            <div id="certStatusBox" style="padding:10px;background: var(--sw-surface-2) ;border-radius:6px;margin-bottom:14px;">
               <span id="certStatusTxt">⏳ Verificando certificado...</span>
             </div>
             <div class="form-row">
@@ -1903,7 +1925,7 @@
                 <i class="fas fa-usb" style="color:#1a73e8;font-size:22px;margin-top:2px;"></i>
                 <div style="flex:1">
                   <p style="margin:0 0 8px;font-weight:600;color:#1a73e8;">A3 Token / Cartão — Ponte local necessária</p>
-                  <p style="margin:0 0 12px;font-size:13px;color:#444;">O navegador não acessa a chave privada do token/cartão diretamente.
+                  <p style="margin:0 0 12px;font-size:13px;color: var(--sw-text-1) ;">O navegador não acessa a chave privada do token/cartão diretamente.
                   Para emitir NF-e com A3 físico é preciso um aplicativo local homologado, extensão com Native Messaging, PKCS#11/CNG/CAPI ou assinatura remota do fornecedor.</p>
                   <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <button type="button" onclick="detectarTokenA3()" class="btn btn-primary" id="btnDetectarToken">
@@ -1919,7 +1941,7 @@
                       <div class="form-group">
                         <label for="certTokenBridgeUrl">URL da ponte local:</label>
                         <input type="text" id="certTokenBridgeUrl" value="http://127.0.0.1:37773" placeholder="http://127.0.0.1:37773">
-                        <small style="color:#666;font-size:11px;">O PIN do token não é salvo no sistema. Ele deve ser solicitado pela ponte local no momento da assinatura.</small>
+                        <small style="color: var(--sw-text-2) ;font-size:11px;">O PIN do token não é salvo no sistema. Ele deve ser solicitado pela ponte local no momento da assinatura.</small>
                       </div>
                       <div class="form-group">
                         <label for="certTokenMiddleware">Middleware instalado:</label>
@@ -1953,7 +1975,7 @@
               <i class="fas fa-chevron-down cfg-panel-chevron"></i>
             </div>
             <div class="cfg-panel-body">
-            <p style="color:#666;font-size:13px;margin-bottom:12px;">Ajuste as alíquotas padrão. Cada produto pode ter configuração individual.</p>
+            <p style="color: var(--sw-text-2) ;font-size:13px;margin-bottom:12px;">Ajuste as alíquotas padrão. Cada produto pode ter configuração individual.</p>
             <div class="form-row">
               <div class="form-group">
                 <label for="cfgIcmsAliq">ICMS Alíquota Interna (%):</label>
@@ -2006,9 +2028,9 @@
               <i class="fas fa-chevron-down cfg-panel-chevron"></i>
             </div>
             <div class="cfg-panel-body">
-            <p style="color:#666;font-size:13px;margin-bottom:12px;">Configure as unidades de medida disponíveis e a precisão decimal do campo Quantidade.</p>
+            <p style="color: var(--sw-text-2) ;font-size:13px;margin-bottom:12px;">Configure as unidades de medida disponíveis e a precisão decimal do campo Quantidade.</p>
             <div id="painelPreferenciasEmissao">
-              <p style="color:#999;font-style:italic;">Carregando preferências...</p>
+              <p style="color: var(--sw-text-2) ;font-style:italic;">Carregando preferências...</p>
             </div>
             </div><!-- cfg-panel-body -->
           </div><!-- panelPrefs -->
@@ -2085,7 +2107,8 @@
         };
     </script>
     <script src="auth.js?v=4173d8da9343"></script>
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
     <script src="client-service.js?v=88ee0c4c9e01"></script>
     <script src="openNewClientModal.js?v=fe2ff86f8dec"></script>
@@ -2820,7 +2843,7 @@
       const tbody = document.getElementById('itensContainer');
       if (!tbody) return;
       if (_itensNF.length === 0) {
-        tbody.innerHTML = '<tr id="trItensVazio"><td colspan="9" class="nf-card-empty" style="text-align:center;color:#999;font-style:italic;">Nenhum item adicionado</td></tr>';
+        tbody.innerHTML = '<tr id="trItensVazio"><td colspan="9" class="nf-card-empty" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">Nenhum item adicionado</td></tr>';
         return;
       }
       tbody.innerHTML = _itensNF.map(it => `
@@ -2890,7 +2913,7 @@
                 <div class="form-group"><label>Valor unitário</label><input id="nfEditItemValor" placeholder="R$ 0,00"></div>
                 <div class="form-group"><label>CSOSN/CST</label><input id="nfEditItemCSOSN" maxlength="4"></div>
               </div>
-              <p style="margin:8px 0 0;color:#555;font-size:13px;">A edição recalcula os impostos automáticos do item conforme a configuração fiscal atual, sem alterar o código fiscal interno do produto.</p>
+              <p style="margin:8px 0 0;color: var(--sw-text-2) ;font-size:13px;">A edição recalcula os impostos automáticos do item conforme a configuração fiscal atual, sem alterar o código fiscal interno do produto.</p>
             </div>
             <div class="modal-footer" style="display:flex;gap:10px;justify-content:flex-end;">
               <button type="button" class="btn btn-secondary" onclick="fecharModalEditarItemNF()">Cancelar</button>
@@ -3752,7 +3775,7 @@
       const tbody = document.getElementById('notasTable');
       if (!tbody) return;
       if (!notas || notas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="nf-card-empty" style="text-align:center;color:#666;font-style:italic;">Nenhuma nota fiscal encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="nf-card-empty" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">Nenhuma nota fiscal encontrada</td></tr>';
         return;
       }
       const statusMap = {
@@ -3942,7 +3965,7 @@
       document.getElementById('nfFiscalEventBody').innerHTML = `
         <input type="hidden" id="nfCceId" value="${escapeHtmlNF(nfId)}">
         <input type="hidden" id="nfCceChave" value="${escapeHtmlNF(chave)}">
-        <p style="margin:0 0 10px;color:#555;font-size:13px;">Use CC-e somente para correções permitidas pela legislação, sem alterar valores, destinatário, impostos, data de emissão ou dados que mudem a operação fiscal.</p>
+        <p style="margin:0 0 10px;color: var(--sw-text-2) ;font-size:13px;">Use CC-e somente para correções permitidas pela legislação, sem alterar valores, destinatário, impostos, data de emissão ou dados que mudem a operação fiscal.</p>
         <div class="form-group">
           <label for="nfCceTexto">Correção *</label>
           <textarea id="nfCceTexto" rows="5" maxlength="1000" placeholder="Descreva a correção fiscal permitida..." style="width:100%;resize:vertical;"></textarea>
@@ -3992,7 +4015,7 @@
       const modal = ensureEventoFiscalModal();
       document.getElementById('nfFiscalEventTitle').innerHTML = '<i class="fas fa-ban"></i> Inutilizar numeração de NF-e';
       document.getElementById('nfFiscalEventBody').innerHTML = `
-        <p style="margin:0 0 10px;color:#555;font-size:13px;">Use inutilização apenas para numeração que não será usada e ainda não possui NF-e autorizada. A faixa será enviada à SEFAZ pela função fiscal.</p>
+        <p style="margin:0 0 10px;color: var(--sw-text-2) ;font-size:13px;">Use inutilização apenas para numeração que não será usada e ainda não possui NF-e autorizada. A faixa será enviada à SEFAZ pela função fiscal.</p>
         <div class="form-row">
           <div class="form-group"><label>Série *</label><input id="nfInutSerie" type="number" min="1" value="${escapeHtmlNF(cfg.nfe?.serie || '1')}"></div>
           <div class="form-group"><label>Número inicial *</label><input id="nfInutInicio" type="number" min="1"></div>
@@ -4366,7 +4389,7 @@
       const naturezas = window.NFNaturezas?.listar(false) || [];
       const tid = obterTenantIdNF();
       if (naturezas.length === 0) {
-        container.innerHTML = '<p style="color:#999;font-style:italic;">Nenhuma natureza cadastrada.</p>';
+        container.innerHTML = '<p style="color: var(--sw-text-2) ;font-style:italic;">Nenhuma natureza cadastrada.</p>';
         return;
       }
       container.innerHTML = `

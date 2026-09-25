@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <link rel="icon" href="favicon.ico" sizes="any">
@@ -25,6 +25,33 @@
         }
     </script>
     <link rel="stylesheet" href="assets/fontawesome/all.min.css?v=20260808">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/aileron@5.1.0/400.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/aileron@5.1.0/600.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/aileron@5.1.0/700.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/auth.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
     <link rel="modulepreload" href="firebaseService.js?v=6285419b7986">
@@ -62,591 +89,16 @@
             }, 10000);
         })();
     </script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: radial-gradient(circle at 10% 10%, rgba(52, 152, 219, 0.25), transparent 40%), radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.25), transparent 40%), linear-gradient(135deg, #0f172a, #1e293b 45%, #0f172a);
-            position: relative;
-            overflow-x: hidden;
-            padding: 24px;
-        }
-
-        body::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
-            opacity: 0.15;
-            z-index: -1;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.92);
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
-            width: 100%;
-            max-width: 460px;
-            text-align: center;
-            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .logo-container {
-            margin-bottom: 26px;
-        }
-
-        .logo-icon {
-            font-size: 48px;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        h1 {
-            color: #1e293b;
-            margin-bottom: 18px;
-            font-size: 28px;
-            position: relative;
-        }
-
-        h1::after {
-            content: "";
-            position: absolute;
-            left: 50%;
-            bottom: -10px;
-            transform: translateX(-50%);
-            width: 50px;
-            height: 3px;
-            background: linear-gradient(90deg, #3498db, #2c3e50);
-        }
-
-        .auth-subtitle {
-            color: #475569;
-            font-size: 14px;
-            line-height: 1.55;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #1e293b;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .input-group {
-            position: relative;
-            margin-bottom: 5px;
-        }
-
-        .input-group i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #64748b;
-            transition: color 0.3s;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px 12px 12px 45px;
-            border: 2px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background-color: #ffffff;
-            color: #0f172a;
-        }
-
-        .input-group select {
-            width: 100%;
-            padding: 12px 12px 12px 45px;
-            border: 2px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background-color: #ffffff;
-            color: #0f172a;
-            appearance: auto;
-        }
-
-        .input-group select:focus {
-            outline: 2px solid #3498db;
-            outline-offset: 0;
-            border-color: #3498db;
-            background-color: white;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
-        }
-
-        .input-group select:focus + i {
-            color: #3498db;
-        }
-
-        input:focus {
-            outline: 2px solid #3498db;
-            outline-offset: 0;
-            border-color: #3498db;
-            background-color: white;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
-        }
-
-        input:focus + i {
-            color: #3498db;
-        }
-
-        button {
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
-            padding: 14px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-            margin-top: 20px;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        button:focus-visible,
-        a:focus-visible,
-        .close:focus-visible {
-            outline: 3px solid #1d4ed8;
-            outline-offset: 2px;
-        }
-
-        button:disabled {
-            opacity: 0.65;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .system-health {
-            margin-bottom: 12px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            text-align: left;
-            border: 1px solid #dbeafe;
-            background: #eff6ff;
-            color: #1e3a8a;
-            display: none;
-        }
-
-        .system-health.system-ok {
-            border-color: #bbf7d0;
-            background: #f0fdf4;
-            color: #166534;
-        }
-
-        .system-health.system-warn {
-            border-color: #fde68a;
-            background: #fffbeb;
-            color: #92400e;
-        }
-
-        .system-health.system-error {
-            border-color: #fecaca;
-            background: #fef2f2;
-            color: #991b1b;
-        }
-
-        .system-health-title {
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 3px;
-        }
-
-        .system-health-text {
-            font-size: 12px;
-            line-height: 1.4;
-        }
-
-        .forgot-password {
-            margin-top: 15px;
-            color: #1d4ed8;
-            text-decoration: none;
-            font-size: 14px;
-            display: inline-block;
-            transition: color 0.3s;
-            font-weight: 600;
-        }
-
-        .forgot-password:hover {
-            color: #1e3a8a;
-            text-decoration: underline;
-        }
-
-        .register-link {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-            color: #475569;
-            font-size: 14px;
-        }
-
-        .login-footer-note {
-            margin-top: 16px;
-            font-size: 12px;
-            color: #64748b;
-            line-height: 1.5;
-        }
-
-        .register-link a {
-            color: #1d4ed8;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
-        }
-
-        .register-link a:hover {
-            color: #1e3a8a;
-            text-decoration: underline;
-        }
-
-        .error-message {
-            color: #b91c1c;
-            font-size: 14px;
-            margin-top: 5px;
-            display: none;
-            padding: 8px;
-            background-color: #fef2f2;
-            border-radius: 4px;
-            border-left: 3px solid #b91c1c;
-        }
-
-        .success-message {
-            color: #15803d;
-            font-size: 14px;
-            margin-top: 5px;
-            display: none;
-            padding: 8px;
-            background-color: #f0fdf4;
-            border-radius: 4px;
-            border-left: 3px solid #15803d;
-        }
-
-        .success-message i {
-            margin-right: 5px;
-            color: #15803d;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 10;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .modal.open {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-
-        .modal-content {
-            background-color: white;
-            padding: 40px;
-            border-radius: 10px;
-            width: 100%;
-            max-width: 500px;
-            position: relative;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-            animation: slideDown 0.4s ease-out;
-            max-height: calc(100vh - 32px);
-            overflow-y: auto;
-        }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 15px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #475569;
-            transition: color 0.3s;
-            width: 44px;
-            height: 44px;
-            min-width:44px;
-            min-height:44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: transparent;
-            border: none;
-            margin: 0;
-            padding: 0;
-            box-shadow: none;
-        }
-
-        .close:hover {
-            color: #b91c1c;
-            background-color: #f8f9fa;
-        }
-
-        .modal-title {
-            margin-bottom: 30px;
-            color: #1e293b;
-            text-align: center;
-        }
-
-        .loading-spinner {
-            display: none;
-            margin: 15px auto;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .maintenance-message {
-            display: none;
-            background-color: #fff8e1;
-            color: #7a4f01;
-            padding: 10px 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            font-size: 12px;
-            text-align: left;
-            border: 1px solid #f8d37b;
-        }
-
-        .maintenance-message strong {
-            display: inline-block;
-            margin-bottom: 4px;
-            font-size: 12px;
-        }
-
-        .maintenance-btn {
-            background: linear-gradient(135deg, #f39c12, #e74c3c);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 7px 11px;
-            font-size: 12px;
-            cursor: pointer;
-            margin-top: 8px;
-            transition: all 0.3s;
-            font-weight: 600;
-            width: auto;
-        }
-
-        .maintenance-btn:hover {
-            background: linear-gradient(135deg, #e67e22, #d35400);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .global-system-footer {
-            position: static;
-            width: min(100%, 460px);
-            margin: 16px auto 0;
-            background: rgba(15, 23, 42, 0.42);
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            border-radius: 10px;
-            backdrop-filter: blur(4px);
-            color: #e2e8f0;
-            font-size: 12px;
-            padding: 10px 12px;
-            text-align: center;
-            z-index: 1;
-        }
-
-        .global-system-footer .global-footer-contact {
-            color: #93c5fd;
-        }
-
-        .global-footer-contact-btn {
-            background: none;
-            border: none;
-            margin: 0;
-            padding: 0;
-            box-shadow: none;
-            color: #93c5fd;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: underline;
-            width: auto;
-            overflow: visible;
-        }
-
-        .global-footer-contact-btn:hover {
-            color: #bfdbfe;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .contact-options {
-            margin-top: 24px;
-        }
-
-        .contact-option {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 14px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            text-align: left;
-            background: #f8fafc;
-        }
-
-        .contact-option i {
-            font-size: 20px;
-            color: #1d4ed8;
-            margin-top: 2px;
-        }
-
-        .contact-option strong {
-            display: block;
-            color: #1e293b;
-            margin-bottom: 4px;
-            font-size: 14px;
-        }
-
-        .contact-option a {
-            color: #1d4ed8;
-            font-size: 13px;
-            font-weight: 600;
-            text-decoration: none;
-            word-break: break-all;
-        }
-
-        .contact-option a:hover {
-            text-decoration: underline;
-        }
-
-        .contact-option p {
-            color: #475569;
-            font-size: 12px;
-            margin-top: 4px;
-            line-height: 1.5;
-        }
-
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            margin: -1px;
-            padding: 0;
-            overflow: hidden;
-            clip: rect(0 0 0 0);
-            white-space: nowrap;
-            border: 0;
-        }
-
-        [aria-busy="true"] button[type="submit"] {
-            opacity: 0.65;
-            pointer-events: none;
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
-                width: 90%;
-                margin: 20px;
-            }
-
-            .global-system-footer {
-                width: calc(100% - 24px);
-                margin-top: 12px;
-            }
-
-            .modal-content {
-                padding: 25px 15px;
-                width: 100%;
-            }
-
-            h1 {
-                font-size: 20px;
-            }
-
-            .logo-icon {
-                font-size: 40px;
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-                scroll-behavior: auto !important;
-            }
-        }
-    </style>
+    
 </head>
-<body>
+<body class="sw-auth">
     <div class="container">
         <div class="logo-container">
-            <img src="assets/icons/icon-192x192.png" alt="Sisweb" width="72" height="72" style="width:72px;height:72px;object-fit:contain;display:block;margin:0 auto 10px;filter:drop-shadow(0 4px 12px rgba(15,23,42,.16));background:transparent;" />
-            <h1>SisWeb</h1>
+            <div class="sw-lockup" role="img" aria-label="Sisweb Madeireiras">
+                <img class="sw-lockup-icon" src="marqueting/icone.ico" onerror="this.onerror=null;this.src='assets/icons/icon-192x192.png';" alt="" aria-hidden="true" width="84" height="84">
+                <img class="sw-lockup-name" src="marqueting/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="220">
+            </div>
+            <h1 class="sw-visual-title">SisWeb</h1>
             <p class="auth-subtitle">Acesse sua conta com segurança para continuar no sistema de gestão.</p>
         </div>
 
@@ -724,7 +176,10 @@
     <div id="registerModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="registerModalTitle" aria-describedby="registerModalDescription" hidden>
         <div class="modal-content">
             <button type="button" class="close" onclick="closeRegisterModal()" aria-label="Fechar">&times;</button>
-            <div style="text-align:center;margin-bottom:10px;"><img src="assets/icons/icon-192x192.png" alt="Sisweb" width="48" height="48" style="width:48px;height:48px;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 3px 10px rgba(15,23,42,.12));background:transparent;" /></div>
+            <div class="sw-lockup" role="img" aria-label="Sisweb Madeireiras">
+                <img class="sw-lockup-icon" src="marqueting/icone.ico" onerror="this.onerror=null;this.src='assets/icons/icon-192x192.png';" alt="" aria-hidden="true" width="56" height="56">
+                <img class="sw-lockup-name" src="marqueting/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="150">
+            </div>
             <h2 class="modal-title" id="registerModalTitle">Criar Conta</h2>
             <p class="visually-hidden" id="registerModalDescription">Crie sua conta para começar a usar o SisWeb. Você terá acesso ao período de teste gratuito.</p>
 
@@ -794,7 +249,10 @@
     <div id="forgotPasswordModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="forgotPasswordModalTitle" aria-describedby="forgotPasswordModalDescription" hidden>
         <div class="modal-content">
             <button type="button" class="close" onclick="closeForgotPasswordModal()" aria-label="Fechar">&times;</button>
-            <div style="text-align:center;margin-bottom:10px;"><img src="assets/icons/icon-192x192.png" alt="Sisweb" width="48" height="48" style="width:48px;height:48px;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 3px 10px rgba(15,23,42,.12));background:transparent;" /></div>
+            <div class="sw-lockup" role="img" aria-label="Sisweb Madeireiras">
+                <img class="sw-lockup-icon" src="marqueting/icone.ico" onerror="this.onerror=null;this.src='assets/icons/icon-192x192.png';" alt="" aria-hidden="true" width="56" height="56">
+                <img class="sw-lockup-name" src="marqueting/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="150">
+            </div>
             <h2 class="modal-title" id="forgotPasswordModalTitle">Recuperar Senha</h2>
             <p class="visually-hidden" id="forgotPasswordModalDescription">Informe o email da conta para receber as instruções de recuperação.</p>
 
@@ -824,6 +282,10 @@
     <div id="contactModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle" aria-describedby="contactModalDescription" hidden>
         <div class="modal-content">
             <button type="button" class="close" onclick="closeContactModal()" aria-label="Fechar">&times;</button>
+            <div class="sw-lockup" role="img" aria-label="Sisweb Madeireiras">
+                <img class="sw-lockup-icon" src="marqueting/icone.ico" onerror="this.onerror=null;this.src='assets/icons/icon-192x192.png';" alt="" aria-hidden="true" width="56" height="56">
+                <img class="sw-lockup-name" src="marqueting/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="150">
+            </div>
             <h2 class="modal-title" id="contactModalTitle"><i class="fas fa-headset" aria-hidden="true"></i> Fale Conosco</h2>
             <p id="contactModalDescription" style="color: #475569; font-size: 14px; line-height: 1.6; text-align: center;">
                 A equipe SisWeb está disponível para ajudar com planos, cadastro, acesso e pagamentos.
@@ -849,6 +311,7 @@
         </div>
     </div>
 
+    <script src="js/sisweb-theme.js?v=1"></script>
     <script src="js/deep-clean.js?v=26495e9d74f4"></script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="superadmin-mfa.js?v=27ab1839aafe"></script>

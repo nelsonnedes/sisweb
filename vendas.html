@@ -21,11 +21,34 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
+<script src="js/sisweb-theme.js?v=1"></script>
 <script src="menu-component.js?v=6c70fd8f5206"></script>
     <style>
         * {
@@ -36,7 +59,7 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
@@ -100,7 +123,7 @@
 
         .sales-clients-header {
             align-items: center;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--sw-border) ;
             display: flex;
             gap: 14px;
             justify-content: space-between;
@@ -133,7 +156,7 @@
 
         .sales-clients-stat {
             background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             padding: 12px;
         }
@@ -477,11 +500,11 @@
         }
 
         .payment-section {
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             padding: 15px;
             border-radius: 8px;
             margin-top: 15px;
-            background-color: #f9f9f9;
+            background-color: var(--sw-surface-2) ;
         }
 
         .payment-method {
@@ -494,8 +517,8 @@
             align-items: center;
             margin-bottom: 10px;
             padding: 10px;
-            background-color: white;
-            border: 1px solid #ddd;
+            background-color: var(--sw-surface);
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
         }
 
@@ -584,7 +607,7 @@
 
         .search-box input {
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             flex: 1 1 280px;
             max-width: none;
@@ -666,7 +689,7 @@
             max-width: 400px;
             padding: 15px 20px;
             border-radius: 8px;
-            background: white;
+            background: var(--sw-surface);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
@@ -724,12 +747,12 @@
 
         .toast-message {
             font-size: 13px;
-            color: #666;
+            color: var(--sw-text-2) ;
         }
 
         .toast-close {
             font-size: 20px;
-            color: #999;
+            color: var(--sw-text-2) ;
             cursor: pointer;
             background: none;
             border: none;
@@ -739,7 +762,7 @@
         }
 
         .toast-close:hover {
-            color: #333;
+            color: var(--sw-text-1) ;
         }
 
         @keyframes slideIn {
@@ -789,7 +812,7 @@
         }
 
         .loading-content {
-            background: white;
+            background: var(--sw-surface);
             padding: 30px;
             border-radius: 12px;
             text-align: center;
@@ -817,7 +840,7 @@
         }
 
         .loading-text {
-            color: #333;
+            color: var(--sw-text-1) ;
             font-size: 16px;
             margin-top: 10px;
         }
@@ -860,10 +883,10 @@
         .modal .columns-list {
             max-height: 320px;
             overflow: auto;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             padding: 8px;
-            background: #fff;
+            background: var(--sw-surface);
         }
 
         .columns-item {
@@ -990,7 +1013,7 @@
     <div class="container">
         <main-menu></main-menu>
 
-        <h1>Sistema de Vendas</h1>
+        <h1 class="sw-page-title">Sistema de Vendas</h1>
 
         <div class="tabs">
             <button type="button" class="tab active" onclick="showTab('pedidos')">
@@ -1190,7 +1213,7 @@
                     <div id="previewConama" style="display: none; margin-top: 15px;">
                         <h4 style="color: #2c3e50; margin-bottom: 10px;">Preview - Resumo:</h4>
                         <div id="listaConama"
-                            style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;">
+                            style="background: var(--sw-surface-2) ; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;">
                             <!-- Dados serão inseridos aqui -->
                         </div>
                     </div>
@@ -1265,7 +1288,7 @@
 
                 <!-- Nova seção de Forma de Pagamento -->
                 <div class="contas-receber-section"
-                    style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-top: 15px; background-color: #f9f9f9;">
+                    style="border: 1px solid var(--sw-border) ; padding: 15px; border-radius: 8px; margin-top: 15px; background-color: var(--sw-surface-2) ;">
                     <h4 style="margin-bottom: 15px; color: #2c3e50;">Forma de Pagamento</h4>
 
                     <!-- Formulário para adicionar conta -->
@@ -1325,7 +1348,7 @@
                             <tbody id="contasReceberTable">
                                 <tr>
                                     <td class="commerce-full-row" data-label="" colspan="6"
-                                        style="text-align: center; color: #666;">Nenhuma conta adicionada
+                                        style="text-align: center; color: var(--sw-text-2) ;">Nenhuma conta adicionada
                                     </td>
                                 </tr>
                             </tbody>
@@ -1575,6 +1598,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="vendasClientesPagination" class="pagination-controls" style="margin-top: 12px;"></div>
             </section>
         </div>
 
@@ -1608,6 +1632,7 @@
                         <tbody id="produtosTable"></tbody>
                     </table>
                 </div>
+                <div id="vendasProdutosPagination" class="pagination-controls" style="margin-top: 12px;"></div>
             </div>
         </div>
 
@@ -1645,34 +1670,31 @@
                         <option value="carregos_pagos">Carregos pagos</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>&nbsp;</label>
-                    <div class="action-buttons" style="gap: 10px;">
-                        <button type="button" onclick="pagarCarregoSelecionados()" class="btn-success">
-                            <i class="fas fa-money-check-alt"></i> Pagar Carrego
-                        </button>
-                        <button type="button" onclick="estornarCarregoSelecionados()" class="btn-danger">
-                            <i class="fas fa-undo"></i> Estornar Carrego
-                        </button>
-                        <button type="button" onclick="excluirCarregoSelecionados()" class="btn-danger"
-                            title="Excluir carrego dos pedidos selecionados">
-                            <i class="fas fa-trash"></i> Excluir Carrego
-                        </button>
-                        <button type="button" onclick="imprimirRelatorio()" class="btn-primary">
-                            <i class="fas fa-print"></i> Imprimir
-                        </button>
-                        <button type="button" onclick="abrirCustomizarColunasRelatorio()" class="btn-secondary"
-                            title="Configurar colunas">
-                            <i class="fas fa-list"></i> Colunas
-                        </button>
-                        <label class="commerce-check-option rel-filter-available" for="relFiltroDisponivel">
-                            <input type="checkbox" id="relFiltroDisponivel"
-                                onchange="toggleFiltroCarregoDisponivel(this.checked)">
-                            <span>Mostrar só disponível</span>
-                        </label>
-                        <span id="relSelCount" class="sel-count-badge">0 selecionados</span>
-                    </div>
-                </div>
+            </div>
+            <div class="action-buttons relatorios-toolbar">
+                <button type="button" onclick="pagarCarregoSelecionados()" class="btn-success">
+                    <i class="fas fa-money-check-alt"></i> Pagar Carrego
+                </button>
+                <button type="button" onclick="estornarCarregoSelecionados()" class="btn-danger">
+                    <i class="fas fa-undo"></i> Estornar Carrego
+                </button>
+                <button type="button" onclick="excluirCarregoSelecionados()" class="btn-danger"
+                    title="Excluir carrego dos pedidos selecionados">
+                    <i class="fas fa-trash"></i> Excluir Carrego
+                </button>
+                <button type="button" onclick="imprimirRelatorio()" class="btn-primary">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <button type="button" onclick="abrirCustomizarColunasRelatorio()" class="btn-secondary"
+                    title="Configurar colunas">
+                    <i class="fas fa-list"></i> Colunas
+                </button>
+                <label class="commerce-check-option rel-filter-available" for="relFiltroDisponivel">
+                    <input type="checkbox" id="relFiltroDisponivel"
+                        onchange="toggleFiltroCarregoDisponivel(this.checked)">
+                    <span>Mostrar só disponível</span>
+                </label>
+                <span id="relSelCount" class="sel-count-badge">0 selecionados</span>
             </div>
 
             <div id="relatorioResult" style="display: none;">
@@ -1700,6 +1722,7 @@
                         <tbody id="relatorioTableBody"></tbody>
                     </table>
                 </div>
+                <div id="vendasRelatorioPagination" class="pagination-controls" style="margin-top: 12px;"></div>
                 <div class="summary-box" id="relatorioResumoFooter" style="margin-top: 15px;">
                     <div class="summary-row">
                         <span>
@@ -1923,7 +1946,7 @@
             <div class="modal-body">
                 <!-- Cabeçalho do Pedido -->
                 <div class="pedido-header"
-                    style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    style="background: var(--sw-surface-2) ; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                     <div
                         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; min-width: 0;">
                         <div style="min-width: 0;">
@@ -1976,7 +1999,7 @@
 
                 <!-- Totais -->
                 <div class="pedido-totais"
-                    style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    style="background: var(--sw-surface-2) ; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
                         <span>Subtotal:</span>
                         <span id="viewPedidoSubtotal" style="font-weight: bold; text-align: right;"></span>

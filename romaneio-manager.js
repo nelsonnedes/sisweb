@@ -495,6 +495,10 @@ class RomaneioManager {
                     #${this.modalId} tbody tr:hover {
                         background-color: #f1f7fb;
                     }
+                    /* Fase 17: hover acompanha o tema (regra clara acima é fallback light). */
+                    html[data-theme="dark"] #${this.modalId} tbody tr:hover {
+                        background-color: var(--sw-hover);
+                    }
                     #${this.modalId} .btn-action,
                     #${this.modalId} .actions-container .btn {
                         margin: 0 2px;
@@ -590,6 +594,23 @@ class RomaneioManager {
                     #paginationControls_${this.modalId}.pagination-controls span {
                         padding: 0 4px;
                         color: #6c757d;
+                    }
+                    /* Fase 17: paginação dos modais acompanha o tema (padrão Lista de Pedidos). */
+                    html[data-theme="dark"] #paginationControls_${this.modalId}.pagination-controls button {
+                        background: var(--sw-surface-2);
+                        border-color: var(--sw-border);
+                        color: var(--sw-brand);
+                    }
+                    html[data-theme="dark"] #paginationControls_${this.modalId}.pagination-controls button.active {
+                        background: var(--sw-brand);
+                        border-color: var(--sw-brand);
+                        color: #ffffff;
+                    }
+                    html[data-theme="dark"] #paginationControls_${this.modalId}.pagination-controls button:disabled {
+                        color: var(--sw-text-3);
+                    }
+                    html[data-theme="dark"] #paginationControls_${this.modalId}.pagination-controls span {
+                        color: var(--sw-text-3);
                     }
                 `;
                 document.head.appendChild(style);

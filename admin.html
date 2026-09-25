@@ -15,6 +15,27 @@
     <script type="module" src="./modules/core/toast.js?v=4376b6ac2f84"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="styles/admin-premium.css?v=2026-06-11-profile-admin-v1">
 
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
@@ -24,14 +45,14 @@
     <main-menu></main-menu>
     <div class="shell">
         <div class="header">
-            <h1 class="title"><i class="fas fa-shield-alt"></i><span>Admin Unificado</span></h1>
+            <h1 class="title sw-page-title"><i class="fas fa-shield-alt"></i><span>Admin Unificado</span></h1>
             <div class="meta" id="adminMeta">Verificando permissões...</div>
             <div id="sentryBellHost" style="display:none;position:relative;margin-left:12px;">
                 <button type="button" id="sentryBellBtn" class="btn small" style="position:relative;padding:6px 10px;" title="Erros de produção (Sentry) nas últimas 24h" aria-label="Abrir alertas de erros de produção">
                     <i class="fas fa-bell"></i>
                     <span id="sentryBellBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:999px;font-size:0.65rem;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px;"></span>
                 </button>
-                <div id="sentryBellPop" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:340px;max-height:420px;overflow:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:60;padding:10px;">
+                <div id="sentryBellPop" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:340px;max-height:420px;overflow:auto;background: var(--sw-surface);border: 1px solid var(--sw-border) ;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:60;padding:10px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                         <span style="font-weight:700;font-size:0.85rem;color:#0f172a;">Erros de produção (24h)</span>
                         <button type="button" id="sentryBellMarkSeen" class="btn small" style="font-size:0.7rem;"><i class="fas fa-check"></i><span>Marcar como vistos</span></button>
@@ -400,7 +421,7 @@
                         <div class="section-title">Histórico de Receita — Últimos 6 Meses</div>
                         <span id="finChartMeta" class="badge pill" style="font-size:0.72rem;">Aprovados</span>
                     </div>
-                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;">
+                    <div style="background:#f8fafc;border: 1px solid var(--sw-border) ;border-radius:12px;padding:16px;">
                         <canvas id="finRevenueChart" height="120" style="width:100%;display:block;"></canvas>
                         <div id="finChartLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:0.75rem;color:#64748b;justify-content:center;"></div>
                     </div>
@@ -566,7 +587,7 @@
                 <div id="securityPagination" class="admin-pagination-host"></div>
 
                 <!-- Monitoramento de Erros (Sentry) -->
-                <div class="section" style="margin-top:18px;border-top:1px solid #e2e8f0;padding-top:14px;">
+                <div class="section" style="margin-top:18px;border-top: 1px solid var(--sw-border) ;padding-top:14px;">
                     <div class="section-header-inline">
                         <div>
                             <div class="section-title"><i class="fas fa-bug" style="color:#ef4444;margin-right:6px;"></i>Monitoramento de Erros (Sentry)</div>
@@ -704,7 +725,7 @@
                         <div class="card" style="flex:1 1 380px;">
                             <div class="card-title">Pré-visualização do modal do assinante</div>
                             <div class="card-description">Visual de conferência antes de salvar.</div>
-                            <div style="margin-top:8px;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f8fafc;">
+                            <div style="margin-top:8px;border: 1px solid var(--sw-border) ;border-radius:10px;padding:10px;background:#f8fafc;">
                                 <div id="settingsPreviewTitle" style="font-weight:700;color:#0f172a;font-size:0.9rem;">Pagamento - Plano Mensal</div>
                                 <div style="margin-top:8px;font-size:0.82rem;color:#334155;"><strong>Chave PIX:</strong> <span id="settingsPreviewPix">-</span></div>
                                 <div style="margin-top:4px;font-size:0.82rem;color:#334155;"><strong>Valor:</strong> <span id="settingsPreviewAmount">R$ 0,00</span></div>
@@ -823,7 +844,7 @@
                             <input id="companyEditLogoFile" type="file" accept="image/*" style="display:none;">
                             <button type="button" class="btn small" id="companyEditSelectLogo" style="margin-top:6px;"><i class="fas fa-image"></i><span>Selecionar logo</span></button>
                             <span id="companyEditLogoFileName" style="display:block;margin-top:6px;font-size:0.75rem;color:#64748b;">Nenhuma imagem selecionada.</span>
-                            <img id="companyEditLogoPreview" alt="Preview logo" style="display:none;margin-top:8px;max-width:180px;max-height:100px;border:1px solid #e5e7eb;border-radius:8px;object-fit:contain;background:#fff;">
+                            <img id="companyEditLogoPreview" alt="Preview logo" style="display:none;margin-top:8px;max-width:180px;max-height:100px;border: 1px solid var(--sw-border) ;border-radius:8px;object-fit:contain;background: var(--sw-surface);">
                         </div>
                     </div>
                     <div class="panel-actions" style="margin-top:10px;">
@@ -907,7 +928,7 @@
                         <div class="section-title"><i class="fas fa-filter" style="color:#6366f1;margin-right:6px;"></i>Funil de Conversão</div>
                         <span id="campFunnelMeta" class="badge pill">Calculando...</span>
                     </div>
-                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;">
+                    <div style="background:#f8fafc;border: 1px solid var(--sw-border) ;border-radius:12px;padding:16px;">
                         <div class="camp-funnel-row">
                             <div class="camp-funnel-label"><i class="fas fa-users"></i> Total cadastrados</div>
                             <div class="camp-funnel-bar-wrap"><div id="funnelBarTotal" class="camp-funnel-bar" style="background:#6366f1;"></div></div>
@@ -1228,7 +1249,7 @@
                     </div>
                     <div class="modal-field" style="flex: 1;">
                         <span class="modal-field-label">Dias Concedidos</span>
-                        <input type="number" id="reviewExtGrantedDays" class="modal-field-value" style="width: 100%; box-sizing: border-box; background: #ffffff;" min="1" max="60">
+                        <input type="number" id="reviewExtGrantedDays" class="modal-field-value" style="width: 100%; box-sizing: border-box; background: var(--sw-surface);" min="1" max="60">
                     </div>
                 </div>
                 <div class="modal-field">
@@ -1237,7 +1258,7 @@
                 </div>
                 <div class="modal-field">
                     <span class="modal-field-label">Nota de Análise (Opcional)</span>
-                    <textarea id="reviewExtNote" class="modal-field-value" style="width: 100%; box-sizing: border-box; background: #ffffff; resize: vertical; min-height: 60px;" placeholder="Ex: Aprovado em caráter de exceção."></textarea>
+                    <textarea id="reviewExtNote" class="modal-field-value" style="width: 100%; box-sizing: border-box; background: var(--sw-surface); resize: vertical; min-height: 60px;" placeholder="Ex: Aprovado em caráter de exceção."></textarea>
                 </div>
                 <input type="hidden" id="reviewExtUid">
                 <input type="hidden" id="reviewExtRequestId">
@@ -1260,7 +1281,7 @@
             <div class="modal-body">
                 <div class="modal-field">
                     <span class="modal-field-label">Nota do pagamento (opcional, máx. 280 caracteres)</span>
-                    <textarea id="commissionPaidNote" class="modal-field-value" style="width: 100%; box-sizing: border-box; background: #ffffff; resize: vertical; min-height: 70px;" maxlength="280" placeholder="Ex: Pago via PIX em 05/09/2026."></textarea>
+                    <textarea id="commissionPaidNote" class="modal-field-value" style="width: 100%; box-sizing: border-box; background: var(--sw-surface); resize: vertical; min-height: 70px;" maxlength="280" placeholder="Ex: Pago via PIX em 05/09/2026."></textarea>
                     <div style="text-align:right;font-size:0.75rem;color:#64748b;margin-top:4px;"><span id="commissionPaidCount">0</span>/280</div>
                 </div>
                 <input type="hidden" id="commissionPaidEntryId">
@@ -1279,10 +1300,10 @@
                 <button type="button" class="modal-close" id="commissionBulkCloseBtn" aria-label="Fechar"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div id="commissionBulkSummary" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:12px;font-size:.88rem"></div>
+                <div id="commissionBulkSummary" style="background:#f8fafc;border: 1px solid var(--sw-border) ;border-radius:8px;padding:12px;margin-bottom:12px;font-size:.88rem"></div>
                 <div class="modal-field">
                     <span class="modal-field-label">Nota do lote (opcional, máx. 280 caracteres)</span>
-                    <textarea id="commissionBulkNote" class="modal-field-value" style="width:100%;box-sizing:border-box;background:#ffffff;resize:vertical;min-height:70px;" maxlength="280" placeholder="Ex: Lote 05/09/2026 via PIX."></textarea>
+                    <textarea id="commissionBulkNote" class="modal-field-value" style="width:100%;box-sizing:border-box;background: var(--sw-surface);resize:vertical;min-height:70px;" maxlength="280" placeholder="Ex: Lote 05/09/2026 via PIX."></textarea>
                     <div style="text-align:right;font-size:0.75rem;color:#64748b;margin-top:4px;"><span id="commissionBulkCount">0</span>/280</div>
                 </div>
             </div>
@@ -1317,7 +1338,8 @@
 
     <script src="firebaseService.js?v=7e1ef38adf49" type="module"></script>
     <script src="auth.js?v=4173d8da9343"></script>
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script src="scripts/admin/admin-ui.js?v=ec6765700811"></script>
     <script src="scripts/admin/admin-main.js?v=2e80dc22a3d9"></script>

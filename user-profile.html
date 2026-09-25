@@ -16,6 +16,28 @@
 <title>Meu Perfil - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="superadmin-mfa.js?v=27ab1839aafe"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -23,6 +45,7 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
+<script src="js/sisweb-theme.js?v=1"></script>
 <script src="menu-component.js?v=6c70fd8f5206"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,14 +60,14 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
+            background-color: var(--sw-surface);
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -191,7 +214,7 @@
         }
 
         .profile-card {
-            background: white;
+            background: var(--sw-surface);
             border-radius: 16px;
             padding: 30px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
@@ -264,18 +287,18 @@
             border-radius: 8px;
             font-size: 16px;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            background: #fafafa;
+            background: var(--sw-surface-2) ;
         }
 
         .form-input:focus {
             border-color: #667eea;
             outline: none;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            background: white;
+            background: var(--sw-surface);
         }
 
         .form-input:disabled {
-            background-color: #f9f9f9;
+            background-color: var(--sw-surface-2) ;
             cursor: not-allowed;
             opacity: 0.7;
         }
@@ -353,7 +376,7 @@
         }
 
         .btn-secondary {
-            background: #f3f4f6;
+            background: var(--sw-surface-2) ;
             color: #374151;
             border: none;
             padding: 12px 24px;
@@ -491,7 +514,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: white;
+            background: var(--sw-surface);
             border-radius: 16px;
             padding: 30px;
             width: 90%;
@@ -541,7 +564,7 @@
             gap: 14px;
             padding: 14px;
             margin: 8px 0 18px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--sw-border) ;
             border-radius: 12px;
             background: #f8fafc;
         }
@@ -557,7 +580,7 @@
         .info-value code {
             padding: 2px 6px;
             border-radius: 6px;
-            background: #f1f5f9;
+            background: var(--sw-surface-2) ;
             color: #334155;
             font-size: 12px;
         }
@@ -750,7 +773,7 @@
 
                 <div id="mfaSetupPanel" style="display:none;">
                     <p style="color:#475569;margin:0 0 10px;">1. Escaneie o QR code abaixo ou digite a chave manualmente no seu app autenticador (Google Authenticator, Authy, etc.).</p>
-                    <div id="mfaQrContainer" style="display:flex;justify-content:center;padding:10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;max-width:220px;margin:0 auto 10px;"></div>
+                    <div id="mfaQrContainer" style="display:flex;justify-content:center;padding:10px;background: var(--sw-surface);border: 1px solid var(--sw-border) ;border-radius:8px;max-width:220px;margin:0 auto 10px;"></div>
                     <p style="color:#475569;font-size:13px;margin:0 0 6px;word-break:break-all;">Chave manual: <strong id="mfaSecretText" style="font-family:monospace;">—</strong></p>
                     <div class="form-group" style="max-width:220px;margin:0 auto;">
                         <label for="mfaConfirmCode">2. Código de confirmação (6 dígitos)</label>
@@ -786,7 +809,7 @@
                     <label>Foto do Perfil</label>
                     <div>
                         <img id="photoPreview" class="photo-preview" style="display: none;" alt="Preview da foto">
-                        <div id="photoPlaceholder" class="photo-preview" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #6b7280;">
+                        <div id="photoPlaceholder" class="photo-preview" style="background: var(--sw-surface-2) ; display: flex; align-items: center; justify-content: center; color: #6b7280;">
                             <i class="fas fa-user" style="font-size: 24px;"></i>
                         </div>
                     </div>

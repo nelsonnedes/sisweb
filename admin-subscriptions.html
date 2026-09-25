@@ -13,6 +13,27 @@
     <title>Gerenciar Assinaturas - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="admin-modern.css">
     <style>
         * {
@@ -23,14 +44,14 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             padding: 20px;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
+            background-color: var(--sw-surface);
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -59,7 +80,7 @@
             padding: 10px 15px;
             border: none;
             border-radius: 4px;
-            background-color: #f5f5f5;
+            background-color: var(--sw-surface-2) ;
             color: #7f8c8d;
             cursor: pointer;
             font-weight: bold;
@@ -92,7 +113,7 @@
             font-weight: bold;
             color: #7f8c8d;
             font-size: 14px;
-            background-color: #f9f9f9;
+            background-color: var(--sw-surface-2) ;
         }
 
         .subscriptions-table tr:last-child td {
@@ -100,7 +121,7 @@
         }
 
         .subscriptions-table tr:hover {
-            background-color: #f9f9f9;
+            background-color: var(--sw-surface-2) ;
         }
 
         .status {
@@ -122,7 +143,7 @@
         }
 
         .status-expired {
-            background-color: #f8f9fa;
+            background-color: var(--sw-surface-2) ;
             color: #95a5a6;
         }
 
@@ -233,7 +254,7 @@
         }
 
         .modal-content {
-            background-color: white;
+            background-color: var(--sw-surface);
             margin: 50px auto;
             padding: 30px;
             border-radius: 8px;
@@ -380,7 +401,7 @@
             padding: 8px 12px;
             border-radius: 6px;
             border: 1px solid #cbd5e1;
-            background: #ffffff;
+            background: var(--sw-surface);
             color: #0f172a;
             font-size: 12px;
             font-weight: 700;
@@ -399,7 +420,7 @@
             width: 100%;
             min-height: 100px;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--sw-border) ;
             border-radius: 4px;
             resize: vertical;
             font-size: 14px;
@@ -542,11 +563,11 @@
             .subscriptions-table.responsive-stack tbody { display: block; width: 100%; }
             .subscriptions-table.responsive-stack tbody tr {
                 display: block;
-                border: 1px solid #e5e7eb;
+                border: 1px solid var(--sw-border) ;
                 border-radius: 10px;
                 margin: 0 0 10px;
                 padding: 6px 8px;
-                background: #fff;
+                background: var(--sw-surface);
             }
             .subscriptions-table.responsive-stack tbody td {
                 display: grid;
@@ -583,7 +604,7 @@
         <main-menu></main-menu>
 
         <div class="page-header">
-            <h1>Gerenciar Assinaturas</h1>
+            <h1 class="sw-page-title">Gerenciar Assinaturas</h1>
             <div style="display: flex; gap: 10px;"></div>
         </div>
         <div id="subscriptionsDataOriginPanel" class="data-origin-panel"></div>
@@ -797,7 +818,8 @@
         import * as firebaseSvc from './firebaseService.js';
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
-    <script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=1"></script>
+<script src="menu-component.js?v=6c70fd8f5206"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         // Variável para armazenar os dados da assinatura atual

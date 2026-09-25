@@ -143,7 +143,7 @@ input[type="checkbox"].sel-carrego-all,
     border: 1px solid #d6dde8;
     border-radius: 8px;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--sw-surface);
 }
 
 .commerce-embedded-toolbar {
@@ -180,13 +180,13 @@ input[type="checkbox"].sel-carrego-all,
     width: 100%;
     min-height: 720px;
     border: 0;
-    background: #ffffff;
+    background: var(--sw-surface);
 }
 
 html.sisweb-embedded,
 html.sisweb-embedded body {
     min-height: auto;
-    background: #ffffff !important;
+    background: var(--sw-surface) !important;
 }
 
 html.sisweb-embedded body {
@@ -243,7 +243,7 @@ html.sisweb-embedded .page-header {
         min-width: max-content;
         border: 1px solid #dbe3ec;
         border-radius: 8px;
-        background: #ffffff;
+        background: var(--sw-surface);
         padding: 10px 12px;
         scroll-snap-align: start;
     }
@@ -404,7 +404,7 @@ html.sisweb-embedded .page-header {
         padding: 10px 12px !important;
         border: 1px solid #dbe3ec;
         border-radius: 8px;
-        background: #fff;
+        background: var(--sw-surface);
         color: #34495e;
         font-weight: 600 !important;
         text-align: left;
@@ -459,7 +459,7 @@ html.sisweb-embedded .page-header {
         padding: 10px 12px !important;
         border: 1px solid #dbe3ec;
         border-radius: 8px;
-        background: #fff;
+        background: var(--sw-surface);
         color: #34495e;
         font-weight: 700 !important;
         text-align: left;
@@ -538,7 +538,7 @@ html.sisweb-embedded .page-header {
         margin-left: -16px !important;
         margin-right: -16px !important;
         padding: 10px 16px 0 !important;
-        background: #fff;
+        background: var(--sw-surface);
         border-top: 1px solid #e4eaf1;
     }
 
@@ -597,7 +597,7 @@ html.sisweb-embedded .page-header {
         border: 1px solid #e1e8ed;
         border-radius: 8px;
         margin-bottom: 12px;
-        background: #fff;
+        background: var(--sw-surface);
         padding: 8px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
@@ -757,7 +757,7 @@ html.sisweb-embedded .page-header {
     .commerce-cart-table-wrap.mobile-cards td.commerce-actions-cell {
         min-height: 48px !important;
         border-bottom: 0;
-        background: #fff;
+        background: var(--sw-surface);
         gap: 8px;
     }
 
@@ -810,7 +810,7 @@ html.sisweb-embedded .page-header {
     .commerce-orders-table-wrap.mobile-cards td.commerce-actions-cell {
         justify-content: stretch !important;
         border-bottom: 0;
-        background: #fff;
+        background: var(--sw-surface);
         min-height: 52px !important;
     }
 
