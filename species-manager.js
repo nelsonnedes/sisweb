@@ -908,8 +908,8 @@ class SpeciesManager {
             const speciesName = getSpeciesDisplayName(specie);
             const scientificName = getSpeciesScientificName(specie) || '-';
             const tr = document.createElement('tr');
-            tr.style.cssText = 'border-bottom: 1px solid #dee2e6; transition: background-color 0.2s; cursor: pointer;';
-            tr.onmouseenter = () => tr.style.backgroundColor = '#f8f9fa';
+            tr.style.cssText = 'border-bottom: 1px solid var(--sw-border); transition: background-color 0.2s; cursor: pointer;';
+            tr.onmouseenter = () => tr.style.backgroundColor = 'var(--sw-hover)';
             tr.onmouseleave = () => tr.style.backgroundColor = '';
             
             // Adicionar evento de clique na linha para selecionar automaticamente
@@ -1849,7 +1849,7 @@ function createSpeciesSuggestionOption(specie, onSelect) {
     });
     div.addEventListener('click', runSelect);
     div.addEventListener('mouseenter', () => {
-        div.style.backgroundColor = '#f8f9fa';
+        div.style.backgroundColor = 'var(--sw-hover)';
     });
     div.addEventListener('mouseleave', () => {
         div.style.backgroundColor = '';

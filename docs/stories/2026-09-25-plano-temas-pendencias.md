@@ -40,7 +40,7 @@ Aberto — auditoria 25/09 (gates verdes: lint+typecheck OK, 663 testes 662/0/1)
 - [x] Origens Fase 17: `species-manager.js:761,912,1852`, `romaneio-comum.css` cobertos.
 
 ## Restos do plano
-- [ ] Onda A: evidência modal Configurar Impressão; veredito labels Almoxarifado/h2;
+- [x] Onda A: evidência modal Configurar Impressão; veredito labels Almoxarifado/h2;
       recontagem do crawler.
 - [x] Onda C: toast system check.
 
