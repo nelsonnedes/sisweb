@@ -978,6 +978,17 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
   - **Blindagem (vale p/ qualquer painel, qualquer custom):** `.theme-option.is-active` virou pílula em `var(--sw-gradient)` + `var(--sw-on-brand)` (+ sombra da marca e ícone junto) — mesmo padrão das abas do modal Suporte, sem duplicação de conceito.
   - **Auditoria global texto-sobre-marca (branco fixo → `var(--sw-on-brand)`, comportamento idêntico por padrão):** `thead` + 6 botões de ação da Folha; `company.html` (button genérico, `.table th` `#f2f2f2` → marca, `.action-button` slate → info, delete → danger); `ajuda.html` (hero + ação primária); `user-profile.html` (header, edit-btn, btn-primary); `subscription-status.html` (hero, h2, planType, 2× message-action, quick-guide, renew); `index.html` (botão Recarregar inline).
   - **Bump SW:** `2026-09-26-tema-marca-fase25-v1` (sw.js + menu-component PWA_VERSION + 9 asserts em 6 arquivos de teste) — clientes com CSS em cache passam a receber o shell/dropdown novos.
+- **Fase 25.4 (Padronização Global de Botões/Ações/Modais — commit `f6b38c1`):**
+  - **Referência:** coluna Ações de `vendas.html` (botões laranja da marca + excluir vermelho) como padrão visual para todo o sistema.
+  - **Headers de modais (5 romaneios):** `.modal-header` com `linear-gradient(135deg, #2c3e50, #34495e)` → `var(--sw-gradient)` + `var(--sw-on-brand)` (PES, TL, PCT, Tora, Pré). Títulos e close-modal também na tinta global.
+  - **Cabeçalho de tabela dentro de modais:** `.modal table th` (PES, PCT, Tora) → `var(--sw-gradient)` + `var(--sw-on-brand)`.
+  - **Botões de ação nas tabelas:** editar/clonar/selecionar → `var(--sw-brand)` com hover `brightness(0.88)`; excluir → `var(--sw-danger)` com hover `brightness(0.88)`; removidos roxos `#6f42c1` e verdes `#28a745` hardcoded.
+  - **Botões de listar:** `.btn-listar` (5 romaneios) → `var(--sw-brand)` (era laranja `#f39c12` hardcoded).
+  - **Variáveis locais:** `--primary-color: #2c3e50` → `var(--sw-brand)` em preromaneio/romaneiopct/romaneiotora; `--secondary-color: #3498db` → `var(--sw-info)`; `--accent-color` → tokens.
+  - **Toasts:** `.toast.warning` (species/fornecedor/client) → `var(--sw-warning)` (era `#f39c12`).
+  - **Módulos JS:** `stock-table-columns.js` (edit/delete/history/down → tokens, resizer hover → marca); `dashboard-styles.css` (btn-refresh hover → marca); `navegacao-pct.js` (tooltip erro → danger); `mdf-e.html`/`notas-fiscais.html` (btn-danger hover → danger); `admin-settings.html`/`admin-subscriptions.html`/`subscription-status.html` (botões → info/danger); `company.html` (developer-avatar → gradiente, table th → marca, action-button → info).
+  - **Auditoria:** zero ocorrências de `background-color: #(28a745|e74c3c|6f42c1|3498db|0d6efd|007bff|dc3545|c0392b|218838|2980b9|59359a|f39c12|e67e22|ffc107)` em todos os HTMLs do sistema.
+  - **Quality Gates:** 671 testes pass / 0 fail; lint + typecheck limpos; commit `f6b38c1` (62 arquivos).
   - **Evidência:** `tmp/dropdown-tema-claro.png` ("Claro" em pílula legível, painel branco, headers laranja no claro).
   - **Quality Gates:** novo teste dedicado (pílula do ativo); `validate:pr` 6/6 OK.
 - **Fase 25.2 (Correção de cache no localhost:5501 — por que não refletia):**
