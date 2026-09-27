@@ -86,11 +86,11 @@ test('index.html: integra tema sem quebrar dashboard', () => {
 
 test('Fase 2: módulo dashboard fala a marca Sisweb', () => {
   const pro = read('modules/dashboard/dashboard-professional-styles.css');
-  assert.match(pro, /--primary-gradient:\s*linear-gradient\(135deg,\s*#ff7a45/i, 'gradiente primário = marca');
+  assert.match(pro, /--primary-gradient:\s*var\(--sw-gradient\)/i, 'gradiente primário usa token do tema');
   assert.ok(!pro.includes('#667eea') && !pro.includes('#764ba2'), 'roxo legado eliminado do shell');
   assert.ok(pro.includes("'Aileron'"), 'tipografia oficial no módulo');
   const base = read('modules/dashboard/dashboard-styles.css');
-  assert.match(base, /--dashboard-primary:\s*#fe6a00/i, 'primário do módulo = marca');
+  assert.match(base, /--dashboard-primary:\s*var\(--sw-brand\)/i, 'primário do módulo usa token do tema');
   assert.ok(!base.includes('#3498db'), 'azul legado eliminado do shell');
   const widgets = read('modules/dashboard/dashboard-widgets.js');
   assert.ok(widgets.includes("primary: '#fe6a00'"), 'charts na marca (só dataset visual)');
@@ -144,7 +144,15 @@ test('Fase 6: hover por tema e modal suporte bitemático', () => {
   assert.ok(tokens.includes('--sw-hover: #242b33;'), 'hover escuro');
   assert.ok(tokens.includes('--sw-hover: #e9edf1;'), 'hover claro suave');
   const shell = read('styles/shell-theme.css');
-  assert.ok(!/background:\s*var\(--sw-brand-soft\)/.test(shell), 'wash claro fora do chrome');
+  const shellLines = shell.split('\n');
+  const brandSoftUses = shellLines
+    .map((line, idx) => ({ line, idx }))
+    .filter(({ line }) => /background:\s*var\(--sw-brand-soft\)/.test(line));
+  for (const { idx } of brandSoftUses) {
+    const contexto = shellLines.slice(Math.max(0, idx - 3), idx + 1).join('\n');
+    assert.ok(contexto.includes('dropdown-content'), 'wash brand-soft só no hover do dropdown do menu');
+  }
+  assert.ok(shell.includes('dropdown-content a:hover'), 'hover do dropdown existe');
   assert.ok(!/rgba\(254,\s*106,\s*0,\s*0\.1[28]\)/.test(shell), 'wash translúcido fora do chrome');
   for (const sel of [
     '#supportModal .support-content',

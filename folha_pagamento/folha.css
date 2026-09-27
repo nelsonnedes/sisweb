@@ -4,26 +4,26 @@
  * Mantém 100% da identidade visual do sistema
  */
 
-/* ✅ VARIÁVEIS CSS EXATAS DO ROMANEIOPCT */
+/* ✅ VARIÁVEIS CSS EXATAS DO ROMANEIOPCT — Agora 100% via tokens do tema */
 :root {
-    --primary-color: #2c3e50;      /* Azul escuro principal */
-    --secondary-color: #3498db;    /* Azul claro secundário */
-    --accent-color: #e74c3c;       /* Vermelho de alerta */
-    --success-color: #27ae60;      /* Verde de sucesso */
-    --warning-color: #f39c12;      /* Laranja de aviso */
-    --danger-color: #e74c3c;       /* Vermelho de perigo */
-    --info-color: #3498db;         /* Azul informativo */
-    --light-color: #ecf0f1;        /* Cinza claro */
-    --dark-color: #2c3e50;         /* Escuro padrão */
-    --gray-color: #6c757d;         /* Cinza médio */
+    --primary-color: var(--sw-brand);      /* Marca principal do sistema */
+    --secondary-color: var(--sw-link);     /* Links e ações secundárias */
+    --accent-color: var(--sw-danger);      /* Vermelho de alerta */
+    --success-color: var(--sw-success);    /* Verde de sucesso */
+    --warning-color: var(--sw-warning);    /* Laranja de aviso */
+    --danger-color: var(--sw-danger);      /* Vermelho de perigo */
+    --info-color: var(--sw-info);          /* Azul informativo */
+    --light-color: var(--sw-surface-2);    /* Cinza claro / superfície secundária */
+    --dark-color: var(--sw-text-1);        /* Escuro padrão (texto principal) */
+    --gray-color: var(--sw-text-3);        /* Cinza médio (texto terciário) */
     
-    /* Cores específicas dos botões */
-    --btn-adicionar: var(--sw-success);      /* Verde para adicionar */
-    --btn-salvar: var(--sw-info);         /* Azul para salvar */
-    --btn-listar: var(--sw-warning);         /* Laranja para listar */
-    --btn-editar: var(--sw-success);         /* Verde escuro para editar */
-    --btn-excluir: var(--sw-danger);        /* Vermelho para excluir */
-    --btn-cancelar: var(--sw-muted);       /* Cinza para cancelar */
+    /* Cores específicas dos botões — todas via tokens do tema */
+    --btn-adicionar: var(--sw-success);    /* Verde para adicionar */
+    --btn-salvar: var(--sw-brand);         /* Marca para salvar (era info/azul) */
+    --btn-listar: var(--sw-warning);       /* Laranja para listar */
+    --btn-editar: var(--sw-success);       /* Verde para editar */
+    --btn-excluir: var(--sw-danger);       /* Vermelho para excluir */
+    --btn-cancelar: var(--sw-text-3);      /* Cinza/terciário para cancelar */
 }
 
 /* ✅ CONTAINER PRINCIPAL - IDÊNTICO AO ROMANEIOPCT */
@@ -136,8 +136,8 @@ section {
 }
 
 .pix-field-help {
-    background: #f7fbff;
-    border-left: 3px solid #d8e9f7;
+    background: var(--sw-surface-2);
+    border-left: 3px solid var(--sw-brand);
     border-radius: 4px;
     padding: 6px 8px;
 }
@@ -345,35 +345,35 @@ button:focus-visible {
     outline-offset: 2px;
 }
 
-/* Botões específicos por função */
+/* Botões específicos por função — tinta segue "Texto sobre a marca" (bitemático) */
 .btn-adicionar {
     background-color: var(--btn-adicionar);
-    color: white;
+    color: var(--sw-on-brand);
 }
 
 .btn-salvar, .btn-save {
     background-color: var(--btn-salvar);
-    color: white;
+    color: var(--sw-on-brand);
 }
 
 .btn-listar {
     background-color: var(--btn-listar);
-    color: white;
+    color: var(--sw-on-brand);
 }
 
 .btn-editar {
     background-color: var(--btn-editar);
-    color: white;
+    color: var(--sw-on-brand);
 }
 
 .btn-excluir {
     background-color: var(--btn-excluir);
-    color: white;
+    color: var(--sw-on-brand);
 }
 
 .back-button, .btn-cancelar {
     background-color: var(--btn-cancelar);
-    color: white;
+    color: var(--sw-on-brand);
 }
 
 /* ✅ CONTAINER DE BOTÕES */
@@ -485,7 +485,7 @@ table {
 
 thead {
     background-color: var(--primary-color);
-    color: white;
+    color: var(--sw-on-brand);
 }
 
 thead th {
@@ -1757,8 +1757,8 @@ tbody tr:last-child td {
 }
 
 .modal-header {
-    background-color: var(--primary-color);
-    color: white;
+    background: var(--sw-gradient);
+    color: var(--sw-on-brand);
     padding: 15px 20px;
     border-radius: 8px 8px 0 0;
     display: flex;
@@ -1770,15 +1770,14 @@ tbody tr:last-child td {
 .modal-title {
     margin: 0;
     font-size: 18px;
-    color: white !important;
+    color: var(--sw-on-brand) !important;
     display: flex;
     align-items: center;
     gap: 10px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
 
 .close-modal {
-    color: white !important;
+    color: var(--sw-on-brand) !important;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
@@ -1791,7 +1790,6 @@ tbody tr:last-child td {
 
 .close-modal:hover {
     opacity: 0.7;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
 }
 
 .modal-body {
@@ -1801,8 +1799,9 @@ tbody tr:last-child td {
 }
 
 .modal-footer {
-    padding: 20px 30px;             /* ✅ AUMENTADO: de 15px 20px para 20px 30px */
-    border-top: 1px solid #dee2e6;
+    padding: 20px 30px;
+    border-top: 1px solid var(--sw-border);
+    background: var(--sw-surface-2);
     display: flex;
     justify-content: space-between;
     align-items: center;

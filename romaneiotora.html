@@ -23,9 +23,9 @@
 
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -67,14 +67,14 @@
     </script>
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
+            --primary-color: var(--sw-brand);
+            --secondary-color: var(--sw-brand);
+            --accent-color: var(--sw-danger);
             --light-color: #ecf0f1;
             --dark-color: #2c3e50;
             --success-color: #2ecc71;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
+            --warning-color: var(--sw-warning);
+            --danger-color: var(--sw-danger);
         }
 
         * {
@@ -232,8 +232,8 @@
             padding: 15px 20px;
             border-bottom: 1px solid var(--sw-border) ;
             margin: 0;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
             border-radius: 8px 8px 0 0;
         }
 
@@ -275,8 +275,8 @@
         }
 
         .modal table th {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
             padding: 6px 8px;
             text-align: left;
             font-weight: bold;
@@ -343,7 +343,7 @@
 
         #speciesListModal .modal-title {
             margin: 0;
-            color: white !important;
+            color: var(--sw-on-brand) !important;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
             font-weight: bold;
         }
@@ -598,7 +598,7 @@
             display: block;
             width: 50px;
             height: 3px;
-            background: #3498db;
+            background: var(--sw-brand);
             margin: 10px auto;
         }
 
@@ -620,7 +620,7 @@
         .developer-avatar {
             width: 80px;
             height: 80px;
-            background-color: #3498db;
+            background: var(--sw-gradient);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -668,7 +668,7 @@
 
         .contact-icon i {
             font-size: 18px;
-            color: #3498db;
+            color: var(--sw-brand);
         }
 
         .contact-detail {
@@ -708,9 +708,9 @@
         }
 
         .pagination-controls button.active {
-            background: #2c3e50;
-            color: #fff;
-            border-color: #2c3e50;
+            background: var(--sw-brand);
+            color: var(--sw-on-brand);
+            border-color: var(--sw-brand);
         }
 
         .pagination-controls button:disabled {
@@ -767,7 +767,7 @@
         }
 
         .autocomplete-icon:hover {
-            color: #007bff;
+            color: var(--sw-info);
         }
 
         /* Estilos para dropdown de impressão */
@@ -856,13 +856,13 @@
         .client-action-button.delete-button:hover {
             background-color: #ffecec;
             border-color: #ffadad;
-            color: #e74c3c;
+            color: var(--sw-danger);
         }
         
         .client-action-button.print-btn:hover {
             background-color: #ecf5ff;
             border-color: #a8caff;
-            color: #3498db;
+            color: var(--sw-brand);
         }
         
         /* Menu de impressão */
@@ -993,7 +993,7 @@
         }
         
         .action-button {
-            background-color: #3498db;
+            background-color: var(--sw-info);
             color: white;
             border: none;
             border-radius: 4px;
@@ -1006,22 +1006,23 @@
             font-size: 14px;
             transition: background-color 0.2s;
         }
-        
+
         .action-button:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-info);
+            filter: brightness(0.88);
         }
 
         .action-button.clone-button,
         #romaneioListModal .clone-button {
-            background-color: #6f42c1 !important;
-            border-color: #6f42c1 !important;
+            background-color: var(--sw-brand) !important;
+            border-color: var(--sw-brand) !important;
             color: white !important;
         }
 
         .action-button.clone-button:hover,
         #romaneioListModal .clone-button:hover {
-            background-color: #59359a !important;
-            border-color: #59359a !important;
+            background-color: var(--sw-brand) !important;
+            border-color: var(--sw-brand) !important;
             color: white !important;
         }
         
@@ -1094,21 +1095,21 @@
         }
         
         .btn-warning {
-            background-color: #f39c12;
+            background-color: var(--sw-brand);
             color: white;
         }
         
         .btn-warning:hover {
-            background-color: #e67e22;
+            background-color: var(--sw-brand);
         }
         
         .btn-danger {
-            background-color: #e74c3c;
+            background-color: var(--sw-danger);
             color: white;
         }
         
         .btn-danger:hover {
-            background-color: #c0392b;
+            background-color: var(--sw-danger);
         }
 
         /* Botões maiores para área de form (fora da tabela) */
@@ -1920,8 +1921,8 @@
     
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
-    <script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
     <script src="correcao-interface-database.js?v=151ac35c2de4"></script>
@@ -1940,7 +1941,7 @@
     <script src="species-utils.js?v=1eae09b2ccc7"></script>
     <script src="species-store.js?v=f6f5cff9d5aa"></script>
     <script src="species-modal-standard.js?v=791d267e95fa"></script>
-    <script src="species-manager.js?v=84869809f23f"></script>
+    <script src="species-manager.js?v=bfd54b61b1ec"></script>
     
     <!-- Script de fornecedor modals -->
     <script src="fornecedor-modals.js?v=03e1ae665e80"></script>
@@ -1961,13 +1962,13 @@
     <script src="tora-geometry-utils.js?v=6cbd9a42cd32"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="romaneio-print-config.js?v=0c4709b882a7"></script>
-    <script src="commerce-pdf-share.js?v=41257785cd5a"></script>
+    <script src="commerce-pdf-share.js?v=e6699735105a"></script>
     <script src="modules/core/romaneio-list-columns.js?v=4a678c769887" data-page="tora" data-target="romaneioListTable"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     <script src="coordenador-inicializacao.js?v=013c48db2ca9"></script>
     <script src="romaneiotora.js?v=a1ea078503a4"></script>
     <script src="romaneiotora_tabela.js?v=77be3c628bf2"></script>
-    <script src="romaneio-manager.js?v=61a408c47163"></script>
+    <script src="romaneio-manager.js?v=1da89d817bff"></script>
     <script src="romaneiotora-import-v4.js?v=10866a4070df"></script>
     
     <!-- Scripts de correções -->
@@ -2832,6 +2833,6 @@
     });
     </script>
     <!-- Módulo de impressão TL/Tora padronizado -->
-    <script src="modules/reports/imprimir-romaneio.js?v=de174a2153af"></script>
+    <script src="modules/reports/imprimir-romaneio.js?v=6612ee24890c"></script>
 </body>
 </html>

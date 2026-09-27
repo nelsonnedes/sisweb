@@ -19,9 +19,9 @@
     <script type="module" src="./modules/core/toast.js?v=4376b6ac2f84"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -41,8 +41,8 @@
             }
         })();
     </script>
-    <script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
@@ -138,7 +138,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
         button {
             background: var(--sw-gradient);
-            color: white;
+            color: var(--sw-on-brand);
             padding: 11px 18px;
             border: none;
             border-radius: 8px;
@@ -202,12 +202,12 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .table th {
-            background-color: #f2f2f2;
-            color: var(--sw-text-1) ;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand) ;
         }
 
         .action-button {
-            background-color: #334155;
+            background-color: var(--sw-info);
             color: white;
             padding: 8px 14px;
             border: none;
@@ -220,15 +220,17 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .action-button:hover {
-            background-color: #34495e;
+            background-color: var(--sw-info);
+            filter: brightness(0.88);
         }
 
         .delete-button {
-            background-color: #c0392b;
+            background-color: var(--sw-danger);
         }
 
         .delete-button:hover {
-            background-color: #e74c3c;
+            background-color: var(--sw-danger);
+            filter: brightness(0.88);
         }
 
         #saveBtn, button[type="submit"], button[onclick*="showCompanyList"] {
@@ -434,7 +436,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         .developer-avatar {
             width: 80px;
             height: 80px;
-            background-color: #3498db;
+            background: var(--sw-gradient);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -909,7 +911,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
-    <script src="commerce-pdf-share.js?v=41257785cd5a"></script>
+    <script src="commerce-pdf-share.js?v=e6699735105a"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
     <script type="module" src="database-utils.js?v=0ed433ed439a"></script>
     <script type="module">

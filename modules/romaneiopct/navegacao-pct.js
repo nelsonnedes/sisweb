@@ -177,7 +177,7 @@ function mostrarErroTemporario(campo, mensagem) {
     tooltip.textContent = mensagem;
     tooltip.style.cssText = `
         position: absolute;
-        background: #e74c3c;
+        background: var(--sw-danger);
         color: white;
         padding: 5px 10px;
         border-radius: 4px;

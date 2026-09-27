@@ -93,9 +93,9 @@
     <title>Romaneio PCT - Sistema Sisweb</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -127,19 +127,19 @@
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
-<script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+<script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
+            --primary-color: var(--sw-brand);
+            --secondary-color: var(--sw-brand);
+            --accent-color: var(--sw-danger);
             --light-color: #ecf0f1;
             --dark-color: #2c3e50;
             --success-color: #2ecc71;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
+            --warning-color: var(--sw-warning);
+            --danger-color: var(--sw-danger);
             --max-width: 1300px;
         }
 
@@ -183,8 +183,8 @@
         }
 
         th {
-            background-color: #2c3e50;
-            color: white;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             font-size: 13px;
             height: 28px;
         }
@@ -199,7 +199,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            background-color: #e74c3c;
+            background-color: var(--sw-danger);
             color: white;
             font-size: 12px;
             height: 24px;
@@ -207,7 +207,7 @@
         }
 
         .btn-excluir:hover {
-            background-color: #c0392b;
+            background-color: var(--sw-danger);
         }
 
         .total-row {
@@ -255,14 +255,14 @@
             padding: 15px 20px;
             border-bottom: 1px solid var(--sw-border) ;
             margin: 0;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
             border-radius: 8px 8px 0 0;
         }
 
         .modal-title {
             margin: 0;
-            color: white !important;
+            color: var(--sw-on-brand) !important;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
             font-weight: bold;
         }
@@ -319,11 +319,11 @@
         .btn-adicionar { background-color: #27ae60; color: white; }
         .btn-adicionar:hover { background-color: #219a52; }
 
-        .btn-salvar { background-color: #3498db; color: white; }
-        .btn-salvar:hover { background-color: #2980b9; }
+        .btn-salvar { background-color: var(--sw-brand); color: var(--sw-on-brand); }
+        .btn-salvar:hover { background-color: var(--sw-brand-dark); }
 
-        .btn-listar { background-color: #f39c12; color: white; }
-        .btn-listar:hover { background-color: #e67e22; }
+        .btn-listar { background-color: var(--sw-brand); color: var(--sw-on-brand); }
+        .btn-listar:hover { background-color: var(--sw-brand); filter: brightness(0.88); }
 
         .back-button, .close-modal-btn { background-color: #6c757d; color: white; }
         .back-button:hover, .close-modal-btn:hover { background-color: #5a6268; }
@@ -339,15 +339,15 @@
         }
 
         .btn-editar {
-            background-color: #28a745;
+            background-color: var(--sw-success);
         }
 
         .btn-editar:hover {
-            background-color: #218838;
+            background-color: var(--sw-success);
         }
 
         .btn-excluir {
-            background-color: #dc3545;
+            background-color: var(--sw-danger);
         }
 
         .btn-excluir:hover {
@@ -361,8 +361,8 @@
         }
 
         .modal table th {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
             padding: 6px 8px;
             text-align: left;
             font-weight: bold;
@@ -404,7 +404,7 @@
 
         /* ✅ PADRONIZAÇÃO: Botões de ação específicos (baseado no romaneiotl) */
         .action-button {
-            background-color: #3498db;
+            background-color: var(--sw-info);
             color: white;
             border: none;
             padding: 8px 12px;
@@ -419,43 +419,47 @@
         }
 
         .action-button:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-info);
+            filter: brightness(0.88);
             transform: translateY(-1px);
             transition: all 0.2s;
         }
 
         .action-button.delete-button {
-            background-color: #e74c3c;
+            background-color: var(--sw-danger);
         }
 
         .action-button.delete-button:hover {
-            background-color: #c0392b;
+            background-color: var(--sw-danger);
+            filter: brightness(0.88);
         }
 
         .action-button.edit-button {
-            background-color: #3498db;
+            background-color: var(--sw-info);
         }
 
         .action-button.edit-button:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-info);
+            filter: brightness(0.88);
         }
 
         .action-button.clone-button {
-            background-color: #6f42c1;
-            color: #ffffff;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
 
         .action-button.clone-button:hover {
-            background-color: #59359a;
-            color: #ffffff;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
+            filter: brightness(0.88);
         }
 
         .action-button.select-button {
-            background-color: #28a745; /* rgb(40, 167, 69) - padronizado com romaneiotl */
+            background-color: var(--sw-success); /* rgb(40, 167, 69) - padronizado com romaneiotl */
         }
 
         .action-button.select-button:hover {
-            background-color: #218838;
+            background-color: var(--sw-success);
         }
         
         .btn-group {
@@ -563,7 +567,7 @@
             background-color: var(--sw-surface);
             min-width: 200px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            border: 2px solid #3498db;
+            border: 2px solid var(--sw-brand);
             border-radius: 6px;
             z-index: 9999999 !important;
             display: none;
@@ -611,8 +615,8 @@
         .print-dropdown .dropdown-content a:hover,
         .tabela-container .dropdown-content a:hover,
         #listaModal .dropdown-content a:hover {
-            background-color: #3498db;
-            color: #ffffff;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
         
         .print-dropdown .dropdown-content a i,
@@ -664,7 +668,7 @@
             position: fixed !important;
             pointer-events: auto !important;
             background-color: var(--sw-surface) !important;
-            border: 2px solid #3498db !important;
+            border: 2px solid var(--sw-brand) !important;
             border-radius: 6px !important;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
             min-width: 200px !important;
@@ -754,16 +758,16 @@
         }
 
         .btn-adicionar.updating {
-            background-color: #f39c12;
+            background-color: var(--sw-brand);
         }
 
         .btn-adicionar.updating:hover {
-            background-color: #e67e22;
+            background-color: var(--sw-brand);
         }
 
         /* ✅ ESTILO PARA BOTÃO DE ATUALIZAÇÃO (MODO EDIÇÃO) */
         .btn-atualizar {
-            background-color: #f39c12 !important; /* Laranja para indicar atualização */
+            background-color: var(--sw-brand) !important; /* Laranja para indicar atualização */
             color: white !important;
             border: none !important;
             padding: 8px 16px !important;
@@ -774,26 +778,25 @@
         }
 
         .btn-atualizar:hover {
-            background-color: #e67e22 !important; /* Laranja mais escuro no hover */
+            background-color: var(--sw-brand) !important; /* Laranja mais escuro no hover */
             transform: translateY(-1px) !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
         }
 
         .btn-salvar {
-            background-color: #3498db;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
 
         .btn-salvar:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-brand-dark);
         }
 
         .btn-listar {
-            background-color: #f39c12;
+            background-color: var(--sw-brand);
         }
 
-        .btn-listar:hover {
-            background-color: #e67e22;
-        }
+        .btn-listar:hover { background-color: var(--sw-brand); filter: brightness(0.88); }
 
         .btn-excluir {
             padding: 4px 8px;
@@ -801,7 +804,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            background-color: #e74c3c;
+            background-color: var(--sw-danger);
             color: white;
             font-size: 12px;
             height: 24px;
@@ -809,7 +812,7 @@
         }
 
         .btn-excluir:hover {
-            background-color: #c0392b;
+            background-color: var(--sw-danger);
         }
 
         .total-row {
@@ -857,7 +860,7 @@
             display: block;
             width: 50px;
             height: 3px;
-            background: #3498db;
+            background: var(--sw-brand);
             margin: 10px auto;
         }
 
@@ -879,7 +882,7 @@
         .developer-avatar {
             width: 80px;
             height: 80px;
-            background-color: #3498db;
+            background: var(--sw-gradient);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -940,7 +943,7 @@
 
         .autocomplete-input:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: var(--sw-brand);
             box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
 
@@ -961,7 +964,7 @@
         }
 
         .autocomplete-icon:hover {
-            color: #007bff;
+            color: var(--sw-info);
         }
 
         /* Ajuste específico para o campo de preço */
@@ -1033,7 +1036,7 @@
         }
 
         .error {
-            color: #e74c3c;
+            color: var(--sw-danger);
             font-size: 14px;
             margin-top: 5px;
             display: none;
@@ -1043,7 +1046,7 @@
         /* Estilos específicos de romaneiopct que sobraram */
         
         .error {
-            color: #e74c3c;
+            color: var(--sw-danger);
             font-size: 14px;
             margin-top: 5px;
             display: none;
@@ -1058,7 +1061,7 @@
         }
 
         .close-modal-btn {
-            background-color: #e74c3c;
+            background-color: var(--sw-danger);
             color: white;
             border: none;
             padding: 8px 15px;
@@ -1095,9 +1098,9 @@
         }
 
         .pagination-controls button.active {
-            background: #2c3e50;
-            color: #fff;
-            border-color: #2c3e50;
+            background: var(--sw-brand);
+            color: var(--sw-on-brand);
+            border-color: var(--sw-brand);
         }
 
         .pagination-controls button:disabled {
@@ -1285,7 +1288,7 @@
 
         /* Estilos para os botões de ação dos clientes e espécies */
         .client-action-button {
-            background-color: #3498db;
+            background-color: var(--sw-info);
             color: white;
             border: none;
             border-radius: 4px;
@@ -1304,7 +1307,8 @@
         }
 
         .client-action-button:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-info);
+            filter: brightness(0.88);
             transform: translateY(-1px);
         }
 
@@ -1544,7 +1548,7 @@
 
         /* Estilos para os botões de ação dos clientes e espécies */
         .client-action-button {
-            background-color: #3498db;
+            background-color: var(--sw-info);
             color: white;
             border: none;
             border-radius: 4px;
@@ -1563,7 +1567,8 @@
         }
 
         .client-action-button:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-info);
+            filter: brightness(0.88);
             transform: translateY(-1px);
         }
 
@@ -1662,15 +1667,15 @@
         }
 
         .btn-editar {
-            background-color: #28a745;
+            background-color: var(--sw-success);
         }
 
         .btn-excluir {
-            background-color: #dc3545;
+            background-color: var(--sw-danger);
         }
 
         .btn-editar:hover {
-            background-color: #218838;
+            background-color: var(--sw-success);
         }
 
         .btn-excluir:hover {
@@ -1764,11 +1769,11 @@
 
         /* ✅ CABEÇALHO DA TABELA - PADRONIZADO ROMANEIOTL */
         #romaneioTable thead th {
-            background-color: #2c3e50;
-            color: white;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             font-weight: bold;
             padding: 12px 8px; /* ✅ PADDING PADRONIZADO */
-            border: 1px solid #34495e;
+            border: 1px solid var(--sw-brand-dark);
             font-size: 14px; /* ✅ FONTE LIGEIRAMENTE MAIOR */
             height: 45px; /* ✅ ALTURA PADRONIZADA TL */
             line-height: 1.4;
@@ -1844,7 +1849,7 @@
 
         #listaModal .dropdown-content a:hover {
             background-color: var(--sw-surface-2) !important;
-            color: #3498db !important;
+            color: var(--sw-brand) !important;
         }
 
         #listaModal .dropdown-content a i {
@@ -1885,7 +1890,7 @@
 
         #listaModal .dropdown-content a:hover {
             background-color: var(--sw-surface-2) !important;
-            color: #3498db !important;
+            color: var(--sw-brand) !important;
         }
 
         #listaModal .dropdown-content a i {
@@ -1965,23 +1970,24 @@
 
         /* ✅ PADRONIZAÇÃO: Cores dos botões igual ao TL */
         #listaModal .edit-button {
-            background-color: #3498db !important;
+            background-color: var(--sw-info) !important;
             color: white !important;
         }
 
         #listaModal .edit-button:hover {
-            background-color: #2980b9 !important;
+            background-color: var(--sw-info) !important;
+            filter: brightness(0.88);
         }
 
         #listaModal .clone-button {
-            background-color: #6f42c1 !important;
-            border-color: #6f42c1 !important;
+            background-color: var(--sw-brand) !important;
+            border-color: var(--sw-brand) !important;
             color: white !important;
         }
 
         #listaModal .clone-button:hover {
-            background-color: #59359a !important;
-            border-color: #59359a !important;
+            background-color: var(--sw-brand) !important;
+            border-color: var(--sw-brand) !important;
             color: white !important;
         }
 
@@ -2008,21 +2014,22 @@
         }
 
         #listaModal .print-button {
-            background-color: #f39c12 !important;
+            background-color: var(--sw-brand) !important;
             color: white !important;
         }
 
         #listaModal .print-button:hover {
-            background-color: #e67e22 !important;
+            background-color: var(--sw-brand) !important;
         }
 
         #listaModal .delete-button {
-            background-color: #e74c3c !important;
+            background-color: var(--sw-danger) !important;
             color: white !important;
         }
 
         #listaModal .delete-button:hover {
-            background-color: #c0392b !important;
+            background-color: var(--sw-danger) !important;
+            filter: brightness(0.88);
         }
 
         /* ✅ ESTILOS DOS TOTAIS - PADRONIZADO ROMANEIOTL */
@@ -2086,11 +2093,11 @@
             margin-top: 20px;
         }
 
-        /* ✅ ESTILOS ESPECÍFICOS PARA MODAL DE LISTA DE ROMANEIOS - AZUL ESCURO COMO TL */
+        /* ✅ ESTILOS ESPECÍFICOS PARA MODAL DE LISTA DE ROMANEIOS - MARCA & IDENTIDADE */
         #listaModal .back-button {
-            background-color: #2c3e50 !important;
+            background-color: var(--sw-brand) !important;
             border: none !important;
-            color: white !important;
+            color: var(--sw-on-brand) !important;
             padding: 8px 16px !important;
             border-radius: 4px !important;
             cursor: pointer !important;
@@ -2399,7 +2406,7 @@
                 <!-- ✅ TABELA PADRONIZADA CORRIGIDA -->
                 <div class="table-container">
                     <table class="table" style="margin-bottom: 0;">
-                        <thead style="position: sticky; top: 0; background-color: #2c3e50; color: white; z-index: 10;">
+                        <thead style="position: sticky; top: 0; background-color: var(--sw-brand); color: var(--sw-on-brand); z-index: 10;">
                             <tr>
                                 <th style="min-width: 90px;">Data</th>
                                 <th style="min-width: 150px;">Cliente</th>
@@ -2861,7 +2868,7 @@
     <script src="romaneios-client-save-fix.js?v=f9b752d56195"></script>
     
     <!-- ❌ DESABILITADO: species-manager.js - CONFLITA COM MODAIS PADRONIZADOS PCT -->
-    <!-- <script src="species-manager.js?v=84869809f23f"></script> -->
+    <!-- <script src="species-manager.js?v=bfd54b61b1ec"></script> -->
     <script src="dimensoes.js?v=c93c3dabc7a7"></script>
     
     <!-- Inicializar variáveis globais -->
@@ -2928,10 +2935,10 @@
     <script src="romaneiopct-main.js?v=90dff0e8efdb"></script>
     
     <script src="romaneio-print-config.js?v=0c4709b882a7"></script>
-    <script src="commerce-pdf-share.js?v=41257785cd5a"></script>
+    <script src="commerce-pdf-share.js?v=e6699735105a"></script>
 
     <!-- 1. Sistema de impressão específico PCT -->
-    <script src="modules/romaneiopct/imprimir-romaneio-pct.js?v=ca867f01b3a1"></script>
+    <script src="modules/romaneiopct/imprimir-romaneio-pct.js?v=f4ae0e58a99a"></script>
     
     <!-- 2. Sistema de preservação de propriedades financeiras PCT -->
     <script src="modules/romaneiopct/preservar-propriedades-financeiras.js?v=557f1791c0db"></script>

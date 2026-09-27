@@ -3273,8 +3273,8 @@ window.ImprimirRomaneio = (function() {
             if (body && !body.querySelector('.sisweb-print-back')) {
                 const bar = doc.createElement('div');
                 bar.className = 'sisweb-print-back';
-                bar.setAttribute('style', 'display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;');
-                bar.innerHTML = '<button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button>';
+                bar.setAttribute('style', 'display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid var(--sw-border);border-radius:6px;background:var(--sw-surface-2);');
+                bar.innerHTML = '<button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid var(--sw-input-border);background:var(--sw-input-bg);font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid var(--sw-brand);background:var(--sw-brand);color:var(--sw-on-brand);font-weight:700;cursor:pointer;">Imprimir</button>';
                 const style = doc.createElement('style');
                 style.setAttribute('data-sisweb-print-back', '1');
                 style.textContent = '@media print{.sisweb-print-back{display:none !important;}}';

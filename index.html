@@ -20,8 +20,8 @@
     </script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
     <link rel="stylesheet" href="styles/dashboard-theme.css?v=1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
@@ -40,10 +40,10 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="modules/dashboard/dashboard-styles.css">
+    <link rel="stylesheet" href="modules/dashboard/dashboard-styles.css?v=20260926-fase25-1">
     <link rel="stylesheet" href="modules/dashboard/dashboard-layout-fix.css">
     <link rel="stylesheet" href="modules/dashboard/dashboard-responsive-styles.css">
-    <link rel="stylesheet" href="modules/dashboard/dashboard-professional-styles.css">
+    <link rel="stylesheet" href="modules/dashboard/dashboard-professional-styles.css?v=20260926-fase25-1">
     
     <!-- ✅ CORREÇÃO: Script para suprimir erros de extensões do navegador -->
     <script>
@@ -76,8 +76,8 @@
         })();
     </script>
     
-    <script defer src="js/sisweb-theme.js?v=1"></script>
-    <script defer src="menu-component.js?v=6c70fd8f5206"></script>
+    <script defer src="js/sisweb-theme.js?v=380b69314121"></script>
+    <script defer src="menu-component.js?v=16bb5786a951"></script>
     <!-- Firebase SDK -->
     <!-- Firebase via módulo compartilhado (singleton) -->
 
@@ -94,7 +94,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
-<script defer src="modules/dashboard/dashboard-widgets.js?v=3f61599d3aeb"></script>
+<script defer src="modules/dashboard/dashboard-widgets.js?v=79c0db4dcb87"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -395,7 +395,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     <div style="background: var(--sw-surface); padding: 30px; border-radius: 12px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                             <h1 style="margin: 0; font-family: var(--sw-font-sans); letter-spacing: -0.3px; color: var(--sw-brand); background: var(--sw-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"><i class="fas fa-tachometer-alt"></i> Dashboard Sistema</h1>
-                            <button onclick="location.reload()" style="background: var(--sw-brand); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+                            <button onclick="location.reload()" style="background: var(--sw-brand); color: var(--sw-on-brand); border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
                                 <i class="fas fa-sync-alt"></i> Recarregar
                             </button>
                         </div>

@@ -132,30 +132,76 @@ html[data-theme="dark"] body td {
   color: var(--sw-text-2);
 }
 
+/* Campos de formulário bitemáticos (Claro e Escuro) — cobertura total com autoridade */
+html[data-theme] input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="image"]),
+html[data-theme] select,
+html[data-theme] textarea,
+html[data-theme] .form-control,
+html[data-theme] .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="image"]),
+html[data-theme] .form-group select,
+html[data-theme] .form-group textarea,
+html[data-theme] .filter-group input,
+html[data-theme] .filter-group select,
+html[data-theme] .filter-container input,
+html[data-theme] .filter-container select,
+html[data-theme] .search-box input,
+html[data-theme] .filters-grid input,
+html[data-theme] .filters-grid select,
+html[data-theme] .filters-row input,
+html[data-theme] .filters-row select,
+html[data-theme] .data-table-filter,
+html[data-theme] .species-list-filter-input,
+html[data-theme] .rlc-page-size-select,
+html[data-theme] .rlc-density-select,
+html[data-theme] .table-container input:not([type="checkbox"]):not([type="radio"]):not([type="button"]),
+html[data-theme] .table-container select,
+html[data-theme] .modal-body input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="image"]),
+html[data-theme] .modal-body select,
+html[data-theme] .modal-body textarea,
+html[data-theme] .modal-content input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="image"]),
+html[data-theme] .modal-content select,
+html[data-theme] .modal-content textarea,
+html[data-theme] div[id*="Modal"] input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="image"]),
+html[data-theme] div[id*="Modal"] select,
+html[data-theme] div[id*="Modal"] textarea,
+html[data-theme] #dataRomaneio,
+html[data-theme] #romaneioData,
+html[data-theme] #dataRomaneioTora {
+  background: var(--sw-input-bg) !important;
+  background-color: var(--sw-input-bg) !important;
+  border: 1px solid var(--sw-input-border) !important;
+  color: var(--sw-text-1) !important;
+}
+
 html[data-theme="dark"] input,
 html[data-theme="dark"] select,
 html[data-theme="dark"] textarea {
-  background: var(--sw-input-bg);
+  color-scheme: dark;
+}
+
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  color-scheme: light;
+}
+
+html[data-theme] input::placeholder,
+html[data-theme] textarea::placeholder {
+  color: var(--sw-input-placeholder) !important;
+}
+
+html[data-theme] select option {
   background-color: var(--sw-input-bg);
-  border-color: var(--sw-input-border);
   color: var(--sw-text-1);
 }
 
-html[data-theme="dark"] input::placeholder,
-html[data-theme="dark"] textarea::placeholder {
-  color: var(--sw-input-placeholder);
-}
-
-/* Família romaneios: IDs com fundo chapado + !important no romaneio-comum.css.
-   O !important aqui é cirúrgico e documentado: só onde o legado usa !important. */
-html[data-theme="dark"] #dataRomaneio,
-html[data-theme="dark"] #romaneioData,
-html[data-theme="dark"] #dataRomaneioTora {
-  background: var(--sw-input-bg) !important;
-  background-color: var(--sw-input-bg) !important;
-  border-color: var(--sw-input-border) !important;
-  color: var(--sw-text-1) !important;
-  color-scheme: dark;
+html[data-theme] input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="image"]):focus,
+html[data-theme] select:focus,
+html[data-theme] textarea:focus {
+  border-color: var(--sw-focus) !important;
+  outline: 2px solid var(--sw-focus) !important;
+  outline-offset: -1px;
+  box-shadow: 0 0 0 3px var(--sw-focus-ring) !important;
 }
 
 /* Zebra + vazio da tabela de itens */
@@ -671,7 +717,7 @@ html[data-theme="dark"] .romaneio-print-config-trigger {
 
 /* Fase 13 — perfil do usuário */
 html[data-theme="dark"] body .profile-header {
-  background: linear-gradient(135deg, #ff7a45 0%, #fe6a00 50%, #c83818 100%);
+  background: var(--sw-gradient);
 }
 
 html[data-theme="dark"] body .profile-card {
@@ -821,10 +867,10 @@ html[data-theme="dark"] body .filters-section {
 }
 
 html[data-theme="dark"] body .table th {
-  background: var(--sw-surface-2);
-  background-color: var(--sw-surface-2);
-  color: var(--sw-text-1);
-  border-color: var(--sw-border);
+  background: var(--sw-brand);
+  background-color: var(--sw-brand);
+  color: var(--sw-on-brand);
+  border-color: var(--sw-brand-dark);
 }
 
 html[data-theme="dark"] body .stat-card {
@@ -910,13 +956,14 @@ html[data-theme="dark"] body .acoes-toggle-button:hover {
   border-color: var(--sw-brand);
 }
 
-/* Fase 9 onda 4 — restantes do crawler (filtros de estoque/finanças, tabelas, fluxo) */
+/* Fase 9 onda 4 — restantes do crawler (filtros de estoque/finanças, tabelas, fluxo).
+   Cabeçalhos seguem a Marca & Identidade do Configurações de Tema (bitemático). */
 html[data-theme="dark"] body .table th,
 html[data-theme="dark"] body table thead th {
-  background: var(--sw-surface-2) !important;
-  background-color: var(--sw-surface-2) !important;
-  color: var(--sw-text-1) !important;
-  border-color: var(--sw-border) !important;
+  background: var(--sw-brand) !important;
+  background-color: var(--sw-brand) !important;
+  color: var(--sw-on-brand) !important;
+  border-color: var(--sw-brand-dark) !important;
 }
 
 html[data-theme="dark"] body .table td,
@@ -1331,24 +1378,24 @@ html[data-theme="dark"] body .saldo-info {
   color: var(--sw-text-2);
 }
 
-html[data-theme="dark"] body #listaModal .filter-container input,
-html[data-theme="dark"] body #romaneioListModal .filter-container input,
-html[data-theme="dark"] body #listaModal .search-box input,
-html[data-theme="dark"] body #romaneioListModal .search-box input {
-  background: var(--sw-input-bg);
-  background-color: var(--sw-input-bg);
-  border-color: var(--sw-input-border);
-  color: var(--sw-text-1);
+html[data-theme] body #listaModal .filter-container input,
+html[data-theme] body #romaneioListModal .filter-container input,
+html[data-theme] body #listaModal .search-box input,
+html[data-theme] body #romaneioListModal .search-box input {
+  background: var(--sw-input-bg) !important;
+  background-color: var(--sw-input-bg) !important;
+  border-color: var(--sw-input-border) !important;
+  color: var(--sw-text-1) !important;
 }
 
-html[data-theme="dark"] body #listaModal .rlc-page-size-select,
-html[data-theme="dark"] body #listaModal .rlc-density-select,
-html[data-theme="dark"] body #romaneioListModal .rlc-page-size-select,
-html[data-theme="dark"] body #romaneioListModal .rlc-density-select {
-  background: var(--sw-input-bg);
-  background-color: var(--sw-input-bg);
-  border-color: var(--sw-input-border);
-  color: var(--sw-text-1);
+html[data-theme] body #listaModal .rlc-page-size-select,
+html[data-theme] body #listaModal .rlc-density-select,
+html[data-theme] body #romaneioListModal .rlc-page-size-select,
+html[data-theme] body #romaneioListModal .rlc-density-select {
+  background: var(--sw-input-bg) !important;
+  background-color: var(--sw-input-bg) !important;
+  border-color: var(--sw-input-border) !important;
+  color: var(--sw-text-1) !important;
 }
 
 /* ===== Fase 17 — toolbar Relatórios (vendas): linha própria full-width.

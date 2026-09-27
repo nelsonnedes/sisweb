@@ -2437,18 +2437,18 @@ async function abrirListaRomaneios() {
         
         modal.innerHTML = `
             <div class="modal-content modal-large">
-                <div class="modal-header" style="background-color: #2c3e50; color: white;">
+                <div class="modal-header" style="background: var(--sw-gradient); color: var(--sw-on-brand);">
                     <h3 class="modal-title">Lista de Romaneios de Tora</h3>
-                        <span class="close-modal" style="color: white; cursor: pointer;">&times;</span>
+                        <span class="close-modal" style="color: var(--sw-on-brand); cursor: pointer;">&times;</span>
                 </div>
                 <div class="modal-body">
                         <div style="margin-bottom: 15px;">
                             <input type="text" id="romaneioListFilter" placeholder="Filtrar por fornecedor, espÃ©cie ou data..." 
-                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                                   style="width: 100%; padding: 10px; border: 1px solid var(--sw-input-border); border-radius: 4px; font-size: 14px; background: var(--sw-input-bg); color: var(--sw-text-1);">
                         </div>
                         <div class="table-container" style="max-height: 500px; overflow-y: auto; overflow-x: visible; position: relative;">
                             <table class="table" style="width: 100%;">
-                                <thead style="position: sticky; top: 0; background-color: #2c3e50; color: white; z-index: 1;">
+                                <thead style="position: sticky; top: 0; background: var(--sw-brand); color: var(--sw-on-brand); z-index: 1;">
                                     <tr>
                                         <th style="padding: 10px;">Data</th>
                                         <th style="padding: 10px;">Fornecedor</th>

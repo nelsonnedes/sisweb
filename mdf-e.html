@@ -11,9 +11,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDF-e - Manifesto de Documentos Fiscais</title>
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -46,7 +46,7 @@
             --dark-color: #2c3e50;
             --success-color: #2ecc71;
             --warning-color: #f39c12;
-            --danger-color: #e74c3c;
+            --danger-color: var(--sw-danger);
         }
 
         * {
@@ -222,7 +222,7 @@
         }
 
         .btn-warning:hover {
-            background-color: #e67e22;
+            background-color: var(--sw-brand);
         }
 
         .btn-danger {
@@ -231,7 +231,8 @@
         }
 
         .btn-danger:hover {
-            background-color: #c0392b;
+            background-color: var(--sw-danger);
+            filter: brightness(0.88);
         }
 
         .btn-small {
@@ -916,8 +917,8 @@
     </div>
 
     <script src="auth.js?v=4173d8da9343"></script>
-    <script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
     <!-- Legacy inline implementation kept as a non-executable migration reference. -->
     <script type="text/plain" id="legacy-mdfe-implementation">
@@ -1225,6 +1226,6 @@
         console.log("✅ firebaseService carregado no mdf-e.html");
     </script>
     <script src="mdfe-xml-builder.js?v=5f468745ae5d"></script>
-    <script src="mdf-e.js?v=bcceefde81e8"></script>
+    <script src="mdf-e.js?v=fc645a33752c"></script>
 </body>
 </html>

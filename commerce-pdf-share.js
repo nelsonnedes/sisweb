@@ -418,10 +418,10 @@
                 align-items: center;
                 padding: 12px 14px;
                 margin-bottom: 16px;
-                border: 1px solid #d6dde8;
-                border-top: 5px solid #2c3e50;
+                border: 1px solid var(--sw-border);
+                border-top: 5px solid var(--sw-brand);
                 border-radius: 6px;
-                background: #ffffff;
+                background: var(--sw-surface);
                 break-inside: avoid;
             }
 
@@ -575,15 +575,15 @@
 
             .sisweb-print-table th,
             table th {
-                background: #2c3e50 !important;
-                color: #fff !important;
+                background: var(--sw-brand) !important;
+                color: var(--sw-on-brand) !important;
                 font-weight: 800;
                 text-align: left;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
                 /* Fallback para navegadores com "Background graphics" desativado */
-                box-shadow: inset 0 0 0 1000px #2c3e50 !important;
+                box-shadow: inset 0 0 0 1000px var(--sw-brand) !important;
             }
 
             .sisweb-print-table tbody tr:nth-child(even),
@@ -611,9 +611,9 @@
                 justify-content: space-between;
                 margin: 0 0 14px;
                 padding: 10px 12px;
-                border: 1px solid #d6dde8;
+                border: 1px solid var(--sw-border);
                 border-radius: 6px;
-                background: #f8fafc;
+                background: var(--sw-surface-2);
             }
 
             .sisweb-print-back-btn {
@@ -622,17 +622,17 @@
                 min-height: 40px;
                 padding: 0 16px;
                 border-radius: 6px;
-                border: 1px solid #cbd5e1;
-                background: #fff;
-                color: #24384d;
+                border: 1px solid var(--sw-input-border);
+                background: var(--sw-input-bg);
+                color: var(--sw-text-1);
                 font-weight: 700;
                 cursor: pointer;
             }
 
             .sisweb-print-back-btn.primary {
-                border-color: #2c3e50;
-                background: #2c3e50;
-                color: #fff;
+                border-color: var(--sw-brand);
+                background: var(--sw-brand);
+                color: var(--sw-on-brand);
             }
 
             .status-badge {
@@ -668,8 +668,8 @@
             .sisweb-print-total-row.total {
                 margin-top: 5px;
                 padding-top: 8px;
-                border-top: 2px solid #2c3e50;
-                color: #1f2937;
+                border-top: 2px solid var(--sw-brand);
+                color: var(--sw-text-1);
                 font-size: 13px;
                 font-weight: 800;
             }

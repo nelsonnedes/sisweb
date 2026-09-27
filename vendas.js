@@ -6105,11 +6105,11 @@ function mostrarPreviewConama(resumoConama, usoInfo) {
 
     if (uso) {
         const moduloLabel = uso.modulo === 'compra' ? 'Compra' : 'Venda';
-        html += `<div style="background:#fdf2f2;border:1px solid #f5c6cb;color:#721c24;padding:10px 12px;border-radius:4px;margin-bottom:10px;font-size:13px;">`
+        html += `<div style="background:var(--sw-alert-warning-bg);border:1px solid var(--sw-warning);color:var(--sw-alert-title);padding:10px 12px;border-radius:4px;margin-bottom:10px;font-size:13px;">`
             + `<strong><i class="fas fa-lock"></i> Romaneio já utilizado no pedido de ${escaparHtmlRomaneioVendas(moduloLabel)} Nº ${escaparHtmlRomaneioVendas(uso.pedidoNumero)}.</strong><br>`
             + `<span>Os itens abaixo estão desativados. O botão "Carregar Itens" ficará bloqueado para este romaneio.</span></div>`;
     } else {
-        html += '<p style="color:#666;font-size:12px;margin:0 0 10px 0;">Desmarque ou exclua os itens que <strong>não</strong> devem ir para o pedido. O botão "Carregar Itens" carrega apenas o que permanecer selecionado.</p>';
+        html += '<p style="color:var(--sw-text-3);font-size:12px;margin:0 0 10px 0;">Desmarque ou exclua os itens que <strong>não</strong> devem ir para o pedido. O botão "Carregar Itens" carrega apenas o que permanecer selecionado.</p>';
     }
 
     if (Object.keys(resumoConama).length === 0) {
@@ -6147,7 +6147,7 @@ function mostrarPreviewConama(resumoConama, usoInfo) {
                     linhaModoVendas = `Modo <strong>Resumo por Espécie</strong>: ${Object.keys(resumoConama).length} grupo(s) — será carregado 1 item por grupo.`;
                 }
                 if (linhaModoVendas) {
-                    html += `<p style="color:#0c5460;background:#d1ecf1;border:1px solid #bee5eb;font-size:12px;margin:0 0 10px 0;padding:8px 10px;border-radius:4px;"><i class="fas fa-layer-group"></i> ${linhaModoVendas}</p>`;
+                    html += `<p style="color:var(--sw-alert-title);background:var(--sw-alert-info-bg);border:1px solid var(--sw-info);font-size:12px;margin:0 0 10px 0;padding:8px 10px;border-radius:4px;"><i class="fas fa-layer-group"></i> ${linhaModoVendas}</p>`;
                 }
             } catch (_) { /* banner best-effort */ }
         }
@@ -6155,8 +6155,8 @@ function mostrarPreviewConama(resumoConama, usoInfo) {
         Object.keys(resumoConama).forEach(especie => {
             const especieSafe = escaparHtmlRomaneioVendas(especie);
             const especieLimpaPrev = String(especie || '').replace(/^\s*[-–—]\s*/, '').trim();
-            html += `<div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: white;">`;
-            html += `<h5 style="margin: 0 0 8px 0; color: #2c3e50;">${especieSafe}</h5>`;
+            html += `<div style="border: 1px solid var(--sw-border); padding: 10px; border-radius: 4px; background: var(--sw-surface);">`;
+            html += `<h5 style="margin: 0 0 8px 0; color: var(--sw-text-1);">${especieSafe}</h5>`;
 
             // Linha genérica: uma por unidade de carga do modo ativo (fiel à carga).
             const renderGrupoPrev = (kind, chave, tituloSafe, subSafe, precoUnitario) => {
@@ -6169,25 +6169,25 @@ function mostrarPreviewConama(resumoConama, usoInfo) {
                 const disabledAttr = desativado ? 'disabled' : '';
                 const rowOpacity = (excluido || desativado) ? 'opacity:0.55;' : '';
 
-                let row = `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:4px;padding:6px 0;border-bottom:1px solid #eee;${rowOpacity}">`;
+                let row = `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:4px;padding:6px 0;border-bottom:1px solid var(--sw-border);${rowOpacity}">`;
                 row += `<input type="checkbox" data-rv-pk="${pk}" ${checkedAttr} ${disabledAttr} onchange="window.romaneioPreviewToggleVendas(this)" title="Incluir este item no carregamento" style="margin-top:4px;">`;
                 row += `<div style="flex: 1;">`;
                 row += `<span style="font-weight: 600;">${tituloSafe}</span><br>`;
-                row += `<span style="color: #666; font-size: 12px;">${subSafe}</span><br>`;
+                row += `<span style="color: var(--sw-text-3); font-size: 12px;">${subSafe}</span><br>`;
                 if (desativado) {
                     const moduloLabel = uso.modulo === 'compra' ? 'Compra' : 'Venda';
-                    row += `<span style="display:inline-block;margin-top:4px;background:#e9ecef;color:#495057;font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escaparHtmlRomaneioVendas(uso.pedidoNumero)} (${escaparHtmlRomaneioVendas(moduloLabel)})</span>`;
+                    row += `<span style="display:inline-block;margin-top:4px;background:var(--sw-surface-2);color:var(--sw-text-2);font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escaparHtmlRomaneioVendas(uso.pedidoNumero)} (${escaparHtmlRomaneioVendas(moduloLabel)})</span>`;
                 } else if (excluido) {
-                    row += `<span style="display:inline-block;margin-top:4px;background:#fff3cd;color:#856404;font-size:11px;padding:2px 8px;border-radius:10px;">Excluído — não será carregado</span>`;
+                    row += `<span style="display:inline-block;margin-top:4px;background:var(--sw-warning-bg);color:var(--sw-warning);font-size:11px;padding:2px 8px;border-radius:10px;">Excluído — não será carregado</span>`;
                 }
                 row += `</div>`;
                 row += `<div style="text-align: right;">`;
                 if (precoUnitario > 0) {
-                    row += `<span style="color: #27ae60; font-weight: 600;">${formatCurrency(precoUnitario)}</span><br>`;
-                    row += `<span style="color: #666; font-size: 11px;">por m³</span>`;
+                    row += `<span style="color: var(--sw-success); font-weight: 600;">${formatCurrency(precoUnitario)}</span><br>`;
+                    row += `<span style="color: var(--sw-text-3); font-size: 11px;">por m³</span>`;
                 } else {
-                    row += `<span style="color: #e74c3c; font-size: 12px;">Sem preço</span><br>`;
-                    row += `<span style="color: #f39c12; font-size: 11px;">Padrão: ${formatCurrency(VendasConfig.precoPorM3Padrao)}</span>`;
+                    row += `<span style="color: var(--sw-danger); font-size: 12px;">Sem preço</span><br>`;
+                    row += `<span style="color: var(--sw-warning); font-size: 11px;">Padrão: ${formatCurrency(VendasConfig.precoPorM3Padrao)}</span>`;
                 }
                 row += `<br><button type="button" data-rv-pk="${pk}" ${disabledAttr} onclick="window.romaneioPreviewExcluirVendas(this)" style="margin-top:6px;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid ${excluido ? '#28a745' : '#dc3545'};background:${excluido ? '#e8f5e9' : '#fff'};color:${excluido ? '#1e7e34' : '#c82333'};cursor:${desativado ? 'not-allowed' : 'pointer'};" title="${excluido ? 'Reincluir este item' : 'Excluir este item do carregamento'}">${excluido ? '<i class="fas fa-undo"></i> Reincluir' : '<i class="fas fa-trash"></i> Excluir'}</button>`;
                 row += `</div>`;

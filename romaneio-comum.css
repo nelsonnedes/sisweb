@@ -8,14 +8,14 @@
 }
 
 #romaneioTable th {
-    background-color: #2c3e50;
-    color: white;
+    background-color: var(--sw-brand);
+    color: var(--sw-on-brand);
     font-weight: bold;
     text-align: left;
     padding: 8px;
     height: 32px;
     font-size: 13px;
-    border: 1px solid #1a2942;
+    border: 1px solid var(--sw-brand-dark);
 }
 
 #romaneioTable td {
@@ -976,13 +976,13 @@ textarea:focus {
 #clientListModal .table tbody tr:nth-child(even) td,
 #fornecedorListModal .table tbody tr:nth-child(even) td,
 #speciesListModal .table tbody tr:nth-child(even) td {
-    background: #f8fbff !important;
+    background: var(--sw-surface-2) !important;
 }
 
 #clientListModal .table tbody tr:hover td,
 #fornecedorListModal .table tbody tr:hover td,
 #speciesListModal .table tbody tr:hover td {
-    background: #eef5ff !important;
+    background: var(--sw-hover) !important;
 }
 
 #clientListModal .table th:last-child,

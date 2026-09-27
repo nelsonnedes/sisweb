@@ -11,7 +11,7 @@
   --sw-brand-light: #ff7a45;
   --sw-brand-dark: #c83818;
   --sw-gradient: linear-gradient(135deg, #ff7a45 0%, #fe6a00 50%, #c83818 100%);
-  --sw-brand-soft: #fff1e8;
+  --sw-brand-soft: #2d1a0e;
   --sw-on-brand: #ffffff;
 
   /* Superfícies + texto (timber escuro) */
@@ -96,6 +96,16 @@
 html[data-theme="light"] {
   color-scheme: light;
 
+  /* Marca Sisweb (Claro) */
+  --sw-brand: #fe6a00;
+  --sw-brand-light: #ff7a45;
+  --sw-brand-dark: #c83818;
+  --sw-gradient: linear-gradient(135deg, #ff7a45 0%, #fe6a00 50%, #c83818 100%);
+  --sw-brand-soft: #fff1e8;
+  --sw-on-brand: #ffffff;
+  --sw-focus: #fe6a00;
+  --sw-focus-ring: rgba(254, 106, 0, 0.25);
+
   /* Superfícies + texto (canvas claro) */
   --sw-bg: #f8f9fa;
   --sw-surface: #ffffff;
@@ -104,6 +114,12 @@ html[data-theme="light"] {
   --sw-text-1: #111827;
   --sw-text-2: #4b5563;
   --sw-text-3: #6b7280;
+
+  /* Semânticas */
+  --sw-success: #16a34a;
+  --sw-warning: #f59e0b;
+  --sw-danger: #dc2626;
+  --sw-info: #2563eb;
 
   /* Ilha do menu + dropdown (claros) */
   --sw-island-bg: #ffffff;
@@ -146,4 +162,5 @@ html[data-theme="light"] {
 
   --sw-shadow-card: 0 24px 48px rgba(17, 24, 39, 0.12);
   --sw-shadow-pop: 0 16px 32px rgba(17, 24, 39, 0.12);
+  --sw-shadow-brand: 0 6px 18px rgba(254, 106, 0, 0.35);
 }

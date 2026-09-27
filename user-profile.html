@@ -15,9 +15,9 @@
 <title>Meu Perfil - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -44,8 +44,8 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
-<script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+<script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,7 +78,7 @@
             border-radius: 16px;
             padding: 40px 30px;
             text-align: center;
-            color: white;
+            color: var(--sw-on-brand);
             margin-bottom: 30px;
             position: relative;
             overflow: hidden;
@@ -248,7 +248,7 @@
 
         .edit-btn {
             background: var(--sw-gradient);
-            color: white;
+            color: var(--sw-on-brand);
             border: none;
             padding: 8px 16px;
             border-radius: 8px;
@@ -354,7 +354,7 @@
 
         .btn-primary {
             background: var(--sw-gradient);
-            color: white;
+            color: var(--sw-on-brand);
             border: none;
             padding: 12px 24px;
             border-radius: 8px;

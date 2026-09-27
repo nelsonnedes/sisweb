@@ -86,35 +86,39 @@
             }
 
             .stock-btn-edit {
-                background-color: #3498db !important;
-                color: #ffffff !important;
+                background-color: var(--sw-brand) !important;
+                color: var(--sw-on-brand) !important;
             }
             .stock-btn-edit:hover {
-                background-color: #2980b9 !important;
+                background-color: var(--sw-brand) !important;
+                filter: brightness(0.88);
             }
 
             .stock-btn-delete {
-                background-color: #e74c3c !important;
+                background-color: var(--sw-danger) !important;
                 color: #ffffff !important;
             }
             .stock-btn-delete:hover {
-                background-color: #c0392b !important;
+                background-color: var(--sw-danger) !important;
+                filter: brightness(0.88);
             }
 
             .stock-btn-history {
-                background-color: #6f42c1 !important;
-                color: #ffffff !important;
+                background-color: var(--sw-brand) !important;
+                color: var(--sw-on-brand) !important;
             }
             .stock-btn-history:hover {
-                background-color: #59359a !important;
+                background-color: var(--sw-brand) !important;
+                filter: brightness(0.88);
             }
 
             .stock-btn-down {
-                background-color: #e67e22 !important;
+                background-color: var(--sw-warning) !important;
                 color: #ffffff !important;
             }
             .stock-btn-down:hover {
-                background-color: #d35400 !important;
+                background-color: var(--sw-warning) !important;
+                filter: brightness(0.88);
             }
 
             /* === MANIPULADOR DE REDIMENSIONAMENTO DE COLUNA === */
@@ -131,7 +135,7 @@
 
             .stock-resizer:hover,
             .stock-resizer.resizing {
-                background-color: #3498db;
+                background-color: var(--sw-brand);
             }
 
             /* === CARDS MODERNOS DE RESUMO (SUMMARY) === */

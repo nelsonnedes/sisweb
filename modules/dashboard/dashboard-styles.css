@@ -14,14 +14,14 @@
    ======================================================================== */
 
 :root {
-    --dashboard-primary: #fe6a00;
-    --dashboard-success: #16a34a;
-    --dashboard-warning: #f59e0b;
-    --dashboard-danger: #dc2626;
-    --dashboard-info: #2563eb;
-    --dashboard-secondary: #6c757d;
-    --dashboard-light: #f8f9fa;
-    --dashboard-dark: #2c3e50;
+    --dashboard-primary: var(--sw-brand);
+    --dashboard-success: var(--sw-success);
+    --dashboard-warning: var(--sw-warning);
+    --dashboard-danger: var(--sw-danger);
+    --dashboard-info: var(--sw-info);
+    --dashboard-secondary: var(--sw-text-3);
+    --dashboard-light: var(--sw-surface-2);
+    --dashboard-dark: var(--sw-text-1);
     
     --dashboard-border-radius: 12px;
     --dashboard-box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -148,7 +148,8 @@
 }
 
 .btn-refresh:hover {
-    background: #2980b9;
+    background: var(--sw-brand);
+    filter: brightness(0.88);
     transform: translateY(-2px);
 }
 

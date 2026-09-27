@@ -12,9 +12,9 @@
     <title>Romaneio PES - Sistema Sisweb</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -36,8 +36,8 @@
     </script>
     <link rel="stylesheet" href="romaneio-comum.css?v=1c15014e677a">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
-    <script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
@@ -198,8 +198,8 @@
         }
 
         button {
-            background-color: #2c3e50;
-            color: white;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             padding: 10px 20px;
             border: none;
             border-radius: 4px;
@@ -208,7 +208,7 @@
         }
 
         button:hover {
-            background-color: #34495e;
+            background-color: var(--sw-brand-dark);
         }
 
         .btn-adicionar {
@@ -220,20 +220,19 @@
         }
 
         .btn-salvar {
-            background-color: #3498db;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
 
         .btn-salvar:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-brand-dark);
         }
 
         .btn-listar {
-            background-color: #f39c12;
+            background-color: var(--sw-brand);
         }
 
-        .btn-listar:hover {
-            background-color: #e67e22;
-        }
+        .btn-listar:hover { background-color: var(--sw-brand); filter: brightness(0.88); }
 
         .buttons-row {
             display: flex;
@@ -321,8 +320,8 @@
         }
 
         th {
-            background-color: #2c3e50;
-            color: white;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             font-size: 13px;
             height: 28px;
         }
@@ -337,7 +336,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            background-color: #3498db;
+            background-color: var(--sw-info);
             color: white;
             font-size: 12px;
             height: 24px;
@@ -348,7 +347,8 @@
         }
 
         .btn-editar:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-info);
+            filter: brightness(0.88);
         }
 
         .btn-excluir {
@@ -357,7 +357,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            background-color: #e74c3c;
+            background-color: var(--sw-danger);
             color: white;
             font-size: 12px;
             height: 24px;
@@ -368,11 +368,12 @@
         }
 
         .btn-excluir:hover {
-            background-color: #c0392b;
+            background-color: var(--sw-danger);
+            filter: brightness(0.88);
         }
 
         .btn-atualizar-item {
-            background-color: #f39c12 !important;
+            background-color: var(--sw-brand) !important;
         }
 
         .btn-atualizar-item:hover {
@@ -441,7 +442,7 @@
         }
 
         .autocomplete-input:focus {
-            border-color: #3498db; /* Destacar borda ao focar */
+            border-color: var(--sw-brand); /* Destacar borda ao focar */
             box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1); /* Sombra sutil ao focar */
         }
 
@@ -475,13 +476,13 @@
         }
 
         .autocomplete-icon:hover {
-            color: #3498db;
+            color: var(--sw-brand);
         }
 
         .autocomplete-icon:focus-visible {
             outline: 2px solid rgba(52, 152, 219, 0.35);
             outline-offset: 2px;
-            color: #3498db;
+            color: var(--sw-brand);
         }
 
         .autocomplete-icon i {
@@ -493,7 +494,7 @@
         /* Estilos para os botões da tabela de clientes */
         .action-button,
         .client-action-button {
-            background-color: #3498db;
+            background-color: var(--sw-info);
             color: white;
             border: none;
             width: 32px;
@@ -510,7 +511,8 @@
 
         .action-button:hover,
         .client-action-button:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-info);
+            filter: brightness(0.88);
             transform: translateY(-1px);
         }
 
@@ -525,41 +527,45 @@
         }
 
         .action-button.edit-button {
-            background-color: #3498db;
+            background-color: var(--sw-brand);
         }
 
         .action-button.edit-button:hover {
-            background-color: #2980b9;
+            background-color: var(--sw-brand);
+            filter: brightness(0.88);
         }
 
         .action-button.select-button {
-            background-color: #28a745;
+            background-color: var(--sw-brand);
         }
 
         .action-button.select-button:hover {
-            background-color: #218838;
+            background-color: var(--sw-brand);
+            filter: brightness(0.88);
         }
 
         .action-button.delete-button {
-            background-color: #e74c3c;
+            background-color: var(--sw-danger);
         }
 
         .action-button.delete-button:hover {
-            background-color: #c0392b;
+            background-color: var(--sw-danger);
+            filter: brightness(0.88);
         }
 
         .action-button.clone-button,
         #romaneioListModal .clone-button {
-            background-color: #6f42c1 !important;
-            border-color: #6f42c1 !important;
-            color: #ffffff !important;
+            background-color: var(--sw-brand) !important;
+            border-color: var(--sw-brand) !important;
+            color: var(--sw-on-brand) !important;
         }
 
         .action-button.clone-button:hover,
         #romaneioListModal .clone-button:hover {
-            background-color: #59359a !important;
-            border-color: #59359a !important;
-            color: #ffffff !important;
+            background-color: var(--sw-brand) !important;
+            border-color: var(--sw-brand) !important;
+            color: var(--sw-on-brand) !important;
+            filter: brightness(0.88);
         }
 
         .btn-group {
@@ -575,8 +581,8 @@
         }
 
         .modal table th {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
             padding: 6px 8px;
             text-align: left;
             font-weight: bold;
@@ -622,9 +628,9 @@
         }
 
         .pagination-controls button.active {
-            background: #2c3e50;
-            color: #fff;
-            border-color: #2c3e50;
+            background: var(--sw-brand);
+            color: var(--sw-on-brand);
+            border-color: var(--sw-brand);
         }
 
         .pagination-controls button:disabled {
@@ -660,7 +666,7 @@
             padding: 14px 20px;
             border-radius: 0;
             border-bottom: 1px solid rgba(255,255,255,0.12);
-            background: #2c3e50;
+            background: var(--sw-gradient);
         }
 
         #romaneioListModal .modal-title {
@@ -750,8 +756,8 @@
             position: sticky;
             top: 0;
             z-index: 2;
-            background: #2c3e50;
-            color: #fff;
+            background: var(--sw-brand);
+            color: var(--sw-on-brand);
             font-size: 13px;
             text-transform: none;
             font-weight: 600;
@@ -767,8 +773,8 @@
         #romaneioListModal .modal-footer {
             margin-top: 0;
             padding: 12px 18px 16px;
-            border-top: 1px solid #e3e9f0;
-            background: #f8fbff;
+            border-top: 1px solid var(--sw-border);
+            background: var(--sw-surface-2);
         }
 
         .autocomplete-suggestions {
@@ -827,18 +833,18 @@
             padding: 15px 20px;
             margin: -20px -20px 20px -20px;
             border-radius: 8px 8px 0 0;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
             border-bottom: 1px solid var(--sw-border) ;
         }
 
         .modal-title {
             margin: 0;
-            color: white;
+            color: var(--sw-on-brand);
         }
 
         .close-modal {
-            color: white;
+            color: var(--sw-on-brand);
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
@@ -929,7 +935,7 @@
             background-color: var(--sw-surface);
             min-width: 200px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            border: 2px solid #3498db;
+            border: 2px solid var(--sw-brand);
             border-radius: 6px;
             z-index: 9999999 !important;
             pointer-events: auto;
@@ -953,7 +959,7 @@
 
         .dropdown-content a:hover {
             background-color: var(--sw-surface-2) ;
-            color: #3498db;
+            color: var(--sw-brand);
         }
 
         .dropdown-content a i {
@@ -1464,7 +1470,7 @@
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="romaneio-print-config.js?v=0c4709b882a7"></script>
-    <script src="commerce-pdf-share.js?v=41257785cd5a"></script>
+    <script src="commerce-pdf-share.js?v=e6699735105a"></script>
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pes" data-target="clientListBody"></script>
     <script src="modules/core/romaneio-list-columns.js?v=4a678c769887" data-page="pes" data-target="romaneioListBody"></script>
     <script>
@@ -3092,7 +3098,7 @@
                 clientListBody.innerHTML = `
                     <tr>
                         <td colspan="6" style="text-align: center; padding: 24px; color: #475569;">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 20px; margin-bottom: 8px; display: block; color: #3498db;"></i>
+                            <i class="fas fa-spinner fa-spin" style="font-size: 20px; margin-bottom: 8px; display: block; color: var(--sw-brand);"></i>
                             Carregando clientes...
                         </td>
                     </tr>
@@ -4084,7 +4090,7 @@
                 romaneioListBody.innerHTML = `
                     <tr>
                         <td colspan="6" style="text-align: center; padding: 24px; color: #475569;">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 20px; margin-bottom: 8px; display: block; color: #3498db;"></i>
+                            <i class="fas fa-spinner fa-spin" style="font-size: 20px; margin-bottom: 8px; display: block; color: var(--sw-brand);"></i>
                             Carregando romaneios...
                         </td>
                     </tr>
@@ -4865,9 +4871,9 @@
                         .meta-row { display: grid; grid-template-columns: 90px 1fr 70px 1fr; gap: 8px; margin-bottom: 6px; }
                         .meta-row:last-child { margin-bottom: 0; }
                         .meta-label { font-weight: 700; color: #0d2339; }
-                        .print-actions { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin: 0 0 14px; padding: 10px 12px; border: 1px solid #d6dde8; border-radius: 6px; background: #f8fafc; }
-                        .print-actions button { min-height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid #cbd5e1; background: var(--sw-surface); font-weight: 700; cursor: pointer; }
-                        .print-actions button:last-child { border-color: #2c3e50; background: #2c3e50; color: #fff; }
+                        .print-actions { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--sw-border); border-radius: 6px; background: var(--sw-surface-2); }
+                        .print-actions button { min-height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid var(--sw-input-border); background: var(--sw-surface); font-weight: 700; cursor: pointer; }
+                        .print-actions button:last-child { border-color: var(--sw-brand); background: var(--sw-brand); color: var(--sw-on-brand); }
                         :root {
                             --pes-translate-x: 194mm;
                             --pes-last-col-width: 60px;

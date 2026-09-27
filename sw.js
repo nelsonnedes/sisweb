@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-09-25-redesign-fases-1-20-v1';
+const APP_VERSION = '2026-09-26-tema-marca-fase25-v1';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

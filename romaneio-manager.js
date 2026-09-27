@@ -1050,14 +1050,14 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
             <td>${i.volumeLiquido || 0}</td>
         </tr>`).join('');
         
-    const html = `
+const html = `
         <!doctype html>
         <html lang="pt-BR">
         <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Romaneio ${romaneioId}</title>
-        <style>table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:8px}.hdr{display:flex;gap:12px;align-items:center;margin-bottom:12px}.hdr-logo{width:72px;height:72px;border:1px solid #ddd;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center}.hdr-logo img{width:100%;height:100%;object-fit:contain}.hdr-fallback{background:#0d2339;color:#fff;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700}.hdr-info{font-size:12px;line-height:1.35}.hdr-name{font-size:18px;font-weight:700}.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;}@media print{.sisweb-print-back{display:none !important;}}</style>
+        <style>table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:8px}.hdr{display:flex;gap:12px;align-items:center;margin-bottom:12px}.hdr-logo{width:72px;height:72px;border:1px solid #ddd;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center}.hdr-logo img{width:100%;height:100%;object-fit:contain}.hdr-fallback{background:var(--sw-brand-dark);color:var(--sw-on-brand);width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700}.hdr-info{font-size:12px;line-height:1.35}.hdr-name{font-size:18px;font-weight:700}.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid var(--sw-border);border-radius:6px;background:var(--sw-surface-2);}@media print{.sisweb-print-back{display:none !important;}}</style>
         </head>
         <body>
-            <div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>
+            <div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid var(--sw-input-border);background:var(--sw-input-bg);font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid var(--sw-brand);background:var(--sw-brand);color:var(--sw-on-brand);font-weight:700;cursor:pointer;">Imprimir</button></div>
             <div class="hdr">
                 <div class="hdr-logo">${companyLogo ? `<img src="${companyLogo}" alt="Logo">` : '<div class="hdr-fallback">SW</div>'}</div>
                 <div class="hdr-info">

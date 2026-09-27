@@ -20,9 +20,9 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -47,8 +47,8 @@
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
-<script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+<script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     <style>
         * {
             margin: 0;
@@ -98,8 +98,8 @@
         }
 
         .tab.active {
-            color: #2c3e50;
-            border-bottom-color: #3498db;
+            color: var(--sw-brand);
+            border-bottom-color: var(--sw-brand);
             font-weight: bold;
         }
 
@@ -301,12 +301,12 @@
         }
 
         .btn-primary {
-            background: #0d6efd;
-            color: #fff;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
         }
 
         .btn-primary:hover {
-            background: #0b5ed7;
+            background: var(--sw-brand-dark);
         }
 
         .btn-secondary {
@@ -383,25 +383,27 @@
             flex-wrap: wrap;
         }
 
-        .summary-box {
-            background-color: #ecf0f1;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
+.summary-box {
+    background: var(--sw-surface);
+    border: 1px solid var(--sw-border);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
 
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    color: var(--sw-text-2);
+}
 
-        .summary-row:last-child {
-            margin-bottom: 0;
-            font-weight: bold;
-            font-size: 18px;
-            color: #2c3e50;
-        }
+.summary-row:last-child {
+    margin-bottom: 0;
+    font-weight: bold;
+    font-size: 18px;
+    color: var(--sw-text-1);
+}
 
         /* Modal Lista de Pedidos — padronizado (compras/vendas) */
         #listaPedidosModal .modal-content {
@@ -2104,11 +2106,11 @@
     <script src="client-service.js?v=88ee0c4c9e01"></script>
     <script src="cities.js?v=741c80084e54"></script>
     <script src="client-modal-handler.js?v=4772af1e6bfb"></script>
-    <script src="openNewClientModal.js?v=fe2ff86f8dec"></script>
+    <script src="openNewClientModal.js?v=496541ddbaff"></script>
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=24c36f6fc7bc"></script>
-    <script src="commerce-pdf-share.js?v=41257785cd5a"></script>
-    <script src="vendas.js?v=7335821b30c2"></script>
+    <script src="commerce-pdf-share.js?v=e6699735105a"></script>
+    <script src="vendas.js?v=d4852950bc4d"></script>
 </body>
 
 </html>

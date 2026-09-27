@@ -399,9 +399,10 @@ class UtilsTL {
         // Criar toast
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
+        const bgColor = type === 'error' ? 'var(--sw-danger)' : type === 'success' ? 'var(--sw-success)' : 'var(--sw-brand)';
         toast.style.cssText = `
-            background: ${type === 'error' ? '#e74c3c' : type === 'success' ? '#27ae60' : '#3498db'};
-            color: white;
+            background: ${bgColor};
+            color: ${type === 'error' || type === 'success' ? '#fff' : 'var(--sw-on-brand)'};
             padding: 12px 20px;
             border-radius: 6px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);

@@ -17,9 +17,9 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -46,8 +46,8 @@
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
-<script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+<script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     <style>
         * {
             margin: 0;
@@ -95,8 +95,8 @@
         }
 
         .tab.active {
-            color: #2c3e50;
-            border-bottom-color: #3498db;
+            color: var(--sw-brand);
+            border-bottom-color: var(--sw-brand);
             font-weight: bold;
         }
 
@@ -295,11 +295,11 @@
             transition: all 0.2s;
         }
 
-        .btn-primary { 
-            background: #0d6efd; 
-            color: #fff; 
+        .btn-primary {
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
         }
-        .btn-primary:hover { background: #0b5ed7; }
+        .btn-primary:hover { background: var(--sw-brand-dark); }
         
         .btn-secondary { 
             background: #6c757d; 
@@ -491,25 +491,27 @@
             flex-wrap: wrap;
         }
 
-        .summary-box {
-            background-color: #ecf0f1;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
+.summary-box {
+    background: var(--sw-surface);
+    border: 1px solid var(--sw-border);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
 
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    color: var(--sw-text-2);
+}
 
-        .summary-row:last-child {
-            margin-bottom: 0;
-            font-weight: bold;
-            font-size: 18px;
-            color: #2c3e50;
-        }
+.summary-row:last-child {
+    margin-bottom: 0;
+    font-weight: bold;
+    font-size: 18px;
+    color: var(--sw-text-1);
+}
 
         /* Modal de Lista de Pedidos — padronizado com Vendas */
         #listaPedidosModal .modal-content {
@@ -2120,14 +2122,14 @@
         })();
     </script>
     <!-- Carregar gerenciador unificado de espécies para popular o select -->
-    <script src="species-manager.js?v=84869809f23f"></script>
+    <script src="species-manager.js?v=bfd54b61b1ec"></script>
     <!-- Carregar gerenciador de cidades -->
     <script src="cities.js?v=741c80084e54"></script>
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=24c36f6fc7bc"></script>
-    <script src="commerce-pdf-share.js?v=41257785cd5a"></script>
+    <script src="commerce-pdf-share.js?v=e6699735105a"></script>
     <!-- Carregar módulo de Compras -->
-    <script src="compras.js?v=6aca5604c8d7"></script>
+    <script src="compras.js?v=1600844a26aa"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

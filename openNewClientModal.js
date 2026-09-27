@@ -107,8 +107,8 @@ function openClientFormModal(options = {}) {
         
         modal.innerHTML = `
             <div class="modal-content" style="display:flex; flex-direction:column; margin:24px auto; max-width:940px; max-height:calc(100dvh - 48px); overflow:hidden; padding:0; width:min(96vw, 940px);">
-                <div class="modal-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: #fff; padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
-                    <h3 class="modal-title" id="newClientModalLabel" style="color:#fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);">Novo Cliente</h3>
+                <div class="modal-header" style="background: var(--sw-gradient); color: var(--sw-on-brand); padding: 15px 20px; min-height: 56px; border-radius: 8px 8px 0 0;">
+                    <h3 class="modal-title" id="newClientModalLabel" style="color:var(--sw-on-brand); text-shadow: 1px 1px 2px rgba(0,0,0,0.4);">Novo Cliente</h3>
                     <button type="button" id="newClientCloseBtn" class="close-modal" aria-label="Fechar">&times;</button>
                 </div>
                 <div class="modal-body" style="flex:1 1 auto; min-height:0; overflow-y:auto; padding:20px; -webkit-overflow-scrolling:touch;">

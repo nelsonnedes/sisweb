@@ -12,8 +12,8 @@
     <title>Configurações Administrativas - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -194,11 +194,11 @@
         }
 
         button.danger {
-            background-color: #e74c3c;
+            background-color: var(--sw-danger);
         }
 
         button.danger:hover {
-            background-color: #c0392b;
+            background-color: var(--sw-danger);
         }
 
         .success-message {
@@ -990,8 +990,8 @@
         import * as firebaseSvc from './firebaseService.js';
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
-    <script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+    <script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         function getAnyUid(user) {

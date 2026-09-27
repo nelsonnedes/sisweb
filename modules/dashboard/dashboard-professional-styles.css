@@ -19,13 +19,13 @@
    ======================================================================== */
 
 :root {
-    /* Paleta Sisweb Madeireiras (cores.md §3 — marca #FE6A00, semânticas oficiais) */
-    --primary-gradient: linear-gradient(135deg, #ff7a45 0%, #fe6a00 50%, #c83818 100%);
-    --success-gradient: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    --warning-gradient: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    --info-gradient: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
-    --danger-gradient: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
-    --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    /* Paleta Sisweb Madeireiras — usa tokens do tema (--sw-*) */
+    --primary-gradient: var(--sw-gradient);
+    --success-gradient: linear-gradient(135deg, var(--sw-success) 0%, #16a34a 100%);
+    --warning-gradient: linear-gradient(135deg, var(--sw-warning) 0%, #f59e0b 100%);
+    --info-gradient: linear-gradient(135deg, var(--sw-info) 0%, #2563eb 100%);
+    --danger-gradient: linear-gradient(135deg, var(--sw-danger) 0%, #dc2626 100%);
+    --dark-gradient: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%);
     
     /* Sombras profissionais */
     --shadow-light: 0 2px 10px rgba(0,0,0,0.08);
@@ -645,15 +645,15 @@ body {
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: linear-gradient(135deg, #ff7a45 0%, #fe6a00 50%, #c83818 100%);
-    color: white;
+    background: var(--sw-gradient);
+    color: var(--sw-on-brand);
     border: none;
     border-radius: 6px;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(254, 106, 0, 0.3);
+    box-shadow: 0 2px 4px var(--sw-shadow-brand);
 }
 
 .pagination-btn:hover:not(:disabled) {

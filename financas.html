@@ -19,9 +19,9 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -95,8 +95,8 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
-<script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+<script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
 
@@ -141,8 +141,8 @@
         }
 
         .tab.active {
-            background: #007bff;
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
         }
 
         .tab-content {
@@ -165,8 +165,8 @@
         }
 
         .dashboard-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
             padding: 20px;
             border-radius: 10px;
             text-align: center;
@@ -316,8 +316,8 @@
         }
 
         .btn-primary {
-            background: #007bff;
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
         }
 
         .btn-success {
@@ -676,13 +676,13 @@
             margin-bottom: 20px;
         }
 
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #dee2e6;
-        }
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--sw-border);
+}
 
         .summary-row:last-child {
             border-bottom: none;
@@ -711,7 +711,7 @@
             white-space: nowrap;
         }
 
-        .report-actions .btn-primary { background: #0056b3; }
+        .report-actions .btn-primary { background: var(--sw-brand-dark); }
         .report-actions .btn-pdf { background: #495057; color: #fff; }
 
         .finance-report-period {
@@ -1956,9 +1956,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-    .icon.custom-columns { display:inline-block; width:18px; height:18px; margin-left:6px; background:#007bff; border-radius:3px; cursor:pointer; vertical-align:middle; }
+    .icon.custom-columns { display:inline-block; width:18px; height:18px; margin-left:6px; background:var(--sw-brand); border-radius:3px; cursor:pointer; vertical-align:middle; }
     .icon.small-list { display:inline-block; width:18px; height:18px; margin-left:4px; background:#6c757d; border-radius:3px; cursor:pointer; vertical-align:middle; }
-    .icon.custom-columns.active { box-shadow: 0 0 0 2px rgba(0,123,255,0.4) inset; }
+    .icon.custom-columns.active { box-shadow: 0 0 0 2px var(--sw-focus-ring) inset; }
     .modal .columns-list { max-height:320px; overflow:auto; border: 1px solid var(--sw-border) ; border-radius:4px; padding:8px; }
     .columns-item { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px; border-bottom:1px solid #eee; }
     .columns-item button { padding:2px 6px; }
@@ -2471,11 +2471,11 @@
     <script src="storageService.js?v=26c2875bf32d"></script>
     <script src="client-service.js?v=88ee0c4c9e01"></script>
     <script src="schema-migration-contatos.js?v=3a574e7e3324"></script>
-    <script src="commerce-pdf-share.js?v=41257785cd5a"></script>
+    <script src="commerce-pdf-share.js?v=e6699735105a"></script>
     <!-- Geração de Lâmina de Cobrança PIX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/pix-brcode.js?v=1714fb7d79ee"></script>
     <script src="js/commerce-boleto-pix.js?v=304de555a465"></script>
-    <script src="financas.js?v=a87e078026dd"></script>
+    <script src="financas.js?v=8bcba312407e"></script>
 </body>
 </html>

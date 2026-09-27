@@ -12,9 +12,9 @@
     <title>Pré-Romaneio - Sistema</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=3">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -43,8 +43,8 @@
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
-<script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+<script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     
     <style>
         /* ==========================================================================
@@ -52,11 +52,11 @@
            ========================================================================== */
 
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e67e22;
+            --primary-color: var(--sw-brand);
+            --secondary-color: var(--sw-brand);
+            --accent-color: var(--sw-brand);
             --success-color: #27ae60;
-            --danger-color: #e74c3c;
+            --danger-color: var(--sw-danger);
             --light-bg: #f8f9fa;
             --border-color: #ddd;
             --text-color: #2c3e50;
@@ -182,7 +182,7 @@
         }
 
         input:focus, select:focus {
-            border-color: #3498db;
+            border-color: var(--sw-brand);
             outline: none;
             box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
         }
@@ -235,11 +235,11 @@
         .btn-adicionar { background-color: #27ae60; }
         .btn-adicionar:hover { background-color: #219a52; }
 
-        .btn-salvar { background-color: #3498db; }
-        .btn-salvar:hover { background-color: #2980b9; }
+        .btn-salvar { background-color: var(--sw-brand); color: var(--sw-on-brand); }
+        .btn-salvar:hover { background-color: var(--sw-brand-dark); }
 
-        .btn-listar { background-color: #f39c12; }
-        .btn-listar:hover { background-color: #e67e22; }
+        .btn-listar { background-color: var(--sw-brand); color: var(--sw-on-brand); }
+        .btn-listar:hover { background-color: var(--sw-brand); filter: brightness(0.88); }
 
         .btn-limpar { background-color: #95a5a6; }
         .btn-limpar:hover { background-color: #7f8c8d; }
@@ -267,15 +267,15 @@
             margin: 0;
         }
 
-        #tabela-toras .edit-button { background-color: #3498db; }
-        #tabela-toras .edit-button:hover { background-color: #2980b9; }
-        #tabela-serrados .edit-button { background-color: #3498db; }
-        #tabela-serrados .edit-button:hover { background-color: #2980b9; }
+        #tabela-toras .edit-button { background-color: var(--sw-info); }
+        #tabela-toras .edit-button:hover { background-color: var(--sw-info); filter: brightness(0.88); }
+        #tabela-serrados .edit-button { background-color: var(--sw-info); }
+        #tabela-serrados .edit-button:hover { background-color: var(--sw-info); filter: brightness(0.88); }
 
-        #tabela-toras .delete-button { background-color: #e74c3c; }
-        #tabela-toras .delete-button:hover { background-color: #c0392b; }
-        #tabela-serrados .delete-button { background-color: #e74c3c; }
-        #tabela-serrados .delete-button:hover { background-color: #c0392b; }
+        #tabela-toras .delete-button { background-color: var(--sw-danger); }
+        #tabela-toras .delete-button:hover { background-color: var(--sw-danger); filter: brightness(0.88); }
+        #tabela-serrados .delete-button { background-color: var(--sw-danger); }
+        #tabela-serrados .delete-button:hover { background-color: var(--sw-danger); filter: brightness(0.88); }
 
         /* === TABELA === */
         .table-responsive {
@@ -327,15 +327,15 @@
                 background: inherit !important;
                 box-shadow: -2px 0 6px rgba(15,23,42,.08);
             }
-            /* cabeçalho de Ações precisa de fundo escuro para não "vazar" */
+            /* cabeçalho de Ações segue a marca para não "vazar" */
             #tabela-serrados th:last-child, #tabela-toras th:last-child {
-                background: #2c3e50 !important;
+                background: var(--sw-brand) !important;
             }
         }
 
         th {
-            background-color: #2c3e50;
-            color: white;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             font-weight: bold;
             text-transform: uppercase;
             font-size: 12px;
@@ -455,9 +455,9 @@
         }
 
         .pagination-controls button.active {
-            background: #2c3e50;
-            color: #fff;
-            border-color: #2c3e50;
+            background: var(--sw-brand);
+            color: var(--sw-on-brand);
+            border-color: var(--sw-brand);
         }
 
         .pagination-controls button:disabled {
@@ -473,7 +473,7 @@
         .pagination-btn {
             background-color: var(--sw-surface-2) ;
             border: 1px solid var(--sw-border) ;
-            color: #2c3e50;
+            color: var(--sw-text-1);
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
@@ -481,13 +481,13 @@
         }
 
         .pagination-btn:hover:not(:disabled) {
-            background-color: #e9ecef;
+            background-color: var(--sw-hover);
         }
 
         .pagination-btn.active {
-            background-color: #2c3e50;
-            color: white;
-            border-color: #2c3e50;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
+            border-color: var(--sw-brand);
         }
 
         .pagination-btn:disabled {
@@ -555,7 +555,7 @@
         }
 
         .autocomplete-icon:hover { 
-            color: #3498db; 
+            color: var(--sw-brand); 
             background-color: rgba(0,0,0,0.05);
         }
         
@@ -579,7 +579,7 @@
 
         .autocomplete-suggestions div:hover {
             background-color: var(--sw-surface-2) ;
-            color: #3498db;
+            color: var(--sw-brand);
         }
 
         /* === MODAIS PADRONIZADOS === */
@@ -599,8 +599,8 @@
 
         .modal-header {
             padding: 10px 16px;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -615,7 +615,7 @@
             margin: 0;
             font-size: 1.05rem;
             font-weight: 600;
-            color: white;
+            color: var(--sw-on-brand);
             text-align: left;
             flex: 1;
             line-height: 1.2;

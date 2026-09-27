@@ -19,9 +19,9 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="ui-components.css">
     <link rel="stylesheet" href="layout-comum.css">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -45,8 +45,8 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
-<script src="js/sisweb-theme.js?v=1"></script>
-<script src="menu-component.js?v=6c70fd8f5206"></script>
+<script src="js/sisweb-theme.js?v=380b69314121"></script>
+<script src="menu-component.js?v=16bb5786a951"></script>
     <style>
         * {
             margin: 0;
@@ -664,8 +664,8 @@
         }
 
         .tab.active {
-            color: #2c3e50;
-            border-bottom-color: #3498db;
+            color: var(--sw-brand);
+            border-bottom-color: var(--sw-brand);
             font-weight: bold;
         }
 
@@ -1845,12 +1845,12 @@
             margin-bottom: 10px;
         }
 
-        .summary-row:last-child {
-            margin-bottom: 0;
-            font-weight: bold;
-            font-size: 18px;
-            color: #2c3e50;
-        }
+.summary-row:last-child {
+    margin-bottom: 0;
+    font-weight: bold;
+    font-size: 18px;
+    color: var(--sw-text-1);
+}
 
         /* Modais Custom Styles */
         .modal-content.modal-lg {
@@ -3595,7 +3595,7 @@
 
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="species-utils.js?v=1eae09b2ccc7"></script>
-    <script src="species-manager.js?v=84869809f23f"></script>
+    <script src="species-manager.js?v=bfd54b61b1ec"></script>
     <script src="tora-geometry-utils.js?v=6cbd9a42cd32"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
     <script src="modules/core/stock-table-columns.js?v=960ca1bf12c4"></script>
@@ -3671,7 +3671,7 @@
         
         console.log("✅ firebaseService carregado no estoque.html completo");
     </script>
-<script src="commerce-pdf-share.js?v=41257785cd5a"></script>
+<script src="commerce-pdf-share.js?v=e6699735105a"></script>
         <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
         <script src="estoque_produtos.js?v=4a7de766ba3b"></script>
         <script src="estoque.js?v=a9ba2f9b72b1"></script>

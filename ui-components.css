@@ -8,17 +8,18 @@
  */
 
 :root {
-    --primary-color: #2c3e50;
-    --primary-light: #34495e;
-    --secondary-color: #17a2b8;
-    --success-color: #27ae60;
-    --danger-color: #e74c3c;
-    --danger-dark: #c0392b;
-    --warning-color: #f39c12;
-    --light-bg: #f8f9fa;
-    --border-color: #e1e8ed;
-    --text-main: #333;
-    --text-muted: #657786;
+    /* Marca & Identidade via Configurações de Tema (bitemático Claro/Escuro) */
+    --primary-color: var(--sw-brand);
+    --primary-light: var(--sw-brand-light);
+    --secondary-color: var(--sw-info);
+    --success-color: var(--sw-success);
+    --danger-color: var(--sw-danger);
+    --danger-dark: var(--sw-danger);
+    --warning-color: var(--sw-warning);
+    --light-bg: var(--sw-surface-2);
+    --border-color: var(--sw-border);
+    --text-main: var(--sw-text-1);
+    --text-muted: var(--sw-text-3);
     --radius-sm: 4px;
     --radius-md: 8px;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
@@ -68,7 +69,7 @@
 }
 
 /* Cores de Botões */
-.btn-primary { background-color: var(--primary-color); color: #fff; }
+.btn-primary { background-color: var(--primary-color); color: var(--sw-on-brand); }
 .btn-primary:hover:not(:disabled) { background-color: var(--primary-light); }
 
 .btn-success, .btn-salvar, .btn-adicionar { background-color: var(--success-color); color: #fff; }
@@ -117,7 +118,7 @@
 
 .table th {
     background-color: var(--primary-color);
-    color: #ffffff;
+    color: var(--sw-on-brand);
     font-weight: 600;
     white-space: nowrap;
     position: sticky;
@@ -207,7 +208,7 @@
 
 .pagination-controls button.active {
     background: var(--primary-color);
-    color: #fff;
+    color: var(--sw-on-brand);
     border-color: var(--primary-color);
     font-weight: bold;
 }
@@ -272,7 +273,7 @@
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
-    color: #fff !important; /* Força cor branca para sobrescrever estilos antigos */
+    color: var(--sw-on-brand) !important; /* Força tinta sobre a marca para sobrescrever estilos antigos */
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
 
