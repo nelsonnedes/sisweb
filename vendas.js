@@ -2437,8 +2437,8 @@ async function salvarPedido(event) {
         const statusNext = String(pedidoData.status || '').toLowerCase();
         const shouldGenerateFinance = statusNext !== 'pendente' && statusNext !== 'cancelado';
 
-        const somaContas = (pedidoData.contasReceber || []).reduce((s, c) => s + (parseFloat(c.valor) || 0), 0);
-        if (Math.abs(somaContas - (parseFloat(pedidoData.total) || 0)) > 0.01) {
+        const somaContas = (pedidoData.contasReceber || []).reduce((s, c) => s + (parseCurrencyValue(c.valor) || 0), 0);
+        if (Math.abs(somaContas - (parseCurrencyValue(pedidoData.total) || 0)) > 0.01) {
             ToastManager.warning('Total do pedido difere da soma das parcelas.', 'Validação');
         }
         
@@ -9041,17 +9041,7 @@ async function excluirCarrego(pedidoId) {
         console.error(err); ToastManager.error('Falha ao excluir carrego', 'Erro');
     } finally { LoadingManager.hide(); }
 }
-        // Fallback: gerar 1 parcela default quando não há contasReceber
-        try {
-            const totalPedido = parseFloat(pedidoData.total || 0);
-            if ((!pedidoData.contasReceber || pedidoData.contasReceber.length === 0) && totalPedido > 0) {
-                const vencDefault = document.getElementById('contaVencimento')?.value || pedidoData.data || new Date().toISOString().slice(0,10);
-                const tipoDefault = document.getElementById('contaTipo')?.value || 'receber';
-                const obsDefault = document.getElementById('contaObservacao')?.value || '';
-                pedidoData.contasReceber = [{ id: `CR_${pedidoData.id}_001`, valor: totalPedido, vencimento: vencDefault, tipo: tipoDefault, observacao: obsDefault }];
-                console.log('➕ Parcela padrão gerada para contas a receber');
-            }
-        } catch (e) { console.warn('Falha ao gerar parcela padrão:', e); }
+
 function toMonthKey(val) {
     try {
         if (val === undefined || val === null) return new Date().toISOString().slice(0,7);
