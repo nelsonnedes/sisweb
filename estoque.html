@@ -193,7 +193,7 @@
             #tabelaMovimentacoes tbody tr:active,
             #tabelaProdutos tbody tr:active,
             #tabelaTorasDisponiveis tbody tr:active {
-                background: #f8fafc !important;
+                background: var(--sw-surface-2) !important;
             }
 
             #tabelaEntrada tbody tr td,
@@ -212,7 +212,7 @@
                 align-items: center !important;
                 padding: 8px 0 !important;
                 border: none !important;
-                border-bottom: 1px dashed #f1f5f9 !important;
+                border-bottom: 1px dashed var(--sw-border) !important;
                 font-size: 13px !important;
                 text-align: right !important;
                 min-height: 32px !important;
@@ -240,7 +240,7 @@
                 padding: 14px 4px !important;
                 border: 0 !important;
                 text-align: center !important;
-                color: #64748b !important;
+                color: var(--sw-text-3) !important;
             }
 
             /* Respeitar colunas ocultas configuradas pelo usuário */
@@ -274,7 +274,7 @@
             .saida-plaqueta-results-table tbody tr td[data-label]::before {
                 content: attr(data-label);
                 font-weight: 700 !important;
-                color: #64748b !important;
+                color: var(--sw-text-3) !important;
                 font-size: 11px !important;
                 text-transform: uppercase !important;
                 letter-spacing: 0.4px !important;
@@ -301,7 +301,7 @@
                 width: 100% !important;
                 min-width: 0 !important;
                 max-width: none !important;
-                background: #f8fafc !important;
+                background: var(--sw-surface-2) !important;
                 border-radius: 8px !important;
                 padding: 8px 12px !important;
                 margin-bottom: 8px !important;
@@ -329,7 +329,7 @@
                 max-width: none !important;
                 white-space: nowrap !important;
                 font-weight: 700 !important;
-                color: #475569 !important;
+                color: var(--sw-text-2) !important;
                 font-size: 11px !important;
                 text-transform: uppercase !important;
                 letter-spacing: 0.5px !important;
@@ -386,7 +386,7 @@
                 content: "Ações" !important;
                 display: inline-block !important;
                 font-weight: 700 !important;
-                color: #64748b !important;
+                color: var(--sw-text-3) !important;
                 font-size: 11px !important;
                 text-transform: uppercase !important;
                 letter-spacing: 0.5px !important;
@@ -509,10 +509,10 @@
             background: var(--sw-surface-2) ;
         }
         .table tbody tr:nth-child(even) td.sticky-actions {
-            background: #fafcff;
+            background: var(--sw-surface-2);
         }
         .table tbody tr:not(.skeleton-row):hover td.sticky-actions {
-            background: #f4f6f8;
+            background: var(--sw-hover);
         }
         .table td.actions-cell,
         .table th.actions-col,
@@ -537,19 +537,19 @@
             transition: background-color 0.2s ease;
         }
         .table tbody tr:not(.skeleton-row):hover {
-            background-color: #f4f6f8;
+            background-color: var(--sw-hover);
         }
 
         /* Skeleton Loaders */
         .skeleton-row td {
             position: relative;
             background-color: transparent;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--sw-border);
             padding: 12px;
         }
         .skeleton-box {
             height: 18px;
-            background: #e2e5e7;
+            background: var(--sw-surface-2);
             border-radius: 4px;
             width: 100%;
             position: relative;
@@ -579,20 +579,20 @@
             letter-spacing: 0.5px;
         }
         .status-alto {
-            background-color: #e6f4ea !important;
-            color: #1e8e3e !important;
+            background-color: var(--sw-alert-success-bg) !important;
+            color: var(--sw-success) !important;
             border: none !important;
         }
         .status-baixo {
-            background-color: #fce8e6 !important;
-            color: #d93025 !important;
+            background-color: var(--sw-alert-error-bg) !important;
+            color: var(--sw-danger) !important;
             border: none !important;
         }
 
         /* Offcanvas / Drawer Premium */
         .offcanvas-drawer {
             background: var(--sw-surface);
-            border: 1px solid #e1e4e8;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 20px;
@@ -603,7 +603,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
@@ -616,11 +616,11 @@
             background: none;
             border: none;
             font-size: 18px;
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             cursor: pointer;
         }
         .btn-close:hover {
-            color: #e74c3c;
+            color: var(--sw-danger);
         }
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-10px); }
@@ -648,7 +648,7 @@
             flex-wrap: wrap;
             gap: 6px;
             margin-bottom: 20px;
-            border-bottom: 2px solid #ecf0f1;
+            border-bottom: 2px solid var(--sw-border);
         }
 
         .tab {
@@ -657,7 +657,7 @@
             border: none;
             background: none;
             font-size: 16px;
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
             border-radius: 6px 6px 0 0;
@@ -671,7 +671,7 @@
         }
 
         .tab:hover {
-            background-color: #ecf0f1;
+            background-color: var(--sw-surface-2);
         }
 
         .tab-content {
@@ -735,7 +735,7 @@
             align-items: center;
             gap: 8px;
             font-weight: 600;
-            color: #334155;
+            color: var(--sw-text-2);
             white-space: nowrap;
         }
 
@@ -791,7 +791,7 @@
         }
 
         .report-columns-btn {
-            background-color: #6b7280;
+            background-color: var(--sw-text-3);
         }
 
         .report-columns-hint {
@@ -863,7 +863,7 @@
         }
 
         .rast-card {
-            background: #f8fafc;
+            background: var(--sw-surface-2);
             border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             padding: 10px 12px;
@@ -871,12 +871,12 @@
 
         .rast-card strong {
             display: block;
-            color: #1f2937;
+            color: var(--sw-text-1);
             font-size: 16px;
         }
 
         .rast-card span {
-            color: #64748b;
+            color: var(--sw-text-3);
             font-size: 12px;
         }
 
@@ -895,8 +895,8 @@
         }
 
         .rast-event.estornado {
-            border-left-color: #d97706;
-            background: #fffbeb;
+            border-left-color: var(--sw-warning);
+            background: var(--sw-alert-warning-bg);
         }
 
         .rast-event-title {
@@ -905,11 +905,11 @@
             gap: 10px;
             flex-wrap: wrap;
             font-weight: 700;
-            color: #1f2937;
+            color: var(--sw-text-1);
         }
 
         .rast-event-meta {
-            color: #64748b;
+            color: var(--sw-text-3);
             font-size: 12px;
             margin-top: 4px;
         }
@@ -947,7 +947,7 @@
         #consultaColumnsConfigModal .report-col-label,
         #produtosColumnsConfigModal .report-col-label,
         #movimentacoesColumnsConfigModal .report-col-label {
-            color: #111827;
+            color: var(--sw-text-1);
             font-size: 14px;
             line-height: 1.25;
             text-align: left;
@@ -958,7 +958,7 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            color: #475569;
+            color: var(--sw-text-2);
             font-size: 13px;
             margin-right: 10px;
         }
@@ -1072,7 +1072,7 @@
         input, select, textarea {
             width: 100%;
             padding: 8px;
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--sw-input-border);
             border-radius: 6px;
             font-size: 16px;
         }
@@ -1111,7 +1111,7 @@
         .saida-plaqueta-results {
             display: none;
             margin: -4px 0 14px;
-            border: 1px solid #dbe3ea;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
             background: var(--sw-surface);
             box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
@@ -1129,9 +1129,9 @@
             gap: 10px;
             flex-wrap: wrap;
             padding: 10px 12px;
-            background: #f8fafc;
-            border-bottom: 1px solid #e5edf3;
-            color: #334155;
+            background: var(--sw-surface-2);
+            border-bottom: 1px solid var(--sw-border);
+            color: var(--sw-text-2);
             font-size: 13px;
             font-weight: 600;
         }
@@ -1151,7 +1151,7 @@
             min-width: 28px;
             border: 0;
             background: transparent;
-            color: #64748b;
+            color: var(--sw-text-3);
             border-radius: 6px;
             cursor: pointer;
             display: inline-flex;
@@ -1160,8 +1160,8 @@
         }
 
         .saida-plaqueta-results-close:hover {
-            background: #e2e8f0;
-            color: #1f2937;
+            background: var(--sw-surface-2);
+            color: var(--sw-text-1);
         }
 
         .saida-plaqueta-results-scroll {
@@ -1179,7 +1179,7 @@
         .saida-plaqueta-results-table th,
         .saida-plaqueta-results-table td {
             padding: 8px 10px;
-            border-bottom: 1px solid #edf2f7;
+            border-bottom: 1px solid var(--sw-border);
             text-align: left;
             white-space: nowrap;
         }
@@ -1188,8 +1188,8 @@
             position: sticky;
             top: 0;
             z-index: 1;
-            background: #f8fafc;
-            color: #475569;
+            background: var(--sw-surface-2);
+            color: var(--sw-text-2);
             font-weight: 700;
         }
 
@@ -1211,12 +1211,12 @@
 
         .saida-plaqueta-results-table th.saida-plaqueta-actions-col {
             z-index: 4;
-            background: #f8fafc;
+            background: var(--sw-surface-2);
         }
 
         .saida-plaqueta-results-table tbody tr:hover .saida-plaqueta-actions-col,
         .saida-plaqueta-results-table tbody tr.is-selected .saida-plaqueta-actions-col {
-            background: #eef6ff;
+            background: var(--sw-alert-info-bg);
         }
 
         .saida-plaqueta-results-table tbody tr {
@@ -1225,7 +1225,7 @@
 
         .saida-plaqueta-results-table tbody tr:hover,
         .saida-plaqueta-results-table tbody tr.is-selected {
-            background: #eef6ff;
+            background: var(--sw-alert-info-bg);
         }
 
         .saida-plaqueta-results-table .text-right {
@@ -1234,7 +1234,7 @@
 
         .saida-plaqueta-results-empty {
             padding: 18px 14px;
-            color: #64748b;
+            color: var(--sw-text-3);
             text-align: center;
             font-style: italic;
         }
@@ -1355,9 +1355,9 @@
         #entradaAlmoxarifado .entrada-almox-form {
             margin: 12px 0 18px;
             padding: 14px;
-            border: 1px solid #dde5ee;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
-            background: #f8fafc;
+            background: var(--sw-surface-2);
         }
 
         #produtos .almox-section-title,
@@ -1398,7 +1398,7 @@
             display: block;
             min-height: 18px;
             margin-top: 5px;
-            color: #64748b;
+            color: var(--sw-text-3);
             font-size: 12px;
         }
 
@@ -1486,7 +1486,7 @@
         #entrada #entradaDadosToraTitulo {
             margin: 16px 0 10px;
             padding-top: 12px;
-            border-top: 1px solid #e5edf3;
+            border-top: 1px solid var(--sw-border);
             color: var(--sw-text-1);
             font-size: 18px;
         }
@@ -1515,7 +1515,7 @@
         #entrada .entrada-section-divider {
             margin: 18px 0 16px;
             border: 0;
-            border-top: 1px solid #dde5ee;
+            border-top: 1px solid var(--sw-border);
         }
 
         #entrada .entrada-item-actions .btn,
@@ -1656,11 +1656,11 @@
             }
 
             #produtos .table tbody tr:nth-child(even) {
-                background: #fafcff;
+                background: var(--sw-surface-2);
             }
 
             #produtos .table tbody tr:hover {
-                background: #eef6ff;
+                background: var(--sw-alert-info-bg);
             }
 
             #produtos .table th,
@@ -1774,7 +1774,7 @@
             gap: 10px;
             padding: 12px 16px;
             border-top: 1px solid var(--sw-border) ;
-            background: #f8fafc;
+            background: var(--sw-surface-2);
         }
 
         /* === PADRONIZAÇÃO DE COLUNAS DAS TABELAS DE ESTOQUE === */
@@ -1880,15 +1880,15 @@
 
         .search-box input {
             padding: 10px;
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--sw-input-border);
             border-radius: 6px;
             width: 100%;
             max-width: 300px;
         }
 
         .status-medio {
-            background-color: #fff3cd;
-            color: #856404;
+            background-color: var(--sw-alert-warning-bg);
+            color: var(--sw-warning);
         }
 
         .alert {
@@ -1898,27 +1898,27 @@
         }
 
         .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
+            background-color: var(--sw-alert-success-bg);
+            border: 1px solid var(--sw-success);
+            color: var(--sw-success);
         }
 
         .alert-danger {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
+            background-color: var(--sw-alert-error-bg);
+            border: 1px solid var(--sw-danger);
+            color: var(--sw-danger);
         }
 
         .alert-warning {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
+            background-color: var(--sw-alert-warning-bg);
+            border: 1px solid var(--sw-warning);
+            color: var(--sw-warning);
         }
 
         .saldo-info {
             margin-top: 6px;
             font-size: 12px;
-            color: #6c757d;
+            color: var(--sw-text-3);
         }
         .saldo-info:empty {
             display: none;
@@ -1936,7 +1936,7 @@
             grid-template-columns: 120px 1fr 1fr;
             gap: 12px;
             align-items: center;
-            border-bottom: 2px solid #e5e7eb;
+            border-bottom: 2px solid var(--sw-border);
             padding-bottom: 12px;
             margin-bottom: 12px;
         }
@@ -1949,25 +1949,25 @@
 
         .relatorio-empresa {
             font-size: 13px;
-            color: #374151;
+            color: var(--sw-text-2);
         }
 
         .relatorio-empresa .nome {
             font-size: 16px;
             font-weight: bold;
-            color: #111827;
+            color: var(--sw-text-1);
         }
 
         .relatorio-meta {
             text-align: right;
             font-size: 13px;
-            color: #374151;
+            color: var(--sw-text-2);
         }
 
         .relatorio-meta .titulo {
             font-size: 16px;
             font-weight: bold;
-            color: #111827;
+            color: var(--sw-text-1);
         }
 
         .relatorio-table {
@@ -2003,7 +2003,7 @@
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
-            background-color: #f9fafb;
+            background-color: var(--sw-surface-2);
         }
 
         .stats-grid {
@@ -2029,7 +2029,7 @@
         }
 
         .stat-label {
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             font-size: 14px;
             margin-top: 5px;
         }
@@ -2110,7 +2110,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             transition: transform 0.2s ease;
             font-size: 14px;
         }
@@ -2158,8 +2158,8 @@
 
         /* Loading Spinner */
         .loader {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #3498db;
+            border: 8px solid var(--sw-border);
+            border-top: 8px solid var(--sw-brand);
             border-radius: 50%;
             width: 60px;
             height: 60px;
@@ -2210,15 +2210,15 @@
             <div class="filters-card" style="background: var(--sw-surface); border: 1px solid var(--sw-border) ; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; align-items: end;">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="produtosDataInicio" style="font-size: 12px; font-weight: 600; color: #475569;">Data Inicial:</label>
+                        <label for="produtosDataInicio" style="font-size: 12px; font-weight: 600; color: var(--sw-text-2);">Data Inicial:</label>
                         <input type="date" id="produtosDataInicio" onchange="filtrarProdutos()">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="produtosDataFim" style="font-size: 12px; font-weight: 600; color: #475569;">Data Final:</label>
+                        <label for="produtosDataFim" style="font-size: 12px; font-weight: 600; color: var(--sw-text-2);">Data Final:</label>
                         <input type="date" id="produtosDataFim" onchange="filtrarProdutos()">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="produtosFiltroCategoria" style="font-size: 12px; font-weight: 600; color: #475569;">Categoria:</label>
+                        <label for="produtosFiltroCategoria" style="font-size: 12px; font-weight: 600; color: var(--sw-text-2);">Categoria:</label>
                         <select id="produtosFiltroCategoria" onchange="filtrarProdutos()">
                             <option value="">Todas as categorias</option>
                             <option value="Geral">Geral</option>
@@ -2233,7 +2233,7 @@
                         </select>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="produtosFiltroLocalizacao" style="font-size: 12px; font-weight: 600; color: #475569;">Localização:</label>
+                        <label for="produtosFiltroLocalizacao" style="font-size: 12px; font-weight: 600; color: var(--sw-text-2);">Localização:</label>
                         <select id="produtosFiltroLocalizacao" onchange="filtrarProdutos()">
                             <option value="">Todas as localizações</option>
                             <option value="Galpão">Galpão</option>
@@ -2244,15 +2244,15 @@
                         </select>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="produtosResponsavelFiltro" style="font-size: 12px; font-weight: 600; color: #475569;">Responsável:</label>
+                        <label for="produtosResponsavelFiltro" style="font-size: 12px; font-weight: 600; color: var(--sw-text-2);">Responsável:</label>
                         <input type="text" id="produtosResponsavelFiltro" placeholder="Nome do responsável" oninput="filtrarProdutos()">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="searchProdutos" style="font-size: 12px; font-weight: 600; color: #475569;">Produto / Busca:</label>
+                        <label for="searchProdutos" style="font-size: 12px; font-weight: 600; color: var(--sw-text-2);">Produto / Busca:</label>
                         <input type="text" id="searchProdutos" placeholder="Nome, código, NF..." oninput="filtrarProdutos()">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="produtosFiltroSaldo" style="font-size: 12px; font-weight: 600; color: #475569;">Estoque / Status:</label>
+                        <label for="produtosFiltroSaldo" style="font-size: 12px; font-weight: 600; color: var(--sw-text-2);">Estoque / Status:</label>
                         <select id="produtosFiltroSaldo" onchange="filtrarProdutos()">
                             <option value="">Todos</option>
                             <option value="positivo">Com estoque</option>
@@ -2261,7 +2261,7 @@
                         </select>
                     </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--sw-border); flex-wrap: wrap; gap: 10px;">
                     <button type="button" onclick="limparFiltrosProdutosAlmoxarifado()" class="btn btn-secondary btn-small">
                         <i class="fas fa-eraser"></i> Limpar Filtros
                     </button>
@@ -3077,7 +3077,7 @@
             <div id="relatorioResult" style="display: none; margin-top: 16px;">
                 <div id="relatorioResultHeader" style="display: flex; align-items: center; min-height: 28px; margin-bottom: 8px;">
                     <div id="relAgruparResponsavelGroup" style="display:none; margin: 0;">
-                        <label class="inline-checkbox" style="font-size: 13px; font-weight: 700; color: #1e293b; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; user-select: none;">
+                        <label class="inline-checkbox" style="font-size: 13px; font-weight: 700; color: var(--sw-text-1); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; user-select: none;">
                             <input type="checkbox" id="relAgruparResponsavel" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
                             <span>Agrupar por Responsável</span>
                         </label>
@@ -3579,7 +3579,7 @@
                     <span class="close" onclick="fecharRelatorioPreview()" style="color: #fff; opacity: 0.8; font-size: 28px; line-height: 1; cursor: pointer;">&times;</span>
                 </div>
             </div>
-            <div class="modal-body" style="flex: 1; padding: 0; overflow: hidden; background-color: #f5f6fa;">
+            <div class="modal-body" style="flex: 1; padding: 0; overflow: hidden; background-color: var(--sw-surface-2);">
                 <iframe id="relatorioPreviewIframe" style="width: 100%; height: 100%; border: none;"></iframe>
             </div>
         </div>

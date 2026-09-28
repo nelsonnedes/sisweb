@@ -560,7 +560,7 @@
         /* ✅ CONTAINER DA TABELA - PADRONIZADO ROMANEIOPCT */
         .itens-container {
             margin-bottom: 20px;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
             overflow: hidden;
         }
@@ -586,7 +586,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 5px 0;
-            border-bottom: 1px solid #ecf0f1;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .totais-item:last-child {
@@ -723,7 +723,7 @@
         }
 
         .about-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 15% auto;
             padding: 30px;
             border: none;
@@ -848,10 +848,10 @@
         }
 
         .help-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 20px;
-            border: 1px solid #888;
+            border: 1px solid var(--sw-border);
             width: 90%;
             max-width: 800px;
             border-radius: 8px;
@@ -911,7 +911,7 @@
         .form-group select {
             width: 100%;
             padding: 6px;
-            border: 1px solid #bdc3c7;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
             font-size: 14px;
             box-sizing: border-box;
@@ -1042,10 +1042,10 @@
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 0; /* Removido padding para o header ocupar 100% corretamente */
-            border: 1px solid #888;
+            border: 1px solid var(--sw-border);
             width: 90%;
             max-width: 1200px;
             border-radius: 8px;
@@ -1091,7 +1091,7 @@
         }
 
         .close-modal {
-            color: white !important;
+            color: var(--sw-on-brand) !important;
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
@@ -1099,7 +1099,8 @@
         }
 
         .close-modal:hover {
-            color: #bdc3c7 !important;
+            color: var(--sw-on-brand) !important;
+            opacity: 0.8;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
         }
 
@@ -1138,7 +1139,7 @@
             align-items: center;
             margin-top: 0;
             padding: 15px 20px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--sw-border);
             background-color: var(--sw-surface-2);
             border-radius: 0 0 8px 8px;
         }
@@ -1216,7 +1217,7 @@
             min-height: 0;
             overflow: auto;
             margin: 8px 0 0;
-            border: 1px solid #e4eaf1;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
         }
         #listaModal .table thead th {
@@ -1254,7 +1255,7 @@
         }
 
         .pagination-controls button {
-            border: 1px solid #d0d7de;
+            border: 1px solid var(--sw-border);
             background: var(--sw-surface);
             color: var(--sw-text-1);
             padding: 6px 10px;
@@ -1308,7 +1309,7 @@
             display: block !important;
             min-width: 220px;
             background: var(--sw-surface);
-            border: 1px solid #d6e1ec;
+            border: 1px solid var(--sw-border);
             border-radius: 6px;
             box-shadow: 0 14px 34px rgba(13, 35, 57, 0.32);
             overflow: hidden;
@@ -1406,14 +1407,14 @@
 
         /* ✅ ESTILOS PARA MODO DE EDIÇÃO */
         .item-em-edicao {
-            background-color: #fff3cd !important;
+            background-color: var(--sw-warning) !important;
             border-left: 4px solid var(--sw-brand) !important;
-            box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2) !important;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2) !important;
             transition: all 0.3s ease !important;
         }
         
         .item-em-edicao td {
-            background-color: #fff3cd !important;
+            background-color: var(--sw-warning) !important;
         }
         
         /* Botão em modo de atualização */

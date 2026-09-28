@@ -57,8 +57,8 @@
             --accent-color: var(--sw-brand);
             --success-color: var(--sw-success);
             --danger-color: var(--sw-danger);
-            --light-bg: #f8f9fa;
-            --border-color: #ddd;
+            --light-bg: var(--sw-surface-2);
+            --border-color: var(--sw-border);
             --text-color: var(--sw-text-1);
             --text-muted: var(--sw-text-3);
             --radius-md: 8px;
@@ -99,7 +99,7 @@
             justify-content: center;
             gap: 5px;
             margin-bottom: 20px;
-            border-bottom: 2px solid #ddd;
+            border-bottom: 2px solid var(--sw-border);
         }
 
         .tab-button {
@@ -115,7 +115,7 @@
         }
 
         .tab-button:hover {
-            background-color: #e9ecef;
+            background-color: var(--sw-surface-2);
             color: var(--sw-text-1);
         }
 
@@ -258,7 +258,7 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
-            color: #fff;
+            color: var(--sw-on-brand);
             transition: all 0.2s ease;
         }
 
@@ -280,7 +280,7 @@
         /* === TABELA === */
         .table-responsive {
             margin-top: 20px;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
             overflow: hidden;
             overflow-x: auto;
@@ -346,7 +346,7 @@
         /* Modal Table Specifics */
         .modal .table-responsive {
             margin: 0;
-            border: 1px solid #d9e1ea;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
             max-height: 60vh;
             overflow: hidden;
@@ -380,7 +380,7 @@
         }
 
         tbody tr:hover {
-            background-color: #f1f1f1;
+            background-color: var(--sw-surface-2);
         }
 
         /* Melhor visibilidade das linhas no modal "Meus Pré-Romaneios" */
@@ -403,11 +403,11 @@
         }
 
         #listaModal tbody td {
-            border-bottom: 1px solid #e1e5ea;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         #listaModal tbody tr:nth-child(odd) td {
-            background-color: #fbfcfd;
+            background-color: var(--sw-surface-2);
         }
 
         #listaModal tbody tr:nth-child(even) td {
@@ -415,7 +415,7 @@
         }
 
         #listaModal tbody tr:hover td {
-            background-color: #eef6ff;
+            background-color: var(--sw-surface-2);
         }
 
         #listaModal tbody tr:last-child td {
@@ -445,7 +445,7 @@
         }
 
         .pagination-controls button {
-            border: 1px solid #d0d7de;
+            border: 1px solid var(--sw-border);
             background: var(--sw-surface);
             color: var(--sw-text-1);
             padding: 6px 10px;
@@ -574,7 +574,7 @@
         .autocomplete-suggestions div {
             padding: 8px 12px;
             cursor: pointer;
-            border-bottom: 1px solid #f1f1f1;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .autocomplete-suggestions div:hover {

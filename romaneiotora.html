@@ -211,10 +211,10 @@
         /* Modal specific styling now managed by ui-components.css */
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 0;
-            border: 1px solid #888;
+            border: 1px solid var(--sw-border);
             width: 90%;
             max-width: 1200px;
             border-radius: 8px;
@@ -252,7 +252,7 @@
             align-items: center;
             margin-top: 0;
             padding: 15px 20px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--sw-border);
             background-color: var(--sw-surface-2);
             border-radius: 0 0 8px 8px;
             flex-wrap: wrap;
@@ -299,7 +299,7 @@
         }
 
         .modal table tbody tr:hover {
-            background-color: #e3f2fd;
+            background-color: var(--sw-surface-2);
         }
 
         #romaneioTable {
@@ -575,7 +575,7 @@
         }
 
         .about-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 15% auto;
             padding: 30px;
             border: none;
@@ -658,7 +658,7 @@
         .contact-icon {
             width: 40px;
             height: 40px;
-            background-color: #ecf0f1;
+            background-color: var(--sw-surface-2);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -698,7 +698,7 @@
         }
 
         .pagination-controls button {
-            border: 1px solid #d0d7de;
+            border: 1px solid var(--sw-border);
             background: var(--sw-surface);
             color: var(--sw-text-1);
             padding: 6px 10px;
@@ -724,7 +724,7 @@
         }
 
         .close-modal {
-            color: #aaa;
+            color: var(--sw-text-3);
             float: right;
             font-size: 28px;
             font-weight: bold;
@@ -733,7 +733,7 @@
 
         .close-modal:hover,
         .close-modal:focus {
-            color: black;
+            color: var(--sw-text-1);
             text-decoration: none;
             cursor: pointer;
         }
@@ -788,7 +788,7 @@
         }
 
         .dropdown-content a {
-            color: black;
+            color: var(--sw-text-1);
             padding: 8px 12px;
             text-decoration: none;
             display: block;
@@ -796,7 +796,7 @@
         }
 
         .dropdown-content a:hover {
-            background-color: #f1f1f1;
+            background-color: var(--sw-surface-2);
         }
 
         .show {
@@ -822,12 +822,12 @@
         .autocomplete-suggestion {
             padding: 8px 10px;
             cursor: pointer;
-            border-bottom: 1px solid #f4f4f4;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .autocomplete-suggestion:hover,
         .autocomplete-suggestion.selected {
-            background-color: #f0f0f0;
+            background-color: var(--sw-surface-2);
         }
 
         /* Estilos para botões de ação nos modais */
@@ -850,19 +850,19 @@
         
         .client-action-button:hover {
             background-color: var(--sw-surface-2) ;
-            border-color: #ccc;
+            border-color: var(--sw-border);
         }
         
         .client-action-button.delete-button:hover {
-            background-color: #ffecec;
-            border-color: #ffadad;
-            color: var(--sw-danger);
+            background-color: var(--sw-danger);
+            border-color: var(--sw-danger);
+            color: var(--sw-on-brand);
         }
         
         .client-action-button.print-btn:hover {
-            background-color: #ecf5ff;
-            border-color: #a8caff;
-            color: var(--sw-brand);
+            background-color: var(--sw-brand);
+            border-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
         
         /* Menu de impressão */
@@ -925,7 +925,7 @@
         }
         
         .print-menu button:hover {
-            background-color: #f1f1f1;
+            background-color: var(--sw-surface-2);
         }
         
         .print-menu button i {

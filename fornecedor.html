@@ -83,7 +83,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .page-title {
@@ -146,7 +146,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         th, td {
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         th {
@@ -263,7 +263,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             cursor: pointer;
         }
 
-        .close:hover { color: #e5e7eb; }
+        .close:hover { color: var(--sw-border); }
 
         /* Form Groups */
         .form-row {
@@ -312,8 +312,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border: 4px solid var(--sw-border);
+            border-top: 4px solid var(--sw-brand);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }

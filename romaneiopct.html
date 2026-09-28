@@ -234,10 +234,10 @@
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 0;
-            border: 1px solid #888;
+            border: 1px solid var(--sw-border);
             width: 90%;
             max-width: 1200px;
             border-radius: 8px;
@@ -268,7 +268,7 @@
         }
 
         .close-modal {
-            color: white !important;
+            color: var(--sw-on-brand) !important;
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
@@ -278,7 +278,8 @@
 
         .close-modal:hover,
         .close-modal:focus {
-            color: #f1f1f1;
+            color: var(--sw-on-brand);
+            opacity: 0.8;
             text-decoration: none;
         }
 
@@ -294,7 +295,7 @@
             align-items: center;
             margin-top: 0;
             padding: 15px 20px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--sw-border);
             background-color: var(--sw-surface-2);
             border-radius: 0 0 8px 8px;
             flex-wrap: wrap;
@@ -373,7 +374,7 @@
 
         .modal table td {
             padding: 6px 8px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
             vertical-align: middle;
             height: 32px;
             font-size: 13px;
@@ -399,7 +400,7 @@
         }
 
         .modal table tbody tr:hover {
-            background-color: #e3f2fd;
+            background-color: var(--sw-surface-2);
         }
 
         /* ✅ PADRONIZAÇÃO: Botões de ação específicos (padrão vendas: marca) */
@@ -843,7 +844,7 @@
         }
 
         .about-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 15% auto;
             padding: 30px;
             border: none;
@@ -925,7 +926,7 @@
 
         .form-group input {
             padding: 6px;
-            border: 1px solid #bdc3c7;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
             font-size: 14px;
             box-sizing: border-box;
@@ -1096,7 +1097,7 @@
         }
 
         .pagination-controls button {
-            border: 1px solid #d0d7de;
+            border: 1px solid var(--sw-border);
             background: var(--sw-surface);
             color: var(--sw-text-1);
             padding: 6px 10px;
@@ -1130,13 +1131,13 @@
         }
 
         #romaneioTable tbody tr:hover td {
-            background-color: #e8f4f8 !important; /* ✅ HOVER PADRONIZADO TL */
+            background-color: var(--sw-surface-2) !important; /* ✅ HOVER PADRONIZADO TL */
             cursor: default;
         }
 
         /* Estilos para feedback visual */
         @keyframes highlight {
-            0% { background-color: #f0fff0; }
+            0% { background-color: var(--sw-surface-2); }
             100% { background-color: transparent; }
         }
 
@@ -1168,8 +1169,8 @@
             
             /* Garantir cores na impressão */
             .resumo-especie-titulo {
-                background-color: #d9534f !important;
-            color: white !important;
+                background-color: var(--sw-brand) !important;
+                color: var(--sw-on-brand) !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -1430,8 +1431,8 @@
             
             /* Garantir cores na impressão */
             .resumo-especie-titulo {
-                background-color: #d9534f !important;
-                color: white !important;
+                background-color: var(--sw-brand) !important;
+                color: var(--sw-on-brand) !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -1618,7 +1619,7 @@
             color: var(--sw-text-2) ;
             text-align: left;
             padding: 8px;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             background-color: var(--sw-surface) !important;
         }
 
@@ -1632,7 +1633,7 @@
         /* Container da tabela */
         .itens-container {
             margin-bottom: 20px;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
             overflow: hidden;
         }
@@ -2066,7 +2067,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 5px 0;
-            border-bottom: 1px solid #ecf0f1;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .totais-item:last-child {

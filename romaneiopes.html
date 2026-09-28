@@ -103,7 +103,7 @@
         input, select {
             width: 100%;
             padding: 8px;
-            border: 1px solid #bdc3c7;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
             margin-bottom: 10px;
             height: 31px;
@@ -381,7 +381,7 @@
         }
 
         .btn-atualizar-item:hover {
-            background-color: #d68910 !important;
+            background-color: var(--sw-brand-dark) !important;
         }
 
         .total-row {
@@ -413,7 +413,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 5px 0;
-            border-bottom: 1px solid #ecf0f1;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .totais-item:last-child {
@@ -611,7 +611,7 @@
         }
 
         .modal table tbody tr:hover {
-            background-color: #e3f2fd;
+            background-color: var(--sw-surface-2);
         }
 
         .pagination-controls {
@@ -624,7 +624,7 @@
         }
 
         .pagination-controls button {
-            border: 1px solid #d0d7de;
+            border: 1px solid var(--sw-border);
             background: var(--sw-surface);
             color: var(--sw-text-1);
             padding: 6px 10px;
@@ -659,7 +659,7 @@
             max-width: 1180px;
             margin: 0 auto;
             padding: 0;
-            border: 1px solid #d6e1ec;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
             overflow: hidden;
             background: var(--sw-surface);
@@ -705,21 +705,21 @@
         #romaneioListModal #romaneioListFilter {
             height: 42px;
             box-sizing: border-box;
-            border-color: #cfd8e3 !important;
+            border-color: var(--sw-input-border) !important;
             border-radius: 6px !important;
             outline: none;
         }
 
         #romaneioListModal #romaneioListFilter:focus {
-            border-color: #2c7be5 !important;
-            box-shadow: 0 0 0 3px rgba(44, 123, 229, 0.14);
+            border-color: var(--sw-focus) !important;
+            box-shadow: 0 0 0 3px var(--sw-focus-ring);
         }
 
         #romaneioListModal .table-container,
         #romaneioListModal .table-responsive {
             max-height: min(52vh, 390px);
             overflow: auto;
-            border: 1px solid #d6e1ec;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
             background: var(--sw-surface);
         }
@@ -734,7 +734,7 @@
 
         #romaneioListModal .table th,
         #romaneioListModal .table td {
-            border-bottom: 1px solid #e5eaf0;
+            border-bottom: 1px solid var(--sw-border);
             padding: 8px 10px;
             vertical-align: middle;
         }
@@ -801,7 +801,7 @@
         .autocomplete-suggestion {
             padding: 8px 10px;
             cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .autocomplete-suggestion:hover, .autocomplete-suggestion.selected {
@@ -822,7 +822,7 @@
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 20px;
             border: 1px solid var(--sw-border) ;
@@ -857,7 +857,8 @@
         }
 
         .close-modal:hover {
-            color: #bdc3c7;
+            color: var(--sw-on-brand);
+            opacity: 0.8;
         }
 
         .modal-body {
@@ -870,7 +871,7 @@
             align-items: center;
             margin-top: 20px;
             padding-top: 15px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--sw-border);
         }
 
         .btn-save {

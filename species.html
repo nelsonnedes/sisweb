@@ -37,6 +37,7 @@
         })();
     </script>
     <link rel="stylesheet" href="layout-comum.css">
+    <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
     
     <!-- Firebase SDK -->
@@ -63,7 +64,7 @@
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .page-title {
@@ -125,7 +126,7 @@
         th, td {
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         th {
@@ -193,7 +194,7 @@
         .close {
             font-size: 28px;
             cursor: pointer;
-            color: #aaa;
+            color: var(--sw-text-3);
         }
 
         .close:hover { color: var(--sw-text-1) ; }
@@ -236,8 +237,8 @@
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border: 4px solid var(--sw-border);
+            border-top: 4px solid var(--sw-brand);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -325,8 +326,8 @@
             </button>
         </div>
 
-        <div class="table-responsive">
-            <table>
+        <div class="table-responsive mobile-cards">
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Nome (Comum)</th>
