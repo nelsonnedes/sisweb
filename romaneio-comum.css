@@ -208,16 +208,16 @@ section#romaneio-items-section h2 {
 
 /* Estilos comuns para todos os romaneios */
 
-/* Variáveis de cores */
+/* Variáveis de cores (tokens globais do tema) */
 :root {
-    --primary-color: var(--sw-text-1);
-    --secondary-color: #3498db;
-    --accent-color: #e74c3c;
-    --light-color: #ecf0f1;
+    --primary-color: var(--sw-brand);
+    --secondary-color: var(--sw-info);
+    --accent-color: var(--sw-danger);
+    --light-color: var(--sw-surface-2);
     --dark-color: var(--sw-text-1);
-    --success-color: #2ecc71;
-    --warning-color: #f39c12;
-    --danger-color: #e74c3c;
+    --success-color: var(--sw-success);
+    --warning-color: var(--sw-warning);
+    --danger-color: var(--sw-danger);
     --max-width: 1300px;
 }
 
@@ -367,7 +367,7 @@ select:focus,
 textarea:focus {
     border-color: var(--secondary-color);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    box-shadow: 0 0 0 2px var(--sw-focus-ring);
 }
 
 /* Estilos para mensagens de erro/aviso */
@@ -775,8 +775,8 @@ textarea:focus {
 #clientModal .modal-header,
 #fornecedorModal .modal-header,
 #speciesModal .modal-header {
-    background: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%) !important;
-    color: #fff !important;
+    background: var(--sw-gradient) !important;
+    color: var(--sw-on-brand) !important;
     padding: 14px 18px !important;
     display: flex !important;
     justify-content: space-between !important;
@@ -792,7 +792,7 @@ textarea:focus {
 #clientModal .modal-title,
 #fornecedorModal .modal-title,
 #speciesModal .modal-title {
-    color: #fff !important;
+    color: var(--sw-on-brand) !important;
     margin: 0 !important;
     font-size: 18px !important;
     font-weight: 700 !important;
@@ -807,7 +807,7 @@ textarea:focus {
 #clientModal .close-modal,
 #fornecedorModal .close-modal,
 #speciesModal .close-modal {
-    color: #fff !important;
+    color: var(--sw-on-brand) !important;
     font-size: 28px !important;
     line-height: 1 !important;
     font-weight: 700 !important;
@@ -821,7 +821,8 @@ textarea:focus {
 #fornecedorModal .close-modal:hover,
 #speciesModal .close-modal:hover {
     opacity: 1;
-    color: #dfe9f4 !important;
+    color: var(--sw-on-brand) !important;
+    filter: brightness(0.9);
 }
 
 #clientListModal .modal-body,
@@ -843,8 +844,8 @@ textarea:focus {
 #fornecedorModal .modal-footer,
 #speciesModal .modal-footer {
     padding: 12px 16px !important;
-    border-top: 1px solid #e4eaf1 !important;
-    background: #f8fbff !important;
+    border-top: 1px solid var(--sw-border) !important;
+    background: var(--sw-surface-2) !important;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
@@ -1443,8 +1444,9 @@ textarea:focus {
     position: sticky !important;
     top: 0 !important;
     z-index: 2 !important;
-    background: var(--sw-text-1) !important;
-    color: #fff !important;
+    background: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
+    border-bottom: 2px solid var(--sw-brand-dark) !important;
 }
 
 #listaModal .pagination-controls,
@@ -1492,8 +1494,8 @@ textarea:focus {
     bottom: auto !important;
     margin-top: auto !important;
     flex-shrink: 0 !important;
-    background: #f8fbff !important;
-    border-top: 1px solid #e4eaf1 !important;
+    background: var(--sw-surface-2) !important;
+    border-top: 1px solid var(--sw-border) !important;
     padding: 10px 16px !important;
 }
 
@@ -2205,8 +2207,8 @@ textarea:focus {
     justify-content: space-between !important;
     align-items: center !important;
     padding: 14px 20px !important;
-    background: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%) !important;
-    color: #ffffff !important;
+    background: var(--sw-gradient) !important;
+    color: var(--sw-on-brand) !important;
     border-radius: 8px 8px 0 0 !important;
     margin: 0 !important;
     box-sizing: border-box !important;
@@ -2337,26 +2339,30 @@ textarea:focus {
 #clientListModal .action-button.edit-button,
 #fornecedorListModal .action-button.edit-button,
 #speciesListModal .action-button.edit-button {
-    background-color: #3498db !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
 }
 
 #clientListModal .action-button.edit-button:hover,
 #fornecedorListModal .action-button.edit-button:hover,
 #speciesListModal .action-button.edit-button:hover {
-    background-color: #2980b9 !important;
+    background-color: var(--sw-brand) !important;
+    filter: brightness(0.88);
     transform: translateY(-1px) !important;
 }
 
 #clientListModal .action-button.delete-button,
 #fornecedorListModal .action-button.delete-button,
 #speciesListModal .action-button.delete-button {
-    background-color: #e74c3c !important;
+    background-color: var(--sw-danger) !important;
+    color: var(--sw-on-brand) !important;
 }
 
 #clientListModal .action-button.delete-button:hover,
 #fornecedorListModal .action-button.delete-button:hover,
 #speciesListModal .action-button.delete-button:hover {
-    background-color: #c0392b !important;
+    background-color: var(--sw-danger) !important;
+    filter: brightness(0.88);
     transform: translateY(-1px) !important;
 }
 
@@ -2529,19 +2535,20 @@ textarea:focus {
     }
 }
 
-/* ✅ Botão de Ação: Clonar Romaneio */
+/* ✅ Botão de Ação: Clonar Romaneio (padrão vendas: marca) */
 .action-button.clone-button,
 .btn-clonar {
-    background-color: #6f42c1 !important;
-    color: #ffffff !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
 }
 
 .action-button.clone-button:hover,
 .btn-clonar:hover {
-    background-color: #59359a !important;
-    color: #ffffff !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 8px rgba(111, 66, 193, 0.35) !important;
+    box-shadow: var(--sw-shadow-brand) !important;
+    filter: brightness(0.88);
 }
 
 /* ==========================================================================
@@ -2594,14 +2601,14 @@ button.btn-adicionar:hover,
     box-shadow: 0 4px 8px rgba(22, 163, 74, 0.25) !important;
 }
 
-/* 💾 Salvar Romaneio (Azul Primário) */
+/* 💾 Salvar Romaneio (marca) */
 button.btn-salvar,
 #btnSalvar,
 .form-buttons .btn-salvar,
 .form-buttons .btn-primary {
-    background-color: #2563eb !important;
-    border: 1px solid #2563eb !important;
-    color: #ffffff !important;
+    background-color: var(--sw-brand) !important;
+    border: 1px solid var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
     height: 38px !important;
     min-height: 38px !important;
     padding: 0 20px !important;
@@ -2621,21 +2628,22 @@ button.btn-salvar:hover,
 #btnSalvar:hover,
 .form-buttons .btn-salvar:hover,
 .form-buttons .btn-primary:hover {
-    background-color: #1d4ed8 !important;
-    border-color: #1d4ed8 !important;
+    background-color: var(--sw-brand) !important;
+    border-color: var(--sw-brand) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25) !important;
+    box-shadow: var(--sw-shadow-brand) !important;
+    filter: brightness(0.88);
 }
 
-/* 📋 Listar Romaneios (Ciano / Azul Informativo) */
+/* 📋 Listar Romaneios (marca) */
 button.btn-listar,
 #btnListar,
 #btnMeusRomaneios,
 .form-buttons .btn-listar,
 .form-buttons .btn-info {
-    background-color: #0284c7 !important;
-    border: 1px solid #0284c7 !important;
-    color: #ffffff !important;
+    background-color: var(--sw-brand) !important;
+    border: 1px solid var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
     height: 38px !important;
     min-height: 38px !important;
     padding: 0 18px !important;
@@ -2656,21 +2664,22 @@ button.btn-listar:hover,
 #btnMeusRomaneios:hover,
 .form-buttons .btn-listar:hover,
 .form-buttons .btn-info:hover {
-    background-color: #0369a1 !important;
-    border-color: #0369a1 !important;
+    background-color: var(--sw-brand) !important;
+    border-color: var(--sw-brand) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 8px rgba(2, 132, 199, 0.25) !important;
+    box-shadow: var(--sw-shadow-brand) !important;
+    filter: brightness(0.88);
 }
 
-/* 📥 Carregar Pré-Romaneio (Verde Esmeralda) */
+/* 📥 Carregar Pré-Romaneio (success temático) */
 button.btn-carregar,
 #btnCarregarPreRomaneio,
 .pre-romaneio-group .btn-carregar,
 .pre-romaneio-group .btn-success,
 .pre-romaneio-group .btn-salvar {
-    background-color: #059669 !important;
-    border: 1px solid #059669 !important;
-    color: #ffffff !important;
+    background-color: var(--sw-success) !important;
+    border: 1px solid var(--sw-success) !important;
+    color: var(--sw-on-brand) !important;
     height: 38px !important;
     min-height: 38px !important;
     padding: 0 16px !important;
@@ -2929,7 +2938,7 @@ button.btn-importar:hover,
     body #clientListModal .table-container, body #fornecedorListModal .table-container, body #speciesListModal .table-container, body #listaModal .table-container, body #romaneioListModal .table-container { overflow: visible !important; max-height: none !important; }
     body #clientListModal .modal-content, body #fornecedorListModal .modal-content, body #speciesListModal .modal-content, body #listaModal .modal-content, body #romaneioListModal .modal-content { height: auto !important; max-height: calc(100vh - 20px) !important; min-height: 0 !important; }
     body #clientListModal .table tbody tr, body #fornecedorListModal .table tbody tr, body #speciesListModal .table tbody tr, body #listaModal .table tbody tr, body #romaneioListModal .table tbody tr { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; max-height: none !important; margin: 0 !important; padding: 10px 8px !important; box-sizing: border-box !important; background: var(--sw-surface) !important; border: 1px solid var(--sw-border) !important; border-radius: 10px !important; box-shadow: 0 2px 8px rgba(15,23,42,.05) !important; }
-    body #clientListModal .table tbody tr td, body #fornecedorListModal .table tbody tr td, body #speciesListModal .table tbody tr td, body #listaModal .table tbody tr td, body #romaneioListModal .table tbody tr td { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; max-height: none !important; box-sizing: border-box !important; padding: 8px 4px !important; margin: 0 !important; border: 0 !important; border-bottom: 1px solid #f0f0f0 !important; text-align: left !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
+    body #clientListModal .table tbody tr td, body #fornecedorListModal .table tbody tr td, body #speciesListModal .table tbody tr td, body #listaModal .table tbody tr td, body #romaneioListModal .table tbody tr td { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; max-height: none !important; box-sizing: border-box !important; padding: 8px 4px !important; margin: 0 !important; border: 0 !important; border-bottom: 1px solid var(--sw-border) !important; text-align: left !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
     /* Especies/Clientes: species-modal-standard.css / standardized-client-modal.js definem width
        via :nth-child (30%/18%...) que vence o generico acima; forcamos 100% em TODOS os td
        do modal (incl. nth-child) para os cards nao estreitarem. */
@@ -2937,7 +2946,7 @@ button.btn-importar:hover,
     body #clientListModal .table tbody tr td:nth-child(n) { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
     body #fornecedorListModal .table tbody tr td:nth-child(n) { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
     body #clientListModal .table tbody tr td:last-child, body #fornecedorListModal .table tbody tr td:last-child, body #speciesListModal .table tbody tr td:last-child, body #listaModal .table tbody tr td:last-child, body #romaneioListModal .table tbody tr td:last-child { border-bottom: 0 !important; border-top: 1px solid var(--sw-border) !important; margin-top: 4px !important; padding-top: 10px !important; min-width: 0 !important; max-width: 100% !important; width: 100% !important; }
-    body #clientListModal .table tbody tr td[data-label]::before, body #fornecedorListModal .table tbody tr td[data-label]::before, body #speciesListModal .table tbody tr td[data-label]::before, body #listaModal .table tbody tr td[data-label]::before, body #romaneioListModal .table tbody tr td[data-label]::before { content: attr(data-label) !important; display: block !important; position: static !important; width: 100% !important; max-width: none !important; margin: 0 0 4px !important; padding: 0 !important; transform: none !important; text-align: left !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; font-size: 11px !important; line-height: 1.2 !important; font-weight: 700 !important; color: #64748b !important; text-transform: uppercase !important; }
+    body #clientListModal .table tbody tr td[data-label]::before, body #fornecedorListModal .table tbody tr td[data-label]::before, body #speciesListModal .table tbody tr td[data-label]::before, body #listaModal .table tbody tr td[data-label]::before, body #romaneioListModal .table tbody tr td[data-label]::before { content: attr(data-label) !important; display: block !important; position: static !important; width: 100% !important; max-width: none !important; margin: 0 0 4px !important; padding: 0 !important; transform: none !important; text-align: left !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; font-size: 11px !important; line-height: 1.2 !important; font-weight: 700 !important; color: var(--sw-text-3) !important; text-transform: uppercase !important; }
     body #clientListModal .table tbody tr td[data-label="Ações"]::before, body #fornecedorListModal .table tbody tr td[data-label="Ações"]::before, body #speciesListModal .table tbody tr td[data-label="Ações"]::before, body #listaModal .table tbody tr td[data-label="Ações"]::before, body #romaneioListModal .table tbody tr td[data-label="Ações"]::before { margin-bottom: 6px !important; }
     body #clientListModal .table tbody tr td[data-label="Ações"] .btn-group, body #fornecedorListModal .table tbody tr td[data-label="Ações"] .btn-group, body #speciesListModal .table tbody tr td[data-label="Ações"] .btn-group, body #listaModal .table tbody tr td[data-label="Ações"] .btn-group, body #romaneioListModal .table tbody tr td[data-label="Ações"] .btn-group { display: flex !important; flex-wrap: wrap !important; justify-content: flex-start !important; gap: 8px !important; width: 100% !important; max-width: 100% !important; }
     body #clientListModal .table tbody tr td[data-label="Ações"] button, body #fornecedorListModal .table tbody tr td[data-label="Ações"] button, body #speciesListModal .table tbody tr td[data-label="Ações"] button, body #listaModal .table tbody tr td[data-label="Ações"] button, body #romaneioListModal .table tbody tr td[data-label="Ações"] button { width: 36px !important; min-width: 36px !important; height: 36px !important; min-height: 36px !important; padding: 0 !important; margin: 0 !important; }

@@ -2638,6 +2638,7 @@ async function salvarPedido(event) {
                     // o fazem); sem isso, um reload <60s pode mostrar o dado antigo.
                     svcInv.invalidateReadCacheForPath('vendas/pedidos');
                     svcInv.invalidateReadCacheForPath('pedidosVenda');
+                    svcInv.invalidateReadCacheForPath('financas/receber');
                 }
             } catch (_) { /* best-effort */ }
         } else {
@@ -7579,31 +7580,97 @@ function atualizarObservacaoConta(contaId, novaObservacao) {
 }
 
 // Descarrega edições de parcelas ainda pendentes (debounce/input sem blur)
-// antes de salvar: sem isso, digitar um valor e salvar em seguida (<180ms,
-// ou via submit por Enter sem blur prévio) persistiria os valores antigos.
+// antes de salvar: sem isso, digitar e salvar em seguida (<180ms, ou via
+// submit por Enter sem blur prévio) persistiria os valores antigos.
+// Em 2 fases (ler tudo do DOM primeiro; só então aplicar + 1 re-render):
+// aplicar linha a linha com re-render intermediário DESTRÓI inputs ainda
+// pendentes (o re-render não preserva dias digitados) e reverte a edição.
 function descarregarEdicaoParcelasVenda() {
     try {
-        if (!Array.isArray(contasReceber)) return;
+        if (!Array.isArray(contasReceber) || contasReceber.length === 0) return;
+        const ler = (id, suffix) => {
+            try {
+                const el = document.getElementById(`conta-${suffix}-${id}`);
+                if (!el || el.disabled) return undefined;
+                return el.value;
+            } catch (_) { return undefined; }
+        };
+        const pendentes = [];
         contasReceber.slice().forEach(conta => {
             const id = String((conta && conta.id) || '');
             if (!id) return;
+            pendentes.push({
+                id,
+                valor: ler(id, 'valor'),
+                dias: ler(id, 'dias'),
+                venc: ler(id, 'venc'),
+                obs: ler(id, 'obs')
+            });
+        });
+        [debounceValorContaTimers, debounceDiasContaTimers].forEach(m => {
             try {
-                const valorEl = document.getElementById(`conta-valor-${id}`);
-                if (valorEl && !valorEl.disabled) atualizarValorConta(id, valorEl.value);
-            } catch (_) {}
-            try {
-                const diasEl = document.getElementById(`conta-dias-${id}`);
-                if (diasEl && !diasEl.disabled) atualizarDiasConta(id, diasEl.value);
-            } catch (_) {}
-            try {
-                const dateEl = document.getElementById(`conta-venc-${id}`);
-                if (dateEl && !dateEl.disabled && dateEl.value) atualizarVencimentoConta(id, dateEl.value);
-            } catch (_) {}
-            try {
-                const obsEl = document.getElementById(`conta-obs-${id}`);
-                if (obsEl && !obsEl.disabled) atualizarObservacaoConta(id, obsEl.value);
+                m.forEach(t => { try { clearTimeout(t); } catch (_) {} });
+                m.clear();
             } catch (_) {}
         });
+        try { parcelaEditandoId = null; } catch (_) {}
+        try { parcelaEditandoDisplay = ''; } catch (_) {}
+        try { parcelaEditandoDateId = null; } catch (_) {}
+        try { parcelaEditandoDateValue = ''; } catch (_) {}
+        const mem = (id) => contasReceber.find(c => String(c.id) === String(id));
+        pendentes.forEach(p => {
+            const conta = mem(p.id);
+            if (!conta) return;
+            if (p.obs !== undefined) conta.observacao = p.obs;
+            if (p.dias !== undefined && p.dias !== '') {
+                const diasInt = parseInt(p.dias, 10);
+                if (!isNaN(diasInt) && diasInt >= 0) {
+                    conta.dias = diasInt;
+                    const base = conta.baseVencimento || conta.vencimento;
+                    try { conta.vencimento = addDaysISO(base, diasInt); } catch (_) {}
+                }
+            } else if (p.venc !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(p.venc || '')) {
+                conta.vencimento = p.venc;
+                try {
+                    const base = conta.baseVencimento || p.venc;
+                    let d = diffDaysISO(base, p.venc);
+                    conta.dias = (isNaN(d) || d < 0) ? 0 : d;
+                } catch (_) {}
+            }
+        });
+        const tocadas = [];
+        pendentes.forEach(p => {
+            if (p.valor === undefined || p.valor === '') return;
+            const v = parseCurrencyValue(p.valor);
+            if (!Number.isFinite(v) || v < 0) return;
+            const conta = mem(p.id);
+            if (!conta) return;
+            if (Math.abs((parseFloat(conta.valor) || 0) - v) < 0.001) return;
+            conta.valor = v;
+            conta.locked = true;
+            tocadas.push(p.id);
+        });
+        if (tocadas.length > 0 && contasReceber.length > 1) {
+            try {
+                const totalEl = document.getElementById('totalGeral');
+                const totalStr = totalEl ? (totalEl.value !== undefined ? totalEl.value : totalEl.textContent) : '0';
+                const totalPedido = parseCurrencyValue(totalStr);
+                if (totalPedido > 0) {
+                    tocadas.forEach(id => {
+                        try {
+                            const atual = mem(id);
+                            if (!atual) return;
+                            const res = redistribuirProgressivoParcelas(contasReceber, id, parseFloat(atual.valor) || 0, totalPedido);
+                            if (res && res.success && Array.isArray(res.parcelas)) {
+                                contasReceber = res.parcelas.map(x => ({ ...x }));
+                            }
+                        } catch (_) {}
+                    });
+                }
+            } catch (_) {}
+        }
+        try { atualizarTabelaContasReceber(); } catch (_) {}
+        try { atualizarTotalContasReceber(); } catch (_) {}
     } catch (_) {}
 }
 
@@ -8067,20 +8134,19 @@ async function visualizarPedido(pedidoId) {
     }
     
     const tbodyPagamento = document.getElementById('viewPedidoPagamentoTable');
-    let contas = normalizarContasReceberLista(pedido.contasReceber || []);
-    if (contas.length === 0) {
-        try {
-            const crFinanceiroAll = await getData('financas/receber') || [];
-            const vinculadas = (crFinanceiroAll || []).filter(c => String(c.origemId) === String(pedidoId));
-            contas = vinculadas.map(c => ({
-                id: c.id,
-                valor: typeof c.valor === 'number' ? c.valor : parseCurrencyValue(c.valor),
-                vencimento: c.dataVencimento || c.vencimento,
-                tipo: c.tipoPagamento || c.tipo,
-                observacao: c.observacoes || c.observacao || '',
-                status: c.status || 'pendente'
-            }));
-        } catch (_) {}
+    let contas = [];
+    try {
+        const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
+        contas = vinculadas.map(c => ({
+            id: c.id,
+            valor: typeof c.valor === 'number' ? c.valor : parseCurrencyValue(c.valor),
+            vencimento: c.dataVencimento || c.vencimento,
+            tipo: c.tipoPagamento || c.tipo,
+            observacao: c.observacoes || c.observacao || '',
+            status: c.status || 'pendente'
+        }));
+    } catch (_) {
+        contas = normalizarContasReceberLista(pedido.contasReceber || []);
     }
     if (contas.length > 0) {
         tbodyPagamento.innerHTML = contas.map(conta => {
@@ -8235,7 +8301,20 @@ async function gerarHTMLImpressaoPedido(pedido) {
     const contasReceberBase = typeof normalizarContasReceberLista === 'function'
         ? normalizarContasReceberLista(pedido.contasReceber || [])
         : (pedido.contasReceber || []);
-    const contasReceberPedido = Array.isArray(contasReceberBase) ? contasReceberBase : [];
+    let contasReceberPedido = Array.isArray(contasReceberBase) ? contasReceberBase : [];
+    if (contasReceberPedido.length === 0) {
+        try {
+            const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
+            contasReceberPedido = vinculadas.map(c => ({
+                id: c.id,
+                valor: typeof c.valor === 'number' ? c.valor : parseCurrencyValue(c.valor),
+                vencimento: c.dataVencimento || c.vencimento,
+                tipo: c.tipoPagamento || c.tipo,
+                observacao: c.observacoes || c.observacao || '',
+                status: c.status || 'pendente'
+            }));
+        } catch (_) {}
+    }
     const htmlPagamento = contasReceberPedido.length > 0
         ? contasReceberPedido.map((conta, index) => `
             <tr>

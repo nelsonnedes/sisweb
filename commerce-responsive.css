@@ -1071,6 +1071,214 @@ html.sisweb-embedded .page-header {
     .pagination-controls {
         gap: 6px;
     }
+
+    /* Tabelas de modais sem wrapper .table-responsive (romaneios PCT/TL/PES/
+       TORA, pré-romaneios, clientes, fornecedores, espécies, itens): a própria
+       tabela recebe .mobile-cards via commerce-responsive.js. Desktop mantém
+       tabela; mobile vira cards usando data-label. */
+    table.table.mobile-cards:not(.no-mobile-cards),
+    table.mobile-cards:not(.no-mobile-cards) {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100%;
+        border: 0 !important;
+        background: transparent !important;
+    }
+
+    table.table.mobile-cards thead,
+    table.mobile-cards thead {
+        position: absolute !important;
+        top: -9999px !important;
+        left: -9999px !important;
+    }
+
+    table.table.mobile-cards tbody,
+    table.mobile-cards tbody {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    table.table.mobile-cards tbody tr,
+    table.mobile-cards tbody tr {
+        display: block !important;
+        width: 100% !important;
+        border: 1px solid #e1e8ed;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        background: var(--sw-surface, #fff);
+        padding: 8px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    table.table.mobile-cards tbody td,
+    table.mobile-cards tbody td {
+        display: grid !important;
+        grid-template-columns: minmax(96px, 38%) minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        width: 100% !important;
+        border: none !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        padding: 10px 12px !important;
+        text-align: right;
+        min-height: 42px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    table.table.mobile-cards tbody td::before,
+    table.mobile-cards tbody td::before {
+        content: attr(data-label);
+        color: #657786;
+        font-weight: 700;
+        text-align: left;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    table.table.mobile-cards tbody td.commerce-full-row,
+    table.mobile-cards tbody td.commerce-full-row {
+        display: block !important;
+        text-align: center;
+    }
+
+    table.table.mobile-cards tbody td.commerce-full-row::before,
+    table.mobile-cards tbody td.commerce-full-row::before {
+        content: "";
+    }
+
+    table.table.mobile-cards tbody td[data-label="Ações"],
+    table.mobile-cards tbody td[data-label="Ações"],
+    table.table.mobile-cards tbody td.commerce-actions-cell,
+    table.mobile-cards tbody td.commerce-actions-cell {
+        display: flex !important;
+        justify-content: flex-end;
+    }
+
+    table.table.mobile-cards tbody td[data-label="Ações"]::before,
+    table.mobile-cards tbody td[data-label="Ações"]::before,
+    table.table.mobile-cards tbody td.commerce-actions-cell::before,
+    table.mobile-cards tbody td.commerce-actions-cell::before {
+        content: "";
+    }
+
+    table.table.mobile-cards tbody td .btn-small,
+    table.mobile-cards tbody td .btn-small,
+    table.table.mobile-cards tbody td button,
+    table.mobile-cards tbody td button {
+        min-width: 38px;
+        min-height: 36px;
+    }
+}
+
+/* Padronização de temas claro/escuro nos botões de ação (coluna Ações)
+   de todos os modais e tabelas: client.html, fornecedor.html, species.html,
+   financas.html, estoque.html, romaneios PCT/TL/PES/TORA e pré-romaneios.
+   Desktop (tabela) e mobile (cards) com cores consistentes por tema. */
+
+/* Botões de ação em tabelas (desktop) */
+.table-responsive td.commerce-actions-cell button,
+.table-responsive td[data-label="Ações"] button,
+table.table.mobile-cards td.commerce-actions-cell button,
+table.table.mobile-cards td[data-label="Ações"] button,
+.acoes-buttons button,
+.action-buttons-container button {
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Botão primário (editar/visualizar) */
+.table-responsive td.commerce-actions-cell .btn-primary,
+.table-responsive td[data-label="Ações"] .btn-primary,
+table.table.mobile-cards td.commerce-actions-cell .btn-primary,
+table.table.mobile-cards td[data-label="Ações"] .btn-primary,
+.acoes-buttons .btn-primary,
+.action-buttons-container .btn-primary {
+    background: var(--sw-brand, #2c3e50) !important;
+    color: var(--sw-on-brand, #fff) !important;
+}
+
+/* Botão de perigo (excluir) */
+.table-responsive td.commerce-actions-cell .btn-danger,
+.table-responsive td[data-label="Ações"] .btn-danger,
+table.table.mobile-cards td.commerce-actions-cell .btn-danger,
+table.table.mobile-cards td[data-label="Ações"] .btn-danger,
+.acoes-buttons .btn-danger,
+.action-buttons-container .btn-danger {
+    background: #dc3545 !important;
+    color: #fff !important;
+}
+
+/* Botão de aviso (imprimir) */
+.table-responsive td.commerce-actions-cell .btn-warning,
+.table-responsive td[data-label="Ações"] .btn-warning,
+table.table.mobile-cards td.commerce-actions-cell .btn-warning,
+table.table.mobile-cards td[data-label="Ações"] .btn-warning,
+.acoes-buttons .btn-warning,
+.action-buttons-container .btn-warning {
+    background: #ffc107 !important;
+    color: #212529 !important;
+}
+
+/* Botão de sucesso */
+.table-responsive td.commerce-actions-cell .btn-success,
+.table-responsive td[data-label="Ações"] .btn-success,
+table.table.mobile-cards td.commerce-actions-cell .btn-success,
+table.table.mobile-cards td[data-label="Ações"] .btn-success,
+.acoes-buttons .btn-success,
+.action-buttons-container .btn-success {
+    background: #28a745 !important;
+    color: #fff !important;
+}
+
+/* Tema escuro */
+html[data-theme="dark"] .table-responsive td.commerce-actions-cell .btn-primary,
+html[data-theme="dark"] .table-responsive td[data-label="Ações"] .btn-primary,
+html[data-theme="dark"] table.table.mobile-cards td.commerce-actions-cell .btn-primary,
+html[data-theme="dark"] table.table.mobile-cards td[data-label="Ações"] .btn-primary,
+html[data-theme="dark"] .acoes-buttons .btn-primary,
+html[data-theme="dark"] .action-buttons-container .btn-primary {
+    background: var(--sw-brand, #3498db) !important;
+    color: var(--sw-on-brand, #fff) !important;
+}
+
+html[data-theme="dark"] .table-responsive td.commerce-actions-cell .btn-danger,
+html[data-theme="dark"] .table-responsive td[data-label="Ações"] .btn-danger,
+html[data-theme="dark"] table.table.mobile-cards td.commerce-actions-cell .btn-danger,
+html[data-theme="dark"] table.table.mobile-cards td[data-label="Ações"] .btn-danger,
+html[data-theme="dark"] .acoes-buttons .btn-danger,
+html[data-theme="dark"] .action-buttons-container .btn-danger {
+    background: #c82333 !important;
+    color: #fff !important;
+}
+
+html[data-theme="dark"] .table-responsive td.commerce-actions-cell .btn-warning,
+html[data-theme="dark"] .table-responsive td[data-label="Ações"] .btn-warning,
+html[data-theme="dark"] table.table.mobile-cards td.commerce-actions-cell .btn-warning,
+html[data-theme="dark"] table.table.mobile-cards td[data-label="Ações"] .btn-warning,
+html[data-theme="dark"] .acoes-buttons .btn-warning,
+html[data-theme="dark"] .action-buttons-container .btn-warning {
+    background: #e0a800 !important;
+    color: #212529 !important;
+}
+
+html[data-theme="dark"] .table-responsive td.commerce-actions-cell .btn-success,
+html[data-theme="dark"] .table-responsive td[data-label="Ações"] .btn-success,
+html[data-theme="dark"] table.table.mobile-cards td.commerce-actions-cell .btn-success,
+html[data-theme="dark"] table.table.mobile-cards td[data-label="Ações"] .btn-success,
+html[data-theme="dark"] .acoes-buttons .btn-success,
+html[data-theme="dark"] .action-buttons-container .btn-success {
+    background: #218838 !important;
+    color: #fff !important;
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {

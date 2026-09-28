@@ -415,9 +415,9 @@ class RomaneioManager {
                         gap: 12px;
                         padding: 15px 20px;
                         margin: 0;
-                        border-bottom: 1px solid #ddd;
+                        border-bottom: 1px solid var(--sw-border);
                         background: var(--sw-gradient);
-                        color: white;
+                        color: var(--sw-on-brand);
                         border-radius: 8px 8px 0 0;
                         overflow: hidden;
                     }
@@ -432,7 +432,7 @@ class RomaneioManager {
                         align-items: center;
                         gap: 8px;
                         line-height: 1.2;
-                        color: white !important;
+                        color: var(--sw-on-brand) !important;
                         font-weight: bold;
                         font-size: 1.25rem;
                         text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
@@ -473,8 +473,8 @@ class RomaneioManager {
                         border-collapse: collapse;
                     }
                     #${this.modalId} thead th {
-                        background-color: #2c3e50;
-                        color: white;
+                        background-color: var(--sw-brand);
+                        color: var(--sw-on-brand);
                         position: sticky;
                         top: 0;
                         z-index: 10;
@@ -483,27 +483,27 @@ class RomaneioManager {
                         text-transform: uppercase;
                         font-size: 0.85rem;
                         letter-spacing: 0.5px;
-                        border-bottom: 2px solid #1a252f;
+                        border-bottom: 2px solid var(--sw-brand-dark);
                     }
                     #${this.modalId} tbody td {
                         padding: 10px;
                         vertical-align: middle;
-                        border-bottom: 1px solid #eee;
-                        color: #333;
+                        border-bottom: 1px solid var(--sw-border);
+                        color: var(--sw-text-2);
                         font-size: 0.9rem;
                     }
-                    /* Fase 21: células/cabeçalho/rodapé acompanham o tema (claros acima = fallback light). */
+                    /* Fase 21: células/cabeçalho/rodapé acompanham o tema (bases acima em tokens). */
                     html[data-theme="dark"] #${this.modalId} thead th {
-                        background-color: var(--sw-surface-2);
-                        color: var(--sw-text-1);
-                        border-bottom-color: var(--sw-border);
+                        background-color: var(--sw-brand);
+                        color: var(--sw-on-brand);
+                        border-bottom-color: var(--sw-brand-dark);
                     }
                     html[data-theme="dark"] #${this.modalId} tbody td {
                         border-bottom-color: var(--sw-border);
                         color: var(--sw-text-2);
                     }
                     #${this.modalId} tbody tr:hover {
-                        background-color: #f1f7fb;
+                        background-color: var(--sw-hover);
                     }
                     /* Fase 17: hover acompanha o tema (regra clara acima é fallback light). */
                     html[data-theme="dark"] #${this.modalId} tbody tr:hover {
@@ -532,8 +532,8 @@ class RomaneioManager {
                         align-items: center;
                         padding: 12px 16px;
                         margin: 0;
-                        border-top: 1px solid #e5e7eb;
-                        background: #f8fafc;
+                        border-top: 1px solid var(--sw-border);
+                        background: var(--sw-surface-2);
                     }
                     html[data-theme="dark"] #${this.modalId} .modal-footer {
                         border-top-color: var(--sw-border);
@@ -543,7 +543,7 @@ class RomaneioManager {
                         padding: 14px 16px;
                     }
                     #${this.modalId} .modal-info {
-                        color: #666;
+                        color: var(--sw-text-3);
                         font-size: 0.9rem;
                     }
                     #${this.modalId} .close-btn-footer {
@@ -568,10 +568,12 @@ class RomaneioManager {
                     #${this.modalId} .filter-input {
                         width: 100%;
                         padding: 10px 15px;
-                        border: 1px solid #ced4da;
+                        border: 1px solid var(--sw-input-border);
                         border-radius: 4px;
                         font-size: 0.95rem;
                         transition: border-color 0.2s;
+                        background: var(--sw-input-bg);
+                        color: var(--sw-text-1);
                     }
                     #${this.modalId} .filter-input:focus {
                         border-color: var(--sw-brand);
@@ -588,18 +590,18 @@ class RomaneioManager {
                         width: 100%;
                     }
                     #paginationControls_${this.modalId}.pagination-controls button {
-                        border: 1px solid #d0d7de;
-                        background: #fff;
-                        color: #2c3e50;
+                        border: 1px solid var(--sw-border);
+                        background: var(--sw-surface);
+                        color: var(--sw-text-1);
                         padding: 6px 10px;
                         border-radius: 4px;
                         cursor: pointer;
                         font-size: 12px;
                     }
                     #paginationControls_${this.modalId}.pagination-controls button.active {
-                        background: #2c3e50;
-                        color: #fff;
-                        border-color: #2c3e50;
+                        background: var(--sw-brand);
+                        color: var(--sw-on-brand);
+                        border-color: var(--sw-brand);
                     }
                     #paginationControls_${this.modalId}.pagination-controls button:disabled {
                         opacity: 0.5;
@@ -618,7 +620,7 @@ class RomaneioManager {
                     html[data-theme="dark"] #paginationControls_${this.modalId}.pagination-controls button.active {
                         background: var(--sw-brand);
                         border-color: var(--sw-brand);
-                        color: #ffffff;
+                        color: var(--sw-on-brand);
                     }
                     html[data-theme="dark"] #paginationControls_${this.modalId}.pagination-controls button:disabled {
                         color: var(--sw-text-3);

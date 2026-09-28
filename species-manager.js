@@ -635,7 +635,7 @@ class SpeciesManager {
                 </div>
                 <div class="modal-footer" style="text-align: right; padding: 15px; border-top: 1px solid #ddd;">
                     <button type="button" class="btn btn-secondary back-button" style="margin-right: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>
-                    <button type="button" class="btn btn-primary btn-save" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Nova Espécie</button>
+                    <button type="button" class="btn btn-primary btn-save" style="padding: 8px 16px; background: var(--sw-brand); color: var(--sw-on-brand); border: none; border-radius: 4px; cursor: pointer;">Nova Espécie</button>
                 </div>
             </div>
         `;
@@ -779,13 +779,13 @@ class SpeciesManager {
                                     data-id="${specie.id}" 
                                     data-name="${escapeSpeciesHtml(speciesName)}"
                                     title="Selecionar espécie"
-                                    style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: 0 1px; border: none; border-radius: 3px; cursor: pointer; background-color: #3498db; color: white; font-size: 12px; transition: all 0.2s ease;">
+                                    style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: 0 1px; border: none; border-radius: 3px; cursor: pointer; background-color: var(--sw-brand); color: var(--sw-on-brand); font-size: 12px; transition: all 0.2s ease;">
                                 <i class="fas fa-check"></i>
                             </button>
                             <button class="client-action-button species-action-btn species-edit-btn" 
                                     data-id="${specie.id}"
                                     title="Editar espécie"
-                                    style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: 0 1px; border: none; border-radius: 3px; cursor: pointer; background-color: #3498db; color: white; font-size: 12px; transition: all 0.2s ease;">
+                                    style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: 0 1px; border: none; border-radius: 3px; cursor: pointer; background-color: var(--sw-brand); color: var(--sw-on-brand); font-size: 12px; transition: all 0.2s ease;">
                                 <i class="fas fa-edit"></i>
                             </button>
                         </div>
@@ -829,10 +829,10 @@ class SpeciesManager {
             
             // Hover effects iguais aos fornecedores
             btn.onmouseenter = () => {
-                btn.style.backgroundColor = '#2980b9';
+                btn.style.backgroundColor = 'var(--sw-brand-dark)';
             };
             btn.onmouseleave = () => {
-                btn.style.backgroundColor = '#3498db';
+                btn.style.backgroundColor = 'var(--sw-brand)';
             };
         });
         
@@ -848,10 +848,10 @@ class SpeciesManager {
             
             // Hover effects iguais aos fornecedores
             btn.onmouseenter = () => {
-                btn.style.backgroundColor = '#2980b9';
+                btn.style.backgroundColor = 'var(--sw-brand-dark)';
             };
             btn.onmouseleave = () => {
-                btn.style.backgroundColor = '#3498db';
+                btn.style.backgroundColor = 'var(--sw-brand)';
             };
         });
     }
@@ -930,13 +930,13 @@ class SpeciesManager {
                                 data-id="${specie.id}" 
                                 data-name="${escapeSpeciesHtml(speciesName)}"
                                 title="Selecionar espécie"
-                                style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: 0 1px; border: none; border-radius: 3px; cursor: pointer; background-color: #3498db; color: white; font-size: 12px; transition: all 0.2s ease;">
+                                style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: 0 1px; border: none; border-radius: 3px; cursor: pointer; background-color: var(--sw-brand); color: var(--sw-on-brand); font-size: 12px; transition: all 0.2s ease;">
                             <i class="fas fa-check"></i>
                         </button>
                         <button class="client-action-button species-action-btn species-edit-btn" 
                                 data-id="${specie.id}"
                                 title="Editar espécie"
-                                style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: 0 1px; border: none; border-radius: 3px; cursor: pointer; background-color: #3498db; color: white; font-size: 12px; transition: all 0.2s ease;">
+                                style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: 0 1px; border: none; border-radius: 3px; cursor: pointer; background-color: var(--sw-brand); color: var(--sw-on-brand); font-size: 12px; transition: all 0.2s ease;">
                             <i class="fas fa-edit"></i>
                         </button>
                     </div>
@@ -1969,7 +1969,7 @@ window.showSpeciesSuggestions = function(input) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.textContent = 'Ver lista completa';
-            btn.style.cssText = 'padding: 4px 8px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px;';
+            btn.style.cssText = 'padding: 4px 8px; background: var(--sw-brand); color: var(--sw-on-brand); border: none; border-radius: 3px; cursor: pointer; font-size: 11px;';
             btn.addEventListener('pointerdown', (event) => {
                 event.preventDefault();
                 window.hideSpeciesSuggestions(input);
@@ -2072,8 +2072,8 @@ style.textContent = `
     border: none !important;
     border-radius: 3px !important;
     cursor: pointer !important;
-    background-color: #3498db !important;
-    color: white !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
     font-size: 12px !important;
     transition: all 0.2s ease !important;
     padding: 0 !important;
@@ -2081,7 +2081,8 @@ style.textContent = `
 }
 
 .client-action-button:hover {
-    background-color: #2980b9 !important;
+    background-color: var(--sw-brand) !important;
+    filter: brightness(0.88);
 }
 
 .client-action-button i {
@@ -2130,8 +2131,8 @@ html[data-theme="dark"] #speciesListModal #speciesListFilter {
 }
 
 .species-list-filter-input:focus {
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
+    border-color: var(--sw-brand) !important;
+    box-shadow: 0 0 0 3px var(--sw-focus-ring) !important;
 }
 
 #speciesListModal .table-container,
@@ -2280,27 +2281,29 @@ html[data-theme="dark"] #speciesListModal #speciesListFilter {
 
 .species-suggestion-scientific {
     margin-top: 2px !important;
-    color: #6b7280 !important;
+    color: var(--sw-text-3) !important;
     font-size: 12px !important;
     line-height: 1.25 !important;
 }
 
 .species-action-btn.species-select-btn {
-    background-color: #3498db !important;
-    color: white !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
 }
 
 .species-action-btn.species-select-btn:hover {
-    background-color: #2980b9 !important;
+    background-color: var(--sw-brand) !important;
+    filter: brightness(0.88);
 }
 
 .species-action-btn.species-edit-btn {
-    background-color: #3498db !important;
-    color: white !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
 }
 
 .species-action-btn.species-edit-btn:hover {
-    background-color: #2980b9 !important;
+    background-color: var(--sw-brand) !important;
+    filter: brightness(0.88);
 }
 
 /* Container para os botões */
@@ -2313,28 +2316,28 @@ html[data-theme="dark"] #speciesListModal #speciesListFilter {
 
 /* Estilos para tabelas (exceto Lista de Pedidos, que tem CSS proprio com .actions-col) */
 .table thead th:not(.actions-col) {
-    background-color: #2c3e50 !important;
-    color: white !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
     font-weight: 600 !important;
     position: sticky !important;
     top: 0 !important;
     z-index: 10 !important;
     padding: 12px !important;
     text-align: left !important;
-    border: 1px solid #1a2942 !important;
+    border: 1px solid var(--sw-brand-dark) !important;
     font-size: 13px !important;
 }
 
 .table tbody td {
     padding: 12px !important;
     text-align: left !important;
-    border-bottom: 1px solid #e0e0e0 !important;
+    border-bottom: 1px solid var(--sw-border) !important;
     vertical-align: middle !important;
     font-size: 13px !important;
 }
 
 .table tbody tr:hover {
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-hover) !important;
     transition: background-color 0.2s ease !important;
 }
 
@@ -2384,18 +2387,20 @@ html[data-theme="dark"] .table tbody tr:hover {
 
 /* Garantir que os botões não sejam sobrescritos */
 button.client-action-button {
-    background-color: #3498db !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
 }
 
 button.client-action-button:hover {
-    background-color: #2980b9 !important;
+    background-color: var(--sw-brand) !important;
+    filter: brightness(0.88);
 }
 
 /* Compatibilidade com diferentes frameworks */
 .btn.client-action-button,
 .button.client-action-button {
-    background-color: #3498db !important;
-    color: white !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
     border: none !important;
 }
 

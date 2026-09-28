@@ -61,6 +61,17 @@ function runFlush({ source, flushStart, flushEnd, flushName, contasVar, diasMapV
     }
   };
   if (valorMapVar) context[valorMapVar] = new Map([['CR1', 67890]]);
+  context.parseCurrencyValue = (value) => {
+    if (!value) return 0;
+    if (typeof value === 'number') return value;
+    const numericValue = value.toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+    return parseFloat(numericValue) || 0;
+  };
+  context.addDaysISO = (baseStr, days) => {
+    const [y, m, d] = baseStr.split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d + parseInt(days, 10)));
+    return date.toISOString().slice(0, 10);
+  };
   context.atualizarValorConta = (id, v) => {
     calls.push(['valor', id, v]);
     if (valorMapVar) context[valorMapVar].delete(String(id));
@@ -103,11 +114,12 @@ test('vendas: flush aplica DOM na memória e limpa timers pendentes', () => {
     valorMapVar: 'debounceValorContaTimers',
     calls
   });
-  const kinds = calls.map(c => c[0]).sort();
-  assert.deepEqual(kinds, ['dias', 'obs', 'valor', 'venc'], 'valor+dias+vencimento+obs aplicados do DOM');
-  const valorCall = calls.find(c => c[0] === 'valor');
-  assert.equal(valorCall[1], 'CR1');
-  assert.equal(valorCall[2], '200', 'valor aplicado é o digitado, não o antigo (100)');
+  const conta = context.contasReceber.find(c => String(c.id) === 'CR1');
+  assert.ok(conta, 'conta CR1 precisa existir');
+  assert.equal(conta.valor, 200, 'valor aplicado é o digitado, não o antigo (100)');
+  assert.equal(conta.dias, 45, 'dias aplicado do DOM');
+  assert.equal(conta.vencimento, '2026-03-18', 'vencimento calculado a partir de dias');
+  assert.equal(conta.observacao, 'nova obs', 'observação aplicada do DOM');
   assert.equal(context.debounceValorContaTimers.size, 0, 'timer de valor pendente consumido');
   assert.equal(context.debounceDiasContaTimers.size, 0, 'timer de dias pendente consumido');
 });

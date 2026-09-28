@@ -281,16 +281,16 @@ class FornecedorManager {
                 <div class="modal-body">
                     <div id="clientListControls" style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:10px 0;">
                         <div>
-                            <button type="button" id="viewAllBtn" style="background:#2c3e50;color:#fff;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;margin-right:6px;">Todos</button>
-                            <button type="button" id="viewSuppliersBtn" style="background:#374151;color:#fff;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;margin-right:6px;">Fornecedores</button>
-                            <button type="button" id="viewClientsBtn" style="background:#374151;color:#fff;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;">Clientes</button>
+                            <button type="button" id="viewAllBtn" style="background:var(--sw-brand);color:var(--sw-on-brand);border:none;border-radius:4px;padding:6px 10px;cursor:pointer;margin-right:6px;">Todos</button>
+                            <button type="button" id="viewSuppliersBtn" style="background:var(--sw-surface-2);color:var(--sw-text-1);border:1px solid var(--sw-border);border-radius:4px;padding:6px 10px;cursor:pointer;margin-right:6px;">Fornecedores</button>
+                            <button type="button" id="viewClientsBtn" style="background:var(--sw-surface-2);color:var(--sw-text-1);border:1px solid var(--sw-border);border-radius:4px;padding:6px 10px;cursor:pointer;margin-right:6px;">Clientes</button>
                         </div>
-                        <input type="text" id="${this.filterId}" placeholder="🔍 Buscar por nome, CNPJ, cidade..." 
-                               style="flex:1;margin:0; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none;">
+                        <input type="text" id="${this.filterId}" placeholder="🔍 Buscar por nome, CNPJ, cidade..."
+                               style="flex:1;margin:0; padding: 10px 12px; border: 2px solid var(--sw-input-border); border-radius: 8px; font-size: 14px; outline: none; background: var(--sw-input-bg); color: var(--sw-text-1);">
                     </div>
                     <table class="table">
                         <thead>
-                            <tr style="background-color: #2c3e50; color: white;">
+                            <tr style="background-color: var(--sw-brand); color: var(--sw-on-brand);">
                                 <th style="padding: 12px; text-align: left;">Nome</th>
                                 <th style="padding: 12px; text-align: left;">CNPJ</th>
                                 <th style="padding: 12px; text-align: left;">Cidade</th>
@@ -303,13 +303,13 @@ class FornecedorManager {
                         <tbody id="${this.tableId}"></tbody>
                     </table>
                 </div>
-                <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid #ddd; text-align: right;">
-                    <button type="button" onclick="document.getElementById('${this.modalId}').style.display='none'" 
-                            style="background-color: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid var(--sw-border); text-align: right; background: var(--sw-surface-2);">
+                    <button type="button" onclick="document.getElementById('${this.modalId}').style.display='none'"
+                            style="background-color: var(--sw-surface-2); color: var(--sw-text-1); padding: 8px 16px; border: 1px solid var(--sw-border); border-radius: 4px; cursor: pointer; margin-right: 10px;">
                         Fechar
                     </button>
-                    <button type="button" onclick="fornecedorManager.openNewModal()" 
-                            style="background-color: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                    <button type="button" onclick="fornecedorManager.openNewModal()"
+                            style="background-color: var(--sw-brand); color: var(--sw-on-brand); padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
                         Novo Fornecedor
                     </button>
                 </div>
@@ -351,11 +351,17 @@ class FornecedorManager {
         const viewClientsBtn = modal.querySelector('#viewClientsBtn');
         const setActive = (type) => {
             this.viewType = type;
-            // feedback visual simples
-            [viewAllBtn, viewSuppliersBtn, viewClientsBtn].forEach(btn => btn && (btn.style.background = '#374151'));
-            if (type === 'todos' && viewAllBtn) viewAllBtn.style.background = '#2c3e50';
-            if (type === 'fornecedores' && viewSuppliersBtn) viewSuppliersBtn.style.background = '#2c3e50';
-            if (type === 'clientes' && viewClientsBtn) viewClientsBtn.style.background = '#2c3e50';
+            // feedback visual simples (tokens do tema)
+            [viewAllBtn, viewSuppliersBtn, viewClientsBtn].forEach(btn => {
+                if (!btn) return;
+                btn.style.background = 'var(--sw-surface-2)';
+                btn.style.color = 'var(--sw-text-1)';
+            });
+            const active = type === 'todos' ? viewAllBtn : type === 'fornecedores' ? viewSuppliersBtn : type === 'clientes' ? viewClientsBtn : null;
+            if (active) {
+                active.style.background = 'var(--sw-brand)';
+                active.style.color = 'var(--sw-on-brand)';
+            }
             this.applyFilter(this.currentFilter);
             this.renderFilteredTable();
         };
@@ -893,14 +899,14 @@ style.textContent = `
 #clientListTable td {
     padding: 8px 12px !important;
     text-align: left !important;
-    border-bottom: 1px solid #e0e0e0 !important;
+    border-bottom: 1px solid var(--sw-border) !important;
     vertical-align: middle !important;
     font-size: 13px !important;
 }
 
 #clientListTable th {
-    background-color: #2c3e50 !important;
-    color: white !important;
+    background-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
     font-weight: 600 !important;
     position: sticky !important;
     top: 0 !important;
@@ -908,7 +914,7 @@ style.textContent = `
 }
 
 #clientListTable tr:hover {
-    background-color: #f8f9fa !important;
+    background-color: var(--sw-hover) !important;
     transition: background-color 0.2s ease !important;
 }
 

@@ -31,7 +31,14 @@
         if (!table || table.dataset.commerceResponsiveBound === '1') return;
         table.dataset.commerceResponsiveBound = '1';
         const wrapper = table.closest('.table-responsive');
-        if (wrapper) wrapper.classList.add('mobile-cards');
+        if (wrapper) {
+            wrapper.classList.add('mobile-cards');
+        } else {
+            // Tabelas de modais sem wrapper .table-responsive (ex.: romaneios,
+            // pré-romaneios, espécies, clientes/fornecedores): marca a própria
+            // tabela para o CSS de cards no mobile (table.mobile-cards).
+            table.classList.add('mobile-cards');
+        }
     }
 
     function applyLabels(table) {

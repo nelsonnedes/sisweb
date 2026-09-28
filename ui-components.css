@@ -72,20 +72,20 @@
 .btn-primary { background-color: var(--primary-color); color: var(--sw-on-brand); }
 .btn-primary:hover:not(:disabled) { background-color: var(--primary-light); }
 
-.btn-success, .btn-salvar, .btn-adicionar { background-color: var(--success-color); color: #fff; }
-.btn-success:hover:not(:disabled), .btn-salvar:hover:not(:disabled), .btn-adicionar:hover:not(:disabled) { background-color: #219653; }
+.btn-success, .btn-salvar, .btn-adicionar { background-color: var(--success-color); color: var(--sw-on-brand); }
+.btn-success:hover:not(:disabled), .btn-salvar:hover:not(:disabled), .btn-adicionar:hover:not(:disabled) { background-color: var(--success-color); filter: brightness(0.88); }
 
-.btn-danger, .btn-excluir { background-color: var(--danger-color); color: #fff; }
-.btn-danger:hover:not(:disabled), .btn-excluir:hover:not(:disabled) { background-color: var(--danger-dark); }
+.btn-danger, .btn-excluir { background-color: var(--danger-color); color: var(--sw-on-brand); }
+.btn-danger:hover:not(:disabled), .btn-excluir:hover:not(:disabled) { background-color: var(--danger-dark); filter: brightness(0.88); }
 
-.btn-warning, .btn-editar { background-color: var(--warning-color); color: #fff; }
-.btn-warning:hover:not(:disabled), .btn-editar:hover:not(:disabled) { background-color: #e67e22; }
+.btn-warning, .btn-editar { background-color: var(--warning-color); color: var(--sw-on-brand); }
+.btn-warning:hover:not(:disabled), .btn-editar:hover:not(:disabled) { background-color: var(--warning-color); filter: brightness(0.88); }
 
-.btn-info, .btn-listar { background-color: var(--secondary-color); color: #fff; }
-.btn-info:hover:not(:disabled), .btn-listar:hover:not(:disabled) { background-color: #138496; }
+.btn-info, .btn-listar { background-color: var(--secondary-color); color: var(--sw-on-brand); }
+.btn-info:hover:not(:disabled), .btn-listar:hover:not(:disabled) { background-color: var(--secondary-color); filter: brightness(0.88); }
 
 .btn-outline { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
-.btn-outline:hover:not(:disabled) { background-color: var(--light-bg); border-color: #ccc; }
+.btn-outline:hover:not(:disabled) { background-color: var(--light-bg); border-color: var(--sw-brand); }
 
 
 /* ==========================================

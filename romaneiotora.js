@@ -2418,38 +2418,38 @@ function renderizarResumoRomaneio() {
         const avgVol = stats.count > 0 ? (stats.totalVolume / stats.count) : 0;
         
         speciesHtml += `
-            <div style="background: #fff; padding: 10px; border-radius: 4px; border: 1px solid #ddd; text-align: center; min-width: 140px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <div style="font-weight: bold; color: #2c3e50; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px;">${esp}</div>
-                <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 3px;">Média Rodo: <strong>${formatNumber(avgRodo, 1)} cm</strong></div>
-                <div style="font-size: 13px; color: #7f8c8d;">Média Volu: <strong>${formatNumber(avgVol, 3)} m³</strong></div>
+            <div style="background: var(--sw-surface); padding: 10px; border-radius: 4px; border: 1px solid var(--sw-border); text-align: center; min-width: 140px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div style="font-weight: bold; color: var(--sw-text-1); margin-bottom: 8px; border-bottom: 1px solid var(--sw-border); padding-bottom: 5px;">${esp}</div>
+                <div style="font-size: 13px; color: var(--sw-text-3); margin-bottom: 3px;">Média Rodo: <strong>${formatNumber(avgRodo, 1)} cm</strong></div>
+                <div style="font-size: 13px; color: var(--sw-text-3);">Média Volu: <strong>${formatNumber(avgVol, 3)} m³</strong></div>
             </div>
         `;
     });
 
     summaryContainer.innerHTML = `
-        <div class="summary-box" style="background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 20px; border-radius: 8px;">
-            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 20px;">
+        <div class="summary-box" style="background-color: var(--sw-surface-2); border: 1px solid var(--sw-border); padding: 20px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid var(--sw-border); padding-bottom: 20px;">
                 <div class="text-center">
-                    <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Quantidade de Toras</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">${itens.length}</div>
+                    <div style="font-size: 14px; color: var(--sw-text-3); text-transform: uppercase; letter-spacing: 1px;">Quantidade de Toras</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--sw-text-1);">${itens.length}</div>
                 </div>
                 <div class="text-center">
-                    <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Volume Total</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">${formatNumber(volTotal, 3)} m³</div>
+                    <div style="font-size: 14px; color: var(--sw-text-3); text-transform: uppercase; letter-spacing: 1px;">Volume Total</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--sw-text-1);">${formatNumber(volTotal, 3)} m³</div>
                 </div>
                 <div class="text-center">
-                    <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Volume Geo.</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">${formatNumber(geoTotal, 3)} m³</div>
+                    <div style="font-size: 14px; color: var(--sw-text-3); text-transform: uppercase; letter-spacing: 1px;">Volume Geo.</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--sw-text-1);">${formatNumber(geoTotal, 3)} m³</div>
                 </div>
                 <div class="text-center">
-                    <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Valor Total</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #27ae60;">${formatCurrency(valTotal)}</div>
+                    <div style="font-size: 14px; color: var(--sw-text-3); text-transform: uppercase; letter-spacing: 1px;">Valor Total</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--sw-success);">${formatCurrency(valTotal)}</div>
                 </div>
             </div>
-            
-            <h4 style="margin-bottom: 15px; font-size: 16px; color: #34495e; border-left: 4px solid #3498db; padding-left: 10px;">Médias de Rodo e Volume por Espécie</h4>
+
+            <h4 style="margin-bottom: 15px; font-size: 16px; color: var(--sw-text-1); border-left: 4px solid var(--sw-brand); padding-left: 10px;">Médias de Rodo e Volume por Espécie</h4>
             <div style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px;">
-                ${speciesHtml || '<div style="color: #999; font-style: italic;">Nenhuma espécie com dados suficientes</div>'}
+                ${speciesHtml || '<div style="color: var(--sw-text-3); font-style: italic;">Nenhuma espécie com dados suficientes</div>'}
             </div>
         </div>
     `;

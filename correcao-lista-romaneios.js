@@ -89,12 +89,12 @@ async function abrirListaRomaneiosCorrigida() {
         if (modalBody) {
             modalBody.innerHTML = `
                 <div style="margin-bottom: 15px;">
-                    <input type="text" id="romaneioListFilter" placeholder="Filtrar por fornecedor, espécie ou data..." 
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                </div>
-                <div class="table-container" style="max-height: 500px; overflow-y: auto; overflow-x: visible; position: relative;">
-                    <table class="table" style="width: 100%;">
-                        <thead style="position: sticky; top: 0; background-color: #2c3e50; color: white; z-index: 1;">
+                        <input type="text" id="romaneioListFilter" placeholder="Filtrar por fornecedor, espécie ou data..."
+                               style="width: 100%; padding: 10px; border: 1px solid var(--sw-input-border); border-radius: 4px; font-size: 14px; background: var(--sw-input-bg); color: var(--sw-text-1);">
+                    </div>
+                    <div class="table-container" style="max-height: 500px; overflow-y: auto; overflow-x: visible; position: relative;">
+                        <table class="table" style="width: 100%;">
+                        <thead style="position: sticky; top: 0; background: var(--sw-brand); color: var(--sw-on-brand); z-index: 1;">
                             <tr>
                                 <th style="padding: 10px;">Data</th>
                                 <th style="padding: 10px;">Fornecedor</th>
@@ -1426,8 +1426,8 @@ function gerarEstilosCSSImpressao(tipo) {
         .info-block {
             margin-bottom: 20px;
             padding: 10px;
-            border: 1px solid #ddd;
-            background-color: #f9f9f9;
+            border: 1px solid var(--sw-border);
+            background-color: var(--sw-surface-2);
         }
         
         .info-row {

@@ -2484,11 +2484,11 @@ async function abrirListaRomaneios() {
                 modalBody.innerHTML = `
                     <div style="margin-bottom: 15px;">
                         <input type="text" id="romaneioListFilter" placeholder="Filtrar por fornecedor, espÃ©cie ou data..." 
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                               style="width: 100%; padding: 10px; border: 1px solid var(--sw-input-border); border-radius: 4px; font-size: 14px; background: var(--sw-input-bg); color: var(--sw-text-1);">
                     </div>
                     <div class="table-container" style="max-height: 500px; overflow-y: auto; overflow-x: visible; position: relative;">
                         <table class="table" style="width: 100%;">
-                            <thead style="position: sticky; top: 0; background-color: #2c3e50; color: white; z-index: 1;">
+                            <thead style="position: sticky; top: 0; background: var(--sw-brand); color: var(--sw-on-brand); z-index: 1;">
                                 <tr>
                                     <th style="padding: 10px;">Data</th>
                                     <th style="padding: 10px;">Fornecedor</th>
@@ -2697,7 +2697,7 @@ async function renderRomaneioList(filter = '') {
             console.error("âŒ Erro ao chamar getData:", getDataError);
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 20px; color: #e74c3c;">
+                    <td colspan="7" style="text-align: center; padding: 20px; color: var(--sw-danger);">
                         <i class="fas fa-exclamation-triangle"></i> Erro ao carregar dados: ${getDataError.message}
                     </td>
                 </tr>
@@ -2848,8 +2848,8 @@ async function renderRomaneioList(filter = '') {
             
             // Criar a linha da tabela
             const tr = document.createElement('tr');
-            tr.style.backgroundColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
-            tr.style.borderBottom = '1px solid #ddd';
+            tr.style.backgroundColor = index % 2 === 0 ? 'var(--sw-surface-2)' : 'var(--sw-surface)';
+            tr.style.borderBottom = '1px solid var(--sw-border)';
             
             // âœ… USAR CHAVE FIREBASE ÃšNICA PARA AÃ‡Ã•ES AO INVÃ‰S DO ID DUPLICADO
             const romaneioUniqueKey = romaneio.firebaseKey || romaneio.id;
@@ -2875,13 +2875,13 @@ async function renderRomaneioList(filter = '') {
                 <td style="padding: 10px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${especies}">${especies}</td>
                 <td style="padding: 10px; text-align: center;">${numItens}</td>
                 <td style="padding: 10px; text-align: right; font-weight: 500;">${volumeFormatado}</td>
-                <td style="padding: 10px; text-align: right; font-weight: 500; color: #27ae60;">${valorFormatado}</td>
+                <td style="padding: 10px; text-align: right; font-weight: 500; color: var(--sw-success);">${valorFormatado}</td>
                 <td style="padding: 10px; text-align: center;">
                     <div style="display: flex; justify-content: center; align-items: center; gap: 6px;">
                         <!-- âœ… MENU AVANÃ‡ADO DE IMPRESSÃƒO ORGANIZADO COM Z-INDEX ALTO -->
                         <div class="dropdown action-dropdown" style="position: relative;">
-                            <button class="client-action-button dropdown-toggle" 
-                                    style="background-color: #3498db; color: white; padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 38px; height: 34px;" 
+                            <button class="client-action-button dropdown-toggle"
+                                    style="background-color: var(--sw-brand); color: var(--sw-on-brand); padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 38px; height: 34px;"
                                     onclick="toggleImprimirDropdownLista(event, '${romaneioUniqueKey}', ${index})" 
                                     title="OpÃ§Ãµes de ImpressÃ£o">
                                 <i class="fas fa-print" style="font-size: 13px;"></i>
@@ -2935,15 +2935,15 @@ async function renderRomaneioList(filter = '') {
                         </div>
                         
                         <!-- âœ… BOTÃƒO DE EDITAR -->
-                        <button class="client-action-button" 
-                                style="background-color: #2ecc71; color: white; padding: 5px 8px; border: none; border-radius: 3px; cursor: pointer;" 
+                        <button class="client-action-button"
+                                style="background-color: var(--sw-brand); color: var(--sw-on-brand); padding: 5px 8px; border: none; border-radius: 3px; cursor: pointer;"
                                 title="Editar ${displayId}" onclick="editarRomaneio('${romaneioUniqueKey}')">
                             <i class="fas fa-edit" style="font-size: 12px;"></i>
                         </button>
                         
                         <!-- âœ… BOTÃƒO DE EXCLUIR -->
-                        <button class="client-action-button" 
-                                style="background-color: #e74c3c; color: white; padding: 5px 8px; border: none; border-radius: 3px; cursor: pointer;" 
+                        <button class="client-action-button"
+                                style="background-color: var(--sw-danger); color: var(--sw-on-brand); padding: 5px 8px; border: none; border-radius: 3px; cursor: pointer;"
                                 title="Excluir ${displayId}" onclick="excluirRomaneio('${romaneioUniqueKey}')">
                             <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
                         </button>
@@ -2962,7 +2962,7 @@ async function renderRomaneioList(filter = '') {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 20px; color: #e74c3c;">
+                    <td colspan="7" style="text-align: center; padding: 20px; color: var(--sw-danger);">
                         <i class="fas fa-exclamation-triangle"></i> Erro ao carregar: ${error.message}
                         <br><small style="margin-top: 10px; display: block;">
                             Verifique o console para mais detalhes
