@@ -468,8 +468,8 @@
             div[id*="romaneioModal"] .modal-header {
                 flex: 0 0 auto !important;
                 height: 52px !important;
-                background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
-                color: #ffffff !important;
+                background: var(--sw-gradient) !important;
+                color: var(--sw-on-brand) !important;
                 padding: 12px 20px !important;
                 border-radius: 8px 8px 0 0 !important;
                 display: flex !important;
@@ -533,13 +533,13 @@
                 position: sticky !important;
                 top: 0 !important;
                 z-index: 10 !important;
-                background: #2c3e50 !important;
-                color: #ffffff !important;
+                background: var(--sw-brand) !important;
+                color: var(--sw-on-brand) !important;
                 font-weight: 600 !important;
                 padding: 10px 10px !important;
                 font-size: 13px !important;
                 white-space: nowrap !important;
-                border-bottom: 2px solid #1e293b !important;
+                border-bottom: 2px solid var(--sw-brand-dark) !important;
             }
 
             #listaModal .modal-footer,
@@ -549,8 +549,8 @@
                 height: auto !important;
                 min-height: 56px !important;
                 padding: 10px 20px !important;
-                border-top: 1px solid #e2e8f0 !important;
-                background: #f8fafc !important;
+                border-top: 1px solid var(--sw-border) !important;
+                background: var(--sw-surface-2) !important;
                 border-radius: 0 0 8px 8px !important;
                 display: flex !important;
                 justify-content: space-between !important;
@@ -848,9 +848,9 @@
                 min-width: 32px;
                 height: 32px;
                 padding: 0 8px;
-                border: 1px solid #cbd5e1;
-                background: #ffffff;
-                color: #334155;
+                border: 1px solid var(--sw-border);
+                background: var(--sw-surface);
+                color: var(--sw-text-1);
                 border-radius: 4px;
                 cursor: pointer;
                 font-size: 12.5px;
@@ -861,40 +861,40 @@
                 transition: all 0.15s ease;
             }
             .rlc-pagination-controls button:hover:not(:disabled) {
-                background: #f1f5f9;
-                border-color: #94a3b8;
+                background: var(--sw-hover);
+                border-color: var(--sw-brand);
             }
             .rlc-pagination-controls button.active {
-                background: #2563eb !important;
-                color: #ffffff !important;
-                border-color: #2563eb !important;
+                background: var(--sw-brand) !important;
+                color: var(--sw-on-brand) !important;
+                border-color: var(--sw-brand) !important;
                 font-weight: 700;
             }
             .rlc-pagination-controls button:disabled {
                 opacity: 0.5;
                 cursor: not-allowed;
-                background: #f8fafc;
+                background: var(--sw-surface-2);
             }
             .rlc-pagination-options {
                 display: inline-flex;
                 align-items: center;
                 gap: 12px;
                 font-size: 13px;
-                color: #475569;
+                color: var(--sw-text-2);
             }
             .rlc-pagination-options select {
                 padding: 5px 10px;
-                border: 1px solid #cbd5e1;
+                border: 1px solid var(--sw-input-border);
                 border-radius: 4px;
-                background: #ffffff;
-                color: #1e293b;
+                background: var(--sw-input-bg);
+                color: var(--sw-text-1);
                 font-size: 12.5px;
                 cursor: pointer;
                 outline: none;
             }
             .rlc-pagination-options select:focus {
-                border-color: #2563eb;
-                box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+                border-color: var(--sw-brand);
+                box-shadow: 0 0 0 2px var(--sw-focus-ring);
             }
         `;
         document.head.appendChild(style);

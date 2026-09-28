@@ -2254,6 +2254,10 @@ async function salvarPedido(event) {
         }
 
         LoadingManager.show('Salvando pedido...');
+
+        // Sincroniza edições de parcelas ainda pendentes (debounce) para a
+        // memória antes de montar o payload — evita persistir valores antigos.
+        try { descarregarEdicaoParcelasVenda(); } catch (_) {}
         
         // Debug: Verificar clientes carregados
         console.log('Cliente ID selecionado:', clienteId);
@@ -7572,6 +7576,35 @@ function atualizarObservacaoConta(contaId, novaObservacao) {
     if (conta) {
         conta.observacao = novaObservacao;
     }
+}
+
+// Descarrega edições de parcelas ainda pendentes (debounce/input sem blur)
+// antes de salvar: sem isso, digitar um valor e salvar em seguida (<180ms,
+// ou via submit por Enter sem blur prévio) persistiria os valores antigos.
+function descarregarEdicaoParcelasVenda() {
+    try {
+        if (!Array.isArray(contasReceber)) return;
+        contasReceber.slice().forEach(conta => {
+            const id = String((conta && conta.id) || '');
+            if (!id) return;
+            try {
+                const valorEl = document.getElementById(`conta-valor-${id}`);
+                if (valorEl && !valorEl.disabled) atualizarValorConta(id, valorEl.value);
+            } catch (_) {}
+            try {
+                const diasEl = document.getElementById(`conta-dias-${id}`);
+                if (diasEl && !diasEl.disabled) atualizarDiasConta(id, diasEl.value);
+            } catch (_) {}
+            try {
+                const dateEl = document.getElementById(`conta-venc-${id}`);
+                if (dateEl && !dateEl.disabled && dateEl.value) atualizarVencimentoConta(id, dateEl.value);
+            } catch (_) {}
+            try {
+                const obsEl = document.getElementById(`conta-obs-${id}`);
+                if (obsEl && !obsEl.disabled) atualizarObservacaoConta(id, obsEl.value);
+            } catch (_) {}
+        });
+    } catch (_) {}
 }
 
 function atualizarTotalContasReceber() {

@@ -136,7 +136,7 @@
             --secondary-color: var(--sw-brand);
             --accent-color: var(--sw-danger);
             --light-color: #ecf0f1;
-            --dark-color: #2c3e50;
+            --dark-color: var(--sw-text-1);
             --success-color: #2ecc71;
             --warning-color: var(--sw-warning);
             --danger-color: var(--sw-danger);
@@ -216,7 +216,7 @@
         }
 
         .total-row td {
-            border-top: 2px solid #2c3e50;
+            border-top: 2px solid var(--sw-text-1);
         }
 
         /* ✅ PADRONIZAÇÃO: Estilos de modais baseados no romaneiotl.html */
@@ -295,7 +295,7 @@
             margin-top: 0;
             padding: 15px 20px;
             border-top: 1px solid #eee;
-            background-color: #f8fbff;
+            background-color: var(--sw-surface-2);
             border-radius: 0 0 8px 8px;
             flex-wrap: wrap;
             gap: 10px;
@@ -316,8 +316,8 @@
             box-shadow: none !important;
         }
 
-        .btn-adicionar { background-color: #27ae60; color: white; }
-        .btn-adicionar:hover { background-color: #219a52; }
+        .btn-adicionar { background-color: var(--sw-success); color: var(--sw-on-brand); }
+        .btn-adicionar:hover { background-color: var(--sw-success); filter: brightness(0.88); }
 
         .btn-salvar { background-color: var(--sw-brand); color: var(--sw-on-brand); }
         .btn-salvar:hover { background-color: var(--sw-brand-dark); }
@@ -325,8 +325,8 @@
         .btn-listar { background-color: var(--sw-brand); color: var(--sw-on-brand); }
         .btn-listar:hover { background-color: var(--sw-brand); filter: brightness(0.88); }
 
-        .back-button, .close-modal-btn { background-color: #6c757d; color: white; }
-        .back-button:hover, .close-modal-btn:hover { background-color: #5a6268; }
+        .back-button, .close-modal-btn { background-color: var(--sw-surface-2); color: var(--sw-text-1); border: 1px solid var(--sw-border); }
+        .back-button:hover, .close-modal-btn:hover { background-color: var(--sw-hover); border-color: var(--sw-brand); }
 
         /* ✅ PADRONIZAÇÃO: Botões de ação da tabela */
         .btn-editar, .btn-excluir {
@@ -402,10 +402,10 @@
             background-color: #e3f2fd;
         }
 
-        /* ✅ PADRONIZAÇÃO: Botões de ação específicos (baseado no romaneiotl) */
+        /* ✅ PADRONIZAÇÃO: Botões de ação específicos (padrão vendas: marca) */
         .action-button {
-            background-color: var(--sw-info);
-            color: white;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             border: none;
             padding: 8px 12px;
             border-radius: 4px;
@@ -419,7 +419,7 @@
         }
 
         .action-button:hover {
-            background-color: var(--sw-info);
+            background-color: var(--sw-brand);
             filter: brightness(0.88);
             transform: translateY(-1px);
             transition: all 0.2s;
@@ -435,11 +435,12 @@
         }
 
         .action-button.edit-button {
-            background-color: var(--sw-info);
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
 
         .action-button.edit-button:hover {
-            background-color: var(--sw-info);
+            background-color: var(--sw-brand);
             filter: brightness(0.88);
         }
 
@@ -470,33 +471,36 @@
         }
 
         .action-button.print-button {
-            background-color: #27ae60;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
 
         .action-button.print-button:hover {
-            background-color: #219a52;
+            background-color: var(--sw-brand);
+            filter: brightness(0.88);
         }
 
         /* ✅ CORREÇÃO CRÍTICA: Botão financeiro (lançar contas a receber) */
         .action-button.financeiro-button {
-            background-color: #27ae60 !important;
-            color: white !important;
+            background-color: var(--sw-success) !important;
+            color: var(--sw-on-brand) !important;
         }
 
         .action-button.financeiro-button:hover {
-            background-color: #219a52 !important;
+            background-color: var(--sw-success) !important;
+            filter: brightness(0.88);
         }
 
         .action-button.financeiro-button.disabled {
-            background-color: #95a5a6 !important;
-            color: #7f8c8d !important;
+            background-color: var(--sw-surface-2) !important;
+            color: var(--sw-text-3) !important;
             cursor: not-allowed !important;
             opacity: 0.8 !important;
         }
 
         .action-button.financeiro-button.disabled:hover {
-            background-color: #95a5a6 !important;
-            color: #7f8c8d !important;
+            background-color: var(--sw-surface-2) !important;
+            color: var(--sw-text-3) !important;
         }
 
         /* ✅ CORREÇÃO EMERGENCIAL: Estilos para menu principal */
@@ -523,7 +527,7 @@
         }
 
         .menu-item-container .dropdown-content a {
-            color: #2c3e50;
+            color: var(--sw-text-1);
             padding: 12px 16px;
             text-decoration: none;
             display: block;
@@ -598,7 +602,7 @@
         .print-dropdown .dropdown-content a,
         .tabela-container .dropdown-content a,
         #listaModal .dropdown-content a {
-            color: #2c3e50;
+            color: var(--sw-text-1);
             padding: 12px 16px;
             text-decoration: none;
             display: block;
@@ -703,13 +707,13 @@
         }
 
         h1 {
-            color: #2c3e50;
+            color: var(--sw-text-1);
             margin-bottom: 20px;
             text-align: center;
         }
 
         h2 {
-            color: #2c3e50;
+            color: var(--sw-text-1);
             margin-bottom: 10px;
             margin-top: 25px;
             font-size: 18px;
@@ -722,7 +726,7 @@
         label {
             display: block;
             margin-bottom: 5px;
-            color: #2c3e50;
+            color: var(--sw-text-1);
         }
 
         input, select {
@@ -750,11 +754,13 @@
         /* ✅ REMOVIDO: Definição duplicada de button - usando versão padronizada acima */
 
         .btn-adicionar {
-            background-color: #27ae60;
+            background-color: var(--sw-success);
+            color: var(--sw-on-brand);
         }
 
         .btn-adicionar:hover {
-            background-color: #219a52;
+            background-color: var(--sw-success);
+            filter: brightness(0.88);
         }
 
         .btn-adicionar.updating {
@@ -821,7 +827,7 @@
         }
 
         .total-row td {
-            border-top: 2px solid #2c3e50;
+            border-top: 2px solid var(--sw-text-1);
         }
 
         /* Estilo para o modal de Sobre */
@@ -848,7 +854,7 @@
         }
 
         .about-content h2 {
-            color: #2c3e50;
+            color: var(--sw-text-1);
             margin-bottom: 30px;
             text-align: center;
             font-size: 24px;
@@ -900,14 +906,14 @@
         }
 
         .developer-name h3 {
-            color: #2c3e50;
+            color: var(--sw-text-1);
             margin: 0;
             font-size: 22px;
             margin-bottom: 5px;
         }
 
         .developer-name span {
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             font-size: 16px;
         }
 
@@ -1053,11 +1059,13 @@
         }
 
         .modal .btn-print {
-            background-color: #27ae60;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
 
         .modal .btn-print:hover {
-            background-color: #219a52;
+            background-color: var(--sw-brand);
+            filter: brightness(0.88);
         }
 
         .close-modal-btn {
@@ -1090,7 +1098,7 @@
         .pagination-controls button {
             border: 1px solid #d0d7de;
             background: var(--sw-surface);
-            color: #2c3e50;
+            color: var(--sw-text-1);
             padding: 6px 10px;
             border-radius: 4px;
             cursor: pointer;
@@ -1110,7 +1118,7 @@
 
         .pagination-controls span {
             padding: 0 4px;
-            color: #6c757d;
+            color: var(--sw-text-3);
         }
 
 
@@ -1286,10 +1294,10 @@
             font-size: 18px;
         }
 
-        /* Estilos para os botões de ação dos clientes e espécies */
+        /* Estilos para os botões de ação dos clientes e espécies (padrão vendas: marca) */
         .client-action-button {
-            background-color: var(--sw-info);
-            color: white;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             border: none;
             border-radius: 4px;
             padding: 6px 10px;
@@ -1307,17 +1315,19 @@
         }
 
         .client-action-button:hover {
-            background-color: var(--sw-info);
+            background-color: var(--sw-brand);
             filter: brightness(0.88);
             transform: translateY(-1px);
         }
 
         .client-action-button.print-btn {
-            background-color: #27ae60;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
 
         .client-action-button.print-btn:hover {
-            background-color: #219a52;
+            background-color: var(--sw-brand);
+            filter: brightness(0.88);
         }
 
         
@@ -1325,7 +1335,7 @@
         .table tbody td {
                 padding: 8px;
             text-align: left;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             height: 32px;
             vertical-align: middle;
             font-size: 13px;
@@ -1378,7 +1388,7 @@
             justify-content: space-between;
             margin: 5px 0;
             padding: 5px 0;
-            color: #2c3e50;
+            color: var(--sw-text-1);
             font-size: 14px;
         }
 
@@ -1546,10 +1556,10 @@
             font-size: 18px;
         }
 
-        /* Estilos para os botões de ação dos clientes e espécies */
+        /* Estilos para os botões de ação dos clientes e espécies (padrão vendas: marca) */
         .client-action-button {
-            background-color: var(--sw-info);
-            color: white;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             border: none;
             border-radius: 4px;
             padding: 6px 10px;
@@ -1567,17 +1577,19 @@
         }
 
         .client-action-button:hover {
-            background-color: var(--sw-info);
+            background-color: var(--sw-brand);
             filter: brightness(0.88);
             transform: translateY(-1px);
         }
 
         .client-action-button.print-btn {
-            background-color: #27ae60;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
         }
 
         .client-action-button.print-btn:hover {
-            background-color: #219a52;
+            background-color: var(--sw-brand);
+            filter: brightness(0.88);
         }
 
         
@@ -1585,7 +1597,7 @@
         .table tbody td {
             padding: 8px;
             text-align: left;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             height: 32px;
             vertical-align: middle;
             font-size: 13px;
@@ -1638,7 +1650,7 @@
             justify-content: space-between;
             margin: 5px 0;
             padding: 5px 0;
-            color: #2c3e50;
+            color: var(--sw-text-1);
             font-size: 14px;
         }
 
@@ -1835,7 +1847,7 @@
 
         /* ✅ BOTÕES DO DROPDOWN COM ESTILO MELHORADO */
         #listaModal .dropdown-content a {
-            color: #2c3e50 !important;
+            color: var(--sw-text-1) !important;
             padding: 12px 16px !important;
             text-decoration: none !important;
             display: flex !important;
@@ -1876,7 +1888,7 @@
         }
 
         #listaModal .dropdown-content a {
-            color: #2c3e50 !important;
+            color: var(--sw-text-1) !important;
             padding: 12px 16px !important;
             text-decoration: none !important;
             display: block !important;
@@ -1982,35 +1994,36 @@
         #listaModal .clone-button {
             background-color: var(--sw-brand) !important;
             border-color: var(--sw-brand) !important;
-            color: white !important;
+            color: var(--sw-on-brand) !important;
         }
 
         #listaModal .clone-button:hover {
             background-color: var(--sw-brand) !important;
             border-color: var(--sw-brand) !important;
-            color: white !important;
+            color: var(--sw-on-brand) !important;
         }
 
         #listaModal .financeiro-button {
-            background-color: #27ae60 !important;
-            color: white !important;
+            background-color: var(--sw-success) !important;
+            color: var(--sw-on-brand) !important;
         }
 
         #listaModal .financeiro-button:hover {
-            background-color: #229954 !important;
+            background-color: var(--sw-success) !important;
+            filter: brightness(0.88);
         }
 
         /* ✅ NOVO: Botão financeiro inativo (cinza) */
         #listaModal .financeiro-button.disabled {
-            background-color: #95a5a6 !important;
-            color: #7f8c8d !important;
+            background-color: var(--sw-surface-2) !important;
+            color: var(--sw-text-3) !important;
             cursor: not-allowed !important;
             opacity: 0.7 !important;
         }
 
         #listaModal .financeiro-button.disabled:hover {
-            background-color: #95a5a6 !important;
-            color: #7f8c8d !important;
+            background-color: var(--sw-surface-2) !important;
+            color: var(--sw-text-3) !important;
         }
 
         #listaModal .print-button {
@@ -2044,7 +2057,7 @@
         .totais-titulo {
             font-weight: bold;
             font-size: 16px;
-            color: #2c3e50;
+            color: var(--sw-text-1);
             margin-bottom: 10px;
         }
 
@@ -2062,12 +2075,12 @@
 
         .totais-label {
             font-weight: 500;
-            color: #34495e;
+            color: var(--sw-text-2);
         }
 
         .totais-valor {
             font-weight: bold;
-            color: #2c3e50;
+            color: var(--sw-text-1);
             font-family: 'Courier New', monospace;
         }
 

@@ -640,7 +640,7 @@
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --dashboard-light: #2c3e50;
+        --dashboard-light: var(--sw-text-1);
         --dashboard-dark: #ecf0f1;
     }
     
@@ -649,14 +649,14 @@
     .chart-container,
     .table-container,
     .dashboard-header {
-        background: #34495e;
+        background: var(--sw-text-2);
     }
     
     .data-table th {
-        background: #2c3e50;
+        background: var(--sw-text-1);
     }
     
     .data-table tr:hover {
-        background: #2c3e50;
+        background: var(--sw-text-1);
     }
 }

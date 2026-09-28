@@ -80,7 +80,7 @@
 .totais-titulo {
     font-weight: bold;
     font-size: 16px;
-    color: #2c3e50;
+    color: var(--sw-text-1);
     margin-bottom: 8px;
 }
 
@@ -89,7 +89,7 @@
     justify-content: space-between;
     margin: 2px 0;
     padding: 2px 0;
-    color: #2c3e50;
+    color: var(--sw-text-1);
     font-size: 14px;
 }
 
@@ -145,12 +145,14 @@
 }
 
 .btn-limpar-pre {
-    background-color: #95a5a6;
-    color: #fff;
+    background-color: var(--sw-surface-2);
+    color: var(--sw-text-1);
+    border: 1px solid var(--sw-border);
 }
 
 .btn-limpar-pre:hover {
-    background-color: #7f8c8d;
+    background-color: var(--sw-hover);
+    border-color: var(--sw-brand);
 }
 
 /* Estilos para paginação */
@@ -188,7 +190,7 @@
 
 /* Ajustes para o layout geral dos romaneios */
 section#romaneio-items-section h2 {
-    color: #2c3e50;
+    color: var(--sw-text-1);
     margin-bottom: 10px;
     font-size: 18px;
 }
@@ -208,11 +210,11 @@ section#romaneio-items-section h2 {
 
 /* Variáveis de cores */
 :root {
-    --primary-color: #2c3e50;
+    --primary-color: var(--sw-text-1);
     --secondary-color: #3498db;
     --accent-color: #e74c3c;
     --light-color: #ecf0f1;
-    --dark-color: #2c3e50;
+    --dark-color: var(--sw-text-1);
     --success-color: #2ecc71;
     --warning-color: #f39c12;
     --danger-color: #e74c3c;
@@ -610,7 +612,7 @@ textarea:focus {
     padding-bottom: 10px;
     border-bottom: 1px solid var(--sw-border) ;
     margin-bottom: 20px;
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    background: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%);
     color: white;
     padding: 15px 20px;
     margin: -20px -20px 20px -20px;
@@ -773,7 +775,7 @@ textarea:focus {
 #clientModal .modal-header,
 #fornecedorModal .modal-header,
 #speciesModal .modal-header {
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+    background: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%) !important;
     color: #fff !important;
     padding: 14px 18px !important;
     display: flex !important;
@@ -908,7 +910,7 @@ textarea:focus {
 #clientModal .modal table th,
 #fornecedorModal .modal table th,
 #speciesModal .modal table th {
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+    background: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%) !important;
     color: #fff !important;
 }
 
@@ -1037,7 +1039,7 @@ textarea:focus {
 #fornecedorModal .form-group label,
 #speciesModal .form-group label {
     font-size: 13px !important;
-    color: #2c3e50 !important;
+    color: var(--sw-text-1) !important;
     font-weight: 600 !important;
 }
 
@@ -1227,7 +1229,7 @@ textarea:focus {
     display: block !important;
     margin: 0 0 6px !important;
     font-weight: 600 !important;
-    color: #2c3e50 !important;
+    color: var(--sw-text-1) !important;
 }
 
 #clientModal #clientForm input,
@@ -1441,7 +1443,7 @@ textarea:focus {
     position: sticky !important;
     top: 0 !important;
     z-index: 2 !important;
-    background: #2c3e50 !important;
+    background: var(--sw-text-1) !important;
     color: #fff !important;
 }
 
@@ -2203,7 +2205,7 @@ textarea:focus {
     justify-content: space-between !important;
     align-items: center !important;
     padding: 14px 20px !important;
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+    background: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%) !important;
     color: #ffffff !important;
     border-radius: 8px 8px 0 0 !important;
     margin: 0 !important;

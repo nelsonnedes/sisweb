@@ -1738,6 +1738,35 @@ function atualizarObservacaoConta(contaId, novaObs) {
     conta.observacao = novaObs;
 }
 
+// Descarrega edições de parcelas ainda pendentes (debounce/input sem blur)
+// antes de salvar: sem isso, digitar dias/vencimento e salvar em seguida
+// persistiria os valores antigos (mesma classe de bug do debounce de valor).
+function descarregarEdicaoParcelasCompra() {
+    try {
+        if (!Array.isArray(contasPagar)) return;
+        contasPagar.slice().forEach(conta => {
+            const id = String((conta && conta.id) || '');
+            if (!id) return;
+            try {
+                const valorEl = document.getElementById(`conta-valor-${id}`);
+                if (valorEl && !valorEl.disabled) onParcelaValorBlur(id, valorEl.value);
+            } catch (_) {}
+            try {
+                const diasEl = document.getElementById(`conta-dias-${id}`);
+                if (diasEl && !diasEl.disabled) atualizarDiasContaPagar(id, diasEl.value);
+            } catch (_) {}
+            try {
+                const dateEl = document.getElementById(`conta-venc-${id}`);
+                if (dateEl && !dateEl.disabled && dateEl.value) onParcelaDateBlur(id, dateEl);
+            } catch (_) {}
+            try {
+                const obsEl = document.getElementById(`conta-obs-${id}`);
+                if (obsEl && !obsEl.disabled) atualizarObservacaoConta(id, obsEl.value);
+            } catch (_) {}
+        });
+    } catch (_) {}
+}
+
 // --- Handlers de Edição (Estilo Vendas) ---
 
 function onParcelaValorInput(contaId, input) {
@@ -2307,7 +2336,11 @@ async function salvarPedido(event) {
     if (event) event.preventDefault();
     console.log('🚀 Iniciando salvamento do pedido...');
     LoadingManager.show('Salvando pedido...');
-    
+
+    // Sincroniza edições de parcelas ainda pendentes (debounce) para a
+    // memória antes de montar o payload — evita persistir valores antigos.
+    try { descarregarEdicaoParcelasCompra(); } catch (_) {}
+
     try {
         const fornecedorId = document.getElementById('fornecedorSelect').value;
         const fornecedorNome = document.getElementById('fornecedorSelect').options[document.getElementById('fornecedorSelect').selectedIndex]?.text;

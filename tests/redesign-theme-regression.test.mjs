@@ -456,3 +456,20 @@ test('Fase 17: toolbar vendas em linha própria + hover parity + chrome/etiqueta
     assert.ok(content.includes(sel), `paginação global: ${sel}`);
   }
 });
+
+test('Fase 25.5: modais de lista dos romaneios na marca (thead, ações, paginação rlc)', () => {
+  const rlc = read('modules/core/romaneio-list-columns.js');
+  assert.match(rlc, /#listaModal thead th,[\s\S]*?background: var\(--sw-brand\) !important;/, 'thead dos modais na marca');
+  assert.match(rlc, /\.rlc-pagination-controls button\.active \{[\s\S]*?background: var\(--sw-brand\) !important;/, 'paginação rlc ativa na marca');
+  assert.ok(!rlc.includes('#2563eb'), 'azul legado fora do rlc-styles');
+  assert.ok(!rlc.includes('#f8fafc'), 'painel claro fora do rlc-styles');
+  for (const f of ['romaneiotl.html', 'romaneiopct.html', 'romaneiopes.html', 'romaneiotora.html', 'preromaneio.html']) {
+    const html = read(f);
+    assert.ok(!/#(2c3e50|34495e|3498db|0d6efd|007bff|dc3545|c0392b|28a745|f39c12|e67e22|6f42c1|59359a)/i.test(html), `${f} sem cores legadas de botões/tabelas`);
+  }
+  const pct = read('romaneiopct.html');
+  assert.match(pct, /\.action-button\.edit-button \{[\s\S]*?background-color: var\(--sw-brand\);/, 'PCT editar na marca');
+  const tora = read('romaneiotora.html');
+  assert.match(tora, /\.action-button \{[\s\S]*?background-color: var\(--sw-brand\);/, 'Tora ações na marca');
+  assert.match(tora, /\.btn-modelo-excel \{[\s\S]*?border: 1px solid var\(--sw-success\);/, 'Tora modelo excel temático');
+});

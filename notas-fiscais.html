@@ -48,11 +48,11 @@
     <link rel="stylesheet" href="status-styles.css">
     <style>
         :root {
-            --primary-color: #2c3e50;
+            --primary-color: var(--sw-text-1);
             --secondary-color: #3498db;
             --accent-color: #e74c3c;
             --light-color: #ecf0f1;
-            --dark-color: #2c3e50;
+            --dark-color: var(--sw-text-1);
             --success-color: #2ecc71;
             --warning-color: #f39c12;
             --danger-color: #e74c3c;
@@ -2896,7 +2896,7 @@
         modal.className = 'modal';
         modal.innerHTML = `
           <div class="modal-content" style="max-width:760px">
-            <div class="modal-header" style="background:#2c3e50;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;">
+            <div class="modal-header" style="background:var(--sw-text-1);color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;">
               <h3 style="margin:0;color:#fff"><i class="fas fa-edit"></i> Editar item da NF-e</h3>
               <button type="button" class="close-modal" onclick="fecharModalEditarItemNF()">&times;</button>
             </div>
@@ -3943,7 +3943,7 @@
       modal.className = 'modal';
       modal.innerHTML = `
         <div class="modal-content" style="max-width:760px">
-          <div class="modal-header" style="background:#2c3e50;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;">
+          <div class="modal-header" style="background:var(--sw-text-1);color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;">
             <h3 id="nfFiscalEventTitle" style="margin:0;color:#fff"></h3>
             <button type="button" class="close-modal" onclick="fecharModalEventoFiscalNF()">&times;</button>
           </div>

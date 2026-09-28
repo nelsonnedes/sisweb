@@ -296,7 +296,7 @@
     left: 0;
     top: 8px;
     font-weight: bold;
-    color: var(--dashboard-dark, #2c3e50);
+    color: var(--dashboard-dark, var(--sw-text-1));
     width: 35%;
 }
 
@@ -397,7 +397,7 @@
 
 @media (prefers-color-scheme: dark) {
     .container {
-        background-color: #2c3e50;
+        background-color: var(--sw-text-1);
         color: #ecf0f1;
     }
     
@@ -405,7 +405,7 @@
     .dashboard-header,
     .chart-container,
     .table-container {
-        background-color: #34495e;
+        background-color: var(--sw-text-2);
         color: #ecf0f1;
     }
 }

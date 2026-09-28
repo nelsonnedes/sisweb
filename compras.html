@@ -64,7 +64,7 @@
         /* Note: Container styles are now in layout-comum.css */
 
         h1, h2 {
-            color: #2c3e50;
+            color: var(--sw-text-1);
             text-align: center;
             margin-bottom: 30px;
         }
@@ -208,7 +208,7 @@
         }
 
         .purchase-supplier-form h3 {
-            color: #2c3e50;
+            color: var(--sw-text-1);
             margin-bottom: 14px;
         }
 
@@ -269,7 +269,7 @@
         label {
             display: block;
             margin-bottom: 5px;
-            color: #34495e;
+            color: var(--sw-text-2);
             font-weight: bold;
         }
 
@@ -399,7 +399,7 @@
             position: sticky;
             top: 0;
             z-index: 2;
-            background: #2c3e50;
+            background: var(--sw-text-1);
             color: #fff;
         }
 
@@ -700,7 +700,7 @@
         .search-box .inline-field label {
             display: block;
             margin-bottom: 4px;
-            color: #34495e;
+            color: var(--sw-text-2);
             font-weight: bold;
             font-size: 12px;
         }
@@ -936,7 +936,7 @@
         .modal .columns-list { max-height: 320px; overflow: auto; border: 1px solid var(--sw-border) ; border-radius: 4px; padding: 8px; background: var(--sw-surface); }
         .columns-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px; border-bottom: 1px solid #eee; }
         .columns-item:last-child { border-bottom: none; }
-        .columns-item > span:first-child { flex: 1; color: #2c3e50; }
+        .columns-item > span:first-child { flex: 1; color: var(--sw-text-1); }
         .columns-item > span:last-child { display: flex; align-items: center; gap: 8px; }
         .columns-item button { padding: 2px 6px; }
         #carrinhoItensTable { table-layout: fixed; }
@@ -1829,11 +1829,11 @@
                     <div class="pedido-detail-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                         <div class="pedido-detail-field" style="min-width: 0;">
                             <label style="font-weight: bold; color: #6c757d;">Número:</label>
-                            <div id="viewPedidoNumero" class="pedido-detail-value commerce-card-value commerce-card-number" style="font-size: 1.2em; color: #2c3e50; min-width: 0; overflow-wrap: anywhere;"></div>
+                            <div id="viewPedidoNumero" class="pedido-detail-value commerce-card-value commerce-card-number" style="font-size: 1.2em; color: var(--sw-text-1); min-width: 0; overflow-wrap: anywhere;"></div>
                         </div>
                         <div class="pedido-detail-field" style="min-width: 0;">
                             <label style="font-weight: bold; color: #6c757d;">Data:</label>
-                            <div id="viewPedidoData" class="pedido-detail-value commerce-card-value commerce-card-number" style="font-size: 1.2em; color: #2c3e50; min-width: 0; overflow-wrap: anywhere;"></div>
+                            <div id="viewPedidoData" class="pedido-detail-value commerce-card-value commerce-card-number" style="font-size: 1.2em; color: var(--sw-text-1); min-width: 0; overflow-wrap: anywhere;"></div>
                         </div>
                         <div class="pedido-detail-field" style="min-width: 0;">
                             <label style="font-weight: bold; color: #6c757d;">Status:</label>
@@ -1843,14 +1843,14 @@
                     
                     <div class="pedido-detail-field pedido-detail-party" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6; min-width: 0;">
                         <label style="font-weight: bold; color: #6c757d;">Fornecedor:</label>
-                        <div id="viewPedidoFornecedor" class="pedido-detail-value commerce-card-value commerce-card-title" style="font-size: 1.1em; color: #2c3e50; min-width: 0; overflow-wrap: anywhere;"></div>
+                        <div id="viewPedidoFornecedor" class="pedido-detail-value commerce-card-value commerce-card-title" style="font-size: 1.1em; color: var(--sw-text-1); min-width: 0; overflow-wrap: anywhere;"></div>
                         <div id="viewPedidoFornecedorDetalhes" class="pedido-detail-value commerce-card-value" style="font-size: 0.9em; color: #6c757d; margin-top: 5px; min-width: 0; overflow-wrap: anywhere;"></div>
                     </div>
                 </div>
                 
                 <!-- Itens do Pedido -->
                 <div class="pedido-itens" style="margin-bottom: 20px;">
-                    <h3 style="color: #2c3e50; margin-bottom: 15px;">
+                    <h3 style="color: var(--sw-text-1); margin-bottom: 15px;">
                         <i class="fas fa-boxes"></i> Itens do Pedido
                     </h3>
                     <div class="table-responsive mobile-cards commerce-detail-table-wrap">
@@ -1891,7 +1891,7 @@
                 
                 <!-- Forma de Pagamento -->
                 <div class="pedido-pagamento" style="margin-bottom: 20px;">
-                    <h3 style="color: #2c3e50; margin-bottom: 15px;">
+                    <h3 style="color: var(--sw-text-1); margin-bottom: 15px;">
                         <i class="fas fa-credit-card"></i> Forma de Pagamento
                     </h3>
                     <div class="table-responsive mobile-cards commerce-detail-table-wrap">

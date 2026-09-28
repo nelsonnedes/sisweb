@@ -196,7 +196,7 @@
 }
 
 .loading-text {
-    color: #2c3e50;
+    color: var(--sw-text-1);
     font-size: 16px;
     font-weight: 500;
     margin-top: 10px;

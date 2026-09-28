@@ -1,7 +1,14 @@
 # Backlog: refinamentos tema light/dark (base C:\Sisweb, pós-Fase 20)
 
 ## Status
-Aberto — auditoria 25/09 (gates verdes: lint+typecheck OK, 663 testes 662/0/1).
+Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
+
+## Fase 25.5 — modais de lista na marca + fix parcelas (28/09)
+- [x] rlc-styles (footer, thead border, paginação completa) → tokens.
+- [x] Ações dos 5 romaneios no padrão vendas (marca; excluir danger).
+- [x] Neutros temáticos (secondary/limpar/back/close/disabled/modelo-excel).
+- [x] Bug parcelas: flush de debounce no início dos salvarPedido (vendas+compras) + teste novo.
+- [x] Bump SW `2026-09-28-tema-marca-fase25-5` + publish produção.
 
 ## P0 — quebra visível (dark)
 - [x] `login.html:155` h3 MFA `color:#2c3e50` → var (auth.css não cobre `h3` nu).

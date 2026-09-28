@@ -71,7 +71,7 @@
             --secondary-color: var(--sw-brand);
             --accent-color: var(--sw-danger);
             --light-color: #ecf0f1;
-            --dark-color: #2c3e50;
+            --dark-color: var(--sw-text-1);
             --success-color: #2ecc71;
             --warning-color: var(--sw-warning);
             --danger-color: var(--sw-danger);
@@ -129,7 +129,7 @@
         }
 
         .total-row td {
-            border-top: 2px solid #2c3e50;
+            border-top: 2px solid var(--sw-text-1);
         }
         
         .form-row {
@@ -161,8 +161,8 @@
         }
 
         .form-row.geo-fields input[readonly] {
-            background-color: #f8fafc;
-            color: #34495e;
+            background-color: var(--sw-surface-2);
+            color: var(--sw-text-2);
             font-weight: 600;
         }
         
@@ -253,7 +253,7 @@
             margin-top: 0;
             padding: 15px 20px;
             border-top: 1px solid #eee;
-            background-color: #f8fbff;
+            background-color: var(--sw-surface-2);
             border-radius: 0 0 8px 8px;
             flex-wrap: wrap;
             gap: 10px;
@@ -334,7 +334,7 @@
             padding-bottom: 10px;
             border-bottom: 1px solid var(--sw-border) ;
             margin-bottom: 20px;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            background: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%);
             color: white;
             padding: 15px 20px;
             margin: -20px -20px 20px -20px;
@@ -559,7 +559,7 @@
         .total-row td {
             font-weight: bold;
             background-color: var(--sw-surface-2) ;
-            border-top: 2px solid #2c3e50;
+            border-top: 2px solid var(--sw-text-1);
             font-size: 12px;
         }
 
@@ -586,7 +586,7 @@
         }
 
         .about-content h2 {
-            color: #2c3e50;
+            color: var(--sw-text-1);
             margin-bottom: 30px;
             text-align: center;
             font-size: 24px;
@@ -636,13 +636,13 @@
         .developer-name {
             font-size: 18px;
             font-weight: bold;
-            color: #2c3e50;
+            color: var(--sw-text-1);
             margin-bottom: 5px;
         }
 
         .developer-title {
             font-size: 14px;
-            color: #7f8c8d;
+            color: var(--sw-text-3);
         }
 
         .contact-info {
@@ -677,13 +677,13 @@
 
         .contact-label {
             font-size: 12px;
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             margin-bottom: 2px;
         }
 
         .contact-value {
             font-size: 14px;
-            color: #2c3e50;
+            color: var(--sw-text-1);
         }
 
         .pagination-controls {
@@ -700,7 +700,7 @@
         .pagination-controls button {
             border: 1px solid #d0d7de;
             background: var(--sw-surface);
-            color: #2c3e50;
+            color: var(--sw-text-1);
             padding: 6px 10px;
             border-radius: 4px;
             cursor: pointer;
@@ -720,7 +720,7 @@
 
         .pagination-controls span {
             padding: 0 4px;
-            color: #6c757d;
+            color: var(--sw-text-3);
         }
 
         .close-modal {
@@ -993,8 +993,8 @@
         }
         
         .action-button {
-            background-color: var(--sw-info);
-            color: white;
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             border: none;
             border-radius: 4px;
             padding: 8px 15px;
@@ -1008,7 +1008,7 @@
         }
 
         .action-button:hover {
-            background-color: var(--sw-info);
+            background-color: var(--sw-brand);
             filter: brightness(0.88);
         }
 
@@ -1016,14 +1016,14 @@
         #romaneioListModal .clone-button {
             background-color: var(--sw-brand) !important;
             border-color: var(--sw-brand) !important;
-            color: white !important;
+            color: var(--sw-on-brand) !important;
         }
 
         .action-button.clone-button:hover,
         #romaneioListModal .clone-button:hover {
             background-color: var(--sw-brand) !important;
             border-color: var(--sw-brand) !important;
-            color: white !important;
+            color: var(--sw-on-brand) !important;
         }
         
         .action-button i {
@@ -1057,8 +1057,8 @@
         }
         
         .loading-spinner {
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #3498db;
+            border: 6px solid var(--sw-surface-2);
+            border-top: 6px solid var(--sw-brand);
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -1122,11 +1122,24 @@
         }
 
         .btn-secondary {
-            background-color: #95a5a6;
-            color: white;
+            background-color: var(--sw-surface-2);
+            color: var(--sw-text-1);
+            border: 1px solid var(--sw-border);
         }
         .btn-secondary:hover {
-            background-color: #7f8c8d;
+            background-color: var(--sw-hover);
+            border-color: var(--sw-brand);
+        }
+
+        /* Botão Modelo Excel: contorno temático (sem regra própria antes) */
+        .btn-modelo-excel {
+            background-color: var(--sw-surface);
+            color: var(--sw-success);
+            border: 1px solid var(--sw-success);
+        }
+        .btn-modelo-excel:hover {
+            background-color: var(--sw-success);
+            color: var(--sw-on-brand);
         }
         
         /* ✅ ALINHAMENTO ESPECÍFICO PARA COLUNA DE AÇÕES */
@@ -2350,7 +2363,7 @@
                     
                     // ✅ FEEDBACK VISUAL AO FOCAR
                     campo.addEventListener('focus', function() {
-                        this.style.borderLeft = '3px solid #007bff';
+                        this.style.borderLeft = '3px solid var(--sw-brand)';
                         if (window.__SISWEB_DEBUG_BOOT) console.log(`🎯 Campo focado: ${campoId}`);
                     });
                     

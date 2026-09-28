@@ -9,7 +9,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: #2c3e50;
+    background-color: var(--sw-text-1);
     border-radius: 8px;
     margin-bottom: 20px;
     padding: 10px;
@@ -54,7 +54,7 @@
 .menu {
     display: flex;
     align-items: center;
-    background-color: #2c3e50;
+    background-color: var(--sw-text-1);
     padding: 10px;
     border-radius: 8px;
     margin-bottom: 20px;
@@ -112,7 +112,7 @@
 }
 
 .dropdown-content a {
-    color: #2c3e50;
+    color: var(--sw-text-1);
     padding: 12px 16px;
     text-decoration: none;
     display: block;
@@ -222,13 +222,13 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #2c3e50;
+    color: var(--sw-text-1);
     white-space: nowrap;
     font-family: 'Inter', Arial, sans-serif;
 }
 
 .user-info i {
-    color: #2c3e50;
+    color: var(--sw-text-1);
 }
 
 .user-info a {
@@ -297,7 +297,7 @@ a.alerts-item-message:hover {
     display: none;
     background: transparent;
     border: none;
-    color: #2c3e50; /* Alterado de white para escuro para ficar visível */
+    color: var(--sw-text-1); /* Alterado de white para escuro para ficar visível */
     font-size: 28px; /* Aumentar um pouco para melhor usabilidade */
     cursor: pointer;
     padding: 10px;
@@ -317,7 +317,7 @@ a.alerts-item-message:hover {
         left: 0;
         width: min(260px, 86vw);
         height: 100vh;
-        background-color: #2c3e50;
+        background-color: var(--sw-text-1);
         flex-direction: column;
         align-items: flex-start;
         padding: 60px 20px 20px;
@@ -349,7 +349,7 @@ a.alerts-item-message:hover {
         width: 100%;
         max-width: none;
         box-shadow: none;
-        background-color: #34495e;
+        background-color: var(--sw-text-2);
         margin-top: 0;
     }
 
@@ -359,7 +359,7 @@ a.alerts-item-message:hover {
     }
     
     .dropdown-content a:hover {
-        background-color: #2c3e50;
+        background-color: var(--sw-text-1);
     }
 
     .sisweb-menu-shell {
@@ -372,7 +372,7 @@ a.alerts-item-message:hover {
     }
 
     .sisweb-menu-shell .menu {
-        background-color: #2c3e50;
+        background-color: var(--sw-text-1);
         padding: 60px 20px 20px;
         border-radius: 0;
         margin: 0;
@@ -405,7 +405,7 @@ a.alerts-item-message:hover {
     }
 
     .menu-quick-actions .dropdown-content a {
-        color: #2c3e50;
+        color: var(--sw-text-1);
     }
 
     .menu-quick-actions .menu-item-trigger {
@@ -414,7 +414,7 @@ a.alerts-item-message:hover {
         padding: 0;
         border: 1px solid rgba(44, 62, 80, 0.16);
         border-radius: 10px;
-        background: #2c3e50;
+        background: var(--sw-text-1);
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
     }
 
@@ -500,7 +500,7 @@ main-menu .sisweb-menu-shell .dropdown-content.show-dropdown {
 }
 
 main-menu .sisweb-menu-shell .dropdown-content a {
-    color: #2c3e50;
+    color: var(--sw-text-1);
     padding: 12px 16px;
     text-decoration: none;
     display: block;
@@ -533,7 +533,7 @@ main-menu .sisweb-menu-shell .dropdown-content a:focus-visible {
         width: 100%;
         max-width: none;
         box-shadow: none;
-        background-color: #34495e;
+        background-color: var(--sw-text-2);
         margin-top: 0;
     }
 
@@ -544,7 +544,7 @@ main-menu .sisweb-menu-shell .dropdown-content a:focus-visible {
     }
 
     main-menu .menu-quick-actions .dropdown-content a {
-        color: #2c3e50;
+        color: var(--sw-text-1);
         font-family: 'Inter', Arial, sans-serif;
     }
 }
