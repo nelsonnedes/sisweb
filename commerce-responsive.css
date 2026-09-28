@@ -85,7 +85,7 @@ input[type="checkbox"].sel-carrego-all,
     cursor: pointer;
     font-size: 0.88rem;
     font-weight: 700;
-    color: #34495e;
+    color: var(--sw-text-2);
 }
 
 /* Toolbar do romaneio: selects na linha de cima; botões + agrupar na de baixo */
@@ -128,6 +128,14 @@ input[type="checkbox"].sel-carrego-all,
     display: none !important;
 }
 
+/* O display:flex !important do mobile (abaixo) anularia o style="display:none"
+   inline que o JS aplica em #opcaoResumoVenda/#opcaoResumoEspecie para
+   PCT/TL/PES: garantir que o inline continue escondendo (só TORA mostra). */
+#opcaoResumoVenda[style*="display: none"],
+#opcaoResumoEspecie[style*="display: none"] {
+    display: none !important;
+}
+
 .rel-filter-available,
 .rel-select-all,
 .summary-print-option {
@@ -158,7 +166,7 @@ input[type="checkbox"].sel-carrego-all,
 
 .commerce-embedded-toolbar h2 {
     margin: 0;
-    color: #2c3e50;
+    color: var(--sw-text-1);
     font-size: 1.12rem;
     line-height: 1.25;
 }
@@ -405,7 +413,7 @@ html.sisweb-embedded .page-header {
         border: 1px solid #dbe3ec;
         border-radius: 8px;
         background: var(--sw-surface);
-        color: #34495e;
+        color: var(--sw-text-2);
         font-weight: 600 !important;
         text-align: left;
     }
@@ -460,7 +468,7 @@ html.sisweb-embedded .page-header {
         border: 1px solid #dbe3ec;
         border-radius: 8px;
         background: var(--sw-surface);
-        color: #34495e;
+        color: var(--sw-text-2);
         font-weight: 700 !important;
         text-align: left;
     }

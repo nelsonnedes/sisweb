@@ -343,6 +343,9 @@ test('TORA mostra só Resumo; serrados só fieldset (vendas+compras)', () => {
   assert.match(compras, /labelResumo\) labelResumo\.style\.display = isTora/);
   const css = fs.readFileSync(new URL('../commerce-responsive.css', import.meta.url), 'utf8');
   assert.match(css, /\.romaneio-group-fieldset\[hidden\]/);
+  // Mobile: display:flex !important não pode ressuscitar o resumo em PCT/TL/PES
+  assert.match(css, /#opcaoResumoVenda\[style\*="display: none"\]/);
+  assert.match(css, /#opcaoResumoEspecie\[style\*="display: none"\]/);
 });
 
 test('vendas: modo resumo por espécie com preview e carga fiéis', () => {
