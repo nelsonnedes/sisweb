@@ -2526,7 +2526,7 @@ async function salvarPedido(event) {
         const contasParaCriarPayload = shouldGenerateFinance ? (pedidoData.contasReceber || []).map((conta, idx) => {
             const crId = conta.id || `CR_${pedidoData.id}_${String(idx + 1).padStart(3, '0')}`;
             conta.id = crId;
-            const valorNum = typeof conta.valor === 'number' ? conta.valor : (typeof parseCurrency === 'function' ? parseCurrency(conta.valor) : parseFloat(conta.valor) || 0);
+            const valorNum = typeof conta.valor === 'number' ? conta.valor : (typeof parseCurrencyValue === 'function' ? parseCurrencyValue(conta.valor) : parseFloat(conta.valor) || 0);
             return {
                 id: crId,
                 tipo: conta.tipo || 'receber',
