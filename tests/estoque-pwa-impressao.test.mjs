@@ -44,9 +44,11 @@ test('botoes de impressao do estoque separam PWA PDF de desktop HTML', () => {
   assert.doesNotMatch(js, /return window\.innerWidth <= 768/);
 
   assert.match(js, /async function exportarTabelaEstoquePdf\(options = \{\}\)[\s\S]*helper\.exportTableReportPdf/);
-  assert.match(js, /async function entregarRelatorioEstoque\(options = \{\}\)[\s\S]*if \(isEstoquePwaPrintContext\(\)\)[\s\S]*await exportarTabelaEstoquePdf\(pdfOptions\)/);
+  assert.match(js, /async function entregarRelatorioEstoque\(options = \{\}\)[\s\S]*abrirPreviewRelatorio\(options\.htmlCompleto/);
   assert.match(js, /function imprimirHtmlEstoque\(htmlCompleto, windowFeatures = 'width=1100,height=800'\)[\s\S]*helper\.printHtmlDocument/);
-  assert.match(js, /async function imprimirDoIframe\(\)[\s\S]*if \(isEstoquePwaPrintContext\(\) && payload\.pdfOptions\)[\s\S]*await exportarTabelaEstoquePdf\(payload\.pdfOptions\)/);
+  assert.match(js, /async function imprimirDoIframe\(\)[\s\S]*iframe\.contentWindow\.print\(\)/);
+  assert.doesNotMatch(js, /if \(isEstoquePwaPrintContext\(\)\)[\s\S]*await exportarTabelaEstoquePdf\(pdfOptions\)/);
+  assert.doesNotMatch(js, /if \(isEstoquePwaPrintContext\(\) && payload\.pdfOptions\)[\s\S]*await exportarTabelaEstoquePdf\(payload\.pdfOptions\)/);
 
   assert.match(js, /async function imprimirConsultaEstoque\(\)[\s\S]*await entregarRelatorioEstoque\(\{[\s\S]*title: 'Consulta de Estoque'/);
   assert.match(js, /async function imprimirEstoqueProdutos\(\)[\s\S]*await entregarRelatorioEstoque\(\{[\s\S]*title: 'Estoque de Almoxarifado'/);

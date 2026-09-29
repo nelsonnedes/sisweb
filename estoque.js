@@ -1063,16 +1063,9 @@ async function entregarRelatorioEstoque(options = {}) {
         pdfOptions
     };
 
-    if (isEstoquePwaPrintContext()) {
-        showLoading('Gerando PDF...');
-        try {
-            await exportarTabelaEstoquePdf(pdfOptions);
-        } finally {
-            hideLoading();
-        }
-        return;
-    }
-
+    // Mobile imprime o MESMO documento padrao do desktop (HTML + preview/
+    // impressão do iframe). O PDF via jsPDF (exportarTabelaEstoquePdf) não é
+    // mais rota de impressão (mantido para uso explícito).
     if (options.preview === false) {
         imprimirHtmlEstoque(options.htmlCompleto || '', options.windowFeatures || 'width=1100,height=800');
         return;
@@ -1142,14 +1135,8 @@ function fecharRelatorioPreview() {
 }
 
 async function imprimirDoIframe() {
-    const payload = window.__estoquePreviewPrintPayload || {};
     const orientacao = window.__estoqueRelatorioOrientacao || 'landscape';
-    if (isEstoquePwaPrintContext() && payload.pdfOptions) {
-        payload.pdfOptions.orientation = orientacao;
-        await exportarTabelaEstoquePdf(payload.pdfOptions);
-        return;
-    }
-
+    // Mesmo documento do preview em todos os contextos (sem desvio para PDF).
     const iframe = document.getElementById('relatorioPreviewIframe');
     if (iframe && iframe.contentWindow) {
         if (iframe.contentDocument) {
