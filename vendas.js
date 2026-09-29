@@ -2480,22 +2480,61 @@ async function salvarPedido(event) {
             } catch (_) {}
         }
 
-        // Prevenir duplicação por número: remover outros pedidos com mesmo número e id diferente
+        // Prevenir duplicação por número: remover outros REGISTROS com mesmo número.
+        // Usa a CHAVE real do Firebase (não o id interno): registros legados
+        // podem viver sob chaves numéricas antigas com o mesmo id interno —
+        // deletar pelo id interno nunca os alcançaria (caso 105/chave 102).
         try {
-            const todos = await getData('vendas/pedidos') || [];
-            const duplicados = (todos || []).filter(p => String(p.numero) === String(pedidoData.numero) && String(p.id) !== String(pedidoData.id));
-            if (duplicados.length > 0) {
-                for (const dup of duplicados) {
-                    // Remover pedidos duplicados
-                    if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                        await window.firebaseService.saveToFirebase('vendas/pedidos', String(dup.id), null);
-                    }
-                    // Remover contas vinculadas ao duplicado
-                    try { await removerContasReceberAnteriores(dup.id); } catch(e) { console.warn('Erro ao remover contas do duplicado:', e); }
-                    // Atualizar cache local
-                    window.pedidos = (window.pedidos || []).filter(p => String(p.id) !== String(dup.id));
+            let dupKeys = [];
+            try {
+                const rawRes = window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function'
+                    ? await window.firebaseService.loadFromFirebase('vendas/pedidos') : null;
+                const raw = rawRes && rawRes.data;
+                if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+                    Object.entries(raw).forEach(([k, v]) => {
+                        if (!v || typeof v !== 'object' || k === '_metadata' || k === 'metadata') return;
+                        if (String(k) === String(pedidoData.id)) return;
+                        if (String(v.numero || '') === String(pedidoData.numero || '')) dupKeys.push(String(k));
+                    });
                 }
-                console.log(`🧹 Removidos ${duplicados.length} pedido(s) duplicado(s) com número ${pedidoData.numero}`);
+            } catch (_) {}
+            if (dupKeys.length === 0) {
+                const todos = await getData('vendas/pedidos') || [];
+                (todos || [])
+                    .filter(p => String(p.numero) === String(pedidoData.numero) && getPedidoVendaId(p) !== String(pedidoData.id))
+                    .forEach(p => {
+                        const k = String((p && p.firebaseKey) || (p && p.id) || '');
+                        if (k && k !== String(pedidoData.id) && !dupKeys.includes(k)) dupKeys.push(k);
+                    });
+            }
+            if (dupKeys.length > 0) {
+                // Ids das parcelas atuais: nunca remover essas (o duplicado legado
+                // compartilha numero/origemId com o pedido atual).
+                const idsAtuais = new Set(
+                    (pedidoData.contasReceber || []).map(c => String((c && c.id) || '')).filter(Boolean)
+                );
+                for (const dk of dupKeys) {
+                    // Remover registro duplicado pela chave real
+                    if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                        await window.firebaseService.saveToFirebase('vendas/pedidos', dk, null);
+                    }
+                    // Remover contas vinculadas ao duplicado, exceto as do pedido atual
+                    // e as que possuem recebimento (fail-closed).
+                    try {
+                        const vinc = await carregarContasReceberVinculadasPedidoVenda({ id: dk, numero: pedidoData.numero });
+                        const alvo = (vinc || []).filter(c =>
+                            !isContaReceberComRecebimento(c) && !idsAtuais.has(String((c && c.id) || ''))
+                        );
+                        if (alvo.length > 0) await removerContasReceberPorLista(alvo);
+                    } catch(e) { console.warn('Erro ao remover contas do duplicado:', e); }
+                    // Atualizar cache local
+                    window.pedidos = (window.pedidos || []).filter(p => getPedidoVendaId(p) !== dk && String(p.firebaseKey || '') !== dk);
+                }
+                try {
+                    const svcInv2 = window.firebaseService || window.FirebaseService;
+                    if (svcInv2 && typeof svcInv2.invalidateReadCacheForPath === 'function') svcInv2.invalidateReadCacheForPath('vendas/pedidos');
+                } catch (_) {}
+                console.log(`🧹 Removidos ${dupKeys.length} registro(s) duplicado(s) com número ${pedidoData.numero}`);
             }
         } catch (e) { console.warn('Falha ao checar duplicados por número:', e); }
         
