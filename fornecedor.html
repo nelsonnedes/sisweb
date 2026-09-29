@@ -150,8 +150,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         th {
-            background-color: var(--sw-surface-2) ;
-            color: var(--sw-text-1);
+            background-color: var(--sw-brand);
+            color: var(--sw-on-brand);
             font-weight: 600;
         }
 
@@ -206,15 +206,15 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             flex: 0 0 auto;
             margin-bottom: 0;
             padding: 16px 24px;
-            background: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%);
+            background: var(--sw-gradient);
             border-bottom: 0;
             border-radius: 8px 8px 0 0;
-            color: #fff;
+            color: var(--sw-on-brand);
         }
 
         .modal-header h2,
         .modal-header .modal-title {
-            color: #fff;
+            color: var(--sw-on-brand);
             font-size: 20px;
             line-height: 1.2;
             margin: 0;

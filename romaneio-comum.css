@@ -911,8 +911,8 @@ textarea:focus {
 #clientModal .modal table th,
 #fornecedorModal .modal table th,
 #speciesModal .modal table th {
-    background: linear-gradient(135deg, var(--sw-text-1) 0%, var(--sw-text-2) 100%) !important;
-    color: #fff !important;
+    background: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
 }
 
 #clientListModal .modal table td,

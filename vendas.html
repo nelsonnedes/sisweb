@@ -281,9 +281,11 @@
         textarea {
             width: 100%;
             padding: 8px;
-            border: 1px solid #bdc3c7;
+            border: 1px solid var(--sw-input-border);
             border-radius: 4px;
             font-size: 16px;
+            background: var(--sw-input-bg);
+            color: var(--sw-text-1);
         }
 
         /* Buttons - Mantendo compatibilidade global */
@@ -896,7 +898,7 @@
             justify-content: space-between;
             gap: 8px;
             padding: 6px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .columns-item:last-child {
@@ -932,9 +934,17 @@
             background-color: #eafaf1;
         }
 
+        html[data-theme="dark"] .paid-carrego {
+            background-color: rgba(22, 163, 74, 0.14);
+        }
+
         .badge-paid {
             color: #27ae60;
             margin-left: 6px;
+        }
+
+        html[data-theme="dark"] .badge-paid {
+            color: #4ade80;
         }
 
         .table th[data-col="numero"],
@@ -988,8 +998,9 @@
         .sel-count-badge {
             display: inline-flex;
             align-items: center;
-            background: #ecf0f1;
-            color: var(--sw-text-1);
+            background: var(--sw-surface-2);
+            color: var(--sw-text-2);
+            border: 1px solid var(--sw-border);
             border-radius: 12px;
             padding: 2px 8px;
             font-size: 12px;
@@ -1001,10 +1012,17 @@
             align-items: center;
             background: #ffecec;
             color: #c0392b;
+            border: 1px solid #f5c6cb;
             border-radius: 12px;
             padding: 2px 8px;
             font-size: 12px;
             margin-left: 6px;
+        }
+
+        html[data-theme="dark"] .badge-no-carrego {
+            background: var(--sw-alert-error-bg);
+            color: #fca5a5;
+            border-color: rgba(220, 38, 38, 0.45);
         }
     </style>
     <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">

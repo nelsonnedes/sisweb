@@ -26,17 +26,18 @@
     justify-content: space-between;
     gap: 12px;
     padding: 18px 20px;
-    border-bottom: 1px solid var(--sw-border) ;
+    border-bottom: 0;
     margin: 0;
-    background: var(--sw-surface);
-    color: #1f2937;
+    background: var(--sw-gradient);
+    color: var(--sw-on-brand);
+    border-radius: 8px 8px 0 0;
 }
 
 #speciesModal .species-standard-header h2,
 #speciesModal .species-standard-header h3,
 #speciesModal .species-standard-title {
     margin: 0;
-    color: #1f2937;
+    color: var(--sw-on-brand);
     font-size: 18px;
     font-weight: 700;
     line-height: 1.25;
@@ -54,7 +55,7 @@
     border: 0;
     border-radius: 6px;
     background: transparent;
-    color: #4b5563;
+    color: var(--sw-on-brand);
     cursor: pointer;
     font-size: 22px;
     line-height: 1;
@@ -63,8 +64,8 @@
 #speciesModal .species-standard-close:hover,
 #speciesModal .species-standard-header .close:hover,
 #speciesModal .species-standard-header .close-modal:hover {
-    background: var(--sw-surface-2) ;
-    color: #111827;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
 }
 
 #speciesModal .species-standard-form {
