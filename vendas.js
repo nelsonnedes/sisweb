@@ -3451,12 +3451,12 @@ function renderPedidosPagination(totalItems) {
     addBtn('>>>', totalPages, pedidosListPage === totalPages);
 }
 
-function goToPedidosPage(page) {
+async function goToPedidosPage(page) {
     const totalPages = Math.max(1, Math.ceil(pedidosListFiltered.length / pedidosListItemsPerPage));
     const next = Math.min(totalPages, Math.max(1, Number(page) || 1));
     if (next === pedidosListPage) return;
     pedidosListPage = next;
-    carregarTabelaPedidos(document.getElementById('searchPedidos')?.value || '');
+    await carregarTabelaPedidos(document.getElementById('searchPedidos')?.value || '');
 }
 
 async function popularFiltrosPedidosVenda() {
