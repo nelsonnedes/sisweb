@@ -166,7 +166,7 @@
 #romaneioTablePagination button {
     background-color: var(--sw-surface-2) ;
     border: 1px solid var(--sw-border) ;
-    color: #0275d8;
+    color: var(--sw-brand);
     padding: 4px 8px;
     margin: 0 2px;
     cursor: pointer;
@@ -174,17 +174,17 @@
 }
 
 #romaneioTablePagination button:hover {
-    background-color: var(--sw-surface-2);
+    background-color: var(--sw-hover);
 }
 
 #romaneioTablePagination button.active {
-    background-color: #0275d8;
-    color: white;
-    border-color: #0275d8;
+    background-color: var(--sw-brand);
+    color: var(--sw-on-brand);
+    border-color: var(--sw-brand-dark);
 }
 
 #romaneioTablePagination button:disabled {
-    color: #aaa;
+    color: var(--sw-text-3);
     cursor: not-allowed;
 }
 
@@ -320,25 +320,27 @@ section#romaneio-items-section h2 {
     border: none;
     border-radius: 4px;
     font-size: 12px;
-    color: white;
+    color: var(--sw-on-brand);
     cursor: pointer;
     vertical-align: middle;
 }
 
 #romaneioTable .btn-editar {
-    background-color: #28a745;
+    background-color: var(--sw-success);
 }
 
 #romaneioTable .btn-editar:hover {
-    background-color: #218838;
+    background-color: var(--sw-success);
+    filter: brightness(0.88);
 }
 
 #romaneioTable .btn-excluir {
-    background-color: #dc3545;
+    background-color: var(--sw-danger);
 }
 
 #romaneioTable .btn-excluir:hover {
-    background-color: #c82333;
+    background-color: var(--sw-danger);
+    filter: brightness(0.88);
 }
 
 /* Classes de alinhamento */
@@ -476,8 +478,8 @@ textarea:focus {
 
 /* ✅ ESTILOS PARA BOTÕES DE IMPRESSÃO */
 .imprimir-btn {
-    background-color: #28a745;
-    color: white;
+    background-color: var(--sw-success);
+    color: var(--sw-on-brand);
     border: none;
     padding: 6px 12px;
     border-radius: 4px;
@@ -488,7 +490,8 @@ textarea:focus {
 }
 
 .imprimir-btn:hover {
-    background-color: #218838;
+    background-color: var(--sw-success);
+    filter: brightness(0.88);
 }
 
 .imprimir-btn:focus {
@@ -1272,7 +1275,7 @@ textarea:focus {
     justify-content: space-between !important;
     align-items: center !important;
     padding: 14px 20px !important;
-    background: #f8fafc !important;
+    background: var(--sw-surface-2) !important;
     border-top: 1px solid var(--sw-border) !important;
     width: 100% !important;
     box-sizing: border-box !important;
@@ -1287,9 +1290,9 @@ textarea:focus {
 #newFornecedorModal .btn-save,
 #newSpeciesModal .btn-save,
 .modal-footer .btn-save {
-    background: #16a34a !important;
-    color: #ffffff !important;
-    border: 1px solid #16a34a !important;
+    background: var(--sw-success) !important;
+    color: var(--sw-on-brand) !important;
+    border: 1px solid var(--sw-success) !important;
     border-radius: 6px !important;
     padding: 8px 22px !important;
     font-weight: 700 !important;
@@ -1466,7 +1469,7 @@ textarea:focus {
     flex-wrap: wrap !important;
     gap: 8px 12px !important;
     padding: 12px 16px !important;
-    background: #f8fafc !important;
+    background: var(--sw-surface-2) !important;
     border-top: 1px solid var(--sw-border) !important;
 }
 
@@ -1611,13 +1614,13 @@ textarea:focus {
 #clientListModal .table tbody tr:nth-child(even),
 #fornecedorListModal .table tbody tr:nth-child(even),
 #speciesListModal .table tbody tr:nth-child(even) {
-    background-color: #fafbfc !important;
+    background-color: var(--sw-surface-2) !important;
 }
 
 #clientListModal .table tbody tr:hover,
 #fornecedorListModal .table tbody tr:hover,
 #speciesListModal .table tbody tr:hover {
-    background-color: #f0f4f8 !important;
+    background-color: var(--sw-hover) !important;
 }
 
 #clientListModal .btn-editar,
@@ -1958,8 +1961,8 @@ textarea:focus {
 #financeFornecedorModal .modal-footer {
     padding: 10px 16px !important;
     margin-top: 0 !important;
-    border-top: 1px solid #e4eaf1 !important;
-    background: #f8fbff !important;
+    border-top: 1px solid var(--sw-border) !important;
+    background: var(--sw-surface-2) !important;
     flex-shrink: 0 !important;
 }
 
@@ -1988,7 +1991,7 @@ textarea:focus {
 #fornecedorModal .modal-footer,
 #speciesModal .modal-footer {
     padding: 10px 16px !important;
-    border-top: 1px solid #e4eaf1 !important;
+    border-top: 1px solid var(--sw-border) !important;
 }
 
 /* Estilos dos botões de ação nos modais de romaneio */
@@ -2011,7 +2014,7 @@ textarea:focus {
 .client-action-button.btn-selecionar,
 .client-action-button[title*="Selecionar"],
 .action-buttons-container .client-action-button:first-child {
-    background-color: #27ae60 !important;
+    background-color: var(--sw-success) !important;
     color: #ffffff !important;
 }
 
@@ -2030,7 +2033,7 @@ textarea:focus {
 #fornecedorListModal .btn-warning,
 #fornecedorListModal .action-button.edit-button,
 #fornecedorListModal .btn-editar {
-    background-color: #f39c12 !important;
+    background-color: var(--sw-warning) !important;
     color: #ffffff !important;
 }
 
@@ -2063,7 +2066,7 @@ textarea:focus {
 
 #fornecedorListModal .action-button.select-button,
 #fornecedorListModal .btn-success {
-    background-color: #27ae60 !important;
+    background-color: var(--sw-success) !important;
 }
 
 #fornecedorListModal .action-button.delete-button,
@@ -2131,7 +2134,7 @@ textarea:focus {
 #speciesListModal .modal-content,
 #listaModal .modal-content,
 #romaneioListModal .modal-content {
-    background-color: #fefefe !important;
+    background-color: var(--sw-surface) !important;
     margin: 2.5vh auto !important;
     padding: 0 !important;
     border: 1px solid #cbd5e1 !important;
@@ -2157,7 +2160,7 @@ textarea:focus {
 #newClientModal .modal-content,
 #financeClienteModal .modal-content,
 #financeFornecedorModal .modal-content {
-    background-color: #fefefe !important;
+    background-color: var(--sw-surface) !important;
     margin: 0 auto !important;
     padding: 0 !important;
     border: 1px solid #888 !important;
@@ -2326,7 +2329,7 @@ textarea:focus {
 #clientListModal .action-button.select-button,
 #fornecedorListModal .action-button.select-button,
 #speciesListModal .action-button.select-button {
-    background-color: #28a745 !important;
+    background-color: var(--sw-success) !important;
 }
 
 #clientListModal .action-button.select-button:hover,
@@ -2783,7 +2786,7 @@ button.btn-importar:hover,
     justify-content: space-between !important;
     align-items: center !important;
     padding: 14px 20px !important;
-    background: #f8fafc !important;
+    background: var(--sw-surface-2) !important;
     border-top: 1px solid var(--sw-border) !important;
     box-sizing: border-box !important;
     gap: 10px !important;
@@ -3044,7 +3047,7 @@ body { overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scr
 /* MOBILE FIX data v3 - 2026-09-17 - input date estouro */
 @media(max-width:768px){#dataRomaneio,#romaneioData,#dataRomaneioTora,input[type="date"]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;display:block!important}.form-group:has(#dataRomaneio),.form-group:has(#romaneioData),.romaneio-date-field{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important;display:block!important}}
 /* FIX altura harmonizada v7 - 38px global para todos os romaneios (acessivel, WCAG) */
-#dataRomaneio, #romaneioData, #dataRomaneioTora { height: 38px !important; min-height: 38px !important; max-height: 38px !important; padding: 8px 12px !important; border: 1px solid #d1d5db !important; border-radius: 6px !important; box-sizing: border-box !important; line-height: 1.2 !important; font-size: 14px !important; background: #f8fafc !important; box-sizing: border-box !important; }
+#dataRomaneio, #romaneioData, #dataRomaneioTora { height: 38px !important; min-height: 38px !important; max-height: 38px !important; padding: 8px 12px !important; border: 1px solid #d1d5db !important; border-radius: 6px !important; box-sizing: border-box !important; line-height: 1.2 !important; font-size: 14px !important; background: var(--sw-surface-2) !important; box-sizing: border-box !important; }
 /* DESKTOP-FIRST tora (2026-09-18): form-row lado-a-lado como preromaneio aba Toras.
    Causa raiz: .form-row .form-group{min-width:200px} + flex-wrap quebrava em 1024-1200px.
    Base agora min-width:0 + Data fixa 200px; empilhamento SÓ dentro de @media 768px abaixo. */
@@ -3718,5 +3721,52 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
     html body #listaModal .table tbody tr td[data-label="Ações"]:not([colspan]) .btn-group > button + button,
     html body #romaneioListModal .table tbody tr td[data-label="Ações"]:not([colspan]) .btn-group > button + button {
         margin-left: 6px !important;
+    }
+}
+
+/* PAGINACAO mobile (romaneios PCT/TL/PES/Tora + pre-romaneio, tabelas e modais
+   Lista de Romaneios/Clientes/Especies/Fornecedores): fileira de botoes
+   <<< < 1..N > >>> somava +360px e estourava o viewport 320-360px.
+   Quebra em linhas centralizadas, sem scroll horizontal, botoes compactos.
+   Vale p/ .pagination-controls/.pagination-container/.pagination e p/ os
+   containers sem classe (romaneioListPagination/listaRomaneiosPagination
+   antes do rlc assumir). Regra da tabela de itens (coluna, acima) tem
+   especificidade maior e segue valendo no seu contexto. Desktop intacto. */
+@media (max-width: 768px) {
+    html body .pagination-controls,
+    html body .pagination-container,
+    html body .pagination,
+    html body #romaneioTablePagination,
+    html body #romaneioListPagination,
+    html body #listaRomaneiosPagination,
+    html body #clientListPagination,
+    html body #speciesListPagination,
+    html body #fornecedorPagination,
+    html body #fornecedorListPagination {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 6px !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+    html body .pagination-controls button,
+    html body .pagination-container button,
+    html body .pagination button,
+    html body #romaneioTablePagination button,
+    html body #romaneioListPagination button,
+    html body #listaRomaneiosPagination button,
+    html body #clientListPagination button,
+    html body #speciesListPagination button,
+    html body #fornecedorPagination button {
+        flex: 0 1 auto !important;
+        min-width: 32px !important;
+        min-height: 36px !important;
+        padding: 4px 8px !important;
+        font-size: 13px !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 }

@@ -250,7 +250,7 @@ function openClientFormModal(options = {}) {
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer" style="align-items:center; background:#fff; border-top:1px solid #e5e7eb; display:flex; flex:0 0 auto; gap:10px; justify-content:flex-end; margin:0; padding:14px 20px;">
+                <div class="modal-footer" style="align-items:center; background:var(--sw-surface-2); border-top:1px solid var(--sw-border); display:flex; flex:0 0 auto; gap:10px; justify-content:flex-end; margin:0; padding:14px 20px;">
                     <button type="button" class="btn btn-danger" id="cancelNewClient">Cancelar</button>
                     <button type="button" class="btn btn-success" id="saveNewClient">Salvar</button>
                 </div>

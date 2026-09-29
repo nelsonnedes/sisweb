@@ -1068,8 +1068,42 @@ html.sisweb-embedded .page-header {
         white-space: normal !important;
     }
 
-    .pagination-controls {
-        gap: 6px;
+    /* Paginacao mobile (vendas/compras/financas/estoque/clientes/fornecedores/
+       especies): botoes <<< < 1..N > >>> somam +360px e estouravam o viewport.
+       Quebra em linhas centralizadas, alvos de toque e sem scroll horizontal.
+       Desktop intacto (fora do @media max-width:768px nada muda). */
+    .pagination-controls,
+    .pagination-container,
+    .pagination,
+    div[id$="Pagination"],
+    div[id$="pagination"],
+    div[id*="paginacao"],
+    div[id*="Paginacao"],
+    #paginacaoRelatorios {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 6px !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .pagination-controls button,
+    .pagination-container button,
+    .pagination button,
+    div[id$="Pagination"] button,
+    div[id$="pagination"] button,
+    div[id*="paginacao"] button,
+    div[id*="Paginacao"] button {
+        flex: 0 1 auto !important;
+        min-width: 32px !important;
+        min-height: 36px !important;
+        padding: 4px 8px !important;
+        font-size: 13px !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     /* Tabelas de modais sem wrapper .table-responsive (romaneios PCT/TL/PES/

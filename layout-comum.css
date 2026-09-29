@@ -105,17 +105,17 @@
 .btn i { font-size: 16px !important; }
 .btn:active { transform: translateY(0.5px) !important; }
 
-.btn-primary { background-color: #3498db !important; color: #fff !important; }
-.btn-primary:hover { background-color: #2980b9 !important; }
+.btn-primary { background-color: var(--sw-brand) !important; color: var(--sw-on-brand) !important; }
+.btn-primary:hover { background-color: var(--sw-brand) !important; filter: brightness(0.88); }
 
-.btn-success { background-color: #27ae60 !important; color: #fff !important; }
-.btn-success:hover { background-color: #229954 !important; }
+.btn-success { background-color: var(--sw-success) !important; color: var(--sw-on-brand) !important; }
+.btn-success:hover { background-color: var(--sw-success) !important; filter: brightness(0.88); }
 
-.btn-danger { background-color: #e74c3c !important; color: #fff !important; }
-.btn-danger:hover { background-color: #c0392b !important; }
+.btn-danger { background-color: var(--sw-danger) !important; color: var(--sw-on-brand) !important; }
+.btn-danger:hover { background-color: var(--sw-danger) !important; filter: brightness(0.88); }
 
-.btn-secondary { background-color: #6c757d !important; color: #fff !important; }
-.btn-secondary:hover { background-color: #5a6268 !important; }
+.btn-secondary { background-color: var(--sw-text-3) !important; color: var(--sw-on-brand) !important; }
+.btn-secondary:hover { background-color: var(--sw-text-3) !important; filter: brightness(0.88); }
 
 /* Botão de download do modelo Excel (âncora com aparência de botão) */
 .btn-modelo-excel { background-color: var(--sw-surface) !important; color: #107c41 !important; border: 2px solid #107c41 !important; font-weight: 600 !important; text-decoration: none !important; }

@@ -376,15 +376,45 @@
         margin: 0;
     }
     
-    /* Paginação responsiva */
+    /* Paginação responsiva: botoes <<< < 1..N > >>> somam +360px e estouram o
+       viewport 320-360px. Quebra em linhas centralizadas, sem scroll
+       horizontal, botoes compactos com alvo de toque. Desktop intacto. */
     .pagination-container {
         flex-direction: column;
         justify-content: center;
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
     }
-    
-    .pagination-controls {
+
+    .pagination-controls,
+    .pagination,
+    div[id$="Pagination"],
+    div[id$="pagination"],
+    div[id*="paginacao"],
+    div[id*="Paginacao"] {
+        display: flex;
         flex-wrap: wrap;
         justify-content: center;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .pagination-controls button,
+    .pagination-container button,
+    .pagination button,
+    div[id$="Pagination"] button,
+    div[id$="pagination"] button {
+        flex: 0 1 auto;
+        min-width: 32px;
+        min-height: 36px;
+        padding: 4px 8px;
+        font-size: 13px;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     /* Tabelas em formato Card (Mobile View) */
@@ -469,14 +499,15 @@
 .client-action-button.btn-selecionar,
 .client-action-button[title*="Selecionar"],
 .action-buttons-container .client-action-button:first-child {
-    background-color: #27ae60 !important;
-    color: #ffffff !important;
+    background-color: var(--sw-success) !important;
+    color: var(--sw-on-brand) !important;
 }
 
 .client-action-button.btn-selecionar:hover,
 .client-action-button[title*="Selecionar"]:hover,
 .action-buttons-container .client-action-button:first-child:hover {
-    background-color: #219653 !important;
+    background-color: var(--sw-success) !important;
+    filter: brightness(0.88) !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 8px rgba(39, 174, 96, 0.35) !important;
 }
@@ -485,14 +516,15 @@
 .client-action-button.btn-editar,
 .client-action-button[title*="Editar"],
 .action-buttons-container .client-action-button:nth-child(2) {
-    background-color: #f39c12 !important;
-    color: #ffffff !important;
+    background-color: var(--sw-warning) !important;
+    color: var(--sw-on-brand) !important;
 }
 
 .client-action-button.btn-editar:hover,
 .client-action-button[title*="Editar"]:hover,
 .action-buttons-container .client-action-button:nth-child(2):hover {
-    background-color: #e67e22 !important;
+    background-color: var(--sw-warning) !important;
+    filter: brightness(0.88) !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 8px rgba(243, 156, 18, 0.35) !important;
 }

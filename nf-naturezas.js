@@ -215,10 +215,10 @@ const NFNaturezas = (() => {
           </div>
         </div>
         <div style="padding:0 24px 20px;display:flex;gap:10px;justify-content:flex-end;">
-          <button id="natOpCancelar" style="padding:9px 18px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:14px;">
+          <button id="natOpCancelar" style="padding:9px 18px;border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);color:var(--sw-text-1);cursor:pointer;font-size:14px;">
             Cancelar
           </button>
-          <button id="natOpSalvar" style="padding:9px 18px;border:none;border-radius:4px;background:#2ecc71;color:#fff;cursor:pointer;font-size:14px;font-weight:600;">
+          <button id="natOpSalvar" style="padding:9px 18px;border:none;border-radius:4px;background:var(--sw-success);color:var(--sw-on-brand);cursor:pointer;font-size:14px;font-weight:600;">
             <i class="fas fa-save"></i> Salvar
           </button>
         </div>

@@ -240,7 +240,7 @@ const NFPreferencias = (() => {
         </div>
       </div>
       <button id="btnSalvarPreferencias"
-        style="padding:9px 20px;border:none;border-radius:4px;background:#27ae60;color:#fff;cursor:pointer;font-size:14px;font-weight:600;">
+        style="padding:9px 20px;border:none;border-radius:4px;background:var(--sw-success);color:var(--sw-on-brand);cursor:pointer;font-size:14px;font-weight:600;">
         <i class="fas fa-save"></i> Salvar Preferências
       </button>`;
     document.getElementById('btnSalvarPreferencias')?.addEventListener('click', async () => {

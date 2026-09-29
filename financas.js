@@ -3184,7 +3184,7 @@ function renderPaginacaoReceber(totalItems) {
     let numberButtons = '';
     for (let p = 1; p <= totalPages; p++) {
         if (p === currentPageReceber) {
-            numberButtons += `<span class="btn btn-small" style="background:#e9ecef;color:#333;cursor:default;">${p}</span>`;
+            numberButtons += `<span class="btn btn-small" style="background:var(--sw-surface-2);color:var(--sw-text-1);cursor:default;">${p}</span>`;
         } else {
             numberButtons += `<button class="btn btn-small" onclick="mudarPaginaReceber(${p})" aria-label="Ir para página ${p}">${p}</button>`;
         }
@@ -3215,7 +3215,7 @@ function renderPaginacaoPagar(totalItems) {
     let numberButtons = '';
     for (let p = 1; p <= totalPages; p++) {
         if (p === currentPagePagar) {
-            numberButtons += `<span class="btn btn-small" style="background:#e9ecef;color:#333;cursor:default;">${p}</span>`;
+            numberButtons += `<span class="btn btn-small" style="background:var(--sw-surface-2);color:var(--sw-text-1);cursor:default;">${p}</span>`;
         } else {
             numberButtons += `<button class="btn btn-small" onclick="mudarPaginaPagar(${p})" aria-label="Ir para página ${p}">${p}</button>`;
         }

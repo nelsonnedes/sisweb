@@ -81,7 +81,7 @@
 #speciesModal .species-standard-label {
     display: block;
     margin-bottom: 6px;
-    color: #374151;
+    color: var(--sw-label, var(--sw-text-2));
     font-size: 13px;
     font-weight: 700;
 }
@@ -91,10 +91,10 @@
     width: 100%;
     min-height: 38px;
     padding: 9px 11px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--sw-input-border);
     border-radius: 6px;
-    background: var(--sw-surface);
-    color: #111827;
+    background: var(--sw-input-bg);
+    color: var(--sw-text-1);
     font-size: 14px;
     line-height: 1.35;
     box-sizing: border-box;
@@ -104,8 +104,8 @@
 
 #speciesModal .species-standard-input:focus,
 #speciesModal .species-standard-textarea:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    border-color: var(--sw-focus);
+    box-shadow: 0 0 0 3px var(--sw-focus-ring);
 }
 
 #speciesModal .species-standard-textarea {
@@ -126,7 +126,7 @@
     min-height: 36px;
     padding: 8px 14px;
     border-radius: 6px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--sw-input-border);
     cursor: pointer;
 }
 
@@ -135,17 +135,17 @@
 #speciesModal .species-standard-actions .btn-salvar,
 #speciesModal .species-standard-actions button[type="submit"],
 #speciesModal .species-modal-actions .btn-primary {
-    border-color: #2563eb;
-    background: #2563eb;
-    color: #fff;
+    border-color: var(--sw-brand);
+    background: var(--sw-brand);
+    color: var(--sw-on-brand);
 }
 
 #speciesModal .species-standard-actions .btn-secondary,
 #speciesModal .species-standard-actions .back-button,
 #speciesModal .species-standard-actions .btn-limpar,
 #speciesModal .species-modal-actions .btn-secondary {
-    background: #f9fafb;
-    color: #374151;
+    background: var(--sw-surface-2);
+    color: var(--sw-text-1);
 }
 
 #speciesModal .species-name-suggestions-reserve {
@@ -162,7 +162,7 @@
     width: 100%;
     max-height: 220px;
     overflow-y: auto;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--sw-input-border);
     border-radius: 6px;
     background: var(--sw-surface);
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
@@ -176,7 +176,7 @@
 
 #speciesModal .species-modal-suggestion:hover,
 #speciesModal .species-modal-suggestion.is-active {
-    background: #f8fafc;
+    background: var(--sw-hover);
 }
 
 #speciesModal .species-modal-suggestion:last-child {
@@ -184,14 +184,14 @@
 }
 
 #speciesModal .species-suggestion-name {
-    color: #111827;
+    color: var(--sw-text-1);
     font-weight: 600;
     line-height: 1.25;
 }
 
 #speciesModal .species-suggestion-scientific {
     margin-top: 2px;
-    color: #6b7280;
+    color: var(--sw-text-3);
     font-size: 12px;
     line-height: 1.25;
 }
@@ -223,10 +223,10 @@
     width: 100% !important;
     min-height: 38px !important;
     padding: 9px 11px !important;
-    border: 1px solid #d1d5db !important;
+    border: 1px solid var(--sw-input-border) !important;
     border-radius: 6px !important;
-    background: var(--sw-surface) !important;
-    color: #111827 !important;
+    background: var(--sw-input-bg) !important;
+    color: var(--sw-text-1) !important;
     font-size: 14px !important;
     line-height: 1.35 !important;
     box-sizing: border-box !important;
@@ -234,8 +234,8 @@
 }
 
 #speciesListModal #speciesListFilter:focus {
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
+    border-color: var(--sw-focus) !important;
+    box-shadow: 0 0 0 3px var(--sw-focus-ring) !important;
 }
 
 /* Fase 21: filtro escuro no dark (regras claras acima = fallback light). */
