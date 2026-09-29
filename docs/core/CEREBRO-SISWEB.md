@@ -85,7 +85,10 @@
 
 ## 9. Deploy / operações
 
-- Hosting: `firebase deploy --only hosting` (build `hosting-dist` 457 arquivos, ~20MB).
+- Hosting: **SEMPRE via `npm run deploy:hosting`** (encadeia `build:hosting` + deploy). **NUNCA rodar `firebase deploy --only hosting` direto sem rebuild** — o site serve `hosting-dist/` (snapshot), não a raiz; deploy sem rebuild publica código antigo.
+  - Trava sistêmica: `firebase.json` → `hosting.predeploy: ["npm run build:hosting"]` (rebuild automático em todo deploy de hosting, mesmo direto).
+  - Verificação pós-build: comparar raiz × dist (ex.: script de hash em `hosting-files.json`; esperado 0 divergentes) e, após deploy, conferir em produção que o JS servido contém os marcadores da correção (ex.: `fetch('vendas.js').then(r=>r.text())` contém o identificador do fix).
+  - Incidente 2026-09-29 (pedido 105): correções commitadas (parseCurrencyValue, resolver canônico, invalidação de cache) não chegavam à produção porque o deploy publicou `hosting-dist` desatualizado — sintoma era "salvou com sucesso mas lista/detalhe/impressão mostravam dados antigos". Resolvido com rebuild + redeploy + verificação do conteúdo servido.
 - Functions: ver runbook de quota (seção 6.2). Deploy serial para v2.
 - Sentry: callables `sentry*` exigem SuperAdmin; issues em RTDB `system/sentry/issues`. DSN ativo; `tracesSampleRate:0`.
 - Rules RTDB: por tenant; billing budget topic `sisweb-cloud-billing-budget-alerts`.

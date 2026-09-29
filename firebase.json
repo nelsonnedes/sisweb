@@ -2,6 +2,9 @@
   "hosting": {
     "site": "sisweb-7ce82",
     "public": "hosting-dist",
+    "predeploy": [
+      "npm run build:hosting"
+    ],
     "ignore": [
       "firebase.json",
       "hosting-files.json",
