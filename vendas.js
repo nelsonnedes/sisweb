@@ -4328,6 +4328,14 @@ function gerarRelatorio(keepPage = false) {
     pedidosPeriodo = Array.from(byNumero.values());
     pedidosPeriodo.sort((a, b) => (toTimestamp(b.data) - toTimestamp(a.data)));
 
+    // "Mostrar só disponível" como filtro de DADOS (não esconderijo de DOM):
+    // aplicado antes de paginação/rodapés/seleção, mantém contagens,
+    // páginas e totais sempre consistentes.
+    try {
+        const soDisponivel = !!document.getElementById('relFiltroDisponivel')?.checked;
+        if (soDisponivel) pedidosPeriodo = pedidosPeriodo.filter(isPedidoCarregoDisponivel);
+    } catch (_) {}
+
     const totalPedidos = pedidosPeriodo.length;
     const valorTotal = pedidosPeriodo.reduce((total, pedido) => total + (typeof pedido.total === 'number' ? pedido.total : parseCurrencyValue(pedido.total)), 0);
     const ticketMedio = totalPedidos > 0 ? valorTotal / totalPedidos : 0;
@@ -4465,7 +4473,6 @@ function gerarRelatorio(keepPage = false) {
     if (footerCarregoEl) footerCarregoEl.textContent = `${formatNumber(totalCarrego, 3)}`;
     aplicarOrdemColunasRelatorio(window.relatorioColunasOrdem || ['numero','data','cliente','total','status','carrego','atualizado','acoes']);
     updateRelCarregoSelectionCount();
-    try { toggleFiltroCarregoDisponivel(!!document.getElementById('relFiltroDisponivel')?.checked); } catch (_) {}
     refreshCommerceResponsiveTables();
 }
 
@@ -8803,50 +8810,38 @@ function getSelectedCarregoIds() {
     return Array.from(window.relCarregoSelection || new Set());
 }
 
-function toggleFiltroCarregoDisponivel(checked) {
-    const rows = document.querySelectorAll('#relatoriosTable tbody tr');
-    rows.forEach(r => {
-        const vol = parseFloat(r.getAttribute('data-carrego-vol') || '0');
-        const pago = r.getAttribute('data-carrego-pago') === '1';
-        const has = r.getAttribute('data-has-carrego') === '1';
-        r.style.setProperty('display', (checked && (pago || !has || vol <= 0)) ? 'none' : '', 'important');
-        const cb = r.querySelector('.sel-carrego');
-        // não desabilitar, permitir seleção para impressão
-        const badge = r.querySelector('.badge-no-carrego');
-        if (badge) badge.style.display = checked ? 'none' : '';
-    });
-    updateRelCarregoSelectionCount();
+// Critério "carrego disponível": tem item carrego com volume > 0 e não pago.
+// Mesma regra antes aplicada via display:none (que quebrava paginação e
+// rodapés); agora usada como filtro de dados em gerarRelatorio().
+function isPedidoCarregoDisponivel(pedido) {
     try {
-        const tableEl = document.getElementById('relatoriosTable');
-        if (!tableEl) return;
-        const visibleRows = Array.from(tableEl.querySelectorAll('tbody tr')).filter(r => r.style.display !== 'none');
-        const totalPedidos = visibleRows.length;
-        let valorTotal = 0;
-        let totalCarrego = 0;
-        let valorTotalCarrego = 0;
-        const ids = [];
-        visibleRows.forEach(r => {
-            totalCarrego += parseFloat(r.getAttribute('data-carrego-vol') || '0') || 0;
-            const tdTotal = r.querySelector('td[data-col="total"]');
-            if (tdTotal) valorTotal += parseCurrencyValue(tdTotal.textContent.trim());
-            const id = r.getAttribute('data-pedido-id');
-            if (id) ids.push(String(id));
-        });
-        ids.forEach(id => {
-            const p = (window._relPedidosPeriodo || []).find(pp => getPedidoVendaId(pp) === String(id)) || (window.pedidos || []).find(pp => getPedidoVendaId(pp) === String(id));
-            valorTotalCarrego += calcularValorCarregoPedido(p);
-        });
-        const ticketMedio = totalPedidos > 0 ? (valorTotal / totalPedidos) : 0;
-        const elTP = document.getElementById('relFooterTotalPedidos');
-        const elVT = document.getElementById('relFooterValorTotal');
-        const elTM = document.getElementById('relFooterTicketMedio');
-        const elTC = document.getElementById('relFooterTotalCarrego');
-        const elVTC = document.getElementById('relFooterValorTotalCarrego');
-        if (elTP) elTP.textContent = String(totalPedidos);
-        if (elVT) elVT.textContent = formatCurrency(valorTotal);
-        if (elTM) elTM.textContent = formatCurrency(ticketMedio);
-        if (elTC) elTC.textContent = `${formatNumber(totalCarrego, 3)}`;
-        if (elVTC) elVTC.textContent = formatCurrency(valorTotalCarrego);
+        if (!pedido || typeof pedido !== 'object') return false;
+        const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
+        const nameOf = it => normalizeStr(String(it.produtoNome || it.nome || it.produto || ''));
+        const carregoItem = itens.find(it => nameOf(it) === 'carrego');
+        if (!carregoItem) return false;
+        const raw = (typeof carregoItem.quantidade !== 'undefined') ? carregoItem.quantidade : (typeof carregoItem.volume !== 'undefined' ? carregoItem.volume : carregoItem.m3);
+        if (!(parseNumberFlexible(raw) > 0)) return false;
+        try {
+            const latest = getCarregoLatestStatusMap();
+            const rec = latest && latest.get(String(getPedidoVendaId(pedido)));
+            if (rec && rec.status === 'pago') return false;
+        } catch (_) {}
+        if (pedido.carregoPago === true) return false;
+        return true;
+    } catch (_) { return false; }
+}
+
+function toggleFiltroCarregoDisponivel(checked) {
+    // O checkbox agora apenas regenera o relatório com o filtro de dados
+    // aplicado (página resetada): paginação, rodapés e seleção consistentes.
+    // Mantido o nome pois o HTML (relFiltroDisponivel.onchange) o referencia.
+    try { vendasRelatorioPage = 1; } catch (_) {}
+    try {
+        const periodoInicio = (document.getElementById('periodoInicio')?.value || '').trim();
+        const periodoFim = (document.getElementById('periodoFim')?.value || '').trim();
+        if (!periodoInicio || !periodoFim) return;
+        gerarRelatorio(true);
     } catch (_) {}
 }
 
