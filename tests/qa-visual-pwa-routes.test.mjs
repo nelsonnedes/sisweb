@@ -153,14 +153,20 @@ test('lista de pedidos usa PDF compartilhavel em PWA para vendas e compras', () 
 
   assert.match(vendasJs, /async function exportarPedidosVendaPdf\(pedidosParaImprimir\)/);
   assert.match(vendasJs, /function isCommercePwaPrintContext\(\)/);
-  assert.match(vendasJs, /await exportarPedidosVendaPdf\(pedidosParaImprimir\)/);
-  assert.match(vendasJs, /await exportarPedidosVendaPdf\(\[pedido\]\)/);
+  // Contrato impressao pedido venda: botoes de impressao usam o template unico
+  // (gerarHTMLImpressaoPedido) — nao roteiam mais pelo exportador PDF.
+  assert.doesNotMatch(vendasJs, /await exportarPedidosVendaPdf\(pedidosParaImprimir\)/);
+  assert.doesNotMatch(vendasJs, /await exportarPedidosVendaPdf\(\[pedido\]\)/);
   assert.doesNotMatch(vendasJs, /for \(const id of ids\)[\s\S]{0,180}await imprimirPedido\(id\)/);
 
   assert.match(comprasJs, /async function exportarPedidosCompraPdf\(pedidosParaImprimir\)/);
   assert.match(comprasJs, /function isCommercePwaPrintContext\(\)/);
-  assert.match(comprasJs, /await exportarPedidosCompraPdf\(pedidosParaImprimir\)/);
-  assert.match(comprasJs, /await exportarPedidosCompraPdf\(\[pedido\]\)/);
+  // Compras unificado: botoes de impressao usam o builder HTML padrao em qualquer contexto;
+  // exportarPedidosCompraPdf segue disponivel para exportacao explicita, fora da rota de impressao.
+  assert.doesNotMatch(comprasJs, /await exportarPedidosCompraPdf\(pedidosParaImprimir\)/);
+  assert.doesNotMatch(comprasJs, /await exportarPedidosCompraPdf\(\[pedido\]\)/);
+  assert.match(comprasJs, /await imprimirPedidosCompraSelecionadosDesktop\(pedidosParaImprimir\)/);
+  assert.match(comprasJs, /await gerarHTMLImpressaoPedidoCompra\(pedido/);
   assert.match(comprasJs, /window\.imprimirPedido = imprimirPedido/);
   assert.doesNotMatch(comprasJs, /for \(const id of ids\)[\s\S]{0,180}await imprimirPedido\(id\)/);
 });
@@ -192,11 +198,19 @@ test('modais de lista e detalhes de pedidos usam cards mobile e acoes corretas',
   assert.match(vendasJs, /getPedidoRecencyTimestamp\(b\) - getPedidoRecencyTimestamp\(a\)/);
   assert.match(vendasJs, /data-label="Total"><span class="commerce-card-value commerce-card-money commerce-card-strong">/);
   assert.match(vendasJs, /data-label="Valor"><span class="commerce-card-value commerce-card-money">/);
-  assert.match(vendasJs, /if \(isCommercePwaPrintContext\(\) && window\.SiswebCommercePdf\) \{[\s\S]*await exportarPedidosVendaPdf\(\[pedido\]\)/);
+  // Contrato impressao pedido venda: mobile e desktop usam o mesmo template
+  // (gerarHTMLImpressaoPedido + printHtmlDocument); o exportador PDF segue
+  // existindo mas fora do caminho dos botoes de impressao.
+  assert.match(vendasJs, /async function imprimirPedido\(pedidoId\)[\s\S]*await gerarHTMLImpressaoPedido\(pedido\)/);
+  assert.doesNotMatch(vendasJs, /if \(isCommercePwaPrintContext\(\) && window\.SiswebCommercePdf\) \{[\s\S]*await exportarPedidosVendaPdf\(\[pedido\]\)/);
   assert.match(comprasJs, /const pedido = window\.compras\.find\(p => String\(p\.id \|\| p\.firebaseKey\) === String\(pedidoId\)\)/);
   assert.match(comprasJs, /data-label="Total"><span class="commerce-card-value commerce-card-money commerce-card-strong">/);
   assert.match(comprasJs, /data-label="Valor"><span class="commerce-card-value commerce-card-money">/);
-  assert.match(comprasJs, /if \(isCommercePwaPrintContext\(\) && window\.SiswebCommercePdf\) \{[\s\S]*await exportarPedidosCompraPdf\(\[pedido\]\)/);
+  // Contrato impressao pedido compra: mobile e desktop usam o mesmo template
+  // (gerarHTMLImpressaoPedidoCompra + printHtmlDocument); o exportador PDF segue
+  // existindo mas fora do caminho dos botoes de impressao.
+  assert.match(comprasJs, /async function imprimirPedido\(pedidoId\)[\s\S]*await obterDadosEmpresa\(\)/);
+  assert.doesNotMatch(comprasJs, /if \(isCommercePwaPrintContext\(\) && window\.SiswebCommercePdf\) \{[\s\S]*await exportarPedidosCompraPdf\(\[pedido\]\)/);
 });
 
 test('modulos com overflow visual possuem correcoes mobile de largura', () => {

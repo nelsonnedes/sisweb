@@ -2977,13 +2977,10 @@ async function imprimirPedidosSelecionados() {
         return;
     }
     try {
-        if (isCommercePwaPrintContext()) {
-            LoadingManager.show('Gerando PDF dos pedidos...');
-            const result = await exportarPedidosCompraPdf(pedidosParaImprimir);
-            notificarEntregaPdfPedido(result);
-            return;
-        }
-
+        // Mobile imprime o MESMO documento padrao do desktop: builder HTML
+        // (gerarHTMLImpressaoPedidoCompra) + printHtmlDocument (com fallback
+        // window.open/window.print e fallback iframe no helper). O PDF via
+        // jsPDF (exportarPedidosCompraPdf) nao e mais rota de impressao.
         await imprimirPedidosCompraSelecionadosDesktop(pedidosParaImprimir);
     } catch (error) {
         console.error('Erro ao imprimir pedidos selecionados:', error);
@@ -4048,11 +4045,8 @@ async function imprimirPedido(pedidoId) {
     LoadingManager.show('Preparando impressão...');
     
     try {
-        if (isCommercePwaPrintContext() && window.SiswebCommercePdf) {
-            const result = await exportarPedidosCompraPdf([pedido]);
-            notificarEntregaPdfPedido(result);
-            return;
-        }
+        // Mobile imprime o MESMO documento padrao do desktop (builder HTML +
+        // printHtmlDocument com fallbacks). Sem desvio para PDF simplificado.
 
         const dadosEmpresa = await obterDadosEmpresa();
         const helper = window.SiswebCommercePdf || {};

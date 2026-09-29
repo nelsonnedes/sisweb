@@ -370,8 +370,16 @@ test('lista de pedidos usa impressao HTML no PC e PDF apenas em PWA', () => {
   const comprasHtml = read('compras.html');
   const firebaseService = read('firebaseService.js');
 
-  assert.match(vendasJs, /async function imprimirPedidosSelecionados\(\)[\s\S]*if \(isCommercePwaPrintContext\(\)\) \{[\s\S]*await exportarPedidosVendaPdf\(pedidosParaImprimir\)[\s\S]*await imprimirPedidosVendaSelecionadosDesktop\(pedidosParaImprimir\)/);
-  assert.match(comprasJs, /async function imprimirPedidosSelecionados\(\)[\s\S]*if \(isCommercePwaPrintContext\(\)\) \{[\s\S]*await exportarPedidosCompraPdf\(pedidosParaImprimir\)[\s\S]*await imprimirPedidosCompraSelecionadosDesktop\(pedidosParaImprimir\)/);
+  // Contrato impressao pedido venda: lista usa o template unico desktop
+  // (gerarHTMLImpressaoPedido via imprimirPedidosVendaSelecionadosDesktop)
+  // em todos os contextos, inclusive mobile.
+  assert.match(vendasJs, /async function imprimirPedidosSelecionados\(\)[\s\S]*await imprimirPedidosVendaSelecionadosDesktop\(pedidosParaImprimir\)/);
+  assert.doesNotMatch(vendasJs, /async function imprimirPedidosSelecionados\(\)[\s\S]*await exportarPedidosVendaPdf\(pedidosParaImprimir\)/);
+  // Contrato impressao pedido compra: lista usa o template unico desktop
+  // (gerarHTMLImpressaoPedidoCompra via imprimirPedidosCompraSelecionadosDesktop)
+  // em todos os contextos, inclusive mobile.
+  assert.match(comprasJs, /async function imprimirPedidosSelecionados\(\)[\s\S]*await imprimirPedidosCompraSelecionadosDesktop\(pedidosParaImprimir\)/);
+  assert.doesNotMatch(comprasJs, /async function imprimirPedidosSelecionados\(\)[\s\S]*await exportarPedidosCompraPdf\(pedidosParaImprimir\)/);
 
   assert.match(vendasJs, /async function imprimirPedidosVendaSelecionadosDesktop\(pedidosParaImprimir\)/);
   assert.match(vendasJs, /window\.matchMedia\('\(pointer: coarse\)'\)\.matches[\s\S]*window\.innerWidth <= 768/);

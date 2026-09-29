@@ -3391,13 +3391,8 @@ async function imprimirPedidosSelecionados() {
         return;
     }
     try {
-        if (isCommercePwaPrintContext()) {
-            LoadingManager.show('Gerando PDF dos pedidos...');
-            const result = await exportarPedidosVendaPdf(pedidosParaImprimir);
-            notificarEntregaPdfPedido(result);
-            return;
-        }
-
+        // Documento padrao desktop (gerarHTMLImpressaoPedido) em todos os contextos,
+        // inclusive mobile: single template, single renderer.
         await imprimirPedidosVendaSelecionadosDesktop(pedidosParaImprimir);
     } catch (error) {
         console.error('Erro ao imprimir pedidos selecionados:', error);
@@ -8312,12 +8307,9 @@ async function imprimirPedido(pedidoId) {
         // Mostrar loading enquanto carrega dados da empresa
         LoadingManager.show('Preparando impressão...');
 
-        if (isCommercePwaPrintContext() && window.SiswebCommercePdf) {
-            const result = await exportarPedidosVendaPdf([pedido]);
-            notificarEntregaPdfPedido(result);
-            return;
-        }
-        
+        // Documento padrao desktop (gerarHTMLImpressaoPedido) em todos os contextos,
+        // inclusive mobile: single template, single renderer.
+        // (exportarPedidosVendaPdf mantido para outros usos; botoes de impressao nao roteiam por ele.)
         // Criar conteúdo HTML para impressão (assíncrono)
         const conteudoImpressao = await gerarHTMLImpressaoPedido(pedido);
         
