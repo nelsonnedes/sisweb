@@ -244,8 +244,8 @@ test('service worker publica nova versao PWA para invalidar cache visual', () =>
   const sw = read('sw.js');
   const menuComponent = read('menu-component.js');
 
-  assert.match(sw, /const APP_VERSION = '2026-09-28-tema-marca-fase25-5'/);
-  assert.match(menuComponent, /const PWA_VERSION = '2026-09-28-tema-marca-fase25-5'/);
+  assert.match(sw, /const APP_VERSION = '2026-09-29-print-unificado'/);
+  assert.match(menuComponent, /const PWA_VERSION = '2026-09-29-print-unificado'/);
   assert.match(sw, /cache: 'no-store'/);
   assert.match(sw, /SISWEB_PWA_UPDATED/);
 });
