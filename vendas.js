@@ -2505,7 +2505,7 @@ async function salvarPedido(event) {
         // ao estado anterior (evita "sucesso" fantasma que some no reload).
         const backupPedidos = Array.isArray(window.pedidos) ? window.pedidos.slice() : [];
         if (editandoPedidoId) {
-            const index = window.pedidos.findIndex(p => p.id === editandoPedidoId);
+            const index = window.pedidos.findIndex(p => getPedidoVendaId(p) === String(editandoPedidoId));
             if (index !== -1) {
                 window.pedidos[index] = pedidoData;
             } else {
@@ -2674,6 +2674,7 @@ async function salvarPedido(event) {
         try { itensCarrinho = []; } catch (_) {}
         try { itemEmEdicaoId = null; } catch (_) {}
         try { contasReceber = []; } catch (_) {}
+        try { dedupePedidosAposSave(); } catch (_) {}
         try { await listarPedidos(); } catch (_) {}
         
     } catch (error) {
@@ -3230,6 +3231,51 @@ function getPedidoVendaId(pedido) {
     return String(pedido && (pedido.id || pedido.firebaseKey || '') || '');
 }
 
+// Resolver canônico de pedido: com duplicatas por número (legado), o find()
+// ingênuo pode retornar a entrada ANTIGA enquanto a tabela (dedupe por
+// recência) exibe a nova. Aqui: match exato por id/firebaseKey primeiro;
+// havendo vários, retorna o mais recente. Fallback por número (mais recente).
+// Usar em editar/visualizar/imprimir/excluir/salvar — nunca find() direto.
+function resolverPedidoVenda(pedidoId) {
+    try {
+        const lista = Array.isArray(window.pedidos) ? window.pedidos : [];
+        const alvo = String(pedidoId || '');
+        if (!alvo) return null;
+        const exatos = lista.filter(p => getPedidoVendaId(p) === alvo);
+        if (exatos.length === 1) return exatos[0];
+        if (exatos.length > 1) {
+            return exatos.slice().sort((a, b) => getPedidoRecencyTimestamp(b) - getPedidoRecencyTimestamp(a))[0] || null;
+        }
+        const porNumero = lista.filter(p => String(p && p.numero || '') === alvo);
+        if (porNumero.length > 0) {
+            return porNumero.slice().sort((a, b) => getPedidoRecencyTimestamp(b) - getPedidoRecencyTimestamp(a))[0] || null;
+        }
+        return null;
+    } catch (_) { return null; }
+}
+
+// Remove duplicatas de window.pedidos após save: mesmo id resolvido ou mesmo
+// número → mantém apenas o mais recente. Evita que find() ache registro velho.
+function dedupePedidosAposSave() {
+    try {
+        const lista = Array.isArray(window.pedidos) ? window.pedidos : [];
+        const porId = new Map();
+        lista.forEach(p => {
+            const k = getPedidoVendaId(p) || `__nonum__${String(p && p.numero || '')}`;
+            const cur = porId.get(k);
+            if (!cur || getPedidoRecencyTimestamp(p) >= getPedidoRecencyTimestamp(cur)) porId.set(k, p);
+        });
+        const porNumero = new Map();
+        Array.from(porId.values()).forEach(p => {
+            const num = String(p && p.numero || '');
+            if (!num) { porNumero.set(`__semnum__${getPedidoVendaId(p)}`, p); return; }
+            const cur = porNumero.get(num);
+            if (!cur || getPedidoRecencyTimestamp(p) >= getPedidoRecencyTimestamp(cur)) porNumero.set(num, p);
+        });
+        window.pedidos = Array.from(porNumero.values());
+    } catch (_) {}
+}
+
 function getPedidosVendaSelecionadosParaImpressao() {
     return pedidosListFiltered.filter(p => pedidosSelecionados.has(getPedidoVendaId(p)));
 }
@@ -3521,7 +3567,7 @@ function filtrarPedidos() {
 }
 
 async function editarPedido(pedidoId) {
-    const pedido = window.pedidos.find(p => getPedidoVendaId(p) === String(pedidoId));
+    const pedido = resolverPedidoVenda(pedidoId);
     if (!pedido) return;
     
     // Fechar modal
@@ -3648,7 +3694,7 @@ async function editarPedido(pedidoId) {
 
 async function clonarPedido(pedidoId) {
     if (!guardOperationalAccessVendas()) return;
-    const pedido = (window.pedidos || []).find(p => getPedidoVendaId(p) === String(pedidoId));
+    const pedido = resolverPedidoVenda(pedidoId);
     if (!pedido) {
         ToastManager.warning('Pedido não encontrado.', 'Clonar pedido');
         return;
@@ -3720,7 +3766,7 @@ async function excluirPedido(pedidoId) {
     }
     
     try {
-        const pedido = window.pedidos.find(p => getPedidoVendaId(p) === String(pedidoId));
+        const pedido = resolverPedidoVenda(pedidoId);
         // Snapshots para rollback se o servidor não confirmar a exclusão.
         const backupPedidosVenda = Array.isArray(window.pedidos) ? window.pedidos.slice() : [];
         let backupEstoqueVenda = null;
@@ -4593,7 +4639,17 @@ function setupRelatoriosRealtime() {
                     if (Array.isArray(data)) {
                         arr = data;
                     } else if (data && typeof data === 'object') {
-                        arr = Object.values(data || {});
+                        // Preservar a chave do Firebase como id (paridade com getData);
+                        // sem isso, entradas sem id quebram findIndex no save e geram
+                        // duplicatas (lista mostra a nova, detalhe/impressão acham a velha).
+                        arr = Object.entries(data || {})
+                            .filter(([k]) => k !== '_metadata' && k !== 'metadata')
+                            .map(([k, v]) => {
+                                if (!v || typeof v !== 'object') return null;
+                                if (v.id) return v;
+                                return { ...v, id: String(k), firebaseKey: String(k) };
+                            })
+                            .filter(Boolean);
                     }
                     arr = (arr || []).map(p => {
                         if (p && p.contasReceber) {
@@ -8053,7 +8109,7 @@ window.onParcelaDiasInput = onParcelaDiasInput;
  * @param {string} pedidoId - ID do pedido a visualizar
  */
 async function visualizarPedido(pedidoId) {
-    const pedido = window.pedidos.find(p => getPedidoVendaId(p) === String(pedidoId));
+    const pedido = resolverPedidoVenda(pedidoId);
     
     if (!pedido) {
         ToastManager.error('Pedido não encontrado', 'Erro');
@@ -8199,7 +8255,7 @@ async function visualizarPedido(pedidoId) {
  * @param {string} pedidoId - ID do pedido a imprimir
  */
 async function imprimirPedido(pedidoId) {
-    const pedido = window.pedidos.find(p => getPedidoVendaId(p) === String(pedidoId));
+    const pedido = resolverPedidoVenda(pedidoId);
     
     if (!pedido) {
         ToastManager.error('Pedido não encontrado', 'Erro');

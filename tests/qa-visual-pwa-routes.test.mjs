@@ -187,7 +187,9 @@ test('modais de lista e detalhes de pedidos usam cards mobile e acoes corretas',
   assert.match(css, /\.commerce-detail-table-wrap\.mobile-cards td:last-child:not\(\.commerce-full-row\),[\s\S]*justify-content: initial !important;/);
   assert.match(css, /#visualizarPedidoModal \.modal-header \.close,[\s\S]*#visualizarPedidoModal \.modal-header \.close-modal,[\s\S]*flex: 0 0 44px;/);
 
-  assert.match(vendasJs, /const pedido = window\.pedidos\.find\(p => getPedidoVendaId\(p\) === String\(pedidoId\)\)/);
+  assert.match(vendasJs, /function resolverPedidoVenda\(pedidoId\)/);
+  assert.match(vendasJs, /const pedido = resolverPedidoVenda\(pedidoId\)/);
+  assert.match(vendasJs, /getPedidoRecencyTimestamp\(b\) - getPedidoRecencyTimestamp\(a\)/);
   assert.match(vendasJs, /data-label="Total"><span class="commerce-card-value commerce-card-money commerce-card-strong">/);
   assert.match(vendasJs, /data-label="Valor"><span class="commerce-card-value commerce-card-money">/);
   assert.match(vendasJs, /if \(isCommercePwaPrintContext\(\) && window\.SiswebCommercePdf\) \{[\s\S]*await exportarPedidosVendaPdf\(\[pedido\]\)/);
