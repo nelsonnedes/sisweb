@@ -897,39 +897,29 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             width: min(232px, 80vw) !important;
                         }
                         .sidebar-brand-only {
-                            position: relative;
                             flex-direction: column;
                             align-items: center;
                             justify-content: center;
-                            gap: 6px;
-                            padding: 14px 10px 18px;
+                            gap: 5px;
+                            padding: 12px 10px 16px;
                             margin-bottom: 8px;
-                            overflow: hidden;
-                            isolation: isolate;
-                        }
-                        .sidebar-brand-only .sidebar-brand-glow {
-                            position: absolute;
-                            inset: -30px -20px auto;
-                            height: 150px;
-                            background: radial-gradient(ellipse 65% 100% at 50% 0%, rgba(255,255,255,.95) 0%, rgba(255,255,255,.45) 45%, rgba(255,255,255,0) 72%);
-                            pointer-events: none;
-                            z-index: 0;
+                            /* Suavização: véu branco que dissolve no laranja,
+                               sem elemento absoluto (à prova de quebra). */
+                            background: linear-gradient(180deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.12) 55%, rgba(255,255,255,0) 100%);
+                            border-radius: 0 0 16px 16px;
                         }
                         .sidebar-brand-only img.sw-lockup-icon {
-                            width: 36px;
-                            height: 36px;
+                            width: 34px;
+                            height: 34px;
                             flex: 0 0 auto;
-                            position: relative;
-                            z-index: 1;
-                            filter: drop-shadow(0 2px 6px rgba(0,0,0,.18));
+                            filter: drop-shadow(0 1px 4px rgba(0,0,0,.22));
                         }
                         .sidebar-brand-only img.sw-lockup-name {
-                            width: 104px;
+                            width: 100px;
                             height: auto;
                             flex: 0 0 auto;
                             min-width: 0;
-                            position: relative;
-                            z-index: 1;
+                            filter: drop-shadow(0 1px 3px rgba(0,0,0,.18));
                         }
                         #mainMenuContainer.active .sidebar-help-group {
                             margin-top: 8px;
@@ -1198,9 +1188,8 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     <button class="menu-toggle" id="menuToggleBtn" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
                     <div class="menu" id="mainMenuContainer">
                     <div class="sidebar-brand-only" aria-hidden="true">
-                        <span class="sidebar-brand-glow"></span>
-                        <img class="sw-lockup-icon" src="${this.resolveUrl('assets/brand/icone.ico')}" onerror="this.onerror=null;this.src='${this.resolveUrl('assets/icons/icon-192x192.png')}';" alt="" width="36" height="36">
-                        <img class="sw-lockup-name" src="${this.resolveUrl('assets/brand/nome.ico')}" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="104">
+                        <img class="sw-lockup-icon" src="${this.resolveUrl('assets/brand/icone.ico')}" onerror="this.onerror=null;this.src='${this.resolveUrl('assets/icons/icon-192x192.png')}';" alt="" width="34" height="34">
+                        <img class="sw-lockup-name" src="${this.resolveUrl('assets/brand/nome.ico')}" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="100">
                     </div>
                     <a href="${homeUrl}" class="menu-item"><i class="fas fa-home"></i> Home</a>
                     
