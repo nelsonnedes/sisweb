@@ -255,12 +255,25 @@ class DiagnosticoConflitos {
         
         const estiloComputado = getComputedStyle(botaoTeste);
         const corFundo = estiloComputado.backgroundColor;
-        
-        // Cores esperadas (padronizadas)
+
+        // Cores esperadas resolvidas das variáveis do tema em runtime
+        // (com fallback legado): o botão agora usa var(--sw-success)=#16a34a,
+        // não mais o #28a745 fixo — comparar com hex fixo gerava falso alarme.
+        const varParaRgb = (nomeVar, fallbackRgb) => {
+            try {
+                const raw = String(getComputedStyle(document.documentElement).getPropertyValue(nomeVar) || '').trim();
+                const hex = raw.match(/^#([0-9a-fA-F]{6})$/);
+                if (hex) {
+                    const n = parseInt(hex[1], 16);
+                    return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+                }
+            } catch (_) {}
+            return fallbackRgb;
+        };
         const coresEsperadas = {
-            'select-button': 'rgb(40, 167, 69)', // #28a745
-            'edit-button': 'rgb(0, 123, 255)',   // #007bff
-            'delete-button': 'rgb(220, 53, 69)'  // #dc3545
+            'select-button': varParaRgb('--sw-success', 'rgb(40, 167, 69)'), // #16a34a temificado (legado #28a745)
+            'edit-button': varParaRgb('--sw-info', 'rgb(0, 123, 255)'),       // legado #007bff
+            'delete-button': varParaRgb('--sw-danger', 'rgb(220, 53, 69)')    // legado #dc3545
         };
         
         if (corFundo === coresEsperadas['select-button']) {
