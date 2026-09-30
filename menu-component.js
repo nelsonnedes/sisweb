@@ -1381,9 +1381,22 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     menuContainer.classList.toggle('active');
                     overlay.classList.toggle('active');
                 };
+                const closeSidebar = () => {
+                    menuContainer.classList.remove('active');
+                    overlay.classList.remove('active');
+                };
 
                 toggleBtn.addEventListener('click', toggleSidebar);
                 overlay.addEventListener('click', toggleSidebar);
+                // Tema/Suporte/Sobre no sidebar: fecha o menu ao tocar
+                // (não preventDefault: os handlers originais precisam do clique).
+                menuContainer.addEventListener('click', (e) => {
+                    try {
+                        const t = e.target && e.target.closest
+                            ? e.target.closest('.theme-option, .support-link, .about-link') : null;
+                        if (t && menuContainer.classList.contains('active')) closeSidebar();
+                    } catch (_) {}
+                });
             }
         }
 
@@ -2865,12 +2878,9 @@ const __siswebAboutModalTemplate = `
         <span class="close" onclick="window.closeAboutModal && window.closeAboutModal()">&times;</span>
         <h2>Sobre</h2>
         <div class="developer-card">
-            <div class="developer-info">
-                <div class="developer-avatar"><i class="fas fa-user"></i></div>
-                <div class="developer-name">
-                    <h3>Sisweb</h3>
-                    <span>Sistema de Gestão</span>
-                </div>
+            <div class="developer-info about-brand-lockup">
+                <img class="sw-lockup-icon" src="__BRAND_BASE__assets/brand/icone.ico" onerror="this.onerror=null;this.src='__BRAND_BASE__assets/icons/icon-192x192.png';" alt="" width="44" height="44">
+                <img class="sw-lockup-name" src="__BRAND_BASE__assets/brand/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="150">
             </div>
             <div class="contact-info">
                 <button type="button" class="about-support-button" onclick="window.showSupport && window.showSupport()"><i class="fas fa-headset"></i> Abrir suporte</button>
@@ -3800,7 +3810,12 @@ function ensureSystemAboutModal() {
         aboutModal = document.createElement('div');
         aboutModal.id = 'aboutModal';
         aboutModal.className = 'about-modal';
-        aboutModal.innerHTML = __siswebAboutModalTemplate;
+        // Base dos assets conforme a pasta da página (espelha resolveUrl).
+        let brandBase = '';
+        try {
+            if (String(window.location.pathname || '').includes('/folha_pagamento/')) brandBase = '../';
+        } catch (_) {}
+        aboutModal.innerHTML = __siswebAboutModalTemplate.split('__BRAND_BASE__').join(brandBase);
         document.body.appendChild(aboutModal);
     }
     let aboutStyle = document.getElementById('sisweb-about-modal-style');
@@ -3822,11 +3837,16 @@ function ensureSystemAboutModal() {
                 width: min(640px, calc(100vw - 24px));
                 max-height: min(80vh, 820px);
                 overflow: auto;
-                background: #ffffff;
+                background: var(--sw-surface);
+                border: 1px solid var(--sw-border);
                 border-radius: 14px;
                 box-shadow: 0 14px 40px rgba(0,0,0,0.35);
                 padding: 16px;
                 position: relative;
+                color: var(--sw-text-1);
+            }
+            #aboutModal .about-content h2 {
+                color: var(--sw-text-1);
             }
             #aboutModal .close {
                 position: absolute;
@@ -3841,19 +3861,28 @@ function ensureSystemAboutModal() {
                 cursor: pointer;
                 font-size: 22px;
                 line-height: 1;
-                color: #0f172a;
-                background: #f1f5f9;
+                color: var(--sw-text-1);
+                background: var(--sw-surface-2);
             }
-            #aboutModal .close:hover { background: #e2e8f0; }
-            #aboutModal .developer-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; background: #fff; }
+            #aboutModal .close:hover { background: var(--sw-hover); }
+            #aboutModal .developer-card { border: 1px solid var(--sw-border); border-radius: 12px; padding: 14px; background: var(--sw-surface); }
             #aboutModal .developer-info { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-            #aboutModal .developer-avatar { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #eff6ff; color: #2563eb; }
-            #aboutModal .developer-name h3 { margin: 0; font-size: 16px; color: #0f172a; }
-            #aboutModal .developer-name span { color: #64748b; font-size: 12px; }
+            #aboutModal .about-brand-lockup {
+                background: var(--sw-surface-2);
+                border: 1px solid var(--sw-border);
+                border-radius: 12px;
+                padding: 12px 14px;
+                justify-content: center;
+            }
+            #aboutModal .about-brand-lockup img.sw-lockup-icon { width: 44px; height: 44px; flex: 0 0 auto; }
+            #aboutModal .about-brand-lockup img.sw-lockup-name { width: 150px; height: auto; flex: 0 1 auto; min-width: 0; }
+            #aboutModal .developer-avatar { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--sw-brand); color: var(--sw-on-brand); }
+            #aboutModal .developer-name h3 { margin: 0; font-size: 16px; color: var(--sw-text-1); }
+            #aboutModal .developer-name span { color: var(--sw-text-3); font-size: 12px; }
             #aboutModal .contact-info { display: grid; gap: 8px; }
-            #aboutModal .contact-item { display: flex; gap: 10px; align-items: center; font-size: 13px; color: #0f172a; }
-            #aboutModal .contact-item i { color: #64748b; }
-            #aboutModal .contact-item a { color: #2563eb; text-decoration: none; }
+            #aboutModal .contact-item { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--sw-text-1); }
+            #aboutModal .contact-item i { color: var(--sw-text-3); }
+            #aboutModal .contact-item a { color: var(--sw-brand); text-decoration: none; }
             #aboutModal .contact-item a:hover { text-decoration: underline; }
             #aboutModal .about-support-button {
                 border: 0;
@@ -3865,10 +3894,10 @@ function ensureSystemAboutModal() {
                 justify-content: center;
                 gap: 8px;
                 font-weight: 700;
-                color: #ffffff;
-                background: #1d4ed8;
+                color: var(--sw-on-brand);
+                background: var(--sw-brand);
             }
-            #aboutModal .about-foot { margin-top: 10px; font-size: 12px; color: #64748b; }
+            #aboutModal .about-foot { margin-top: 10px; font-size: 12px; color: var(--sw-text-3); }
         `;
         document.head.appendChild(aboutStyle);
     }
