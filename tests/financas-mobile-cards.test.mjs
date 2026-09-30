@@ -85,7 +85,7 @@ test("Sistema Financeiro - service worker com nova APP_VERSION para invalidar ca
     const swPath = path.resolve("sw.js");
     const sw = fs.readFileSync(swPath, "utf8");
 
-    assert.match(sw, /const APP_VERSION = '2026-09-30-date-ios'/, "APP_VERSION deve refletir a entrega mobile");
+    assert.match(sw, /const APP_VERSION = '2026-09-30-sidebar-marca-parceiro'/, "APP_VERSION deve refletir a entrega mobile");
 });
 
 test("Sistema Financeiro - Histórico de Pagamentos vira card legível no mobile", () => {
