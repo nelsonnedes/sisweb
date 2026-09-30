@@ -798,8 +798,9 @@ window.ModalListaRomaneios = (function() {
             };
             document.addEventListener('click', closeHandler);
             document.addEventListener('keydown', escapeHandler);
-            window.tlPrintDropdownHandlers = { closeHandler, escapeHandler };
-            button.addEventListener('click', function(e) { e.stopPropagation(); }, true);
+            const buttonStopPropagationHandler = function(e) { e.stopPropagation(); };
+            button.addEventListener('click', buttonStopPropagationHandler, true);
+            window.tlPrintDropdownHandlers = { closeHandler, escapeHandler, button, buttonStopPropagationHandler };
         }, 100);
     }
 
@@ -826,6 +827,9 @@ window.ModalListaRomaneios = (function() {
             if (window.tlPrintDropdownHandlers) {
                 document.removeEventListener('click', window.tlPrintDropdownHandlers.closeHandler);
                 document.removeEventListener('keydown', window.tlPrintDropdownHandlers.escapeHandler);
+                if (window.tlPrintDropdownHandlers.button && window.tlPrintDropdownHandlers.buttonStopPropagationHandler) {
+                    window.tlPrintDropdownHandlers.button.removeEventListener('click', window.tlPrintDropdownHandlers.buttonStopPropagationHandler, true);
+                }
                 window.tlPrintDropdownHandlers = null;
             }
             // Legado: limpar handlers do sistema flutuante antigo, se existirem
