@@ -6,7 +6,7 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-09-30-sidebar-marca-parceiro';
+    const PWA_VERSION = '2026-09-30-tl-dropdown-inline';
     const state = {
         deferredPrompt: null,
         floatingButton: null,
