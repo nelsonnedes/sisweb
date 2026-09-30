@@ -211,8 +211,8 @@ test('Fase 8: trilhas restantes integradas', () => {
     assert.ok(html.includes('data-theme-mode'), `${f} com bootstrap`);
     assert.ok(!html.includes('C:\\Sisweb'), `${f} sem referência a produção`);
   }
-  assert.ok(!read('subscription.html').includes('sisweb-tokens.css'),
-    'subscription pública fora do tema por decisão (trilha de conversão)');
+  assert.ok(read('subscription.html').includes('sisweb-tokens.css'),
+    'subscription com tokens (temas claro/escuro por decisão de produto)');
 });
 
 test('Fase 10: cards padrão KPI + fundo + rodapé unificados', () => {

@@ -97,6 +97,27 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800;1,9..144,700&family=Inter:wght@400;600;700&family=Archivo:ital,wdth,wght@0,62..125,100..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+<script>
+  // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+  // Mesmo padrao de financas.html / login.html — evita flash claro/escuro.
+  (function () {
+    try {
+      var stored = localStorage.getItem('sisweb:theme');
+      var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+      var effective = mode === 'system'
+        && window.matchMedia
+        && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+        : mode === 'system' ? 'dark' : mode;
+      document.documentElement.setAttribute('data-theme', effective);
+      document.documentElement.setAttribute('data-theme-mode', mode);
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+    } catch (_) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
 <link rel="stylesheet" href="landing-vendas.css">
 <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
 <script src="sentry-init.js?v=7530fe3e6fec"></script>
@@ -106,7 +127,7 @@
 <!-- Topbar Fixa -->
 <header class="lv-topbar">
   <div class="lv-container lv-topbar-inner">
-    <div class="lv-logo"><img src="assets/brand/icone.ico" alt="" aria-hidden="true" width="30" height="30" style="width:30px;height:30px;object-fit:contain;flex-shrink:0;display:block;" /> <img src="assets/brand/nome.ico" alt="Sisweb — Gestão para Madeireiras" width="88" height="26" loading="eager" decoding="async" style="height:24px;width:auto;object-fit:contain;display:block;" /></div>
+    <div class="lv-logo"><img src="assets/brand/icone.ico" onerror="this.onerror=null;this.src='assets/icons/icon-192x192.png';" alt="" aria-hidden="true" width="30" height="30" style="width:30px;height:30px;object-fit:contain;flex-shrink:0;display:block;" /> <img src="assets/brand/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb — Gestão para Madeireiras" width="88" height="26" loading="eager" decoding="async" style="height:24px;width:auto;object-fit:contain;display:block;" /></div>
     <nav class="lv-nav" aria-label="Navegação principal">
       <a href="#beneficios">Ecossistema</a>
       <a href="#simulador">Simulador</a>
@@ -119,6 +140,10 @@
       <a href="https://sisweb-7ce82.web.app/portal-parceiro.html" class="lv-btn lv-btn-ghost"><i class="fas fa-sign-in-alt"></i> Meu painel do Parceiro</a>
       <a href="https://sisweb-7ce82.web.app/login.html" class="lv-btn lv-btn-ghost">Entrar</a>
       <a href="https://sisweb-7ce82.web.app/login.html?mode=register&plan=starter&cupom=LANDING30" class="lv-btn lv-btn-primary">Começar agora</a>
+      <div class="lv-theme-switch" role="group" aria-label="Tema da página">
+        <button type="button" class="lv-theme-btn" data-theme-option="light" role="menuitemradio" aria-checked="false" title="Tema claro"><i class="fas fa-sun" aria-hidden="true"></i><span>Claro</span></button>
+        <button type="button" class="lv-theme-btn" data-theme-option="dark" role="menuitemradio" aria-checked="false" title="Tema escuro"><i class="fas fa-moon" aria-hidden="true"></i><span>Escuro</span></button>
+      </div>
       <div class="lv-share-wrap">
         <button type="button" class="lv-btn lv-btn-share" id="lv-share-btn" aria-label="Compartilhar no WhatsApp" aria-expanded="false" aria-haspopup="true">
           <i class="fas fa-share-alt"></i> <span>Compartilhar</span>
@@ -148,7 +173,7 @@
 <section class="lv-hero">
   <div class="lv-container lv-hero-grid">
     <div class="lv-hero-copy">
-      <span class="lv-badge"><img src="assets/brand/icone.ico" alt="" aria-hidden="true" width="18" height="18" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;display:inline-block;vertical-align:-3px;" /> Romaneio • Cubagem • Estoque • NF-e/MDF-e</span>
+      <span class="lv-badge"><img src="assets/brand/icone.ico" onerror="this.onerror=null;this.src='assets/icons/icon-192x192.png';" alt="" aria-hidden="true" width="18" height="18" style="width:18px;height:18px;object-fit:contain;flex-shrink:0;display:inline-block;vertical-align:-3px;" /> Romaneio • Cubagem • Estoque • NF-e/MDF-e</span>
       <h1>Sua madeireira do <em>pátio</em> à <em>nota</em> em um só sistema.</h1>
       <p>Chega de romaneio no papel, cubagem na calculadora e estoque na cabeça do apontador. O Sisweb junta <strong>romaneio de toras e serrados, cubagem Francon e geométrica, estoque de pátio com rastreabilidade, financeiro e NF-e/MDF-e</strong> num login único — feito no Pará, para o ritmo de quem carrega caminhão todo dia.</p>
       <div class="lv-hero-ctas">
@@ -509,6 +534,7 @@
 <a href="https://wa.me/5591991311049?text=Ol%C3%A1!%20Vim%20pela%20p%C3%A1gina%20de%20vendas%20do%20Sisweb%20e%20quero%20falar%20com%20um%20consultor." class="lv-float lv-float-wa" aria-label="Conversar no WhatsApp com a Sisweb: +55 91 99131-1049" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i></a>
 <!-- Instagram: botão oculto até haver handle oficial. Não publicar link placeholder. -->
 
+<script src="js/sisweb-theme.js?v=380b69314121"></script>
 <script src="landing-vendas.js?v=29d65b88c8c1"></script>
 </body>
 </html>

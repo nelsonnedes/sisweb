@@ -14,7 +14,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800;1,9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
+    <script>
+        // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', effective === 'light' ? '#f8f9fa' : '#121417');
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
@@ -32,6 +52,442 @@
             --lv-areia-trans: rgba(228, 214, 188, 0.18);
             --lv-font-display: "Fraunces", Georgia, "Times New Roman", serif;
             --lv-font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* ═══ Sisweb — Brand lockup oficial (icone + nome, padrão login.html) ═══ */
+        .sw-lockup {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sw-lockup-icon {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 8px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 6px 18px rgba(254, 106, 0, 0.4));
+        }
+
+        .sw-lockup-name {
+            width: 150px;
+            max-width: 40vw;
+            height: auto;
+        }
+
+        /* ═══ Sisweb — alternador Claro/Escuro (delegação [data-theme-option] via js/sisweb-theme.js) ═══ */
+        .sw-theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 253, 247, 0.06);
+            border: 1px solid var(--lv-areia-trans);
+            border-radius: 999px;
+            padding: 4px;
+        }
+
+        .sw-theme-toggle .sw-theme-btn {
+            border: 0;
+            border-radius: 999px;
+            padding: 7px 14px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            font-family: var(--lv-font-body);
+            color: #D6C8B2;
+            background: transparent;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .sw-theme-toggle .sw-theme-btn:hover {
+            color: #FFFDF7;
+        }
+
+        .sw-theme-toggle .sw-theme-btn.is-active {
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
+            box-shadow: var(--sw-shadow-brand);
+        }
+
+        .sw-theme-toggle .sw-theme-btn.is-active i {
+            color: var(--sw-on-brand);
+        }
+
+        .sw-theme-toggle .sw-theme-btn:focus-visible {
+            outline: 2px solid var(--sw-focus);
+            outline-offset: 2px;
+        }
+
+        /* ═══════════ Tema Claro — paridade via tokens (escuro = base acima, inalterado) ═══════════ */
+        html[data-theme="light"] body {
+            background: var(--sw-bg);
+            background-color: var(--sw-bg);
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] body::before {
+            background: linear-gradient(180deg, rgba(254, 106, 0, 0.06) 0%, rgba(248, 249, 250, 0) 40%);
+            opacity: 1;
+        }
+
+        html[data-theme="light"] .global-system-footer {
+            color: var(--sw-text-3);
+        }
+
+        html[data-theme="light"] .subscription-header-brand {
+            border-bottom-color: var(--sw-border);
+        }
+
+        html[data-theme="light"] .subscription-logo {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .subscription-logo span {
+            color: var(--sw-text-3);
+        }
+
+        html[data-theme="light"] .sw-theme-toggle {
+            background: var(--sw-surface-2);
+            border-color: var(--sw-border);
+        }
+
+        html[data-theme="light"] .sw-theme-toggle .sw-theme-btn {
+            color: var(--sw-text-3);
+        }
+
+        html[data-theme="light"] .sw-theme-toggle .sw-theme-btn:hover {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .lv-proof-pill {
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
+            color: var(--sw-text-2);
+            box-shadow: var(--sw-shadow-pop);
+        }
+
+        html[data-theme="light"] .lv-proof-pill i {
+            color: var(--sw-brand);
+        }
+
+        html[data-theme="light"] .lv-proof-pill strong {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .campaign-item {
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
+            color: var(--sw-text-2);
+            box-shadow: var(--sw-shadow-pop);
+        }
+
+        html[data-theme="light"] .campaign-item strong {
+            color: var(--sw-brand-dark);
+        }
+
+        html[data-theme="light"] .campaign-item a {
+            color: var(--sw-link);
+        }
+
+        html[data-theme="light"] .trial-info {
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
+            color: var(--sw-text-1);
+            box-shadow: var(--sw-shadow-card);
+        }
+
+        html[data-theme="light"] .trial-info h2 {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .trial-info p {
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .promo-box {
+            background: var(--sw-alert-success-bg);
+            border-color: var(--sw-success);
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .plan-card {
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
+            box-shadow: var(--sw-shadow-card);
+        }
+
+        html[data-theme="light"] .plan-card:hover {
+            border-color: var(--sw-brand);
+            box-shadow: var(--sw-shadow-brand);
+        }
+
+        html[data-theme="light"] .plan-title {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .plan-price {
+            color: var(--sw-brand-dark);
+        }
+
+        html[data-theme="light"] .plan-price small {
+            color: var(--sw-text-3);
+        }
+
+        html[data-theme="light"] .plan-features li {
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .plan-features li i {
+            color: var(--sw-success);
+        }
+
+        html[data-theme="light"] .method-badge {
+            background: var(--sw-brand-soft);
+            color: var(--sw-pill-ink);
+            border-color: var(--sw-pill-border);
+        }
+
+        html[data-theme="light"] .select-plan {
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
+            box-shadow: var(--sw-shadow-brand);
+        }
+
+        html[data-theme="light"] .select-plan:hover:not(:disabled) {
+            background: var(--sw-brand-dark);
+            box-shadow: var(--sw-shadow-brand);
+        }
+
+        html[data-theme="light"] .select-plan:disabled {
+            background: var(--sw-surface-2);
+            color: var(--sw-text-3);
+        }
+
+        html[data-theme="light"] .plan-disclaimer {
+            background: var(--sw-alert-info-bg);
+            border-color: var(--sw-info);
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .subscription-message-cta {
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
+            color: var(--sw-text-2);
+            box-shadow: var(--sw-shadow-card);
+        }
+
+        html[data-theme="light"] .subscription-message-icon {
+            background: var(--sw-gradient);
+            color: var(--sw-on-brand);
+            box-shadow: var(--sw-shadow-brand);
+        }
+
+        html[data-theme="light"] .subscription-message-kicker {
+            color: var(--sw-brand-dark);
+        }
+
+        html[data-theme="light"] .subscription-message-copy h2 {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .subscription-message-copy p {
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .subscription-message-button {
+            background: var(--sw-gradient);
+            border-color: transparent;
+            color: var(--sw-on-brand);
+            box-shadow: var(--sw-shadow-brand);
+        }
+
+        html[data-theme="light"] .subscription-message-button:hover {
+            background: var(--sw-brand-dark);
+        }
+
+        html[data-theme="light"] .subscription-guide {
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
+            color: var(--sw-text-2);
+            box-shadow: var(--sw-shadow-card);
+        }
+
+        html[data-theme="light"] .subscription-guide-kicker {
+            color: var(--sw-brand-dark);
+        }
+
+        html[data-theme="light"] .subscription-guide h2 {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .subscription-guide-lead {
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .subscription-guide-cta {
+            background: var(--sw-surface-2);
+            border-color: var(--sw-border);
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .subscription-guide-cta:hover {
+            background: var(--sw-hover);
+        }
+
+        html[data-theme="light"] .subscription-guide-search {
+            background: var(--sw-input-bg);
+            border-color: var(--sw-input-border);
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .subscription-guide-search::placeholder {
+            color: var(--sw-input-placeholder);
+        }
+
+        html[data-theme="light"] .subscription-guide-card {
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
+        }
+
+        html[data-theme="light"] .subscription-guide-card:hover {
+            border-color: var(--sw-brand);
+        }
+
+        html[data-theme="light"] .subscription-guide-card h3 {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .subscription-guide-card h3 i {
+            color: var(--sw-brand);
+        }
+
+        html[data-theme="light"] .subscription-guide-card ul {
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .subscription-guide-shot {
+            background: var(--sw-surface-2);
+            border-color: var(--sw-border);
+        }
+
+        html[data-theme="light"] .subscription-guide-shot figcaption {
+            background: var(--sw-surface-2);
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .subscription-guide-shot figcaption i {
+            color: var(--sw-brand-dark);
+        }
+
+        html[data-theme="light"] .modal-content {
+            background-color: var(--sw-surface);
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .payment-heading h2 {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .payment-subtitle {
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .payment-mode-switch {
+            background: var(--sw-surface-2);
+        }
+
+        html[data-theme="light"] .payment-mode-btn {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .pix-auto-panel {
+            background: var(--sw-alert-info-bg);
+            border-color: var(--sw-info);
+        }
+
+        html[data-theme="light"] .pix-status-chip {
+            background: var(--sw-surface-2);
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .pix-expiration {
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .pix-qr-shell {
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
+        }
+
+        html[data-theme="light"] .pix-code-block {
+            background: var(--sw-surface);
+            border-color: var(--sw-border);
+        }
+
+        html[data-theme="light"] .pix-code-value {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .pix-action-secondary {
+            background: var(--sw-surface);
+            color: var(--sw-text-1);
+            border-color: var(--sw-input-border);
+        }
+
+        html[data-theme="light"] .pix-helper {
+            background: var(--sw-surface-2);
+            border-color: var(--sw-border);
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .pix-info p {
+            color: var(--sw-text-2);
+        }
+
+        html[data-theme="light"] .payment-instructions {
+            color: var(--sw-text-3);
+        }
+
+        html[data-theme="light"] .step {
+            background-color: var(--sw-surface-2);
+        }
+
+        html[data-theme="light"] .step h3 {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .close {
+            color: var(--sw-text-3);
+        }
+
+        html[data-theme="light"] .referral-box input,
+        html[data-theme="light"] .payment-methods-select select,
+        html[data-theme="light"] .payment-methods-select textarea {
+            background: var(--sw-input-bg);
+            border-color: var(--sw-input-border);
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] .payment-methods-select label {
+            color: var(--sw-label);
+        }
+
+        html[data-theme="light"] #partnerCodeBox {
+            background: var(--sw-alert-info-bg);
+            border-color: var(--sw-info);
+        }
+
+        html[data-theme="light"] #partnerCodeBox label {
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="light"] #partnerCodeBox label::after {
+            color: var(--sw-text-3);
         }
 
         * {
@@ -707,7 +1163,7 @@
         }
 
         .plan-features li i {
-            color: #22c55e;
+            color: var(--sw-success);
             margin-right: 12px;
             font-size: 15px;
             flex-shrink: 0;
@@ -1148,11 +1604,11 @@
         }
 
         #validationMessage.success {
-            color: #27ae60;
+            color: var(--sw-success);
         }
 
         #validationMessage.error {
-            color: #e74c3c;
+            color: var(--sw-danger);
         }
 
         .promo-box {
@@ -1202,7 +1658,7 @@
             margin-top: 12px;
             padding: 12px 14px;
             border: 1px solid #dbe7f3;
-            border-left: 4px solid #2563eb;
+            border-left: 4px solid var(--sw-info);
             border-radius: 10px;
             background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
             box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
@@ -1327,20 +1783,21 @@
                 max-height: calc(100dvh - 16px);
                 padding: 18px;
             }
+        }
         .payment-blocked-alert {
             text-align: center;
             padding: 18px 14px;
-            background: linear-gradient(135deg, #fef2f2, #f8fafc);
-            border: 1px solid #fca5a5;
+            background: var(--sw-alert-error-bg);
+            border: 1px solid var(--sw-danger);
             border-radius: 12px;
-            color: #991b1b;
+            color: var(--sw-danger);
             font-size: 14px;
             line-height: 1.6;
         }
         .payment-blocked-alert small {
             display: block;
             margin-top: 6px;
-            color: #475569;
+            color: var(--sw-text-2);
             font-size: 13px;
         }
         .payment-blocked-alert button {
@@ -1352,11 +1809,16 @@
 <body>
     <div class="container">
         <div class="subscription-header-brand">
-            <a href="landing-vendas.html" class="subscription-logo">
-                <img src="assets/icons/icon-192x192.png" alt="Sisweb" width="32" height="32" style="width:32px;height:32px;object-fit:contain;border-radius:8px;flex-shrink:0;" />
-                <strong>Sisweb</strong> <span>Gestão Madeireira</span>
+            <a href="landing-vendas.html" class="subscription-logo sw-lockup" role="img" aria-label="Sisweb — Gestão Madeireira">
+                <img class="sw-lockup-icon" src="assets/brand/icone.ico" onerror="this.onerror=null;this.src='assets/icons/icon-192x192.png';" alt="" aria-hidden="true" width="40" height="40">
+                <img class="sw-lockup-name" src="assets/brand/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb" width="150">
+                <span>Gestão Madeireira</span>
             </a>
             <div class="subscription-badges-row">
+                <div class="sw-theme-toggle" role="radiogroup" aria-label="Tema da página">
+                    <button type="button" class="sw-theme-btn" data-theme-option="light" role="radio" aria-checked="false"><i class="fas fa-sun" aria-hidden="true"></i> Claro</button>
+                    <button type="button" class="sw-theme-btn" data-theme-option="dark" role="radio" aria-checked="false"><i class="fas fa-moon" aria-hidden="true"></i> Escuro</button>
+                </div>
                 <span class="lv-proof-pill"><i class="fas fa-shield-alt"></i> <strong>Ativação Imediata</strong></span>
                 <span class="lv-proof-pill"><i class="fas fa-bolt"></i> PIX Automático</span>
                 <span class="lv-proof-pill"><i class="fas fa-lock"></i> Dados Criptografados</span>
@@ -1703,6 +2165,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="js/sisweb-theme.js?v=380b69314121"></script>
     <script src="menu-component.js?v=16bb5786a951"></script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script type="module">

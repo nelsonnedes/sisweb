@@ -9,8 +9,8 @@ function read(rel) {
 
 test('Landing topbar: marca oficial (icone+nome) no lugar do logo anterior', () => {
   const html = read('landing-vendas.html');
-  assert.match(html, /<div class="lv-logo"><img src="assets\/brand\/icone\.ico" alt="" aria-hidden="true" width="30" height="30"/);
-  assert.match(html, /<img src="assets\/brand\/nome\.ico" alt="Sisweb — Gestão para Madeireiras" width="88" height="26" loading="eager" decoding="async"/);
+  assert.match(html, /<div class="lv-logo"><img src="assets\/brand\/icone\.ico"( onerror="[^"]*")? alt="" aria-hidden="true" width="30" height="30"/);
+  assert.match(html, /<img src="assets\/brand\/nome\.ico"( onerror="[^"]*")? alt="Sisweb — Gestão para Madeireiras" width="88" height="26" loading="eager" decoding="async"/);
   assert.doesNotMatch(html, /<div class="lv-logo"><img src="assets\/icons\/icon-192x192\.png"/);
   assert.doesNotMatch(html, /<strong>Sisweb<\/strong> <span>Gestão Madeireira<\/span>/);
   assert.doesNotMatch(html, /lv-hero-brand/);
@@ -27,7 +27,7 @@ test('Landing favicons: icone oficial em todas as refs (apple-touch preservado)'
 
 test('Landing badge: icone oficial da marca (igual topbar)', () => {
   const html = read('landing-vendas.html');
-  assert.match(html, /<span class="lv-badge"><img src="assets\/brand\/icone\.ico" alt="" aria-hidden="true" width="18" height="18"/);
+  assert.match(html, /<span class="lv-badge"><img src="assets\/brand\/icone\.ico"( onerror="[^"]*")? alt="" aria-hidden="true" width="18" height="18"/);
   assert.ok(html.indexOf('lv-badge') < html.indexOf('Sua madeireira do <em>pátio</em>'), 'badge antes do h1');
 });
 

@@ -541,3 +541,167 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 /* ---------- Toast styles ---------- */
 .lv-toast{display:none}
 .lv-toast.show{display:flex}
+
+/* ============================================================
+   Tema Claro/Escuro (padrao Sisweb via styles/sisweb-tokens.css)
+   Light = identidade marketing original (tora/casca/mogno) intacta.
+   Dark = remap das vars --lv-* para --sw-* + correcoes pontuais.
+   ============================================================ */
+
+/* ---------- Theme switcher discreto (delegacao via js/sisweb-theme.js) ---------- */
+.lv-theme-switch{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--lv-areia);border-radius:999px;padding:2px;background:transparent}
+.lv-theme-btn{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--lv-muted);font-family:var(--lv-font-body);font-size:.76rem;font-weight:700;padding:7px 11px;border-radius:999px;cursor:pointer;white-space:nowrap;min-height:36px}
+.lv-theme-btn i{font-size:.8rem}
+.lv-theme-btn:hover{color:var(--lv-mogno)}
+.lv-theme-btn.is-active{background:var(--lv-casca);color:var(--lv-dark-ink)}
+.lv-theme-btn.is-active i{color:var(--lv-serragem)}
+@media(max-width:768px){
+  .lv-theme-btn{padding:7px 9px}
+  .lv-theme-btn span{display:none}
+}
+
+/* ---------- Eyebrow + cupons (sem estilo proprio antes; identidade lv-*) ---------- */
+.lv-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.74rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--lv-mogno);margin:0 0 10px}
+.lv-eyebrow i{color:var(--lv-serragem)}
+.lv-section-coupons{background:var(--lv-card);border-top:1px solid var(--lv-areia);border-bottom:1px solid var(--lv-areia)}
+.lv-coupons-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}
+.lv-coupon-card{background:var(--lv-card);border:1px solid var(--lv-areia);border-top:5px solid var(--lv-serragem);border-radius:var(--lv-radius);padding:20px 18px;box-shadow:0 8px 24px rgba(28,19,11,.08)}
+.lv-coupon-off{font-family:var(--lv-font-display);font-size:1.5rem;font-weight:800;color:var(--lv-mogno)}
+.lv-coupon-code{display:inline-block;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;letter-spacing:.06em;background:#EFE4CE;border:1px dashed var(--lv-mogno);border-radius:8px;padding:6px 12px;margin-top:10px;color:var(--lv-casca)}
+.lv-coupon-meta{font-size:.8rem;color:var(--lv-muted);margin:10px 0 14px}
+.lv-coupon-actions{display:flex;gap:10px;flex-wrap:wrap}
+.lv-coupons-note{font-size:.82rem;color:var(--lv-muted);margin-top:16px}
+.lv-coupons-note i{color:var(--lv-mata)}
+
+/* ---------- Tema escuro: remap de superficies ---------- */
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --lv-tora:var(--sw-bg);
+  --lv-card:var(--sw-surface);
+  --lv-ink:var(--sw-text-1);
+  --lv-muted:var(--sw-text-3);
+  --lv-areia:var(--sw-border);
+  --lv-dark-ink:var(--sw-text-1);
+  --lv-dark-muted:var(--sw-text-2);
+}
+html[data-theme="dark"] body{background:var(--sw-bg);color:var(--sw-text-2)}
+html[data-theme="dark"] a{color:var(--sw-link)}
+html[data-theme="dark"] .lv-topbar{background:var(--sw-surface)}
+html[data-theme="dark"] .lv-logo{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-nav a{color:var(--sw-text-2)}
+html[data-theme="dark"] .lv-nav a:hover{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-btn-ghost{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-btn-ghost:hover{color:var(--sw-brand-light);border-color:var(--sw-brand)}
+html[data-theme="dark"] .lv-theme-btn{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-theme-btn:hover{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-theme-btn.is-active{background:var(--sw-surface-2);color:var(--sw-text-1)}
+
+/* Hero / identidade no escuro (serifas e acentos preservados) */
+html[data-theme="dark"] .lv-hero{background:linear-gradient(180deg,var(--sw-surface) 0%,var(--sw-bg) 100%)}
+html[data-theme="dark"] .lv-hero-copy h1{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-hero-copy h1 em{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-hero-copy p{color:var(--sw-text-2)}
+html[data-theme="dark"] .lv-hero-copy p strong{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-badge{background:var(--sw-surface-2);border-color:var(--sw-border);color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-proof-pill{background:var(--sw-surface);color:var(--sw-text-2);box-shadow:none}
+html[data-theme="dark"] .lv-proof-pill strong{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-proof-pill i{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-hero-proofs .lv-proof-pill:nth-child(2){background:var(--sw-surface);color:var(--sw-text-2);border-color:var(--sw-border)}
+html[data-theme="dark"] .lv-hero-proofs .lv-proof-pill:nth-child(2):hover{background:var(--sw-surface-2);border-color:var(--sw-success)}
+html[data-theme="dark"] .lv-hero-proofs .lv-proof-pill:nth-child(3){background:var(--sw-surface);color:var(--sw-text-1);border-color:var(--sw-brand)}
+html[data-theme="dark"] .lv-hero-proofs .lv-proof-pill:nth-child(3) strong{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-hero-proofs .lv-proof-pill:nth-child(3):hover{background:var(--sw-success);border-color:var(--sw-success);color:#fff}
+html[data-theme="dark"] .lv-hero-proofs .lv-proof-pill:nth-child(3):hover i,
+html[data-theme="dark"] .lv-hero-proofs .lv-proof-pill:nth-child(3):hover strong{color:#fff}
+html[data-theme="dark"] .lv-hero-proof{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-hero-proof i{color:var(--sw-success)}
+html[data-theme="dark"] .lv-hero-trust{border-top-color:var(--sw-border)}
+html[data-theme="dark"] .lv-trust-logos img{opacity:.75;filter:grayscale(100%) brightness(1.6)}
+html[data-theme="dark"] .lv-trust-logos img:hover{opacity:1;filter:none}
+html[data-theme="dark"] .lv-trust-meta{color:var(--sw-text-2)}
+html[data-theme="dark"] .lv-logpile{background:linear-gradient(180deg,var(--sw-bg) 0%,var(--sw-surface) 100%)}
+
+/* Secoes / cards / fluxo / ecossistema */
+html[data-theme="dark"] .lv-section-alt{background:var(--sw-surface)}
+html[data-theme="dark"] .lv-section-title{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-section-title em{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-section-sub{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-card p,
+html[data-theme="dark"] .lv-flow-step p,
+html[data-theme="dark"] .lv-eco-card p,
+html[data-theme="dark"] .lv-step p,
+html[data-theme="dark"] .lv-benefit-list li,
+html[data-theme="dark"] .lv-sim-gain-item{color:var(--sw-text-2)}
+html[data-theme="dark"] .lv-card h3,
+html[data-theme="dark"] .lv-flow-step h3,
+html[data-theme="dark"] .lv-eco-card h4,
+html[data-theme="dark"] .lv-step h4,
+html[data-theme="dark"] .lv-benefit-col h3,
+html[data-theme="dark"] .lv-benefit-list strong,
+html[data-theme="dark"] .lv-sim-card-title,
+html[data-theme="dark"] .lv-sim-field-header label{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-eco-card span{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-card-icon{background:var(--sw-surface-2)}
+html[data-theme="dark"] .lv-flow-step code{background:var(--sw-surface-2);color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-check{background:var(--sw-surface-2);color:var(--sw-text-2)}
+html[data-theme="dark"] .lv-ecosystem-note{background:var(--sw-surface-2);color:var(--sw-text-2)}
+html[data-theme="dark"] .lv-link{color:var(--sw-link)}
+html[data-theme="dark"] .lv-eco-card-muted{background:transparent}
+html[data-theme="dark"] .lv-section-accent{background:var(--sw-surface)}
+html[data-theme="dark"] .lv-nota-tecnica{background:var(--sw-surface-2);color:var(--sw-text-2)}
+html[data-theme="dark"] .lv-step span{background:var(--sw-success);color:#fff}
+
+/* Vitrine / carrossel */
+html[data-theme="dark"] .lv-section-vitrine{background:linear-gradient(180deg,var(--sw-surface) 0%,var(--sw-bg) 100%)}
+html[data-theme="dark"] .lv-device-label,
+html[data-theme="dark"] .lv-device-cap{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-viewport,
+html[data-theme="dark"] .lv-monitor-screen,
+html[data-theme="dark"] .lv-phone-screen,
+html[data-theme="dark"] .lv-hero-stage > .lv-phone-wrap .lv-phone-screen{background:var(--sw-surface-2)}
+html[data-theme="dark"] .lv-slide img{background:var(--sw-surface-2)}
+html[data-theme="dark"] .lv-slide::before{background:rgba(30,34,40,.94);color:var(--sw-text-1);border-color:var(--sw-border)}
+html[data-theme="dark"] .lv-slide-cap{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-mini{background:var(--sw-surface-2)}
+html[data-theme="dark"] .lv-mini-cards i{background:var(--sw-surface);border-color:var(--sw-border)}
+html[data-theme="dark"] .lv-mini-rows i{background:var(--sw-surface-2);border-color:var(--sw-border)}
+html[data-theme="dark"] .lv-mini-rows i:nth-child(even){background:var(--sw-surface)}
+html[data-theme="dark"] .lv-dot span{background:var(--sw-text-3)}
+html[data-theme="dark"] .lv-dot:hover span{background:var(--sw-text-1)}
+
+/* Simulador / cupons / contato */
+html[data-theme="dark"] .lv-sim-card{box-shadow:none}
+html[data-theme="dark"] .lv-sim-val{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-sim-kpi{background:var(--sw-bg);box-shadow:none}
+html[data-theme="dark"] .lv-sim-kpi-highlight{background:linear-gradient(135deg,var(--sw-surface),var(--sw-brand-soft));border-color:var(--sw-brand)}
+html[data-theme="dark"] .lv-sim-kpi-num{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-sim-kpi-highlight .lv-sim-kpi-num{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-sim-kpi-label{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-sim-kpi small{color:var(--sw-text-2)}
+html[data-theme="dark"] .lv-sim-gains{border-top-color:var(--sw-border)}
+html[data-theme="dark"] .lv-sim-gain-item i{color:var(--sw-success)}
+html[data-theme="dark"] .lv-slider{background:var(--sw-border)}
+html[data-theme="dark"] .lv-partner-calc output{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-partner-calc label{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-partner-calc small{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-coupon-off{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-coupon-code{background:var(--sw-surface-2);color:var(--sw-text-1);border-color:var(--sw-brand)}
+html[data-theme="dark"] .lv-coupon-meta{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-coupons-note{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-contact-icon{background:rgba(255,255,255,.16)}
+html[data-theme="dark"] .lv-btn-wa{background:#fff;color:#128C4B}
+html[data-theme="dark"] .lv-btn-wa:hover{background:#f0f0f0;color:var(--lv-mogno)}
+html[data-theme="dark"] .lv-eyebrow{color:var(--sw-brand-light)}
+
+/* Share / toast / footer */
+html[data-theme="dark"] .lv-share-opt{color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-share-opt:hover{background:var(--sw-surface-2)}
+html[data-theme="dark"] .lv-share-opt small{color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-share-opt i.fa-copy{color:var(--sw-brand-light)}
+html[data-theme="dark"] .lv-footer{background:var(--sw-surface);color:var(--sw-text-3)}
+html[data-theme="dark"] .lv-toast{background:var(--sw-surface-2);color:var(--sw-text-1)}
+html[data-theme="dark"] .lv-tooltip{background:var(--sw-surface-2);color:var(--sw-text-1);border-color:var(--sw-border)}
+@media(max-width:768px){
+  html[data-theme="dark"] .lv-btn-share{background:transparent;color:var(--sw-text-1)}
+  html[data-theme="dark"] .lv-btn-share:hover{background:var(--sw-surface-2);color:var(--sw-brand-light);border-color:var(--sw-brand)}
+}
