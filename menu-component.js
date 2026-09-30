@@ -913,7 +913,9 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             text-align: center;
                             margin: 0 0 8px;
                             padding: 16px 10px 18px;
-                            background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,.94) 62%, rgba(255,255,255,0) 100%);
+                            /* Suavização no topo: entra transparente e chega ao
+                               branco em ~22px (sem corte seco na borda). */
+                            background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #ffffff 22px, rgba(255,255,255,.94) 78%, rgba(255,255,255,0) 100%);
                         }
                         .sidebar-brand-only img.sw-lockup-icon {
                             width: 34px;
