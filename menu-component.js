@@ -905,36 +905,37 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             align-items: center;
                             justify-content: center;
                             gap: 6px;
-                            /* Mesmo cartão do modal Sobre: superfície escura fixa
-                               (identidade estável nos dois temas) com lockup. */
+                            /* Cabeçalho padrão "Lista de Romaneios": gradiente da
+                               marca, cantos superiores arredondados, base reta
+                               fundindo no laranja do sidebar. */
                             width: 100%;
                             align-self: stretch;
                             box-sizing: border-box;
                             text-align: center;
                             margin: 0 0 8px;
-                            padding: 14px 10px;
-                            background: #1e2228;
-                            border: 1px solid rgba(255,255,255,.14);
-                            border-radius: 14px;
-                            box-shadow: 0 4px 14px rgba(0,0,0,.25);
+                            padding: 16px 10px 20px;
+                            background: var(--sw-gradient);
+                            border-radius: 14px 14px 0 0;
+                            box-shadow: 0 2px 8px rgba(0,0,0,.18);
                         }
                         .sidebar-brand-only img.sw-lockup-icon {
-                            width: 34px;
-                            height: 34px;
+                            width: 36px;
+                            height: 36px;
                             flex: 0 0 auto;
                             margin-left: auto;
                             margin-right: auto;
-                            filter: drop-shadow(0 1px 4px rgba(0,0,0,.22));
+                            /* Lockup laranja sobre fundo laranja: inverte p/ branco. */
+                            filter: brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,.3));
                         }
                         .sidebar-brand-only img.sw-lockup-name {
-                            width: 100px;
+                            width: 108px;
                             max-width: 100%;
                             height: auto;
                             flex: 0 0 auto;
                             min-width: 0;
                             margin-left: auto;
                             margin-right: auto;
-                            filter: drop-shadow(0 1px 3px rgba(0,0,0,.18));
+                            filter: brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,.3));
                         }
                         #mainMenuContainer.active .sidebar-help-group {
                             margin-top: 8px;
