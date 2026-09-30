@@ -778,11 +778,10 @@ window.ModalListaRomaneios = (function() {
         dbg('✅ Dropdown TL exibido (inline, paridade PCT)');
 
         // ✅ FECHAR AO CLICAR FORA / ESC — closers auto-limpantes por abertura.
-        // O closer de fora usa `mousedown` (NÃO `click`): o mousedown dispara
-        // ANTES do click, então ao clicar no ícone de OUTRO romaneio o closer
-        // fecha o dropdown antigo primeiro e o toggle abre o novo em seguida.
-        // Com `click` (bubble: alvo -> document) o closer do dropdown antigo
-        // rodava DEPOIS do toggle e fechava instantaneamente o recém-aberto.
+        // Usa `click` (bubble) + stopPropagation no botão de impressão:
+        // - Clique no botão: stopPropagation impede o closer, toggle funciona
+        // - Clique fora: closer fecha
+        // - Clique em outro botão: closer do antigo fecha, toggle do novo abre
         setTimeout(() => {
             if (!dropdown.classList.contains('show')) return;
             const closeHandler = function(event) {
@@ -797,9 +796,10 @@ window.ModalListaRomaneios = (function() {
                     dbg('✅ Dropdown fechado pela tecla Escape');
                 }
             };
-            document.addEventListener('mousedown', closeHandler);
+            document.addEventListener('click', closeHandler);
             document.addEventListener('keydown', escapeHandler);
             window.tlPrintDropdownHandlers = { closeHandler, escapeHandler };
+            button.addEventListener('click', function(e) { e.stopPropagation(); }, true);
         }, 100);
     }
 
