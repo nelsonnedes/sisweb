@@ -873,6 +873,50 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             overflow-y: auto !important;
                         }
                     }
+                    /* Sidebar mobile: extras (marca + parceiro + ajuda). Desktop: ocultos.
+                       O item Parceiro NUNCA aparece por CSS: só via JS após
+                       confirmar parceiro cadastrado (fail-closed). */
+                    .sidebar-brand-only,
+                    .sidebar-help-group { display: none !important; }
+                    .sidebar-partner-item { display: none; }
+                    @media (max-width: 768px){
+                        #mainMenuContainer.active .sidebar-brand-only { display: flex !important; }
+                        #mainMenuContainer.active .sidebar-help-group { display: block !important; }
+                        #mainMenuContainer.active .sidebar-partner-item[data-partner="1"] { display: block !important; }
+                        .sidebar-brand-only {
+                            align-items: center;
+                            gap: 12px;
+                            padding: 4px 10px 16px;
+                            border-bottom: 1px solid rgba(255,255,255,.22);
+                            margin-bottom: 8px;
+                        }
+                        .sidebar-brand-only img {
+                            width: 44px;
+                            height: 44px;
+                            border-radius: 11px;
+                            background: #fff;
+                            padding: 3px;
+                            flex: 0 0 auto;
+                        }
+                        .sidebar-brand-only .sidebar-brand-name {
+                            display: block;
+                            color: #fff;
+                            font-weight: 800;
+                            font-size: 18px;
+                            line-height: 1.15;
+                        }
+                        .sidebar-brand-only .sidebar-brand-sub {
+                            display: block;
+                            color: rgba(255,255,255,.78);
+                            font-size: 11px;
+                            letter-spacing: .4px;
+                        }
+                        #mainMenuContainer.active .sidebar-help-group {
+                            margin-top: 8px;
+                            border-top: 1px solid rgba(255,255,255,.22);
+                            padding-top: 8px;
+                        }
+                    }
                     .settings-profile-card-slot {
                         padding: 0;
                         margin: 0 0 8px;
@@ -1133,6 +1177,10 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                 <div class="sisweb-menu-shell">
                     <button class="menu-toggle" id="menuToggleBtn" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
                     <div class="menu" id="mainMenuContainer">
+                    <div class="sidebar-brand-only" aria-hidden="true">
+                        <img src="${this.resolveUrl('assets/brand/icone.ico')}" onerror="this.onerror=null;this.src='${this.resolveUrl('assets/icons/icon-192x192.png')}';" alt="" width="44" height="44">
+                        <span><span class="sidebar-brand-name">Sisweb</span><span class="sidebar-brand-sub">Madeireiras</span></span>
+                    </div>
                     <a href="${homeUrl}" class="menu-item"><i class="fas fa-home"></i> Home</a>
                     
                     ${showBusinessModules ? `
@@ -1186,6 +1234,18 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             <a href="${this.resolveUrl('romaneiotora.html')}"><i class="fas fa-circle"></i> Romaneio Tora</a>
                             <a href="${this.resolveUrl('ajudabitolas.html')}"><i class="fas fa-question-circle"></i> Ajuda com Espessura</a>
                         </div>
+                    </div>
+
+                    <!-- Parceiro: só aparece para quem é parceiro cadastrado (ver setupSidebarPartner). -->
+                    <div class="menu-item-container sidebar-partner-item" id="sidebarPartnerItem" style="display:none;">
+                        <a href="${this.resolveUrl('portal-parceiro.html')}" class="menu-item"><i class="fas fa-handshake"></i> Parceiro</a>
+                    </div>
+
+                    <!-- Ajuda no sidebar mobile (espelha a seção Ajuda do dropdown Configurações). -->
+                    <div class="menu-item-container sidebar-help-group" id="sidebarHelpGroup">
+                        <a href="${this.resolveUrl('ajuda.html')}" class="menu-item"><i class="fas fa-book-open"></i> Ajuda</a>
+                        ${!adminContext.isSuperAdmin ? `<a href="#" class="menu-item support-link"><i class="fas fa-headset"></i> Suporte</a>` : ''}
+                        <a href="#" class="menu-item about-link"><i class="fas fa-info-circle"></i> Sobre</a>
                     </div>
                     ` : ''}
                     </div>
@@ -1267,6 +1327,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             // Configurar eventos de dropdown
             this.setupDropdowns();
             this.setupMobileSidebar();
+            this.setupSidebarPartner();
             if (window.SiswebPWA && typeof window.SiswebPWA.bindInstallLinks === 'function') {
                 window.SiswebPWA.bindInstallLinks(this);
             }
@@ -1292,6 +1353,33 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                 toggleBtn.addEventListener('click', toggleSidebar);
                 overlay.addEventListener('click', toggleSidebar);
             }
+        }
+
+        // Parceiro no sidebar mobile: exibe o link SOMENTE se o usuário for
+        // parceiro cadastrado (fail-closed: qualquer falha = continua oculto).
+        // Tenta na montagem e uma vez após o auth assentar.
+        setupSidebarPartner() {
+            const check = async () => {
+                try {
+                    const el = this.querySelector('#sidebarPartnerItem');
+                    if (!el || el.dataset.partnerChecked === '1') return;
+                    let isPartner = false;
+                    if (typeof window.isPartnerOnlyAccount === 'function') {
+                        isPartner = await Promise.race([
+                            Promise.resolve().then(() => window.isPartnerOnlyAccount()),
+                            new Promise((resolve) => setTimeout(() => resolve(false), 5000))
+                        ]) === true;
+                    }
+                    if (isPartner) {
+                        el.dataset.partnerChecked = '1';
+                        // Flag lida SÓ pela regra mobile (desktop nunca exibe).
+                        el.dataset.partner = '1';
+                        el.style.display = '';
+                    }
+                } catch (_) {}
+            };
+            try { check(); } catch (_) {}
+            try { setTimeout(check, 4000); } catch (_) {}
         }
 
         setupDropdowns() {
