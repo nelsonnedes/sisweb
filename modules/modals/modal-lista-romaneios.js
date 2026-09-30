@@ -699,144 +699,105 @@ window.ModalListaRomaneios = (function() {
     }
 
     /**
-     * ✅ TOGGLE DROPDOWN DE IMPRESSÃO (baseado no original)
+     * ✅ TOGGLE DROPDOWN DE IMPRESSÃO (paridade com PCT: usa o .dropdown-content
+     * inline da linha + onclick direto das opções; sem menu flutuante paralelo,
+     * sem estado global — funciona N vezes seguidas)
      */
     function togglePrintDropdown(button) {
         const dropdown = button.parentElement.querySelector('.dropdown-content');
-        
+
         if (!dropdown) {
             console.error('❌ Dropdown não encontrado');
             return;
         }
 
-        if (!button.dataset.tlPrintDropdownSource) {
-            button.dataset.tlPrintDropdownSource = `tl-print-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        }
+        // ✅ FECHAR OUTROS DROPDOWNS (igual ao PCT)
+        document.querySelectorAll('#listaModal .dropdown-content').forEach(d => {
+            if (d !== dropdown) {
+                d.classList.remove('show');
+                d.style.display = 'none';
+            }
+        });
 
-        const currentMenu = document.querySelector(`.external-print-menu[data-source="${button.dataset.tlPrintDropdownSource}"]`);
-        if (currentMenu) {
+        // ✅ TOGGLE DO DROPDOWN ATUAL (igual ao PCT)
+        const isVisible = dropdown.classList.contains('show') && dropdown.style.display !== 'none';
+        if (isVisible) {
             closeAllPrintDropdownsTL();
-            dbg('✅ Dropdown fechado');
+            dbg('✅ Dropdown fechado manualmente');
             return;
         }
 
         closeAllPrintDropdownsTL();
 
-        const printOptions = [
-            { mode: 'completo', icon: 'fas fa-file-alt', label: 'Completo' },
-            { mode: 'sem_preco_unitario', icon: 'fas fa-file-minus', label: 'Sem Preço Unitário' },
-            { mode: 'sem_preco', icon: 'fas fa-file-times', label: 'Sem Preços' }
-        ];
-        const romaneioId = button.dataset.romaneioId || button.closest('tr')?.dataset?.romaneioId || dropdown.querySelector('[data-print-romaneio-id]')?.dataset?.printRomaneioId || '';
-        const floatingMenu = document.createElement('div');
-        floatingMenu.className = 'dropdown-content show external-print-menu tl-print-dropdown-menu';
-        floatingMenu.dataset.source = button.dataset.tlPrintDropdownSource;
-        floatingMenu.innerHTML = printOptions.map(option => `
-            <button type="button" class="tl-print-option" data-print-romaneio-id="${romaneioId}" data-print-mode="${option.mode}">
-                <i class="${option.icon}"></i> ${option.label}
-            </button>
-        `).join('');
-        document.body.appendChild(floatingMenu);
-
-        function findMenuOptionFromEvent(event) {
-            const direct = event.target.closest && event.target.closest('[data-print-mode]');
-            if (direct) return direct;
-            const x = event.clientX;
-            const y = event.clientY;
-            if (typeof x !== 'number' || typeof y !== 'number') return null;
-            return Array.from(floatingMenu.querySelectorAll('[data-print-mode]')).find(option => {
-                const rect = option.getBoundingClientRect();
-                return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-            }) || null;
-        }
-
-        floatingMenu.addEventListener('mousedown', function(event) {
-            if (findMenuOptionFromEvent(event)) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        }, true);
-
-        floatingMenu.addEventListener('click', function(event) {
-            const option = findMenuOptionFromEvent(event);
-            if (!option) return;
-            event.preventDefault();
-            event.stopPropagation();
-            printRomaneio(option.dataset.printRomaneioId, option.dataset.printMode);
-        }, true);
-
         try {
-            const modal = document.getElementById(CONFIG.modalId);
-            if (modal) modal.classList.add('has-active-print-dropdown');
-
             const rect = button.getBoundingClientRect();
-            floatingMenu.style.position = 'fixed';
-            floatingMenu.style.top = `${rect.bottom + 4}px`;
-            floatingMenu.style.left = `${rect.left}px`;
-            floatingMenu.style.zIndex = '10000080';
-            floatingMenu.style.right = 'auto';
-            floatingMenu.style.marginTop = '0';
-            floatingMenu.style.maxHeight = '280px';
-            floatingMenu.style.overflowY = 'auto';
-            floatingMenu.style.display = 'block';
-            floatingMenu.style.minWidth = '220px';
-            floatingMenu.style.background = '#fff';
-            floatingMenu.style.border = '1px solid #d6e1ec';
-            floatingMenu.style.borderRadius = '6px';
-            floatingMenu.style.boxShadow = '0 14px 34px rgba(13, 35, 57, 0.32)';
-            floatingMenu.style.pointerEvents = 'auto';
+            dropdown.classList.add('show');
+            dropdown.style.display = 'block';
+            dropdown.style.position = 'fixed';
+            dropdown.style.zIndex = '10000080';
+            dropdown.style.minWidth = '180px';
+            dropdown.style.maxWidth = '220px';
+            dropdown.style.right = 'auto';
+            dropdown.style.marginTop = '0';
+            dropdown.style.pointerEvents = 'auto';
 
-            const viewportPadding = 8;
-            const menuRect = floatingMenu.getBoundingClientRect();
-            if (menuRect.right > (window.innerWidth - viewportPadding)) {
-                const clampedLeft = Math.max(viewportPadding, window.innerWidth - menuRect.width - viewportPadding);
-                floatingMenu.style.left = `${clampedLeft}px`;
+            // ✅ MARCAR LINHA COMO ATIVA PARA EVITAR SOBREPOSIÇÃO (igual ao PCT)
+            const row = button.closest('tr');
+            if (row) {
+                document.querySelectorAll('#listaModal tr').forEach(r => {
+                    r.classList.remove('dropdown-active');
+                    r.style.position = '';
+                    r.style.zIndex = '';
+                });
+                row.classList.add('dropdown-active');
+                row.style.position = 'relative';
+                row.style.zIndex = '99999998';
             }
-            if (menuRect.bottom > (window.innerHeight - viewportPadding)) {
-                const clampedTop = Math.max(viewportPadding, rect.top - menuRect.height - 4);
-                floatingMenu.style.top = `${clampedTop}px`;
+
+            // ✅ POSIÇÃO VERTICAL COM CLAMP (nunca sai da viewport)
+            const dropdownHeight = 140;
+            let topPosition = rect.bottom + 4;
+            if (topPosition + dropdownHeight > window.innerHeight - 8) {
+                topPosition = Math.max(8, rect.top - dropdownHeight - 4);
             }
+            dropdown.style.top = `${topPosition}px`;
+
+            // ✅ POSIÇÃO HORIZONTAL COM CLAMP (nunca sai da viewport)
+            const menuWidth = Math.max(dropdown.offsetWidth || 0, 180);
+            let leftPosition = rect.left;
+            if (leftPosition + menuWidth > window.innerWidth - 8) {
+                leftPosition = (rect.right - menuWidth >= 8)
+                    ? rect.right - menuWidth
+                    : Math.max(8, window.innerWidth - menuWidth - 8);
+            }
+            dropdown.style.left = `${leftPosition}px`;
         } catch (e) {
             console.warn('⚠️ Falha ao posicionar dropdown TL:', e);
         }
 
-        dbg('✅ Dropdown mostrado como menu flutuante externo');
+        dbg('✅ Dropdown TL exibido (inline, paridade PCT)');
 
+        // ✅ FECHAR AO CLICAR FORA / ESC — closers auto-limpantes por abertura
+        // (bubble + guarda de visibilidade: nunca fecham o dropdown recém-criado
+        //  nem sobrevivem a ele, diferente do sistema flutuante anterior)
         setTimeout(() => {
-            if (window.currentDropdownCloseHandler) {
-                document.removeEventListener('mousedown', window.currentDropdownCloseHandler, true);
-            }
-
+            if (!dropdown.classList.contains('show')) return;
             const closeHandler = function(event) {
-                const isInsideDropdown = floatingMenu.contains(event.target);
-                const rect = floatingMenu.getBoundingClientRect();
-                const isInsideByPoint = typeof event.clientX === 'number'
-                    && event.clientX >= rect.left
-                    && event.clientX <= rect.right
-                    && event.clientY >= rect.top
-                    && event.clientY <= rect.bottom;
-                const isDropdownButton = button.contains(event.target);
-
-                if (!isInsideDropdown && !isInsideByPoint && !isDropdownButton) {
+                if (!dropdown.contains(event.target) && !button.contains(event.target)) {
                     closeAllPrintDropdownsTL();
                     dbg('✅ Dropdown fechado por clique externo');
                 }
             };
-
-            document.addEventListener('mousedown', closeHandler, true);
-            window.currentDropdownCloseHandler = closeHandler;
-        }, 100);
-
-        if (!window.currentDropdownEscapeHandler) {
             const escapeHandler = function(ev) {
                 if (ev.key === 'Escape') {
                     closeAllPrintDropdownsTL();
                     dbg('✅ Dropdown fechado pela tecla Escape');
                 }
             };
+            document.addEventListener('click', closeHandler);
             document.addEventListener('keydown', escapeHandler);
-            window.currentDropdownEscapeHandler = escapeHandler;
-        }
+            window.tlPrintDropdownHandlers = { closeHandler, escapeHandler };
+        }, 100);
     }
 
     /**
@@ -848,11 +809,23 @@ window.ModalListaRomaneios = (function() {
                 d.classList.remove('show');
                 d.style.display = 'none';
             });
-            // Remover possíveis menus externos flutuantes
+            // Higiene: remover menus flutuantes legados do sistema anterior, se houver
             document.querySelectorAll('.external-print-menu').forEach(menu => menu.remove());
+            // Limpar marca de linha ativa (paridade com PCT)
+            document.querySelectorAll('#listaModal tr.dropdown-active').forEach(r => {
+                r.classList.remove('dropdown-active');
+                r.style.position = '';
+                r.style.zIndex = '';
+            });
             const modal = document.getElementById(CONFIG.modalId);
             if (modal) modal.classList.remove('has-active-print-dropdown');
-            // Remover handlers ativos
+            // Remover closers ativos desta abertura
+            if (window.tlPrintDropdownHandlers) {
+                document.removeEventListener('click', window.tlPrintDropdownHandlers.closeHandler);
+                document.removeEventListener('keydown', window.tlPrintDropdownHandlers.escapeHandler);
+                window.tlPrintDropdownHandlers = null;
+            }
+            // Legado: limpar handlers do sistema flutuante antigo, se existirem
             if (window.currentDropdownCloseHandler) {
                 document.removeEventListener('mousedown', window.currentDropdownCloseHandler, true);
                 window.currentDropdownCloseHandler = null;
