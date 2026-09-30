@@ -1094,10 +1094,27 @@
 
         input, select, textarea {
             width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
             padding: 8px;
             border: 1px solid var(--sw-input-border);
             border-radius: 6px;
             font-size: 16px;
+        }
+
+        /* iOS/mobile: texto localizado do date/datetime tem largura
+           intrínseca grande e estoura modais sem estas travas. */
+        input[type="date"], input[type="datetime-local"] {
+            min-width: 0;
+        }
+
+        @media (max-width: 768px) {
+            input[type="date"], input[type="datetime-local"] {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+            }
         }
 
         .species-combobox-inline {

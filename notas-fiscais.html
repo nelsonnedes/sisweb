@@ -158,6 +158,7 @@
 
         .form-group {
             flex: 1;
+            min-width: 0;
             display: flex;
             flex-direction: column;
         }
@@ -177,6 +178,24 @@
             border-radius: 4px;
             font-size: 14px;
             transition: border-color 0.3s ease;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        /* iOS/mobile: texto localizado do date tem largura intrínseca
+           grande e estoura modais sem estas travas. */
+        .form-group input[type="date"] {
+            min-width: 0;
+        }
+
+        @media (max-width: 768px) {
+            .form-group input[type="date"] {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+            }
         }
 
         .form-group input:focus,
