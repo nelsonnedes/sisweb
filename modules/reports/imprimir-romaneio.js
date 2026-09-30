@@ -118,6 +118,42 @@ window.ImprimirRomaneio = (function() {
     }
 
     /**
+     * Abre a janela de impressão de forma SÍNCRONA dentro do gesto do clique
+     * (antes de qualquer await) e escreve um placeholder imediato. Sem isso,
+     * o mobile abre about:blank vazio ou bloqueia a segunda impressão sem
+     * feedback. Retorna a janela ou null (popup bloqueado).
+     */
+    function abrirJanelaImpressaoSync(tituloDocumento) {
+        let win = null;
+        try {
+            win = window.open('', '_blank');
+        } catch (_) {
+            win = null;
+        }
+        if (!win || win.closed === true) return null;
+        try {
+            const titulo = String(tituloDocumento || 'Romaneio').replace(/[<>&"]/g, '');
+            win.document.open();
+            win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${titulo}</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:90vh;color:#334155}div{text-align:center}</style></head><body><div>Gerando documento de impressão…</div></body></html>`);
+            win.document.close();
+        } catch (_) {}
+        return win;
+    }
+
+    /**
+     * Escreve mensagem de erro DENTRO da janela (nunca deixar about:blank).
+     */
+    function escreverErroNaJanela(win, mensagem) {
+        try {
+            if (!win || win.closed === true) return;
+            const msg = String(mensagem || 'Falha ao gerar impressão.').replace(/[<>&"]/g, '');
+            win.document.open();
+            win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Erro de impressão</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:90vh;color:#7f1d1d}div{text-align:center;padding:20px}</style></head><body><div>${msg}<br><br><button type="button" onclick="try{window.close()}catch(e){}">Fechar</button></div></body></html>`);
+            win.document.close();
+        } catch (_) {}
+    }
+
+    /**
      * ✅ FUNÇÃO PRINCIPAL: Imprimir Romaneio
      */
     async function imprimirRomaneio(romaneioId, tipo = TIPOS_IMPRESSAO.COMPLETO) {
@@ -125,34 +161,44 @@ window.ImprimirRomaneio = (function() {
             ? window.RomaneioDataUtils.normalizePrintMode(tipo)
             : String(tipo || TIPOS_IMPRESSAO.COMPLETO).replace(/-/g, '_').toLowerCase();
         console.log(`🖨️ Iniciando impressão do romaneio ${romaneioId} - Tipo: ${tipo}`);
-        
+
+        // Janela aberta no gesto (síncrono, antes dos awaits).
+        const janelaSync = abrirJanelaImpressaoSync(`Romaneio ${romaneioId}`);
+        if (!janelaSync) {
+            mostrarErro('Popup bloqueado. Permita popups para imprimir.');
+            return false;
+        }
+
         try {
             // Carregar dados do romaneio
             const romaneio = await carregarDadosRomaneio(romaneioId);
 
             if (!romaneio) {
+                escreverErroNaJanela(janelaSync, 'Romaneio não encontrado para impressão');
                 mostrarErro('Romaneio não encontrado para impressão');
                 return false;
             }
-            
+
             // Validar dados para impressão
             if (!validarDadosImpressao(romaneio)) {
+                try { janelaSync.close(); } catch (_) {}
                 return false;
             }
 
             await ensurePrintColumnConfig('TL');
-            
+
             // Gerar HTML do relatório
             const htmlRelatorio = await gerarHtmlRelatorio(romaneio, tipo);
-            
+
             // Abrir janela de impressão
-            abrirJanelaImpressao(htmlRelatorio, romaneio.id, 'TL');
-            
+            abrirJanelaImpressao(htmlRelatorio, romaneio.id, 'TL', janelaSync);
+
             console.log('✅ Relatório gerado e enviado para impressão');
             return true;
-            
+
         } catch (error) {
             console.error('❌ Erro ao imprimir romaneio:', error);
+            escreverErroNaJanela(janelaSync, 'Erro interno ao gerar relatório');
             mostrarErro('Erro interno ao gerar relatório');
             return false;
         }
@@ -163,29 +209,39 @@ window.ImprimirRomaneio = (function() {
      * Mantém o padrão do módulo TL, reutiliza abrirJanelaImpressao e mostrarErro.
      */
     async function imprimirRomaneioTora(romaneioId, tipo = TIPOS_IMPRESSAO.COMPLETO) {
-        try {
-            tipo = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizePrintMode === 'function'
-                ? window.RomaneioDataUtils.normalizePrintMode(tipo)
-                : String(tipo || TIPOS_IMPRESSAO.COMPLETO).replace(/-/g, '_').toLowerCase();
-            console.log(`🪵 Imprimir Romaneio Tora → id=${romaneioId} tipo=${tipo}`);
+        tipo = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizePrintMode === 'function'
+            ? window.RomaneioDataUtils.normalizePrintMode(tipo)
+            : String(tipo || TIPOS_IMPRESSAO.COMPLETO).replace(/-/g, '_').toLowerCase();
+        console.log(`🪵 Imprimir Romaneio Tora → id=${romaneioId} tipo=${tipo}`);
 
+        // Janela aberta no gesto (síncrono, antes dos awaits).
+        const janelaSync = abrirJanelaImpressaoSync(`Romaneio Tora ${romaneioId}`);
+        if (!janelaSync) {
+            mostrarErro('Popup bloqueado. Permita popups para imprimir.');
+            return false;
+        }
+
+        try {
             const romaneio = await carregarDadosRomaneioTora(romaneioId);
             if (!romaneio) {
+                escreverErroNaJanela(janelaSync, 'Romaneio Tora não encontrado para impressão');
                 mostrarErro('Romaneio Tora não encontrado para impressão');
                 return false;
             }
 
             if (!validarDadosImpressaoTora(romaneio)) {
+                try { janelaSync.close(); } catch (_) {}
                 return false;
             }
 
             await ensurePrintColumnConfig('TORA');
             const html = await gerarHtmlRelatorioTora(romaneio, tipo);
-            abrirJanelaImpressao(html, romaneio.id || romaneio.romaneioId || romaneio.key || 'ROMANEIO_TORA', 'TORA');
+            abrirJanelaImpressao(html, romaneio.id || romaneio.romaneioId || romaneio.key || 'ROMANEIO_TORA', 'TORA', janelaSync);
             console.log('✅ Relatório Tora gerado e enviado para impressão');
             return true;
         } catch (error) {
             console.error('❌ Erro ao imprimir romaneio Tora:', error);
+            escreverErroNaJanela(janelaSync, 'Erro interno ao gerar relatório Tora');
             mostrarErro('Erro interno ao gerar relatório Tora');
             return false;
         }
@@ -3195,15 +3251,26 @@ window.ImprimirRomaneio = (function() {
 
     /**
      * Abrir janela de impressão
+     * @param {Window|null} janelaPreAberta - janela aberta de forma síncrona
+     * no gesto do clique (evita bloqueio de popup e about:blank no mobile).
      */
-    function abrirJanelaImpressao(html, romaneioId, printModule = 'TL') {
+    function abrirJanelaImpressao(html, romaneioId, printModule = 'TL', janelaPreAberta = null) {
         // ✅ MOBILE: janela só é aberta aqui (dados já carregados pelos chamadores).
         // Evita about:blank antecipado; valida alvo parcial e injeta Voltar + trigger robusto.
         let janelaImpressao = null;
         try {
-            janelaImpressao = window.open('', '_blank');
+            if (janelaPreAberta && janelaPreAberta.closed === false) {
+                janelaImpressao = janelaPreAberta;
+            }
         } catch (_) {
             janelaImpressao = null;
+        }
+        if (!janelaImpressao) {
+            try {
+                janelaImpressao = window.open('', '_blank');
+            } catch (_) {
+                janelaImpressao = null;
+            }
         }
 
         if (!janelaImpressao || janelaImpressao.closed === true) {
@@ -3354,6 +3421,13 @@ window.ImprimirRomaneio = (function() {
             mostrarErro('Adicione itens ao romaneio antes de imprimir');
             return false;
         }
+
+        // Janela aberta no gesto (síncrono, antes dos awaits).
+        const janelaSyncAtual = abrirJanelaImpressaoSync('Romaneio atual');
+        if (!janelaSyncAtual) {
+            mostrarErro('Popup bloqueado. Permita popups para imprimir.');
+            return false;
+        }
         
         // Calcular totais
         let totalVolume = 0;
@@ -3383,8 +3457,15 @@ window.ImprimirRomaneio = (function() {
         };
         
         // Gerar e imprimir
-        const htmlRelatorio = await gerarHtmlRelatorio(romaneioTemp, tipo);
-        abrirJanelaImpressao(htmlRelatorio, romaneioTemp.id);
+        try {
+            const htmlRelatorio = await gerarHtmlRelatorio(romaneioTemp, tipo);
+            abrirJanelaImpressao(htmlRelatorio, romaneioTemp.id, 'TL', janelaSyncAtual);
+        } catch (error) {
+            console.error('❌ Erro ao imprimir romaneio atual:', error);
+            escreverErroNaJanela(janelaSyncAtual, 'Erro interno ao gerar relatório');
+            mostrarErro('Erro interno ao gerar relatório');
+            return false;
+        }
         
         return true;
     }
