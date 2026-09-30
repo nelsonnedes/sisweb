@@ -6,7 +6,7 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-09-30-tl-dropdown-inline';
+    const PWA_VERSION = '2026-09-30-tl-dropdown-fora';
     const state = {
         deferredPrompt: null,
         floatingButton: null,

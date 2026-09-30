@@ -777,9 +777,12 @@ window.ModalListaRomaneios = (function() {
 
         dbg('✅ Dropdown TL exibido (inline, paridade PCT)');
 
-        // ✅ FECHAR AO CLICAR FORA / ESC — closers auto-limpantes por abertura
-        // (bubble + guarda de visibilidade: nunca fecham o dropdown recém-criado
-        //  nem sobrevivem a ele, diferente do sistema flutuante anterior)
+        // ✅ FECHAR AO CLICAR FORA / ESC — closers auto-limpantes por abertura.
+        // O closer de fora usa `mousedown` (NÃO `click`): o mousedown dispara
+        // ANTES do click, então ao clicar no ícone de OUTRO romaneio o closer
+        // fecha o dropdown antigo primeiro e o toggle abre o novo em seguida.
+        // Com `click` (bubble: alvo -> document) o closer do dropdown antigo
+        // rodava DEPOIS do toggle e fechava instantaneamente o recém-aberto.
         setTimeout(() => {
             if (!dropdown.classList.contains('show')) return;
             const closeHandler = function(event) {
@@ -794,7 +797,7 @@ window.ModalListaRomaneios = (function() {
                     dbg('✅ Dropdown fechado pela tecla Escape');
                 }
             };
-            document.addEventListener('click', closeHandler);
+            document.addEventListener('mousedown', closeHandler);
             document.addEventListener('keydown', escapeHandler);
             window.tlPrintDropdownHandlers = { closeHandler, escapeHandler };
         }, 100);
@@ -821,7 +824,7 @@ window.ModalListaRomaneios = (function() {
             if (modal) modal.classList.remove('has-active-print-dropdown');
             // Remover closers ativos desta abertura
             if (window.tlPrintDropdownHandlers) {
-                document.removeEventListener('click', window.tlPrintDropdownHandlers.closeHandler);
+                document.removeEventListener('mousedown', window.tlPrintDropdownHandlers.closeHandler);
                 document.removeEventListener('keydown', window.tlPrintDropdownHandlers.escapeHandler);
                 window.tlPrintDropdownHandlers = null;
             }
