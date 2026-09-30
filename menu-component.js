@@ -897,16 +897,18 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             width: min(232px, 80vw) !important;
                         }
                         .sidebar-brand-only {
+                            position: sticky;
+                            top: 0;
+                            z-index: 5;
                             flex-direction: column;
                             align-items: center;
                             justify-content: center;
                             gap: 5px;
-                            padding: 12px 10px 16px;
-                            margin-bottom: 8px;
-                            /* Suavização: véu branco que dissolve no laranja,
-                               sem elemento absoluto (à prova de quebra). */
-                            background: linear-gradient(180deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.12) 55%, rgba(255,255,255,0) 100%);
-                            border-radius: 0 0 16px 16px;
+                            /* Full-bleed: ocupa toda a largura do sidebar e fica
+                               fixo no topo ao rolar (sempre visível/legível). */
+                            margin: -60px -20px 8px;
+                            padding: 14px 10px 16px;
+                            background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,.94) 62%, rgba(255,255,255,0) 100%);
                         }
                         .sidebar-brand-only img.sw-lockup-icon {
                             width: 34px;
