@@ -890,27 +890,46 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             padding-top: 8px;
                         }
                         #mainMenuContainer.active .sidebar-partner-item[data-partner="1"] { display: block !important; }
+                        /* Marca no sidebar: lockup centralizado sobre brilho que se
+                           dissolve no laranja (sem cartão de borda dura) + sidebar
+                           mais estreita. */
+                        #mainMenuContainer {
+                            width: min(232px, 80vw) !important;
+                        }
                         .sidebar-brand-only {
+                            position: relative;
+                            flex-direction: column;
                             align-items: center;
-                            gap: 10px;
-                            padding: 10px 12px;
-                            margin-bottom: 10px;
-                            /* Mesmo cartão claro da tela de login p/ o lockup. */
-                            background: #fff;
-                            border: 1px solid rgba(255,255,255,.6);
-                            border-radius: 14px;
-                            box-shadow: 0 4px 14px rgba(0,0,0,.22);
+                            justify-content: center;
+                            gap: 6px;
+                            padding: 14px 10px 18px;
+                            margin-bottom: 8px;
+                            overflow: hidden;
+                            isolation: isolate;
+                        }
+                        .sidebar-brand-only .sidebar-brand-glow {
+                            position: absolute;
+                            inset: -30px -20px auto;
+                            height: 150px;
+                            background: radial-gradient(ellipse 65% 100% at 50% 0%, rgba(255,255,255,.95) 0%, rgba(255,255,255,.45) 45%, rgba(255,255,255,0) 72%);
+                            pointer-events: none;
+                            z-index: 0;
                         }
                         .sidebar-brand-only img.sw-lockup-icon {
-                            width: 46px;
-                            height: 46px;
+                            width: 36px;
+                            height: 36px;
                             flex: 0 0 auto;
+                            position: relative;
+                            z-index: 1;
+                            filter: drop-shadow(0 2px 6px rgba(0,0,0,.18));
                         }
                         .sidebar-brand-only img.sw-lockup-name {
-                            width: 132px;
+                            width: 104px;
                             height: auto;
-                            flex: 0 1 auto;
+                            flex: 0 0 auto;
                             min-width: 0;
+                            position: relative;
+                            z-index: 1;
                         }
                         #mainMenuContainer.active .sidebar-help-group {
                             margin-top: 8px;
@@ -1179,8 +1198,9 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     <button class="menu-toggle" id="menuToggleBtn" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
                     <div class="menu" id="mainMenuContainer">
                     <div class="sidebar-brand-only" aria-hidden="true">
-                        <img class="sw-lockup-icon" src="${this.resolveUrl('assets/brand/icone.ico')}" onerror="this.onerror=null;this.src='${this.resolveUrl('assets/icons/icon-192x192.png')}';" alt="" width="46" height="46">
-                        <img class="sw-lockup-name" src="${this.resolveUrl('assets/brand/nome.ico')}" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="132">
+                        <span class="sidebar-brand-glow"></span>
+                        <img class="sw-lockup-icon" src="${this.resolveUrl('assets/brand/icone.ico')}" onerror="this.onerror=null;this.src='${this.resolveUrl('assets/icons/icon-192x192.png')}';" alt="" width="36" height="36">
+                        <img class="sw-lockup-name" src="${this.resolveUrl('assets/brand/nome.ico')}" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="104">
                     </div>
                     <a href="${homeUrl}" class="menu-item"><i class="fas fa-home"></i> Home</a>
                     
