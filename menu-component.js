@@ -904,18 +904,19 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             flex-direction: column;
                             align-items: center;
                             justify-content: center;
-                            gap: 5px;
-                            /* Largura total explícita (desacoplada do padding do
-                               menu): ocupa o sidebar de borda a borda. */
+                            gap: 6px;
+                            /* Mesmo cartão do modal Sobre: superfície escura fixa
+                               (identidade estável nos dois temas) com lockup. */
                             width: 100%;
                             align-self: stretch;
                             box-sizing: border-box;
                             text-align: center;
                             margin: 0 0 8px;
-                            padding: 16px 10px 18px;
-                            /* Suavização no topo: entra transparente e chega ao
-                               branco em ~22px (sem corte seco na borda). */
-                            background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #ffffff 22px, rgba(255,255,255,.94) 78%, rgba(255,255,255,0) 100%);
+                            padding: 14px 10px;
+                            background: #1e2228;
+                            border: 1px solid rgba(255,255,255,.14);
+                            border-radius: 14px;
+                            box-shadow: 0 4px 14px rgba(0,0,0,.25);
                         }
                         .sidebar-brand-only img.sw-lockup-icon {
                             width: 34px;
