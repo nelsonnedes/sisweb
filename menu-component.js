@@ -895,6 +895,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                            mais estreita. */
                         #mainMenuContainer {
                             width: min(232px, 80vw) !important;
+                            padding-top: 0 !important;
                         }
                         .sidebar-brand-only {
                             position: sticky;
@@ -904,23 +905,32 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             align-items: center;
                             justify-content: center;
                             gap: 5px;
-                            /* Full-bleed: ocupa toda a largura do sidebar e fica
-                               fixo no topo ao rolar (sempre visível/legível). */
-                            margin: -60px -20px 8px;
-                            padding: 14px 10px 16px;
+                            /* Largura total explícita (desacoplada do padding do
+                               menu): ocupa o sidebar de borda a borda. */
+                            width: 100%;
+                            align-self: stretch;
+                            box-sizing: border-box;
+                            text-align: center;
+                            margin: 0 0 8px;
+                            padding: 16px 10px 18px;
                             background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,.94) 62%, rgba(255,255,255,0) 100%);
                         }
                         .sidebar-brand-only img.sw-lockup-icon {
                             width: 34px;
                             height: 34px;
                             flex: 0 0 auto;
+                            margin-left: auto;
+                            margin-right: auto;
                             filter: drop-shadow(0 1px 4px rgba(0,0,0,.22));
                         }
                         .sidebar-brand-only img.sw-lockup-name {
                             width: 100px;
+                            max-width: 100%;
                             height: auto;
                             flex: 0 0 auto;
                             min-width: 0;
+                            margin-left: auto;
+                            margin-right: auto;
                             filter: drop-shadow(0 1px 3px rgba(0,0,0,.18));
                         }
                         #mainMenuContainer.active .sidebar-help-group {
