@@ -257,6 +257,31 @@
                 width: 100% !important;
                 max-width: 100% !important;
                 min-width: 0 !important;
+                display: block !important;
+                overflow: hidden !important;
+            }
+            /* iOS Safari: o texto interno do date (::-webkit-date-and-time-value)
+               tem largura mínima própria e ignora a largura do input — é ele
+               que estourava a tela no iPhone. Trava + ellipsis. */
+            .form-group input[type="date"]::-webkit-date-and-time-value,
+            #pagamentoModal input[type="date"]::-webkit-date-and-time-value {
+                min-width: 0 !important;
+                max-width: 100% !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+            }
+            .form-group input[type="date"]::-webkit-calendar-picker-indicator,
+            #pagamentoModal input[type="date"]::-webkit-calendar-picker-indicator {
+                flex: 0 0 auto !important;
+                margin-left: 4px !important;
+            }
+            /* O form do modal nunca pode vazar na horizontal. */
+            #pagamentoModal #pagamentoForm,
+            #pagamentoModal .modal-body {
+                overflow-x: hidden !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
             }
         }
 

@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-09-29-print-unificado';
+const APP_VERSION = '2026-09-30-date-ios';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',
