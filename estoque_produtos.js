@@ -1003,7 +1003,7 @@ async function abrirConfiguracaoColunasProdutos() {
                         <span class="close-modal" onclick="fecharConfiguracaoColunasProdutos()">&times;</span>
                     </div>
                     <div class="modal-body">
-                        <div style="color:#64748b; font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis na tabela do Almoxarifado e na impressão.</div>
+                        <div style="color:var(--sw-text-3); font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis na tabela do Almoxarifado e na impressão.</div>
                         <label class="report-col-item" style="margin-bottom:10px;">
                             <input type="checkbox" id="produtosColumnsSelectAll" onchange="toggleTodasColunasProdutos(this.checked)">
                             <span class="report-col-label"><strong>Selecionar todas as colunas</strong></span>

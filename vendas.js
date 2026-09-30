@@ -1315,7 +1315,7 @@ function renderizarClientesVenda() {
                 <td data-label="Contato">${telefone}</td>
                 <td data-label="Localização">
                     <span>${escapeOperationalHtmlVendas(cidadeUf)}</span>
-                    ${endereco ? `<small style="display:block;color:#64748b;margin-top:3px;">${escapeOperationalHtmlVendas(endereco)}</small>` : ''}
+                    ${endereco ? `<small style="display:block;color:var(--sw-text-3);margin-top:3px;">${escapeOperationalHtmlVendas(endereco)}</small>` : ''}
                 </td>
                 <td data-label="Status"><span class="status-badge status-${status}">${statusLabel}</span></td>
                 <td data-label="Ações" class="sales-clients-actions-cell commerce-actions-cell">

@@ -101,7 +101,7 @@ test('vendas e compras padronizam checkboxes romaneio e carrinho no PWA', () => 
   assert.match(css, /\.commerce-cart-table-wrap\.mobile-cards td\[data-label="Produto"\] \{[\s\S]*grid-template-columns: 1fr;/);
   assert.match(css, /\.commerce-cart-table-wrap\.mobile-cards tr \{[\s\S]*height: auto !important;[\s\S]*overflow: hidden;/);
   assert.match(css, /\.commerce-cart-table-wrap\.mobile-cards td \{[\s\S]*padding: 10px 12px !important;[\s\S]*line-height: 1\.3 !important;/);
-  assert.match(css, /\.commerce-cart-table-wrap\.mobile-cards td\[data-label="Produto"\] \{[\s\S]*display: block !important;[\s\S]*background: #f8fafc;/);
+  assert.match(css, /\.commerce-cart-table-wrap\.mobile-cards td\[data-label="Produto"\] \{[\s\S]*display: block !important;[\s\S]*background: var\(--sw-surface-2\);/);
   assert.match(css, /\.commerce-cart-table-wrap\.mobile-cards td\[data-label="Ações"\] \.btn-small,[\s\S]*height: 40px !important;/);
   assert.match(css, /\.commerce-orders-table-wrap\.mobile-cards tr,[\s\S]*#listaPedidosModal \.commerce-orders-table-wrap\.mobile-cards #listaPedidosTable tr \{[\s\S]*height: auto !important;/);
   assert.match(css, /\.commerce-orders-table-wrap\.mobile-cards \.commerce-actions-wrap,[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);

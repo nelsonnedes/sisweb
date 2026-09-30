@@ -4438,7 +4438,7 @@ async function carregarTabelaReceber(filtro = {}) {
     if (overlay && shouldOverlay) { overlay.style.display = 'flex'; window.financeLoadingCount = (window.financeLoadingCount||0) + 1; }
     const tbody = document.getElementById('receberTable');
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #2c3e50;"><i class="fas fa-spinner fa-spin"></i> Carregando contas a receber...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--sw-text-2);"><i class="fas fa-spinner fa-spin"></i> Carregando contas a receber...</td></tr>';
     }
     
     // ✅ CORREÇÃO: Limpar dados inválidos antes de carregar
@@ -4732,7 +4732,7 @@ async function carregarTabelaPagar(filtro = {}) {
     if (overlay && shouldOverlay) { overlay.style.display = 'flex'; window.financeLoadingCount = (window.financeLoadingCount||0) + 1; }
     const tbody = document.getElementById('pagarTable');
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #2c3e50;"><i class="fas fa-spinner fa-spin"></i> Carregando contas a pagar...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--sw-text-2);"><i class="fas fa-spinner fa-spin"></i> Carregando contas a pagar...</td></tr>';
     }
     
     // ✅ CORREÇÃO: Limpar dados inválidos antes de carregar
@@ -5819,7 +5819,7 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
     let historico = '<div class="finance-history-table-wrap">';
     historico += '<table class="finance-history-table" style="width: 100%; border-collapse: collapse; table-layout: fixed; font-size:11px; line-height:1.1;">';
     historico += '<colgroup><col style="width:12%;"><col style="width:13%;"><col style="width:14%;"><col style="width:14%;"><col style="width:10%;"><col style="width:23%;"><col style="width:7%;"><col style="width:7%;"></colgroup>';
-    historico += '<thead><tr style="background: #f5f5f5;"><th style="padding: 4px 5px; border: 1px solid #ddd; white-space: nowrap;">Data</th><th style="padding: 4px 5px; border: 1px solid #ddd; white-space: nowrap;">Juros Período</th><th style="padding: 4px 5px; border: 1px solid #ddd; white-space: nowrap;">Pagamento</th><th style="padding: 4px 5px; border: 1px solid #ddd; white-space: nowrap;">Saldo Após</th><th style="padding: 4px 5px; border: 1px solid #ddd; white-space: nowrap;">Método</th><th style="padding: 4px 5px; border: 1px solid #ddd; white-space: nowrap;">Observações</th><th style="padding: 4px 5px; border: 1px solid #ddd; text-align: center; white-space: nowrap;">Anexo</th><th style="padding: 4px 5px; border: 1px solid #ddd; text-align: center; white-space: nowrap;">Ações</th></tr></thead>';
+    historico += '<thead><tr style="background: var(--sw-surface-2);"><th style="padding: 4px 5px; border: 1px solid var(--sw-border); white-space: nowrap;">Data</th><th style="padding: 4px 5px; border: 1px solid var(--sw-border); white-space: nowrap;">Juros Período</th><th style="padding: 4px 5px; border: 1px solid var(--sw-border); white-space: nowrap;">Pagamento</th><th style="padding: 4px 5px; border: 1px solid var(--sw-border); white-space: nowrap;">Saldo Após</th><th style="padding: 4px 5px; border: 1px solid var(--sw-border); white-space: nowrap;">Método</th><th style="padding: 4px 5px; border: 1px solid var(--sw-border); white-space: nowrap;">Observações</th><th style="padding: 4px 5px; border: 1px solid var(--sw-border); text-align: center; white-space: nowrap;">Anexo</th><th style="padding: 4px 5px; border: 1px solid var(--sw-border); text-align: center; white-space: nowrap;">Ações</th></tr></thead>';
     historico += '<tbody>';
     
     // ✅ CORREÇÃO: Exibir histórico de pagamentos parciais se existir
@@ -5833,18 +5833,18 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
             const observacoes = escapeHtml(pagamento.observacoes || '-');
             historico += `
                 <tr>
-                    <td data-label="Data" style="padding: 3px 5px; border: 1px solid #ddd; white-space: nowrap;">${formatDate(pagamento.data)}</td>
-                    <td data-label="Juros Período" style="padding: 3px 5px; border: 1px solid #ddd; text-align: right; white-space: nowrap;" title="Dias atraso no período: ${row.diasAtraso}">${formatCurrency(row.jurosCents / 100)}</td>
-                    <td data-label="Pagamento" style="padding: 3px 5px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatCurrency(row.pagamentoCents / 100)}</td>
-                    <td data-label="Saldo Após" style="padding: 3px 5px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatCurrency(row.saldoDepoisCents / 100)}</td>
-                    <td data-label="Método" style="padding: 3px 5px; border: 1px solid #ddd; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${metodo}</td>
-                    <td data-label="Observações" style="padding: 3px 5px; border: 1px solid #ddd; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${observacoes}</td>
-                    <td data-label="Anexo" class="finance-history-attachment-cell" style="padding: 3px 5px; border: 1px solid #ddd; text-align: center;">
+                    <td data-label="Data" style="padding: 3px 5px; border: 1px solid var(--sw-border); white-space: nowrap;">${formatDate(pagamento.data)}</td>
+                    <td data-label="Juros Período" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: right; white-space: nowrap;" title="Dias atraso no período: ${row.diasAtraso}">${formatCurrency(row.jurosCents / 100)}</td>
+                    <td data-label="Pagamento" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: right; white-space: nowrap;">${formatCurrency(row.pagamentoCents / 100)}</td>
+                    <td data-label="Saldo Após" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: right; white-space: nowrap;">${formatCurrency(row.saldoDepoisCents / 100)}</td>
+                    <td data-label="Método" style="padding: 3px 5px; border: 1px solid var(--sw-border); white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${metodo}</td>
+                    <td data-label="Observações" style="padding: 3px 5px; border: 1px solid var(--sw-border); white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${observacoes}</td>
+                    <td data-label="Anexo" class="finance-history-attachment-cell" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: center;">
                         ${comprovanteUrl
                             ? `<button type="button" class="btn btn-sm btn-info" onclick="openFinanceAttachment(${comprovanteUrlArg})" title="Ver Comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-eye"></i></button>`
                             : `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="anexarComprovanteHistorico(${contaIdArg}, ${tipoArg}, ${historicoIndex})" title="Anexar comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-paperclip" style="opacity:.75;"></i></button>`}
                     </td>
-                    <td data-label="Ações" class="finance-history-action-cell" style="padding: 3px 5px; border: 1px solid #ddd; text-align: center;">
+                    <td data-label="Ações" class="finance-history-action-cell" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: center;">
                         <button type="button" onclick="excluirPagamento(${contaIdArg}, ${tipoArg}, ${historicoIndex}, this)" class="btn btn-sm btn-danger" title="Excluir pagamento" style="padding:1px 5px; font-size:11px;"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
@@ -5858,24 +5858,24 @@ function verHistoricoPagamentos(contaId, tipo = 'receber') {
         // ✅ CORREÇÃO: Para contas pagas sem histórico, exibir o pagamento único
         historico += `
             <tr>
-                <td data-label="Data" style="padding: 3px 5px; border: 1px solid #ddd; white-space: nowrap;">${formatDate(conta.dataPagamento)}</td>
-                <td data-label="Juros Período" style="padding: 3px 5px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatCurrency(0)}</td>
-                <td data-label="Pagamento" style="padding: 3px 5px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatCurrency(valorOriginalNum)}</td>
-                <td data-label="Saldo Após" style="padding: 3px 5px; border: 1px solid #ddd; text-align: right; white-space: nowrap;">${formatCurrency(0)}</td>
-                <td data-label="Método" style="padding: 3px 5px; border: 1px solid #ddd; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${metodo}</td>
-                <td data-label="Observações" style="padding: 3px 5px; border: 1px solid #ddd; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${observacoes}</td>
-                <td data-label="Anexo" class="finance-history-attachment-cell" style="padding: 3px 5px; border: 1px solid #ddd; text-align: center;">
+                <td data-label="Data" style="padding: 3px 5px; border: 1px solid var(--sw-border); white-space: nowrap;">${formatDate(conta.dataPagamento)}</td>
+                <td data-label="Juros Período" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: right; white-space: nowrap;">${formatCurrency(0)}</td>
+                <td data-label="Pagamento" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: right; white-space: nowrap;">${formatCurrency(valorOriginalNum)}</td>
+                <td data-label="Saldo Após" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: right; white-space: nowrap;">${formatCurrency(0)}</td>
+                <td data-label="Método" style="padding: 3px 5px; border: 1px solid var(--sw-border); white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${metodo}</td>
+                <td data-label="Observações" style="padding: 3px 5px; border: 1px solid var(--sw-border); white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">${observacoes}</td>
+                <td data-label="Anexo" class="finance-history-attachment-cell" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: center;">
                     ${comprovanteUrl
                         ? `<button type="button" class="btn btn-sm btn-info" onclick="openFinanceAttachment(${comprovanteUrlArg})" title="Ver Comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-eye"></i></button>`
                         : `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="anexarComprovanteHistorico(${contaIdArg}, ${tipoArg}, 'total')" title="Anexar comprovante" style="padding:1px 5px; font-size:11px;"><i class="fas fa-paperclip" style="opacity:.75;"></i></button>`}
                 </td>
-                <td data-label="Ações" class="finance-history-action-cell" style="padding: 3px 5px; border: 1px solid #ddd; text-align: center;">
+                <td data-label="Ações" class="finance-history-action-cell" style="padding: 3px 5px; border: 1px solid var(--sw-border); text-align: center;">
                     <button type="button" onclick="excluirPagamento(${contaIdArg}, ${tipoArg}, 'total', this)" class="btn btn-sm btn-danger" title="Excluir pagamento" style="padding:1px 5px; font-size:11px;"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>
         `;
     } else {
-        historico += '<tr><td colspan="8" class="finance-history-empty" style="padding: 8px; text-align: center; border: 1px solid #ddd;">Nenhum pagamento registrado</td></tr>';
+        historico += '<tr><td colspan="8" class="finance-history-empty" style="padding: 8px; text-align: center; border: 1px solid var(--sw-border);">Nenhum pagamento registrado</td></tr>';
     }
     
     historico += '</tbody></table></div>';

@@ -144,6 +144,12 @@
     width: 1%; /* Força a coluna a ocupar o mínimo de espaço necessário */
 }
 
+.table th:last-child,
+.table th.actions-col {
+    background-color: var(--primary-color);
+    color: var(--sw-on-brand);
+}
+
 .table .actions-container,
 .table .btn-group {
     display: inline-flex;
@@ -203,7 +209,7 @@
 
 .pagination-controls button:hover:not(:disabled) {
     background: var(--light-bg);
-    border-color: #ccc;
+    border-color: var(--sw-border);
 }
 
 .pagination-controls button.active {
@@ -444,7 +450,7 @@
 
     .table-responsive.mobile-cards td {
         border: none;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--sw-border);
         position: relative;
         padding-left: 45%;
         text-align: right;
@@ -473,6 +479,24 @@
         font-weight: bold;
         color: var(--text-muted);
         content: attr(data-label);
+    }
+
+    /* Células de AÇÃO: sem rótulo "AÇÕES" no card (evita texto vertical em
+       colunas estreitas); só botões, alinhados ao fim. */
+    .table-responsive.mobile-cards td[data-label="Ações"],
+    .table-responsive.mobile-cards td.commerce-actions-cell,
+    .table-responsive.mobile-cards td.actions-cell,
+    .table-responsive.mobile-cards td.acoes-cell {
+        justify-content: flex-end !important;
+        padding-left: 12px !important;
+    }
+
+    .table-responsive.mobile-cards td[data-label="Ações"]:before,
+    .table-responsive.mobile-cards td.commerce-actions-cell:before,
+    .table-responsive.mobile-cards td.actions-cell:before,
+    .table-responsive.mobile-cards td.acoes-cell:before {
+        content: "" !important;
+        display: none !important;
     }
 }
 

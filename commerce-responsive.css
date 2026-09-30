@@ -397,7 +397,7 @@ html.sisweb-embedded .page-header {
         padding: 8px;
         border: 1px solid #dbe3ec;
         border-radius: 8px;
-        background: #f8fafc;
+        background: var(--sw-surface-2);
         align-items: stretch !important;
     }
 
@@ -432,7 +432,7 @@ html.sisweb-embedded .page-header {
         padding: 8px;
         border: 1px solid #dbe3ec;
         border-radius: 8px;
-        background: #f8fafc;
+        background: var(--sw-surface-2);
     }
 
     .romaneio-load-btn {
@@ -602,7 +602,7 @@ html.sisweb-embedded .page-header {
     }
 
     .table-responsive.mobile-cards tr {
-        border: 1px solid #e1e8ed;
+        border: 1px solid var(--sw-border);
         border-radius: 8px;
         margin-bottom: 12px;
         background: var(--sw-surface);
@@ -616,7 +616,7 @@ html.sisweb-embedded .page-header {
         align-items: center;
         position: relative;
         border: none;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--sw-border);
         gap: 8px;
         padding: 10px 12px;
         text-align: right;
@@ -631,7 +631,7 @@ html.sisweb-embedded .page-header {
         transform: none;
         width: auto;
         padding-right: 10px;
-        color: #657786;
+        color: var(--sw-text-3);
         font-weight: 700;
         text-align: left;
         white-space: normal;
@@ -735,9 +735,9 @@ html.sisweb-embedded .page-header {
         display: block !important;
         min-height: 0 !important;
         padding: 12px !important;
-        border-bottom-color: #e5edf5;
-        background: #f8fafc;
-        color: #243447;
+        border-bottom-color: var(--sw-border);
+        background: var(--sw-surface-2);
+        color: var(--sw-text-1);
         font-weight: 700;
         line-height: 1.25 !important;
         text-align: left !important;
@@ -747,7 +747,7 @@ html.sisweb-embedded .page-header {
         display: block;
         margin-bottom: 4px;
         padding-right: 0;
-        color: #657786;
+        color: var(--sw-text-3);
         font-size: 0.72rem;
         letter-spacing: 0;
     }
@@ -822,6 +822,12 @@ html.sisweb-embedded .page-header {
         min-height: 52px !important;
     }
 
+    .commerce-orders-table-wrap.mobile-cards td[data-label="Ações"]::before,
+    .commerce-orders-table-wrap.mobile-cards td.commerce-actions-cell::before {
+        content: "" !important;
+        display: none !important;
+    }
+
     .commerce-orders-table-wrap.mobile-cards .commerce-actions-wrap,
     .commerce-orders-table-wrap.mobile-cards .acoes-buttons {
         display: grid !important;
@@ -854,7 +860,7 @@ html.sisweb-embedded .page-header {
         display: block !important;
         text-align: left !important;
         min-height: 0 !important;
-        background: #f8fafc;
+        background: var(--sw-surface-2);
         font-weight: 700;
     }
 
@@ -883,7 +889,7 @@ html.sisweb-embedded .page-header {
         justify-content: initial !important;
         text-align: right !important;
         white-space: normal !important;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--sw-border);
     }
 
     #visualizarPedidoModal .pedido-detail-field,
@@ -937,7 +943,7 @@ html.sisweb-embedded .page-header {
 
     .commerce-detail-table-wrap.mobile-cards .commerce-card-strong {
         font-weight: 800;
-        color: #1f2937;
+        color: var(--sw-text-1);
     }
 
     .commerce-detail-table-wrap.mobile-cards td[data-label="Produto"] .commerce-card-value {
@@ -975,6 +981,12 @@ html.sisweb-embedded .page-header {
     .commerce-payment-table-wrap.mobile-cards td.commerce-actions-cell {
         display: flex !important;
         justify-content: stretch !important;
+    }
+
+    .commerce-payment-table-wrap.mobile-cards td[data-label="Ações"]::before,
+    .commerce-payment-table-wrap.mobile-cards td.commerce-actions-cell::before {
+        content: "" !important;
+        display: none !important;
     }
 
     .commerce-payment-table-wrap.mobile-cards td[data-label="Ações"] button,
@@ -1136,7 +1148,7 @@ html.sisweb-embedded .page-header {
     table.mobile-cards tbody tr {
         display: block !important;
         width: 100% !important;
-        border: 1px solid #e1e8ed;
+        border: 1px solid var(--sw-border);
         border-radius: 8px;
         margin-bottom: 12px;
         background: var(--sw-surface, #fff);
@@ -1152,7 +1164,7 @@ html.sisweb-embedded .page-header {
         gap: 8px;
         width: 100% !important;
         border: none !important;
-        border-bottom: 1px solid #f0f0f0 !important;
+        border-bottom: 1px solid var(--sw-border) !important;
         padding: 10px 12px !important;
         text-align: right;
         min-height: 42px;
@@ -1163,7 +1175,7 @@ html.sisweb-embedded .page-header {
     table.table.mobile-cards tbody td::before,
     table.mobile-cards tbody td::before {
         content: attr(data-label);
-        color: #657786;
+        color: var(--sw-text-3);
         font-weight: 700;
         text-align: left;
         white-space: normal;
@@ -1345,5 +1357,38 @@ html[data-theme="dark"] .action-buttons-container .btn-success {
         gap: 8px !important;
         margin: 0 !important;
         line-height: 1.25;
+    }
+}
+
+/* Antídoto global mobile (≤768px): células de AÇÃO nunca exibem o rótulo
+   "AÇÕES" via ::before. Sem isso, o label divide a linha do card com os
+   botões e, em viewports estreitos (ex. 370px), o ::before espremido com
+   overflow-wrap:anywhere/word-break quebra por caractere (texto vertical).
+   Regras com IDs + !important (estoque, romaneios) mantêm seu label
+   intencional: este fallback só alcança células sem regra própria. */
+@media (max-width: 768px) {
+    td[data-label="Ações"]::before,
+    td.commerce-actions-cell::before,
+    td.actions-cell[data-label="Ações"]::before,
+    td.acoes-cell::before,
+    td.relatorio-acoes-cell::before,
+    td.finance-history-action-cell::before {
+        content: "" !important;
+        display: none !important;
+    }
+
+    td[data-label="Ações"],
+    td.commerce-actions-cell,
+    td.actions-cell[data-label="Ações"],
+    td.acoes-cell,
+    td.relatorio-acoes-cell,
+    td.finance-history-action-cell {
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        gap: 8px !important;
+        white-space: normal !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
     }
 }

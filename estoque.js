@@ -2715,7 +2715,7 @@ async function abrirConfiguracaoColunasEntrada() {
                         <span class="close-modal" onclick="fecharConfiguracaoColunasEntrada()">&times;</span>
                     </div>
                     <div class="modal-body">
-                        <div style="color:#64748b; font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis na tabela de itens para entrada.</div>
+                        <div style="color:var(--sw-text-3); font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis na tabela de itens para entrada.</div>
                         <label class="report-col-item" style="margin-bottom:10px;">
                             <input type="checkbox" id="entradaColumnsSelectAll" onchange="toggleTodasColunasEntrada(this.checked)">
                             <span class="report-col-label"><strong>Selecionar todas as colunas</strong></span>
@@ -2934,7 +2934,7 @@ async function abrirConfiguracaoColunasSaida() {
                         <span class="close-modal" onclick="fecharConfiguracaoColunasSaida()">&times;</span>
                     </div>
                     <div class="modal-body">
-                        <div style="color:#64748b; font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis na tabela de toras selecionadas para baixa.</div>
+                        <div style="color:var(--sw-text-3); font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis na tabela de toras selecionadas para baixa.</div>
                         <label class="report-col-item" style="margin-bottom:10px;">
                             <input type="checkbox" id="saidaColumnsSelectAll" onchange="toggleTodasColunasSaida(this.checked)">
                             <span class="report-col-label"><strong>Selecionar todas as colunas</strong></span>
@@ -3186,7 +3186,7 @@ async function abrirConfiguracaoColunasConsulta() {
                         <span class="close-modal" onclick="fecharConfiguracaoColunasConsulta()">&times;</span>
                     </div>
                     <div class="modal-body">
-                        <div style="color:#64748b; font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis na Consulta de Toras e na impressão.</div>
+                        <div style="color:var(--sw-text-3); font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis na Consulta de Toras e na impressão.</div>
                         <label class="report-col-item" style="margin-bottom:10px;">
                             <input type="checkbox" id="consultaColumnsSelectAll" onchange="toggleTodasColunasConsulta(this.checked)">
                             <span class="report-col-label"><strong>Selecionar todas as colunas</strong></span>
@@ -3400,38 +3400,38 @@ function renderizarTabelaEntrada() {
             const avgVol = stats.count > 0 ? (stats.totalVolume / stats.count) : 0;
 
             speciesHtml += `
-                <div style="background: #fff; padding: 10px; border-radius: 4px; border: 1px solid #ddd; text-align: center; min-width: 140px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <div style="font-weight: bold; color: #2c3e50; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px;">${esp}</div>
-                    <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 3px;">Média Rodo: <strong>${formatNumber(avgRodo, 1)} cm</strong></div>
-                    <div style="font-size: 13px; color: #7f8c8d;">Média Volu: <strong>${formatNumber(avgVol, 3)} m³</strong></div>
+                <div style="background: var(--sw-surface); padding: 10px; border-radius: 4px; border: 1px solid var(--sw-border); text-align: center; min-width: 140px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-weight: bold; color: var(--sw-text-1); margin-bottom: 8px; border-bottom: 1px solid var(--sw-border); padding-bottom: 5px;">${esp}</div>
+                    <div style="font-size: 13px; color: var(--sw-text-3); margin-bottom: 3px;">Média Rodo: <strong>${formatNumber(avgRodo, 1)} cm</strong></div>
+                    <div style="font-size: 13px; color: var(--sw-text-3);">Média Volu: <strong>${formatNumber(avgVol, 3)} m³</strong></div>
                 </div>
             `;
         });
 
         summaryContainer.innerHTML = `
-            <div class="summary-box" style="background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 20px;">
-                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 20px;">
+            <div class="summary-box" style="background-color: var(--sw-surface-2); border: 1px solid var(--sw-border); padding: 20px;">
+                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid var(--sw-border); padding-bottom: 20px;">
                     <div class="text-center">
-                        <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Quantidade de Toras</div>
-                        <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">${itensEntrada.length}</div>
+                        <div style="font-size: 14px; color: var(--sw-text-3); text-transform: uppercase; letter-spacing: 1px;">Quantidade de Toras</div>
+                        <div style="font-size: 24px; font-weight: bold; color: var(--sw-text-1);">${itensEntrada.length}</div>
                     </div>
                     <div class="text-center">
-                        <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Volume Total</div>
-                        <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">${formatNumber(volTotal, 3)} m³</div>
+                        <div style="font-size: 14px; color: var(--sw-text-3); text-transform: uppercase; letter-spacing: 1px;">Volume Total</div>
+                        <div style="font-size: 24px; font-weight: bold; color: var(--sw-text-1);">${formatNumber(volTotal, 3)} m³</div>
                     </div>
                     <div class="text-center">
-                        <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">V. Geo. Total</div>
-                        <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">${formatNumber(geoTotal, 3)} m³</div>
+                        <div style="font-size: 14px; color: var(--sw-text-3); text-transform: uppercase; letter-spacing: 1px;">V. Geo. Total</div>
+                        <div style="font-size: 24px; font-weight: bold; color: var(--sw-text-1);">${formatNumber(geoTotal, 3)} m³</div>
                     </div>
                     <div class="text-center">
-                        <div style="font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px;">Valor Total</div>
+                        <div style="font-size: 14px; color: var(--sw-text-3); text-transform: uppercase; letter-spacing: 1px;">Valor Total</div>
                         <div style="font-size: 24px; font-weight: bold; color: #27ae60;">${formatCurrency(valTotal)}</div>
                     </div>
                 </div>
 
-                <h4 style="margin-bottom: 15px; font-size: 16px; color: #34495e; border-left: 4px solid #3498db; padding-left: 10px;">Médias de Rodo e Volume por Espécie</h4>
+                <h4 style="margin-bottom: 15px; font-size: 16px; color: var(--sw-text-1); border-left: 4px solid #3498db; padding-left: 10px;">Médias de Rodo e Volume por Espécie</h4>
                 <div style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px;">
-                    ${speciesHtml || '<div style="color: #999; font-style: italic;">Nenhuma espécie com rodo informado</div>'}
+                    ${speciesHtml || '<div style="color: var(--sw-text-3); font-style: italic;">Nenhuma espécie com rodo informado</div>'}
                 </div>
             </div>
         `;
@@ -5813,7 +5813,7 @@ async function abrirConfiguracaoColunasMovimentacoes() {
                         <span class="close-modal" onclick="fecharConfiguracaoColunasMovimentacoes()">&times;</span>
                     </div>
                     <div class="modal-body">
-                        <div style="color:#64748b; font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis no histórico de movimentações e na impressão.</div>
+                        <div style="color:var(--sw-text-3); font-size:13px; margin-bottom:10px;">Escolha as colunas visíveis no histórico de movimentações e na impressão.</div>
                         <label class="report-col-item" style="margin-bottom:10px;">
                             <input type="checkbox" id="movimentacoesColumnsSelectAll" onchange="toggleTodasColunasMovimentacoes(this.checked)">
                             <span class="report-col-label"><strong>Selecionar todas as colunas</strong></span>
@@ -6107,7 +6107,7 @@ async function carregarTabelaMovimentacoes(filtro = {}) {
             </div>
         `;
     } else if (resumoEl) {
-        resumoEl.innerHTML = '<div class="summary-row" style="font-size: 12px; color: #7f8c8d;"><span>Atualizando resumo...</span></div>';
+        resumoEl.innerHTML = '<div class="summary-row" style="font-size: 12px; color: var(--sw-text-3);"><span>Atualizando resumo...</span></div>';
     }
     calcularResumoMovimentacoes(baseParaResumo).then(resumo => {
         if (resumoSeq !== resumoMovimentacoesSeq) return;
@@ -7099,7 +7099,7 @@ async function abrirConfiguracaoColunasRelatorio() {
                         <span class="close-modal" onclick="fecharConfiguracaoColunasRelatorio()">&times;</span>
                     </div>
                     <div class="modal-body">
-                        <div id="reportColumnsConfigMeta" style="color:#64748b; font-size:13px; margin-bottom:10px;"></div>
+                        <div id="reportColumnsConfigMeta" style="color:var(--sw-text-3); font-size:13px; margin-bottom:10px;"></div>
                         <label class="report-col-item" style="margin-bottom:10px;">
                             <input type="checkbox" id="reportColumnsSelectAll" onchange="toggleTodasColunasRelatorio(this.checked)">
                             <span class="report-col-label"><strong>Selecionar todas as colunas</strong></span>
@@ -7463,7 +7463,7 @@ function montarTabelaRelatorioEstoque(tipo, items, selectionTipo, getKey, onlySe
         const avgVol = stats.countVolume > 0 ? (stats.totalVolume / stats.countVolume) : 0;
 
         speciesCardsHtml += `
-            <div class="stat-species-card" style="background: #ffffff; padding: 12px 14px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; min-width: 140px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex: 0 0 auto;">
+            <div class="stat-species-card" style="background: var(--sw-surface); padding: 12px 14px; border-radius: 6px; border: 1px solid var(--sw-border); text-align: center; min-width: 140px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex: 0 0 auto;">
                 <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; font-size: 13px;">${escapeHtml(esp)}</div>
                 <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Média Rodo: <strong style="color: #0f172a;">${formatNumber(avgRodo, 1)} cm</strong></div>
                 <div style="font-size: 12px; color: #64748b;">Média Volu: <strong style="color: #0f172a;">${formatNumber(avgVol, 3)} m³</strong></div>

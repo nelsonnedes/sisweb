@@ -3954,6 +3954,30 @@ async function gerarHTMLImpressaoPedidoCompra(pedido) {
         `).join('')
         : '<tr><td colspan="4" class="text-center">Sem informações de pagamento</td></tr>';
     const totalPedido = typeof getPedidoCompraTotal === 'function' ? getPedidoCompraTotal(pedido) : pedido.total;
+    // Total Geral (Qtd.) — espelho de vendas.js `gerarHTMLImpressaoPedido`:
+    // soma parseFloat(it.quantidade) ignorando itens de carrego (quando o helper existir).
+    const totalQuantidadeCompra = (pedido.itens || []).reduce((acc, item) => {
+        if (typeof isCarregoItem === 'function' && isCarregoItem(item)) return acc;
+        const q = parseFloat(item.quantidade);
+        return acc + (isNaN(q) ? 0 : q);
+    }, 0);
+    const unidadesCompra = Array.from(new Set((pedido.itens || [])
+        .map(it => (it.unidade || '').trim())
+        .filter(u => u)));
+    let decimalsQtdCompra = 3;
+    if (unidadesCompra.length === 1) {
+        const u = unidadesCompra[0].toUpperCase();
+        if (u === 'UN') {
+            decimalsQtdCompra = 0;
+        } else if (u === 'M3' || u.includes('M³')) {
+            decimalsQtdCompra = 3;
+        }
+    } else {
+        // Unidades mistas: manter 3 casas para maior precisão
+        decimalsQtdCompra = 3;
+    }
+    const unidadeLabelCompra = unidadesCompra.length === 1 ? ` ${unidadesCompra[0]}` : '';
+    const totalQuantidadeCompraFormatada = `${formatNumber(totalQuantidadeCompra, decimalsQtdCompra)}${unidadeLabelCompra}`;
     const bodyHtml = `
         <section class="sisweb-print-info-grid">
             <div class="sisweb-print-info-box">
@@ -3988,6 +4012,10 @@ async function gerarHTMLImpressaoPedidoCompra(pedido) {
 
         <section class="sisweb-print-section">
             <div class="sisweb-print-totals">
+                <div class="sisweb-print-total-row">
+                    <span>Total Geral (Qtd.)</span>
+                    <strong>${htmlEscape(totalQuantidadeCompraFormatada)}</strong>
+                </div>
                 <div class="sisweb-print-total-row">
                     <span>Subtotal</span>
                     <strong>${htmlEscape(formatCurrency(pedido.subtotal || 0))}</strong>
@@ -4086,6 +4114,28 @@ async function imprimirPedido(pedidoId) {
             `).join('')
             : '<tr><td colspan="4" class="text-center">Sem informações de pagamento</td></tr>';
         const totalPedido = typeof getPedidoCompraTotal === 'function' ? getPedidoCompraTotal(pedido) : pedido.total;
+        // Total Geral (Qtd.) — espelho de vendas.js `gerarHTMLImpressaoPedido` (mesma lógica do builder acima).
+        const totalQuantidadeCompra = (pedido.itens || []).reduce((acc, item) => {
+            if (typeof isCarregoItem === 'function' && isCarregoItem(item)) return acc;
+            const q = parseFloat(item.quantidade);
+            return acc + (isNaN(q) ? 0 : q);
+        }, 0);
+        const unidadesCompra = Array.from(new Set((pedido.itens || [])
+            .map(it => (it.unidade || '').trim())
+            .filter(u => u)));
+        let decimalsQtdCompra = 3;
+        if (unidadesCompra.length === 1) {
+            const u = unidadesCompra[0].toUpperCase();
+            if (u === 'UN') {
+                decimalsQtdCompra = 0;
+            } else if (u === 'M3' || u.includes('M³')) {
+                decimalsQtdCompra = 3;
+            }
+        } else {
+            decimalsQtdCompra = 3;
+        }
+        const unidadeLabelCompra = unidadesCompra.length === 1 ? ` ${unidadesCompra[0]}` : '';
+        const totalQuantidadeCompraFormatada = `${formatNumber(totalQuantidadeCompra, decimalsQtdCompra)}${unidadeLabelCompra}`;
         const bodyHtml = `
             <section class="sisweb-print-info-grid">
                 <div class="sisweb-print-info-box">
@@ -4120,6 +4170,10 @@ async function imprimirPedido(pedidoId) {
 
             <section class="sisweb-print-section">
                 <div class="sisweb-print-totals">
+                    <div class="sisweb-print-total-row">
+                        <span>Total Geral (Qtd.)</span>
+                        <strong>${htmlEscape(totalQuantidadeCompraFormatada)}</strong>
+                    </div>
                     <div class="sisweb-print-total-row">
                         <span>Subtotal</span>
                         <strong>${htmlEscape(formatCurrency(pedido.subtotal || 0))}</strong>
@@ -4778,7 +4832,7 @@ function renderizarFornecedoresCompra() {
                 <td data-label="Contato">${telefone}</td>
                 <td data-label="Localização">
                     <span>${escapeHtml(cidadeUf)}</span>
-                    ${endereco ? `<small style="display:block;color:#64748b;margin-top:3px;">${escapeHtml(endereco)}</small>` : ''}
+                    ${endereco ? `<small style="display:block;color:var(--sw-text-3);margin-top:3px;">${escapeHtml(endereco)}</small>` : ''}
                 </td>
                 <td data-label="Ações" class="purchase-suppliers-actions-cell commerce-actions-cell">
                     <div class="commerce-actions-wrap">
@@ -5747,14 +5801,14 @@ function renderizarPreviewRomaneioCompra() {
         const checkedAttr = (!excluido && !desativado) ? 'checked' : '';
         const disabledAttr = desativado ? 'disabled' : '';
         const rowOpacity = (excluido || desativado) ? 'opacity:0.55;' : '';
-        let cartao = `<div style="display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:8px 10px;${rowOpacity}">`;
+        let cartao = `<div style="display:flex;gap:8px;align-items:flex-start;background:var(--sw-surface);border:1px solid var(--sw-border);border-radius:4px;padding:8px 10px;${rowOpacity}">`;
         cartao += `<input type="checkbox" data-rc-idx="${idx}" ${checkedAttr} ${disabledAttr} onchange="window.romaneioPreviewToggleCompra(this)" title="Incluir este item no carregamento" style="margin-top:4px;">`;
         cartao += `<div style="flex:1;min-width:0;">`;
-        cartao += `<div style="font-weight:600;color:#2c3e50;font-size:13px;">${escapeHtml(rot.nome)}</div>`;
-        cartao += `<div style="color:#666;font-size:12px;">Qtd/Vol: ${escapeHtml(formatNumber(rot.qtd))} ${escapeHtml(rot.unidade)} • ${escapeHtml(formatCurrency(rot.preco))} unit.${rot.pecasInfo ? ` • ${escapeHtml(rot.pecasInfo)}` : ''}</div>`;
+        cartao += `<div style="font-weight:600;color:var(--sw-text-1);font-size:13px;">${escapeHtml(rot.nome)}</div>`;
+        cartao += `<div style="color:var(--sw-text-3);font-size:12px;">Qtd/Vol: ${escapeHtml(formatNumber(rot.qtd))} ${escapeHtml(rot.unidade)} • ${escapeHtml(formatCurrency(rot.preco))} unit.${rot.pecasInfo ? ` • ${escapeHtml(rot.pecasInfo)}` : ''}</div>`;
         if (desativado) {
             const moduloLabel = uso.modulo === 'venda' ? 'Venda' : 'Compra';
-            cartao += `<span style="display:inline-block;margin-top:4px;background:#e9ecef;color:#495057;font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escapeHtml(uso.pedidoNumero)} (${escapeHtml(moduloLabel)})</span>`;
+            cartao += `<span style="display:inline-block;margin-top:4px;background:var(--sw-surface-2);color:var(--sw-text-2);font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escapeHtml(uso.pedidoNumero)} (${escapeHtml(moduloLabel)})</span>`;
         } else if (excluido) {
             cartao += `<span style="display:inline-block;margin-top:4px;background:#fff3cd;color:#856404;font-size:11px;padding:2px 8px;border-radius:10px;">Excluído — não será carregado</span>`;
         }
@@ -5765,7 +5819,7 @@ function renderizarPreviewRomaneioCompra() {
     };
 
     if (itens.length === 0) {
-        html += '<p style="color:#666;font-style:italic;">Nenhum item válido encontrado no romaneio selecionado.</p>';
+        html += '<p style="color:var(--sw-text-3);font-style:italic;">Nenhum item válido encontrado no romaneio selecionado.</p>';
     } else if (!uso && (modoPrev === 'dimensoes' || modoPrev === 'especie' || modoPrev === 'largura')) {
         const porDimPrev = (modoPrev === 'dimensoes');
         const porLargPrev = (modoPrev === 'largura');
@@ -5797,8 +5851,8 @@ function renderizarPreviewRomaneioCompra() {
                 pecasGrp += quantidadePecasItemCompra(it, tipoAtualPrev);
                 if (!romaneioPreviewExcluidosCompra.has(idx)) selGrp++;
             });
-            html += `<div style="border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;padding:8px;">`;
-            html += `<div style="font-size:12px;color:#2c3e50;margin-bottom:6px;"><strong>${escapeHtml(grp.rotulo)}</strong><br><span style="color:#666;">${selGrp} de ${grp.idxs.length} itens • ${escapeHtml(formatNumber(volGrp))} m³${pecasGrp > 0 ? ` • ${pecasGrp} Peças` : ''}</span></div>`;
+            html += `<div style="border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);padding:8px;">`;
+            html += `<div style="font-size:12px;color:var(--sw-text-1);margin-bottom:6px;"><strong>${escapeHtml(grp.rotulo)}</strong><br><span style="color:var(--sw-text-3);">${selGrp} de ${grp.idxs.length} itens • ${escapeHtml(formatNumber(volGrp))} m³${pecasGrp > 0 ? ` • ${pecasGrp} Peças` : ''}</span></div>`;
             html += '<div style="display:grid;gap:8px;">';
             grp.idxs.forEach((idx) => { html += cartaoItemPrev(itens[idx], idx); });
             html += '</div></div>';

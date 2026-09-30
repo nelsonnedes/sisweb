@@ -135,7 +135,7 @@
         }
 
         .sales-clients-header p {
-            color: #64748b;
+            color: var(--sw-text-3);
             line-height: 1.45;
             margin: 0;
         }
@@ -154,14 +154,14 @@
         }
 
         .sales-clients-stat {
-            background: #f8fafc;
+            background: var(--sw-surface-2);
             border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             padding: 12px;
         }
 
         .sales-clients-stat span {
-            color: #64748b;
+            color: var(--sw-text-3);
             display: block;
             font-size: 12px;
             font-weight: 700;
@@ -170,7 +170,7 @@
         }
 
         .sales-clients-stat strong {
-            color: #0f172a;
+            color: var(--sw-text-1);
             display: block;
             font-size: 20px;
             line-height: 1.2;
@@ -189,7 +189,7 @@
         }
 
         .sales-clients-search i {
-            color: #94a3b8;
+            color: var(--sw-text-3);
             left: 12px;
             position: absolute;
             top: 50%;
@@ -201,7 +201,7 @@
         }
 
         .sales-client-form {
-            border: 1px solid #dbe4ef;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
             padding: 16px;
         }
@@ -224,7 +224,7 @@
         }
 
         .sales-clients-empty {
-            color: #64748b;
+            color: var(--sw-text-3);
             padding: 22px;
             text-align: center;
         }
@@ -234,12 +234,12 @@
         }
 
         .sales-clients-name-cell strong {
-            color: #0f172a;
+            color: var(--sw-text-1);
             display: block;
         }
 
         .sales-clients-name-cell small {
-            color: #64748b;
+            color: var(--sw-text-3);
             display: block;
             margin-top: 3px;
         }
@@ -1969,28 +1969,28 @@
                     <div
                         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; min-width: 0;">
                         <div style="min-width: 0;">
-                            <label style="font-weight: bold; color: #6c757d;">Número:</label>
+                            <label style="font-weight: bold; color: var(--sw-label);">Número:</label>
                             <div id="viewPedidoNumero"
                                 style="font-size: 1.2em; color: var(--sw-text-1); overflow-wrap: anywhere;"></div>
                         </div>
                         <div style="min-width: 0;">
-                            <label style="font-weight: bold; color: #6c757d;">Data:</label>
+                            <label style="font-weight: bold; color: var(--sw-label);">Data:</label>
                             <div id="viewPedidoData"
                                 style="font-size: 1.2em; color: var(--sw-text-1); overflow-wrap: anywhere;"></div>
                         </div>
                         <div style="min-width: 0;">
-                            <label style="font-weight: bold; color: #6c757d;">Status:</label>
+                            <label style="font-weight: bold; color: var(--sw-label);">Status:</label>
                             <div id="viewPedidoStatus" style="overflow-wrap: anywhere;"></div>
                         </div>
                     </div>
 
                     <div
-                        style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6; min-width: 0;">
-                        <label style="font-weight: bold; color: #6c757d;">Cliente:</label>
+                        style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--sw-border); min-width: 0;">
+                        <label style="font-weight: bold; color: var(--sw-label);">Cliente:</label>
                         <div id="viewPedidoCliente"
                             style="font-size: 1.1em; color: var(--sw-text-1); overflow-wrap: anywhere;"></div>
                         <div id="viewPedidoClienteDetalhes"
-                            style="font-size: 0.9em; color: #6c757d; margin-top: 5px; overflow-wrap: anywhere; word-break: break-word;">
+                            style="font-size: 0.9em; color: var(--sw-text-3); margin-top: 5px; overflow-wrap: anywhere; word-break: break-word;">
                         </div>
                     </div>
                 </div>
@@ -2032,7 +2032,7 @@
                         <span id="viewPedidoDesconto" style="color: #e74c3c; text-align: right;"></span>
                     </div>
                     <div
-                        style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-top: 10px; border-top: 2px solid #dee2e6;">
+                        style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-top: 10px; border-top: 2px solid var(--sw-border);">
                         <span style="font-size: 1.2em; font-weight: bold;">Total Geral:</span>
                         <span id="viewPedidoTotal"
                             style="font-size: 1.2em; font-weight: bold; color: #28a745; text-align: right;"></span>
@@ -2063,7 +2063,7 @@
 
                 <!-- Metadados -->
                 <div class="pedido-meta"
-                    style="font-size: 0.9em; color: #6c757d; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                    style="font-size: 0.9em; color: var(--sw-text-3); padding-top: 15px; border-top: 1px solid var(--sw-border);">
                     <div>Criado em: <span id="viewPedidoCreated"></span></div>
                     <div id="viewPedidoUpdatedContainer" style="margin-top: 5px; display: none;">
                         Última atualização: <span id="viewPedidoUpdated"></span>
@@ -2072,7 +2072,7 @@
             </div>
 
             <div class="modal-footer"
-                style="display: flex; gap: 10px; justify-content: flex-end; padding: 15px; border-top: 1px solid #dee2e6;">
+                style="display: flex; gap: 10px; justify-content: flex-end; padding: 15px; border-top: 1px solid var(--sw-border);">
                 <button type="button" onclick="imprimirPedido(window.pedidoVisualizando)" class="btn-primary">
                     <i class="fas fa-print"></i> Imprimir
                 </button>

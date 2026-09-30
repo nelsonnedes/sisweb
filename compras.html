@@ -132,7 +132,7 @@
         }
 
         .purchase-suppliers-header p {
-            color: #64748b;
+            color: var(--sw-text-3);
             line-height: 1.45;
             margin: 0;
         }
@@ -151,14 +151,14 @@
         }
 
         .purchase-suppliers-stat {
-            background: #f8fafc;
+            background: var(--sw-surface-2);
             border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             padding: 12px;
         }
 
         .purchase-suppliers-stat span {
-            color: #64748b;
+            color: var(--sw-text-3);
             display: block;
             font-size: 12px;
             font-weight: 700;
@@ -167,7 +167,7 @@
         }
 
         .purchase-suppliers-stat strong {
-            color: #0f172a;
+            color: var(--sw-text-1);
             display: block;
             font-size: 20px;
             line-height: 1.2;
@@ -186,7 +186,7 @@
         }
 
         .purchase-suppliers-search i {
-            color: #94a3b8;
+            color: var(--sw-text-3);
             left: 12px;
             position: absolute;
             top: 50%;
@@ -198,7 +198,7 @@
         }
 
         .purchase-supplier-form {
-            border: 1px solid #dbe4ef;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
             padding: 16px;
         }
@@ -221,7 +221,7 @@
         }
 
         .purchase-suppliers-empty {
-            color: #64748b;
+            color: var(--sw-text-3);
             padding: 22px;
             text-align: center;
         }
@@ -231,12 +231,12 @@
         }
 
         .purchase-suppliers-name-cell strong {
-            color: #0f172a;
+            color: var(--sw-text-1);
             display: block;
         }
 
         .purchase-suppliers-name-cell small {
-            color: #64748b;
+            color: var(--sw-text-3);
             display: block;
             margin-top: 3px;
         }
@@ -934,7 +934,7 @@
     </style>
     <style>
         .modal .columns-list { max-height: 320px; overflow: auto; border: 1px solid var(--sw-border) ; border-radius: 4px; padding: 8px; background: var(--sw-surface); }
-        .columns-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px; border-bottom: 1px solid #eee; }
+        .columns-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px; border-bottom: 1px solid var(--sw-border); }
         .columns-item:last-child { border-bottom: none; }
         .columns-item > span:first-child { flex: 1; color: var(--sw-text-1); }
         .columns-item > span:last-child { display: flex; align-items: center; gap: 8px; }
@@ -1199,7 +1199,7 @@
                                 <th>Quantidade</th>
                                 <th>Preço Unit.</th>
                                 <th>Total</th>
-                                <th>Ações</th>
+                                <th style="background-color: var(--primary-color); color: var(--sw-on-brand); text-align: center;">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="itensTable">
@@ -1278,13 +1278,13 @@
                         <table class="table commerce-payment-table" style="margin-top: 15px;">
                             <thead>
                                 <tr>
-                                    <th>Valor</th>
-                                    <th>Dias</th>
-                                    <th>Vencimento</th>
-                                    <th>Tipo</th>
-                                    <th>Observação</th>
-                                    <th>Ações</th>
-                                </tr>
+                                <th>Valor</th>
+                                <th>Dias</th>
+                                <th>Vencimento</th>
+                                <th>Tipo</th>
+                                <th>Observação</th>
+                                <th style="background-color: var(--primary-color); color: var(--sw-on-brand); text-align: center;">Ações</th>
+                            </tr>
                             </thead>
                             <tbody id="contasPagarTable">
                                 <tr>
@@ -1510,7 +1510,7 @@
                                 <th>Documento</th>
                                 <th>Contato</th>
                                 <th>Localização</th>
-                                <th class="actions-col">Ações</th>
+                                <th class="actions-col" style="background-color: var(--primary-color); color: var(--sw-on-brand);">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="comprasFornecedoresTableBody">
@@ -1828,23 +1828,23 @@
                 <div class="pedido-header commerce-detail-summary" style="background: var(--sw-surface-2) ; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                     <div class="pedido-detail-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                         <div class="pedido-detail-field" style="min-width: 0;">
-                            <label style="font-weight: bold; color: #6c757d;">Número:</label>
+                            <label style="font-weight: bold; color: var(--sw-label);">Número:</label>
                             <div id="viewPedidoNumero" class="pedido-detail-value commerce-card-value commerce-card-number" style="font-size: 1.2em; color: var(--sw-text-1); min-width: 0; overflow-wrap: anywhere;"></div>
                         </div>
                         <div class="pedido-detail-field" style="min-width: 0;">
-                            <label style="font-weight: bold; color: #6c757d;">Data:</label>
+                            <label style="font-weight: bold; color: var(--sw-label);">Data:</label>
                             <div id="viewPedidoData" class="pedido-detail-value commerce-card-value commerce-card-number" style="font-size: 1.2em; color: var(--sw-text-1); min-width: 0; overflow-wrap: anywhere;"></div>
                         </div>
                         <div class="pedido-detail-field" style="min-width: 0;">
-                            <label style="font-weight: bold; color: #6c757d;">Status:</label>
+                            <label style="font-weight: bold; color: var(--sw-label);">Status:</label>
                             <div id="viewPedidoStatus" class="pedido-detail-value commerce-card-value" style="min-width: 0; overflow-wrap: anywhere;"></div>
                         </div>
                     </div>
                     
-                    <div class="pedido-detail-field pedido-detail-party" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6; min-width: 0;">
-                        <label style="font-weight: bold; color: #6c757d;">Fornecedor:</label>
+                    <div class="pedido-detail-field pedido-detail-party" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--sw-border); min-width: 0;">
+                        <label style="font-weight: bold; color: var(--sw-label);">Fornecedor:</label>
                         <div id="viewPedidoFornecedor" class="pedido-detail-value commerce-card-value commerce-card-title" style="font-size: 1.1em; color: var(--sw-text-1); min-width: 0; overflow-wrap: anywhere;"></div>
-                        <div id="viewPedidoFornecedorDetalhes" class="pedido-detail-value commerce-card-value" style="font-size: 0.9em; color: #6c757d; margin-top: 5px; min-width: 0; overflow-wrap: anywhere;"></div>
+                        <div id="viewPedidoFornecedorDetalhes" class="pedido-detail-value commerce-card-value" style="font-size: 0.9em; color: var(--sw-text-3); margin-top: 5px; min-width: 0; overflow-wrap: anywhere;"></div>
                     </div>
                 </div>
                 
@@ -1883,7 +1883,7 @@
                         <span>Desconto:</span>
                         <span id="viewPedidoDesconto" class="commerce-card-value commerce-card-money" style="color: #e74c3c; white-space: nowrap; text-align: right;"></span>
                     </div>
-                    <div class="summary-row pedido-total-row pedido-total-final" style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid #dee2e6;">
+                    <div class="summary-row pedido-total-row pedido-total-final" style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid var(--sw-border);">
                         <span style="font-size: 1.2em; font-weight: bold;">Total Geral:</span>
                         <span id="viewPedidoTotal" class="commerce-card-value commerce-card-money commerce-card-strong" style="font-size: 1.2em; font-weight: bold; color: #28a745; white-space: nowrap; text-align: right;"></span>
                     </div>
@@ -1912,7 +1912,7 @@
                 </div>
                 
                 <!-- Metadados -->
-                <div class="pedido-meta" style="font-size: 0.9em; color: #6c757d; padding-top: 15px; border-top: 1px solid #dee2e6; min-width: 0; overflow-wrap: anywhere;">
+                <div class="pedido-meta" style="font-size: 0.9em; color: var(--sw-text-3); padding-top: 15px; border-top: 1px solid var(--sw-border); min-width: 0; overflow-wrap: anywhere;">
                     <div class="pedido-meta-row">Criado em: <span id="viewPedidoCreated" class="commerce-card-value commerce-card-number"></span></div>
                     <div id="viewPedidoUpdatedContainer" class="pedido-meta-row" style="margin-top: 5px; display: none;">
                         Última atualização: <span id="viewPedidoUpdated" class="commerce-card-value commerce-card-number"></span>
@@ -1920,7 +1920,7 @@
                 </div>
             </div>
             
-            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end; padding: 15px; border-top: 1px solid #dee2e6;">
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end; padding: 15px; border-top: 1px solid var(--sw-border);">
                 <button onclick="imprimirPedido(window.pedidoVisualizando)" class="btn-primary">
                     <i class="fas fa-print"></i> Imprimir
                 </button>

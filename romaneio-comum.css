@@ -21,7 +21,7 @@
 #romaneioTable td {
     padding: 8px;
     text-align: left;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--sw-border);
     height: 32px;
     vertical-align: middle;
     font-size: 13px;
@@ -56,7 +56,7 @@
     color: var(--sw-text-2);
     padding: 12px 8px;
     background-color: var(--sw-surface) !important;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--sw-border);
 }
 
 /* Botões de ação da tabela (definidos no bloco posterior: border-radius 4px + vertical-align) */
@@ -64,7 +64,7 @@
 /* Container para a tabela */
 .itens-container {
     margin-bottom: 20px;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--sw-border);
     border-radius: 4px;
     overflow: hidden;
 }
@@ -102,7 +102,7 @@
 .totais-container {
     display: flex;
     flex-direction: column;
-    border-top: 1px solid #dee2e6;
+    border-top: 1px solid var(--sw-border);
     padding-top: 10px;
     margin-top: 10px;
     background-color: var(--sw-surface-2) ;
@@ -439,9 +439,9 @@ textarea:focus {
     padding: 8px 16px;
     margin: 0;
     font-size: 12px;
-    color: #6c757d;
+    color: var(--sw-text-3);
     font-weight: 600;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--sw-border);
     background-color: var(--sw-surface-2) ;
 }
 
@@ -1243,7 +1243,7 @@ textarea:focus {
 #fornecedorModal #fornecedorForm select,
 #fornecedorModal #fornecedorForm textarea {
     width: 100% !important;
-    border: 1px solid #d1d5db !important;
+    border: 1px solid var(--sw-input-border) !important;
     border-radius: 6px !important;
     padding: 8px 12px !important;
     font-size: 14px !important;
@@ -2458,7 +2458,7 @@ textarea:focus {
 .modal-body textarea {
     width: 100% !important;
     box-sizing: border-box !important;
-    border: 1px solid #d1d5db !important;
+    border: 1px solid var(--sw-input-border) !important;
     border-radius: 6px !important;
     padding: 8px 12px !important;
     font-size: 14px !important;
@@ -3505,7 +3505,7 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         font-variant-numeric: tabular-nums !important;
         padding: 6px 0 !important;
         border: 0 !important;
-        border-bottom: 1px solid #f1f5f9 !important;
+        border-bottom: 1px solid var(--sw-border) !important;
         height: auto !important;
         min-height: 22px !important;
     }
@@ -3524,7 +3524,7 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         overflow: hidden !important;
         text-overflow: ellipsis !important;
         font-weight: 700 !important;
-        color: #64748b !important;
+        color: var(--sw-text-3) !important;
         font-size: 11px !important;
         line-height: 1.2 !important;
         text-transform: uppercase !important;
@@ -3638,7 +3638,7 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         font-variant-numeric: tabular-nums !important;
         padding: 6px 0 !important;
         border: 0 !important;
-        border-bottom: 1px solid #f1f5f9 !important;
+        border-bottom: 1px solid var(--sw-border) !important;
         height: auto !important;
         min-height: 22px !important;
     }
@@ -3658,7 +3658,7 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         overflow: hidden !important;
         text-overflow: ellipsis !important;
         font-weight: 700 !important;
-        color: #64748b !important;
+        color: var(--sw-text-3) !important;
         font-size: 11px !important;
         line-height: 1.2 !important;
         text-transform: uppercase !important;
