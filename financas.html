@@ -1000,6 +1000,23 @@
                 box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
                 padding: 12px 14px !important;
                 margin-bottom: 12px !important;
+                position: relative !important;
+                overflow: hidden !important;
+            }
+
+            /* Faixa de marca no topo dos cards mobile (faixa sutil, 3px). */
+            #receberTable > tr::before,
+            #pagarTable > tr::before,
+            #fluxoTable > tr::before {
+                content: "" !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                height: 3px !important;
+                background: var(--sw-gradient) !important;
+                border-radius: 10px 10px 0 0 !important;
+                pointer-events: none !important;
             }
 
             #receberTable > tr td,
@@ -1068,8 +1085,9 @@
                 margin-left: auto !important;
             }
 
-            /* Coluna de acoes em faixa full-width (sem rotulo "ACOES" no card:
-               o ::before espremido ao lado dos botoes quebra por caractere) */
+            /* Coluna de acoes em faixa full-width: rótulo "AÇÕES" à esquerda +
+               botões à direita na mesma linha (padrão Lista de Romaneios).
+               O nowrap vale SÓ para o ::before (evita quebra por caractere). */
             #receberTable > tr td.actions-cell,
             #pagarTable > tr td.actions-cell {
                 width: 100% !important;
@@ -1077,17 +1095,44 @@
                 margin-top: 8px !important;
                 padding-top: 10px !important;
                 min-height: 0 !important;
-                display: block !important;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                gap: 8px !important;
                 text-align: right !important;
+                overflow: visible !important;
+                white-space: normal !important;
+                overflow-wrap: normal !important;
+                word-break: normal !important;
             }
             #receberTable > tr td.actions-cell[data-label="Ações"]::before,
             #pagarTable > tr td.actions-cell[data-label="Ações"]::before {
-                content: "" !important;
-                display: none !important;
+                content: attr(data-label) !important;
+                display: inline-block !important;
+                flex: 0 0 auto !important;
+                white-space: nowrap !important;
+                overflow: visible !important;
+                font-weight: 700 !important;
+                color: var(--sw-text-3) !important;
+                font-size: 11px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.4px !important;
+                text-align: left !important;
+                margin-right: 0 !important;
+                position: static !important;
+                width: auto !important;
+                top: auto !important;
+                left: auto !important;
+                transform: none !important;
+                padding-right: 0 !important;
             }
             #receberTable > tr td.actions-cell .actions-inline,
             #pagarTable > tr td.actions-cell .actions-inline {
-                width: 100%;
+                width: auto;
+                flex: 1 1 auto;
+                min-width: 0;
+                margin-left: auto;
                 display: flex;
                 flex-wrap: wrap;
                 justify-content: flex-end;
@@ -2074,6 +2119,20 @@
             border-radius: 9px;
             background: var(--sw-surface);
             box-shadow: 0 2px 7px rgba(15, 23, 42, 0.06);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Faixa de marca no topo dos cards mobile (faixa sutil, 3px). */
+        #pagamentoModal .finance-history-table tbody > tr::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--sw-gradient);
+            border-radius: 9px 9px 0 0;
+            pointer-events: none;
         }
         #pagamentoModal .finance-history-table tbody > tr:last-child {
             margin-bottom: 0;
@@ -2116,14 +2175,45 @@
         #pagamentoModal .finance-history-table td.finance-history-action-cell {
             border-bottom: 0 !important;
         }
-        /* Acoes do historico: sem rotulo "ACOES" (evita texto vertical) */
+        /* Acoes do historico: rótulo "AÇÕES" à esquerda + botão à direita na
+           mesma linha (padrão Lista de Romaneios). O nowrap vale SÓ para o
+           ::before (evita quebra por caractere); o botão vai para a direita
+           via margin-left:auto. */
         #pagamentoModal .finance-history-table td.finance-history-action-cell {
-            display: block !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 8px !important;
             text-align: right !important;
+            overflow: visible !important;
+            white-space: normal !important;
+            overflow-wrap: normal !important;
+            word-break: normal !important;
         }
         #pagamentoModal .finance-history-table td.finance-history-action-cell::before {
-            content: "" !important;
-            display: none !important;
+            content: attr(data-label) !important;
+            display: inline-block !important;
+            flex: 0 0 auto !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            white-space: nowrap !important;
+            overflow: visible !important;
+            color: var(--sw-text-3);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .35px;
+            line-height: 1.25;
+            text-align: left;
+            text-transform: uppercase;
+            position: static !important;
+            transform: none !important;
+            width: auto !important;
+            padding-right: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        #pagamentoModal .finance-history-table td.finance-history-action-cell > button {
+            margin-left: auto !important;
         }
         #pagamentoModal .finance-history-table td.finance-history-attachment-cell,
         #pagamentoModal .finance-history-table td.finance-history-action-cell {

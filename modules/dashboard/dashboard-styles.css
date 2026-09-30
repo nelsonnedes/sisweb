@@ -188,7 +188,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: var(--card-color, var(--dashboard-primary));
+    background: var(--sw-gradient);
 }
 
 .kpi-card.primary { --card-color: var(--dashboard-primary); }

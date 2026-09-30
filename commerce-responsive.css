@@ -608,6 +608,21 @@ html.sisweb-embedded .page-header {
         background: var(--sw-surface);
         padding: 8px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Faixa de marca no topo dos cards mobile (faixa sutil, 3px). */
+    .table-responsive.mobile-cards tbody tr::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--sw-gradient);
+        border-radius: 8px 8px 0 0;
+        pointer-events: none;
     }
 
     .table-responsive.mobile-cards td {
@@ -654,18 +669,44 @@ html.sisweb-embedded .page-header {
         content: "";
     }
 
+    /* Ações no card: rótulo "AÇÕES" à esquerda + botões à direita na mesma
+       linha (padrão Lista de Romaneios: flex row + ::before nowrap à esquerda,
+       botões com margin-left:auto à direita). O nowrap vale SÓ para o ::before
+       (evita quebra por caractere); valores mantêm wrapping normal. */
     .table-responsive.mobile-cards td[data-label="Ações"],
     .table-responsive.mobile-cards td.commerce-actions-cell {
         display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
         padding: 10px 12px;
         width: 100% !important;
         min-width: 100% !important;
-        justify-content: flex-end;
+        overflow: visible !important;
+        white-space: normal !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
     }
 
     .table-responsive.mobile-cards td[data-label="Ações"]::before,
     .table-responsive.mobile-cards td.commerce-actions-cell::before {
-        content: "";
+        content: attr(data-label) !important;
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        position: static !important;
+        transform: none !important;
+        width: auto !important;
+        padding-right: 0 !important;
+    }
+
+    .table-responsive.mobile-cards td[data-label="Ações"] .commerce-actions-wrap,
+    .table-responsive.mobile-cards td[data-label="Ações"] .acoes-buttons,
+    .table-responsive.mobile-cards td.commerce-actions-cell .commerce-actions-wrap,
+    .table-responsive.mobile-cards td.commerce-actions-cell .acoes-buttons {
+        margin-left: auto !important;
     }
 
     .table-responsive.mobile-cards td .btn-small,
@@ -816,16 +857,31 @@ html.sisweb-embedded .page-header {
 
     .commerce-orders-table-wrap.mobile-cards td[data-label="Ações"],
     .commerce-orders-table-wrap.mobile-cards td.commerce-actions-cell {
-        justify-content: stretch !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
         border-bottom: 0;
         background: var(--sw-surface);
         min-height: 52px !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
     }
 
     .commerce-orders-table-wrap.mobile-cards td[data-label="Ações"]::before,
     .commerce-orders-table-wrap.mobile-cards td.commerce-actions-cell::before {
-        content: "" !important;
-        display: none !important;
+        content: attr(data-label) !important;
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        position: static !important;
+        transform: none !important;
+        width: auto !important;
+        padding-right: 0 !important;
     }
 
     .commerce-orders-table-wrap.mobile-cards .commerce-actions-wrap,
@@ -833,7 +889,10 @@ html.sisweb-embedded .page-header {
         display: grid !important;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 8px;
-        width: 100%;
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+        margin-left: auto;
     }
 
     .table-responsive.mobile-cards .commerce-actions-wrap,
@@ -980,19 +1039,37 @@ html.sisweb-embedded .page-header {
     .commerce-payment-table-wrap.mobile-cards td[data-label="Ações"],
     .commerce-payment-table-wrap.mobile-cards td.commerce-actions-cell {
         display: flex !important;
-        justify-content: stretch !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
     }
 
     .commerce-payment-table-wrap.mobile-cards td[data-label="Ações"]::before,
     .commerce-payment-table-wrap.mobile-cards td.commerce-actions-cell::before {
-        content: "" !important;
-        display: none !important;
+        content: attr(data-label) !important;
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        position: static !important;
+        transform: none !important;
+        width: auto !important;
+        padding-right: 0 !important;
+        margin-bottom: 0 !important;
     }
 
     .commerce-payment-table-wrap.mobile-cards td[data-label="Ações"] button,
     .commerce-payment-table-wrap.mobile-cards td.commerce-actions-cell button {
-        width: 100% !important;
+        width: auto !important;
+        flex: 1 1 auto !important;
+        min-width: 44px !important;
         min-height: 42px !important;
+        margin-left: auto !important;
     }
 
     .commerce-report-table-wrap.mobile-cards td {
@@ -1198,14 +1275,36 @@ html.sisweb-embedded .page-header {
     table.table.mobile-cards tbody td.commerce-actions-cell,
     table.mobile-cards tbody td.commerce-actions-cell {
         display: flex !important;
-        justify-content: flex-end;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
     }
 
     table.table.mobile-cards tbody td[data-label="Ações"]::before,
     table.mobile-cards tbody td[data-label="Ações"]::before,
     table.table.mobile-cards tbody td.commerce-actions-cell::before,
     table.mobile-cards tbody td.commerce-actions-cell::before {
-        content: "";
+        content: attr(data-label) !important;
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        position: static !important;
+        transform: none !important;
+        width: auto !important;
+        padding-right: 0 !important;
+    }
+
+    table.table.mobile-cards tbody td[data-label="Ações"] .commerce-actions-wrap,
+    table.mobile-cards tbody td[data-label="Ações"] .commerce-actions-wrap,
+    table.table.mobile-cards tbody td[data-label="Ações"] .acoes-buttons,
+    table.mobile-cards tbody td[data-label="Ações"] .acoes-buttons {
+        margin-left: auto !important;
     }
 
     table.table.mobile-cards tbody td .btn-small,
@@ -1360,12 +1459,13 @@ html[data-theme="dark"] .action-buttons-container .btn-success {
     }
 }
 
-/* Antídoto global mobile (≤768px): células de AÇÃO nunca exibem o rótulo
-   "AÇÕES" via ::before. Sem isso, o label divide a linha do card com os
-   botões e, em viewports estreitos (ex. 370px), o ::before espremido com
-   overflow-wrap:anywhere/word-break quebra por caractere (texto vertical).
-   Regras com IDs + !important (estoque, romaneios) mantêm seu label
-   intencional: este fallback só alcança células sem regra própria. */
+/* Padrão mobile (≤768px) — fileira AÇÕES label-visível-horizontal (padrão
+   Lista de Romaneios, romaneio-comum.css): célula em flex row com o rótulo
+   "AÇÕES" (::before, nowrap, inline-start) + botões inline-end via
+   margin-left:auto nos wrappers. O nowrap vale SÓ para o ::before de Ações
+   (evita quebra por caractere em viewports estreitos); valores mantêm
+   wrapping normal. Regras com IDs + !important (estoque, romaneios,
+   finanças) mantêm seu ajuste fino: este bloco é o fallback compartilhado. */
 @media (max-width: 768px) {
     td[data-label="Ações"]::before,
     td.commerce-actions-cell::before,
@@ -1373,8 +1473,15 @@ html[data-theme="dark"] .action-buttons-container .btn-success {
     td.acoes-cell::before,
     td.relatorio-acoes-cell::before,
     td.finance-history-action-cell::before {
-        content: "" !important;
-        display: none !important;
+        content: attr(data-label) !important;
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        position: static !important;
+        transform: none !important;
+        width: auto !important;
+        padding-right: 0 !important;
     }
 
     td[data-label="Ações"],
@@ -1384,11 +1491,32 @@ html[data-theme="dark"] .action-buttons-container .btn-success {
     td.relatorio-acoes-cell,
     td.finance-history-action-cell {
         display: flex !important;
-        justify-content: flex-end !important;
+        flex-direction: row !important;
+        justify-content: flex-start !important;
         align-items: center !important;
         gap: 8px !important;
+        overflow: visible !important;
         white-space: normal !important;
         overflow-wrap: normal !important;
         word-break: normal !important;
+    }
+
+    td[data-label="Ações"] .commerce-actions-wrap,
+    td[data-label="Ações"] .acoes-buttons,
+    td[data-label="Ações"] .relatorio-acoes-buttons,
+    td[data-label="Ações"] .actions-inline,
+    td[data-label="Ações"] .btn-group,
+    td.commerce-actions-cell .commerce-actions-wrap,
+    td.commerce-actions-cell .acoes-buttons,
+    td.actions-cell[data-label="Ações"] .actions-inline,
+    td.actions-cell[data-label="Ações"] .btn-group {
+        margin-left: auto !important;
+    }
+
+    td[data-label="Ações"] > button,
+    td.commerce-actions-cell > button,
+    td.actions-cell[data-label="Ações"] > button,
+    td.finance-history-action-cell > button {
+        margin-left: auto !important;
     }
 }

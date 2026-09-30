@@ -446,6 +446,21 @@
         background: var(--sw-surface);
         padding: 8px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Faixa de marca no topo dos cards mobile (faixa sutil, 3px). */
+    .table-responsive.mobile-cards tbody tr::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--sw-gradient);
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+        pointer-events: none;
     }
 
     .table-responsive.mobile-cards td {
@@ -481,22 +496,47 @@
         content: attr(data-label);
     }
 
-    /* Células de AÇÃO: sem rótulo "AÇÕES" no card (evita texto vertical em
-       colunas estreitas); só botões, alinhados ao fim. */
+    /* Células de AÇÃO: rótulo "AÇÕES" à esquerda + botões à direita na mesma
+       linha (padrão Lista de Romaneios: flex row + ::before nowrap à esquerda,
+       botões com margin-left:auto à direita). O nowrap vale SÓ para o ::before
+       (evita quebra por caractere em colunas estreitas). */
     .table-responsive.mobile-cards td[data-label="Ações"],
     .table-responsive.mobile-cards td.commerce-actions-cell,
     .table-responsive.mobile-cards td.actions-cell,
     .table-responsive.mobile-cards td.acoes-cell {
-        justify-content: flex-end !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
         padding-left: 12px !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
     }
 
     .table-responsive.mobile-cards td[data-label="Ações"]:before,
     .table-responsive.mobile-cards td.commerce-actions-cell:before,
     .table-responsive.mobile-cards td.actions-cell:before,
     .table-responsive.mobile-cards td.acoes-cell:before {
-        content: "" !important;
-        display: none !important;
+        content: attr(data-label) !important;
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        position: static !important;
+        transform: none !important;
+        width: auto !important;
+        padding-right: 0 !important;
+    }
+
+    .table-responsive.mobile-cards td[data-label="Ações"] .commerce-actions-wrap,
+    .table-responsive.mobile-cards td[data-label="Ações"] .acoes-buttons,
+    .table-responsive.mobile-cards td[data-label="Ações"] .btn-group,
+    .table-responsive.mobile-cards td.actions-cell .btn-group,
+    .table-responsive.mobile-cards td.acoes-cell .btn-group {
+        margin-left: auto !important;
     }
 }
 
