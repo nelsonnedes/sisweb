@@ -877,18 +877,29 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                        O item Parceiro NUNCA aparece por CSS: só via JS após
                        confirmar parceiro cadastrado (fail-closed). */
                     .sidebar-brand-only,
-                    .sidebar-help-group { display: none !important; }
+                    .sidebar-help-group,
+                    .sidebar-theme-group { display: none !important; }
                     .sidebar-partner-item { display: none; }
                     @media (max-width: 768px){
                         #mainMenuContainer.active .sidebar-brand-only { display: flex !important; }
                         #mainMenuContainer.active .sidebar-help-group { display: block !important; }
+                        #mainMenuContainer.active .sidebar-theme-group {
+                            display: block !important;
+                            margin-top: 8px;
+                            border-top: 1px solid rgba(255,255,255,.22);
+                            padding-top: 8px;
+                        }
                         #mainMenuContainer.active .sidebar-partner-item[data-partner="1"] { display: block !important; }
                         .sidebar-brand-only {
                             align-items: center;
                             gap: 12px;
-                            padding: 4px 10px 16px;
-                            border-bottom: 1px solid rgba(255,255,255,.22);
-                            margin-bottom: 8px;
+                            padding: 12px;
+                            margin-bottom: 10px;
+                            /* Destaque sobre o laranja: cartão escuro translúcido. */
+                            background: rgba(0,0,0,.24);
+                            border: 1px solid rgba(255,255,255,.28);
+                            border-radius: 14px;
+                            box-shadow: 0 4px 14px rgba(0,0,0,.22);
                         }
                         .sidebar-brand-only img {
                             width: 44px;
@@ -897,19 +908,22 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             background: #fff;
                             padding: 3px;
                             flex: 0 0 auto;
+                            box-shadow: 0 2px 8px rgba(0,0,0,.25);
                         }
                         .sidebar-brand-only .sidebar-brand-name {
                             display: block;
                             color: #fff;
                             font-weight: 800;
-                            font-size: 18px;
+                            font-size: 19px;
                             line-height: 1.15;
+                            text-shadow: 0 1px 3px rgba(0,0,0,.35);
                         }
                         .sidebar-brand-only .sidebar-brand-sub {
                             display: block;
-                            color: rgba(255,255,255,.78);
+                            color: rgba(255,255,255,.85);
                             font-size: 11px;
-                            letter-spacing: .4px;
+                            letter-spacing: 2.5px;
+                            text-transform: uppercase;
                         }
                         #mainMenuContainer.active .sidebar-help-group {
                             margin-top: 8px;
@@ -1246,6 +1260,14 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         <a href="${this.resolveUrl('ajuda.html')}" class="menu-item"><i class="fas fa-book-open"></i> Ajuda</a>
                         ${!adminContext.isSuperAdmin ? `<a href="#" class="menu-item support-link"><i class="fas fa-headset"></i> Suporte</a>` : ''}
                         <a href="#" class="menu-item about-link"><i class="fas fa-info-circle"></i> Sobre</a>
+                    </div>
+
+                    <!-- Tema no sidebar mobile (espelha as opções do dropdown Configurações;
+                         sisweb-theme.js delega por [data-theme-option] no documento). -->
+                    <div class="menu-item-container sidebar-theme-group" id="sidebarThemeGroup">
+                        <a href="#" class="menu-item theme-option" data-theme-option="light" role="menuitemradio" aria-checked="false"><i class="fas fa-sun"></i> Claro</a>
+                        <a href="#" class="menu-item theme-option" data-theme-option="dark" role="menuitemradio" aria-checked="false"><i class="fas fa-moon"></i> Escuro</a>
+                        <a href="#" class="menu-item theme-option" data-theme-option="config" role="menuitem" aria-checked="false"><i class="fas fa-palette"></i> Configurações</a>
                     </div>
                     ` : ''}
                     </div>
