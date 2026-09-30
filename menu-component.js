@@ -892,38 +892,25 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         #mainMenuContainer.active .sidebar-partner-item[data-partner="1"] { display: block !important; }
                         .sidebar-brand-only {
                             align-items: center;
-                            gap: 12px;
-                            padding: 12px;
+                            gap: 10px;
+                            padding: 10px 12px;
                             margin-bottom: 10px;
-                            /* Destaque sobre o laranja: cartão escuro translúcido. */
-                            background: rgba(0,0,0,.24);
-                            border: 1px solid rgba(255,255,255,.28);
+                            /* Mesmo cartão claro da tela de login p/ o lockup. */
+                            background: #fff;
+                            border: 1px solid rgba(255,255,255,.6);
                             border-radius: 14px;
                             box-shadow: 0 4px 14px rgba(0,0,0,.22);
                         }
-                        .sidebar-brand-only img {
-                            width: 44px;
-                            height: 44px;
-                            border-radius: 11px;
-                            background: #fff;
-                            padding: 3px;
+                        .sidebar-brand-only img.sw-lockup-icon {
+                            width: 46px;
+                            height: 46px;
                             flex: 0 0 auto;
-                            box-shadow: 0 2px 8px rgba(0,0,0,.25);
                         }
-                        .sidebar-brand-only .sidebar-brand-name {
-                            display: block;
-                            color: #fff;
-                            font-weight: 800;
-                            font-size: 19px;
-                            line-height: 1.15;
-                            text-shadow: 0 1px 3px rgba(0,0,0,.35);
-                        }
-                        .sidebar-brand-only .sidebar-brand-sub {
-                            display: block;
-                            color: rgba(255,255,255,.85);
-                            font-size: 11px;
-                            letter-spacing: 2.5px;
-                            text-transform: uppercase;
+                        .sidebar-brand-only img.sw-lockup-name {
+                            width: 132px;
+                            height: auto;
+                            flex: 0 1 auto;
+                            min-width: 0;
                         }
                         #mainMenuContainer.active .sidebar-help-group {
                             margin-top: 8px;
@@ -1192,8 +1179,8 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     <button class="menu-toggle" id="menuToggleBtn" aria-label="Abrir menu"><i class="fas fa-bars"></i></button>
                     <div class="menu" id="mainMenuContainer">
                     <div class="sidebar-brand-only" aria-hidden="true">
-                        <img src="${this.resolveUrl('assets/brand/icone.ico')}" onerror="this.onerror=null;this.src='${this.resolveUrl('assets/icons/icon-192x192.png')}';" alt="" width="44" height="44">
-                        <span><span class="sidebar-brand-name">Sisweb</span><span class="sidebar-brand-sub">Madeireiras</span></span>
+                        <img class="sw-lockup-icon" src="${this.resolveUrl('assets/brand/icone.ico')}" onerror="this.onerror=null;this.src='${this.resolveUrl('assets/icons/icon-192x192.png')}';" alt="" width="46" height="46">
+                        <img class="sw-lockup-name" src="${this.resolveUrl('assets/brand/nome.ico')}" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb Madeireiras" width="132">
                     </div>
                     <a href="${homeUrl}" class="menu-item"><i class="fas fa-home"></i> Home</a>
                     
