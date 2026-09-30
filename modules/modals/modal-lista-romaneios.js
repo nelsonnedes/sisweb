@@ -824,7 +824,7 @@ window.ModalListaRomaneios = (function() {
             if (modal) modal.classList.remove('has-active-print-dropdown');
             // Remover closers ativos desta abertura
             if (window.tlPrintDropdownHandlers) {
-                document.removeEventListener('mousedown', window.tlPrintDropdownHandlers.closeHandler);
+                document.removeEventListener('click', window.tlPrintDropdownHandlers.closeHandler);
                 document.removeEventListener('keydown', window.tlPrintDropdownHandlers.escapeHandler);
                 window.tlPrintDropdownHandlers = null;
             }
