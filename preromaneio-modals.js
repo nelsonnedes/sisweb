@@ -729,14 +729,19 @@ function selectSpecies(name, price) {
 }
 
 function openNewSpeciesModal() {
-    const modal = document.getElementById('speciesModal');
-    if (modal) {
-        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
-            window.SiswebSpeciesModal.enhance({ modal });
-        }
-        modal.style.display = 'block';
-    }
-}
+      const listModal = document.getElementById('speciesListModal');
+      if (listModal && (listModal.style.display === 'block' || listModal.style.display === 'flex')) {
+          listModal.style.display = 'none';
+          console.log('✅ Lista de Espécies fechada automaticamente ao abrir "Nova Espécie"');
+      }
+      const modal = document.getElementById('speciesModal');
+      if (modal) {
+          if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
+              window.SiswebSpeciesModal.enhance({ modal });
+          }
+          modal.style.display = 'block';
+      }
+  }
 
 function closeNewSpeciesModal() {
     const modal = document.getElementById('speciesModal');
