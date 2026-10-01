@@ -990,6 +990,18 @@ window.ModalListaRomaneiosPCT = (function() {
     
     function printRomaneio(romaneioId, tipo = "completo") {
         console.log(` PCT: Imprimindo romaneio ${romaneioId} - Tipo: ${tipo}`);
+        // ✅ Sempre fechar dropdowns antes de imprimir (paridade TL: closeAllPrintDropdownsTL)
+        try {
+            document.querySelectorAll('.dropdown-content.show, .dropdown-content[style*="display: block"]').forEach(d => {
+                d.classList.remove('show');
+                d.style.display = 'none';
+            });
+            document.querySelectorAll('tr.dropdown-active').forEach(r => {
+                r.classList.remove('dropdown-active');
+                r.style.position = '';
+                r.style.zIndex = '';
+            });
+        } catch (_) {}
         if (window.imprimirRomaneio) {
                 window.imprimirRomaneio(romaneioId, tipo);
         } else if (window.imprimirRomaneioFromList) {

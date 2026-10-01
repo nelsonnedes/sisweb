@@ -4560,6 +4560,18 @@
         }
 
         async function printRomaneio(index, tipo = 'completo') {
+            // ✅ Sempre fechar dropdowns de impressão antes de imprimir (paridade TL)
+            try {
+                document.querySelectorAll('#romaneioListModal .dropdown-content.show').forEach(m => {
+                    m.classList.remove('show');
+                    m.style.position = '';
+                    m.style.left = '';
+                    m.style.top = '';
+                    m.style.right = '';
+                    m.style.bottom = '';
+                    m.style.zIndex = '';
+                });
+            } catch (_) {}
             const romaneios = await loadRomaneiosPesCompany();
             const romaneio = romaneiosPesModalList[index] || romaneios[index];
             if (!romaneio) {

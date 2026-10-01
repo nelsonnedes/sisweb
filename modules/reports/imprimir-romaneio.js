@@ -214,6 +214,18 @@ window.ImprimirRomaneio = (function() {
             : String(tipo || TIPOS_IMPRESSAO.COMPLETO).replace(/-/g, '_').toLowerCase();
         console.log(`🪵 Imprimir Romaneio Tora → id=${romaneioId} tipo=${tipo}`);
 
+        // ✅ Sempre fechar dropdowns/menus de impressão da lista antes de imprimir
+        // (paridade TL: o wrapper window.imprimirRomaneioTora do romaneio-manager.js
+        // é sobrescrito por este módulo, então o fechamento precisa morar aqui,
+        // no choke point por onde passam todas as impressões da lista Tora).
+        try {
+            document.querySelectorAll('.external-print-menu').forEach(m => m.remove());
+            document.querySelectorAll('.dropdown-menu.show, .dropdown-content.show').forEach(d => {
+                d.classList.remove('show');
+                d.style.display = 'none';
+            });
+        } catch (_) {}
+
         // Janela aberta no gesto (síncrono, antes dos awaits).
         const janelaSync = abrirJanelaImpressaoSync(`Romaneio Tora ${romaneioId}`);
         if (!janelaSync) {
