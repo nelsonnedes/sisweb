@@ -548,37 +548,24 @@ window.GerenciarEspecies = (function() {
         
         try {
             let resultado = null;
-            const svc = window.FirebaseService || window.firebaseService || window.firebaseServiceTL;
             
-            if (svc || window.databaseAdapter) {
-                try {
-                    console.log(`🔥 Salvando no Firebase: especies/${especie.id}`);
-                    let firebaseResult = null;
-                    if (svc && typeof svc.saveToFirebase === 'function') {
-                        firebaseResult = await svc.saveToFirebase('especies', especie.id, especie);
-                    } else if (svc && typeof svc.saveData === 'function') {
-                        // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
-                        firebaseResult = await svc.saveData('especies', String(especie.id), especie);
-                    } else if (window.databaseAdapter && typeof window.databaseAdapter.saveData === 'function') {
-                        firebaseResult = await window.databaseAdapter.saveData(`especies/${especie.id}`, especie);
-                    }
-                    
-                    if (firebaseResult && firebaseResult.success) {
-                        console.log(`✅ Espécie salva no Firebase com sucesso:`, firebaseResult);
-                        resultado = { success: true };
-                        if (svc && typeof svc.invalidateCollectionCache === 'function') {
-                            svc.invalidateCollectionCache('especies');
-                        }
-                        if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.invalidate === 'function') {
-                            window.SiswebSpeciesStore.invalidate();
-                        }
-                    } else {
-                        throw new Error(firebaseResult?.error || 'Resposta inválida do Firebase');
-                    }
-                } catch (firebaseError) {
-                    console.error('❌ Erro ao salvar no Firebase:', firebaseError);
-                    throw firebaseError;
+            // ✅ Escrita canônica (trava inflight + read-back + invalidação única)
+            try {
+                if (!window.SpeciesCRUD || typeof window.SpeciesCRUD.save !== 'function') {
+                    throw new Error('Módulo canônico de espécies não carregado');
                 }
+                console.log(`🔥 Salvando via SpeciesCRUD: especies/${especie.id}`);
+                const saved = await window.SpeciesCRUD.save({
+                    id: especie.id,
+                    name: getSpeciesName(especie),
+                    scientific: getSpeciesScientific(especie),
+                    createdAt: especie.createdAt
+                });
+                console.log(`✅ Espécie salva com sucesso:`, saved.id);
+                resultado = { success: true };
+            } catch (firebaseError) {
+                console.error('❌ Erro ao salvar no Firebase:', firebaseError);
+                throw firebaseError;
             }
             
             if (!resultado || !resultado.success) {

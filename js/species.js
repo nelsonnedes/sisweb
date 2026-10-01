@@ -280,38 +280,21 @@ async function handleSave(e) {
 
     showLoading(true);
 
-    const now = new Date().toISOString();
-    const speciesData = toCanonicalSpecies({
-        id: editingId || undefined,
-        especie: name,
-        nomeCientifico: scientificName,
-        updatedAt: now
-    }, 0, { updatedAt: now });
+    try {
+        // ✅ Escrita canônica (trava inflight + read-back + invalidação única)
+        if (!window.SpeciesCRUD || typeof window.SpeciesCRUD.save !== 'function') {
+            throw new Error('Módulo de espécies não carregado');
+        }
+        const saved = await window.SpeciesCRUD.save({
+            id: editingId || undefined,
+            name: name,
+            scientific: scientificName
+        });
+        const isEditMode = Boolean(saved.isEdit);
+        const finalId = saved.id;
+        const dataToSave = saved.record;
 
-    if (!editingId) {
-        speciesData.createdAt = now;
-    }
-
-try {
-            const isEditMode = !!editingId;
-            const finalId = isEditMode
-                ? String(editingId)
-                : (window.firebaseService && window.firebaseService.database
-                    ? window.firebaseService.database.ref('especies').push().key
-                    : `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
-
-            const dataToSave = { ...speciesData, id: finalId };
-
-            let result;
-            if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-                result = await window.firebaseService.saveData(`especies/${finalId}`, dataToSave);
-            } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                result = await window.firebaseService.saveToFirebase('especies', String(finalId), dataToSave);
-            } else {
-                throw new Error('Serviço de salvamento não disponível');
-            }
-        
-        if (result && result.success) {
+        if (saved && saved.success) {
             showToast(isEditMode ? 'Espécie atualizada!' : 'Espécie criada!', 'success');
             closeModal();
 
@@ -338,21 +321,9 @@ try {
             const activeFilter = elements.searchInput ? elements.searchInput.value : '';
             renderTable(filterList(currentSpecies, activeFilter));
 
-            // 2. Invalidação de Cache no serviço Firebase
-            try {
-                if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
-                    window.firebaseService.invalidateCache('especies');
-                    window.firebaseService.invalidateCache('species');
-                }
-                if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.invalidate === 'function') {
-                    window.SiswebSpeciesStore.invalidate();
-                }
-            } catch (_) {}
-
-            // 3. Recarregar do Firebase com forceRefresh
+            // Recarregar do Firebase com forceRefresh (o módulo canônico já
+            // invalidou caches e recarregou o store; aqui só re-renderiza a UI)
             await loadSpecies({ forceRefresh: true });
-        } else {
-            throw new Error((result && result.error) || 'Falha ao salvar espécie');
         }
     } catch (error) {
         console.error('Erro ao salvar:', error);

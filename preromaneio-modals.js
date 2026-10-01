@@ -768,27 +768,15 @@ if (speciesForm) {
             }
         }
 
-        const now = new Date().toISOString();
-        const speciesId = `ESP_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const newSpecies = window.SiswebSpecies && typeof window.SiswebSpecies.toCanonicalRecord === 'function'
-            ? window.SiswebSpecies.toCanonicalRecord({ id: speciesId, especie: name, nomeCientifico, createdAt: now }, 0, { id: speciesId, updatedAt: now })
-            : { id: speciesId, especie: name, nomeCientifico, createdAt: now, updatedAt: now };
-
-        try {
-            // saveData/saveToFirebase tem assinatura (path, key, data)
-            const speciesTenant = (typeof resolveTenantId === 'function' ? resolveTenantId() : null);
-            if (!speciesTenant) {
-                alert('Empresa não identificada na sessão. Recarregue a página e tente novamente.');
-                return;
-            }
-            const speciesBase = `companies/${speciesTenant}/especies`;
-            const speciesPayload = {};
-            Object.keys(newSpecies).forEach((k) => {
-                const v = newSpecies[k];
-                speciesPayload[k] = (v === undefined ? null : v);
-            });
-            const result = await window.firebaseService.saveData(speciesBase, String(speciesId), speciesPayload);
-            if (result && result.success) {
+          try {
+              if (!window.SpeciesCRUD || typeof window.SpeciesCRUD.save !== 'function') {
+                  alert('Módulo de espécies não carregado. Recarregue a página e tente novamente.');
+                  return;
+              }
+              // ✅ Escrita canônica (trava inflight + read-back + invalidação única)
+              const saved = await window.SpeciesCRUD.save({ name: name, scientific: nomeCientifico });
+              const result = saved;
+              if (result && result.success) {
                 selectSpecies(name, '');
                 closeNewSpeciesModal();
                 // Refresh list if open
