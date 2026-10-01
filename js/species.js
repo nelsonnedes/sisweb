@@ -292,24 +292,24 @@ async function handleSave(e) {
         speciesData.createdAt = now;
     }
 
-    try {
-        const isEditMode = !!editingId;
-        const finalId = isEditMode
-            ? String(editingId)
-            : (window.firebaseService && window.firebaseService.database
-                ? window.firebaseService.database.ref('especies').push().key
-                : `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+try {
+            const isEditMode = !!editingId;
+            const finalId = isEditMode
+                ? String(editingId)
+                : (window.firebaseService && window.firebaseService.database
+                    ? window.firebaseService.database.ref('especies').push().key
+                    : `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
 
-        const dataToSave = { ...speciesData, id: finalId };
+            const dataToSave = { ...speciesData, id: finalId };
 
-        let result;
-        if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-            result = await window.firebaseService.saveData('especies', String(finalId), dataToSave);
-        } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            result = await window.firebaseService.saveToFirebase('especies', String(finalId), dataToSave);
-        } else {
-            throw new Error('Serviço de salvamento não disponível');
-        }
+            let result;
+            if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+                result = await window.firebaseService.saveData(`especies/${finalId}`, dataToSave);
+            } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                result = await window.firebaseService.saveToFirebase('especies', String(finalId), dataToSave);
+            } else {
+                throw new Error('Serviço de salvamento não disponível');
+            }
         
         if (result && result.success) {
             showToast(isEditMode ? 'Espécie atualizada!' : 'Espécie criada!', 'success');
