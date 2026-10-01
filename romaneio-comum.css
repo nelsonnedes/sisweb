@@ -1364,11 +1364,35 @@ textarea:focus {
     box-shadow: 0 4px 8px rgba(100, 116, 139, 0.25) !important;
 }
 
+/* ============================================================
+   Z-INDEX HIERARQUIA DE MODAIS
+   - List modals (abrem primeiro): z-index 100000
+   - Form modals (abrem por cima): z-index 100010
+   ============================================================ */
+
+#speciesListModal,
+#clientListModal,
+#fornecedorListModal,
+#listaModal,
+#romaneioListModal {
+    z-index: 100000 !important;
+}
+
+#speciesModal,
+#clientModal,
+#fornecedorModal,
+#newClientModal,
+#newFornecedorModal,
+#newSpeciesModal,
+#financeClienteModal,
+#financeFornecedorModal {
+    z-index: 100010 !important;
+}
+
 /* Modais: Lista de Romaneios (TL/PCT/TORA via #listaModal, PES via #romaneioListModal) */
 #listaModal,
 #romaneioListModal {
     overflow: hidden !important;
-    z-index: 9999990 !important;
 }
 
 #listaModal .modal-content,
@@ -2105,10 +2129,7 @@ textarea:focus {
 #clientListModal,
 #fornecedorListModal,
 #speciesListModal,
-#clientModal,
-#fornecedorModal,
-#speciesModal,
-#newClientModal,
+#clientListModal,
 #listaModal,
 #romaneioListModal {
     display: none;
