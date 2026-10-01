@@ -136,6 +136,18 @@ test('SpeciesCRUD.resolveRecordId unifica aliases de id', () => {
   assert.ok(!crud.matchesId({ id: 'A' }, 'B'));
 });
 
+test('SpeciesCRUD.save com record preserva companyId na edicao', async () => {
+  const db = makeDb({ C1: { id: 'C1', especie: 'A', companyId: 'tenant_teste' } });
+  const sandbox = buildSandbox(db);
+  const res = await sandbox.SpeciesCRUD.save({
+    id: 'C1',
+    record: { id: 'C1', especie: 'A', nomeCientifico: 'Novo', companyId: 'tenant_teste' }
+  });
+  assert.equal(res.success, true);
+  assert.equal(db.data.C1.companyId, 'tenant_teste', 'companyId preservado');
+  assert.equal(db.data.C1.nomeCientifico, 'Novo');
+});
+
 test('SpeciesCRUD.remove exige id e usa deleteData', async () => {
   const db = makeDb({ DEL: { id: 'DEL', especie: 'X' } });
   db.deleteData = async (path) => {

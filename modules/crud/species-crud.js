@@ -84,6 +84,29 @@
         var t = tools();
         var now = new Date().toISOString();
         var id = String(src.id || '') || ('ESP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
+        // Registro completo (preserva companyId e demais campos na edição).
+        if (src.record && typeof src.record === 'object') {
+            var base = Object.assign({}, src.record);
+            if (src.name !== undefined) {
+                base.especie = src.name;
+                base.nome = src.name;
+                base.name = src.name;
+            }
+            if (src.scientific !== undefined) base.nomeCientifico = src.scientific;
+            if (typeof t.toCanonicalRecord === 'function') {
+                var rec = t.toCanonicalRecord(base, 0, { id: id, updatedAt: now });
+                if (!rec.createdAt && base.createdAt) rec.createdAt = base.createdAt;
+                return rec;
+            }
+            return {
+                id: id,
+                especie: String(base.especie || ''),
+                nomeCientifico: String(base.nomeCientifico || ''),
+                ativo: true,
+                createdAt: base.createdAt || now,
+                updatedAt: now
+            };
+        }
         if (typeof t.toCanonicalRecord === 'function') {
             return t.toCanonicalRecord(
                 { especie: src.name, nomeCientifico: src.scientific || '' },
@@ -206,11 +229,12 @@
 
     async function doSave(input) {
         var src = input || {};
-        var name = String(src.name == null ? '' : src.name).trim();
+        var rec = src.record && typeof src.record === 'object' ? src.record : null;
+        var name = String(src.name !== undefined ? src.name : (rec ? getDisplayName(rec) : '')).toString().trim();
         if (!name) throw new Error('O nome da espécie é obrigatório');
         var isEdit = Boolean(String(src.id == null ? '' : src.id).trim());
         var now = new Date().toISOString();
-        var payload = toCanonicalPayload({ name: name, scientific: src.scientific || '' });
+        var payload = toCanonicalPayload({ id: src.id, name: name, scientific: src.scientific, record: rec });
         if (isEdit) {
             payload.id = String(src.id).trim();
             payload.createdAt = src.createdAt || payload.createdAt;

@@ -1476,8 +1476,7 @@ class SpeciesManager {
                     await window.firebaseService.saveToFirebase('especies', safeId, { ...canonicalRecord, id: safeId });
                     console.log(`✅ Espécie salva via firebaseService em especies/${safeId}`);
                 } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-                    // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
-                    await window.firebaseService.saveData('especies', safeId, { ...canonicalRecord, id: safeId });
+                    await window.firebaseService.saveData(`especies/${safeId}`, { ...canonicalRecord, id: safeId });
                     console.log(`✅ Espécie salva via firebaseService.saveData em especies/${safeId}`);
                 } else if (window.databaseAdapter && typeof window.databaseAdapter.saveData === 'function') {
                     await window.databaseAdapter.saveData(`especies/${safeId}`, { ...canonicalRecord, id: safeId });
@@ -1488,6 +1487,13 @@ class SpeciesManager {
                 throw error;
             }
             
+            // ✅ Aguardar propagação no Firebase antes de atualizar listas
+            try {
+                if (window.SpeciesCRUD && typeof window.SpeciesCRUD.verifyVisible === 'function') {
+                    await window.SpeciesCRUD.verifyVisible(specieData.id);
+                }
+            } catch (_) {}
+
             // Fechar modal
             const speciesModal = document.getElementById('speciesModal');
             if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.hideModal === 'function') {

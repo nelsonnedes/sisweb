@@ -36,8 +36,8 @@
     </script>
     <link rel="stylesheet" href="romaneio-comum.css?v=1c15014e677a">
     <link rel="stylesheet" href="species-modal-standard.css?v=20260520a">
-    <script src="js/sisweb-theme.js?v=380b69314121"></script>
-<script src="menu-component.js?v=16bb5786a951"></script>
+    <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
+<script src="menu-component.js?v=4d71c9d9c389"></script>
     <link rel="stylesheet" href="print-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
@@ -1421,6 +1421,7 @@
     <script src="species-utils.js?v=1eae09b2ccc7"></script>
     <script src="species-store.js?v=f6f5cff9d5aa"></script>
     <script src="species-modal-standard.js?v=791d267e95fa"></script>
+    <script src="modules/crud/species-crud.js?v=8edb8d98327e"></script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script type="module">
         import {
@@ -1477,11 +1478,11 @@
     <script src="romaneios-client-save-fix.js?v=f9b752d56195"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
     <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
-    <script src="commerce-responsive.js?v=24c36f6fc7bc"></script>
+    <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="romaneio-print-config.js?v=0c4709b882a7"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pes" data-target="clientListBody"></script>
-    <script src="modules/core/romaneio-list-columns.js?v=4a678c769887" data-page="pes" data-target="romaneioListBody"></script>
+    <script src="modules/core/romaneio-list-columns.js?v=210bbf18cbc0" data-page="pes" data-target="romaneioListBody"></script>
     <script>
         let itens = [];
         let itemEmEdicaoIndex = -1; // Para controlar edição de itens
@@ -3728,13 +3729,26 @@
                     return false;
                 }
 
-                try {
-                    window.dispatchEvent(new CustomEvent('species:updated', { detail: { id: idToSave, nome: dataWithCompany.especie } }));
-                } catch (_) {}
+                  // ✅ Aguardar propagação no Firebase antes de recarregar (evita lista desatualizada)
+                  try {
+                      if (window.SpeciesCRUD && typeof window.SpeciesCRUD.verifyVisible === 'function') {
+                          await window.SpeciesCRUD.verifyVisible(idToSave);
+                      }
+                  } catch (_) {}
 
-                alert(isEditing ? 'Espécie atualizada com sucesso!' : 'Espécie cadastrada com sucesso!');
-                await carregarEspecies({ force: true }); // Recarregar a lista de espécies
-                return true;
+                  try {
+                      window.dispatchEvent(new CustomEvent('species:updated', { detail: { id: idToSave, nome: dataWithCompany.especie } }));
+                  } catch (_) {}
+
+                  alert(isEditing ? 'Espécie atualizada com sucesso!' : 'Espécie cadastrada com sucesso!');
+                  await carregarEspecies({ force: true }); // Recarregar a lista de espécies
+                  if (!isEditing) {
+                      // ✅ Preencher o campo com a espécie recém-criada (paridade TL/PCT/Pré)
+                      const especieInput = document.getElementById('especieInput');
+                      if (especieInput) especieInput.value = dataWithCompany.especie || '';
+                      selectedSpecies = { ...dataWithCompany, id: idToSave };
+                  }
+                  return true;
             } else {
                 alert('Erro ao salvar espécie. Por favor, tente novamente.');
                 return false;
