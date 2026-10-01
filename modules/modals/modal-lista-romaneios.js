@@ -777,16 +777,27 @@ window.ModalListaRomaneios = (function() {
 
         dbg('✅ Dropdown TL exibido (inline, paridade PCT)');
 
-        // ✅ FECHAR AO CLICAR FORA / ESC — closers auto-limpantes por abertura.
-        // Usa `click` (bubble) + stopPropagation no botão de impressão:
-        // - Clique no botão: stopPropagation impede o closer, toggle funciona
-        // - Clique fora: closer fecha
-        // - Clique em outro botão: closer do antigo fecha, toggle do novo abre
+        // ✅ FECHAR AO CLICAR FORA / ESC — paridade total com PCT:
+        // closer auto-removível, SEM stopPropagation no botão (o closeHandler
+        // já ignora cliques no botão/dropdown via contains). Cada abertura
+        // registra um closer que remove a si mesmo ao disparar.
         setTimeout(() => {
             if (!dropdown.classList.contains('show')) return;
+            const rowAtOpen = button.closest('tr');
             const closeHandler = function(event) {
                 if (!dropdown.contains(event.target) && !button.contains(event.target)) {
-                    closeAllPrintDropdownsTL();
+                    dropdown.classList.remove('show');
+                    dropdown.style.display = 'none';
+                    if (rowAtOpen) {
+                        rowAtOpen.classList.remove('dropdown-active');
+                        rowAtOpen.style.position = '';
+                        rowAtOpen.style.zIndex = '';
+                    }
+                    document.removeEventListener('click', closeHandler);
+                    document.removeEventListener('keydown', escapeHandler);
+                    if (window.tlPrintDropdownHandlers && window.tlPrintDropdownHandlers.closeHandler === closeHandler) {
+                        window.tlPrintDropdownHandlers = null;
+                    }
                     dbg('✅ Dropdown fechado por clique externo');
                 }
             };
@@ -798,9 +809,7 @@ window.ModalListaRomaneios = (function() {
             };
             document.addEventListener('click', closeHandler);
             document.addEventListener('keydown', escapeHandler);
-            const buttonStopPropagationHandler = function(e) { e.stopPropagation(); };
-            button.addEventListener('click', buttonStopPropagationHandler, true);
-            window.tlPrintDropdownHandlers = { closeHandler, escapeHandler, button, buttonStopPropagationHandler };
+            window.tlPrintDropdownHandlers = { closeHandler, escapeHandler, button, buttonStopPropagationHandler: null };
         }, 100);
     }
 
