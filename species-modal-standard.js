@@ -162,6 +162,9 @@
     function isTenantSpeciesStorageKey(key, tenantId) {
         const value = String(key || '');
         if (!/(^|__|\/)(especies|especies_cache)$/.test(value)) return false;
+        // Chaves avulsas sem namespace ('especies', 'X__especies') são snapshots
+        // legados — nunca autoritativas. Ignorar evita bloquear por fantasmas.
+        if (!/^(companies\/[^\/]+\/|company_[^\/]+__)(especies|especies_cache)$/.test(value)) return false;
         if (!tenantId) {
             return value === 'companies/__no_tenant__/especies'
                 || value === 'companies/__no_tenant__/especies_cache';
@@ -173,12 +176,15 @@
     }
 
     function getSpeciesList(extraSource) {
+        // Fonte explícita = lista autoritativa do chamador (mesmo vazia: "nenhuma",
+        // não "desconhecida"). Sem merge com caches globais — evita bloquear por
+        // registros-fantasma já excluídos (ex.: snapshots legados em localStorage).
         if (typeof extraSource === 'function') {
             try {
                 const list = extraSource();
-                if (Array.isArray(list) && list.length) return normalizeList(list);
+                if (Array.isArray(list)) return normalizeList(list);
             } catch (_) {}
-        } else if (Array.isArray(extraSource) && extraSource.length) {
+        } else if (Array.isArray(extraSource)) {
             return normalizeList(extraSource);
         }
 

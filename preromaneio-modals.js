@@ -759,14 +759,39 @@ if (speciesForm) {
         const scientificInput = document.getElementById('speciesDescription') || document.getElementById('speciesDesc');
         const nomeCientifico = scientificInput ? scientificInput.value : '';
 
-        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
-            const duplicate = window.SiswebSpeciesModal.getExactDuplicate(name);
-            if (duplicate) {
-                alert(`Espécie já cadastrada: ${window.SiswebSpeciesModal.getDisplayName(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
-                document.getElementById('speciesName').focus();
-                return;
-            }
-        }
+          // ✅ Duplicata à prova de fantasma (store + refresh + purga)
+          const lerStoreCachePre = () => {
+              try {
+                  if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getCached === 'function') {
+                      return window.SiswebSpeciesStore.getCached() || [];
+                  }
+              } catch (_) {}
+              return [];
+          };
+          const recarregarStorePre = async () => {
+              try {
+                  if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+                      await window.SiswebSpeciesStore.getAll({ force: true, waitRemote: true, timeoutMs: 8000 });
+                  }
+              } catch (_) {}
+          };
+          let dupPre = null;
+          if (window.SpeciesCRUD && typeof window.SpeciesCRUD.checkDuplicateOrGhost === 'function') {
+              dupPre = await window.SpeciesCRUD.checkDuplicateOrGhost({
+                  name: name,
+                  currentId: '',
+                  authoritativeList: lerStoreCachePre,
+                  refresh: recarregarStorePre
+              });
+          } else if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
+              const legacy = window.SiswebSpeciesModal.getExactDuplicate(name);
+              dupPre = { blocked: Boolean(legacy), ghost: false, record: legacy };
+          }
+          if (dupPre && dupPre.blocked) {
+              alert(`Espécie já cadastrada: ${window.SiswebSpeciesModal.getDisplayName(dupPre.record)}. Use o cadastro existente para evitar duplicidade.`);
+              document.getElementById('speciesName').focus();
+              return;
+          }
 
           try {
               if (!window.SpeciesCRUD || typeof window.SpeciesCRUD.save !== 'function') {

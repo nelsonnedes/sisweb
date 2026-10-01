@@ -269,13 +269,28 @@ async function handleSave(e) {
         return;
     }
 
-    if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
-        const duplicate = window.SiswebSpeciesModal.getExactDuplicate(name, editingId, () => currentSpecies);
-        if (duplicate) {
-            showToast(`Espécie já cadastrada: ${getSpeciesName(duplicate)}. Use o cadastro existente para evitar duplicidade.`, 'warning');
-            elements.nameInput.focus();
-            return;
-        }
+    // ✅ Verificação de duplicata à prova de fantasma: se o nome só existir em
+    // caches globais desatualizados (registro já excluído), purga e libera.
+    let dupCheck = null;
+    if (window.SpeciesCRUD && typeof window.SpeciesCRUD.checkDuplicateOrGhost === 'function') {
+        dupCheck = await window.SpeciesCRUD.checkDuplicateOrGhost({
+            name: name,
+            currentId: editingId,
+            authoritativeList: () => currentSpecies,
+            refresh: () => loadSpecies({ forceRefresh: true })
+        });
+    } else if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
+        const legacy = window.SiswebSpeciesModal.getExactDuplicate(name, editingId, () => currentSpecies);
+        dupCheck = { blocked: Boolean(legacy), ghost: false, record: legacy };
+    }
+    if (dupCheck && dupCheck.blocked) {
+        const dupName = getSpeciesName(dupCheck.record);
+        showToast(`Espécie já cadastrada: ${dupName}. Use o cadastro existente para evitar duplicidade.`, 'warning');
+        elements.nameInput.focus();
+        return;
+    }
+    if (dupCheck && dupCheck.ghost) {
+        showToast('Cache desatualizado sincronizado. Tentando salvar...', 'info');
     }
 
     showLoading(true);
@@ -363,42 +378,25 @@ window.deleteSpecies = async (id) => {
 
     showLoading(true);
     try {
-        const tenant = await ensureAuthAndTenant();
-        // Excluir no caminho canônico.
-        const result = await window.firebaseService.deleteData(`especies/${cleanId}`);
-        
-        if (result.success) {
+        await ensureAuthAndTenant();
+        // ✅ Exclusão canônica com verificação de leitura: se o registro ainda
+        // existir no Firebase após excluir, reporta falha em vez de "sucesso".
+        if (!window.SpeciesCRUD || typeof window.SpeciesCRUD.remove !== 'function') {
+            throw new Error('Módulo de espécies não carregado');
+        }
+        await window.SpeciesCRUD.remove(cleanId);
+
+        {
             currentSpecies = currentSpecies.filter(s => ![s && s.id, s && s.key, s && s.firebaseKey, s && s.originalId]
                 .map(v => String(v || '').trim())
                 .filter(Boolean)
                 .includes(cleanId));
-            
+
             const activeFilter = elements.searchInput ? elements.searchInput.value : '';
             renderTable(filterList(currentSpecies, activeFilter));
 
-            try {
-                if (window.firebaseService && typeof window.firebaseService.removeLocalStorage === 'function') {
-                    window.firebaseService.removeLocalStorage('especies');
-                    window.firebaseService.removeLocalStorage(`companies/${tenant}/especies`);
-                    window.firebaseService.removeLocalStorage(`especies/${cleanId}`);
-                    window.firebaseService.removeLocalStorage(`companies/${tenant}/especies/${cleanId}`);
-                    window.firebaseService.removeLocalStorage('species');
-                    window.firebaseService.removeLocalStorage(`companies/${tenant}/species`);
-                    window.firebaseService.removeLocalStorage(`species/${cleanId}`);
-                    window.firebaseService.removeLocalStorage(`companies/${tenant}/species/${cleanId}`);
-                }
-                if (window.firebaseService && typeof window.firebaseService.invalidateCache === 'function') {
-                    window.firebaseService.invalidateCache('especies');
-                    window.firebaseService.invalidateCache('species');
-                }
-                if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.invalidate === 'function') {
-                    window.SiswebSpeciesStore.invalidate();
-                }
-            } catch (_) {}
             showToast('Espécie excluída!', 'success');
             await loadSpecies({ forceRefresh: true });
-        } else {
-            throw new Error(result.error);
         }
     } catch (error) {
         console.error('Erro ao excluir:', error);
@@ -410,6 +408,10 @@ window.deleteSpecies = async (id) => {
 
 // UI Helpers
 function renderTable(list = currentSpecies) {
+    // ✅ Travar página atual no intervalo válido (evita página vazia após excluir)
+    const totalPages = Math.max(1, Math.ceil(list.length / itemsPerPage));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const paginatedItems = list.slice(start, end);

@@ -205,6 +205,123 @@
         return false;
     }
 
+    /** Remove snapshots legados avulsos (ex.: chave 'especies' sem namespace),
+     * fonte clássica de registros-fantasma já excluídos no Firebase. */
+    function purgeStaleSpeciesCaches() {
+        try {
+            var ls = global.localStorage;
+            if (ls) {
+                var legacyKeys = ['especies', 'species', 'especies_cache', 'species_cache'];
+                for (var i = 0; i < legacyKeys.length; i++) {
+                    try { ls.removeItem(legacyKeys[i]); } catch (_) {}
+                }
+            }
+        } catch (_) {}
+        try {
+            var service = svc();
+            if (service && typeof service.removeLocalStorage === 'function') {
+                var aliases = ['especies', 'species', 'especies_cache', 'species_cache',
+                    'especiesPct', 'data/species'];
+                for (var j = 0; j < aliases.length; j++) {
+                    try { service.removeLocalStorage(aliases[j]); } catch (_) {}
+                }
+            }
+        } catch (_) {}
+        try {
+            var st = store();
+            if (st && typeof st.invalidate === 'function') st.invalidate();
+        } catch (_) {}
+    }
+
+    /** Lê a coleção com forceRefresh e confirma que o id NÃO está mais presente. */
+    async function verifyGone(id, attempts) {
+        var max = attempts == null ? READBACK_ATTEMPTS : attempts;
+        for (var i = 0; i < max; i++) {
+            var found = false;
+            try {
+                var service = svc();
+                var result = null;
+                if (service && typeof service.loadFromFirebase === 'function') {
+                    result = await service.loadFromFirebase(COLLECTION, { forceRefresh: true });
+                }
+                var data = result && result.success && result.data !== undefined ? result.data : result;
+                if (data) {
+                    if (Array.isArray(data)) {
+                        for (var a = 0; a < data.length; a++) {
+                            if (matchesId(data[a], id)) { found = true; break; }
+                        }
+                    } else if (typeof data === 'object') {
+                        if (Object.prototype.hasOwnProperty.call(data, id)) {
+                            found = true;
+                        } else {
+                            var keys = Object.keys(data);
+                            for (var k = 0; k < keys.length; k++) {
+                                if (matchesId(data[keys[k]], id)) { found = true; break; }
+                            }
+                        }
+                    }
+                }
+            } catch (_) { found = true; /* erro de leitura: não afirmar remoção */ }
+            if (!found) return true;
+            if (i < max - 1) await delay(READBACK_DELAY_MS);
+        }
+        return false;
+    }
+
+    function readAuthoritativeList(listGetter) {
+        var list = [];
+        try { list = typeof listGetter === 'function' ? (listGetter() || []) : (listGetter || []); } catch (_) { list = []; }
+        return Array.isArray(list) ? list : [];
+    }
+
+    function findInList(list, name, currentId) {
+        var key = normalizeNameKey(name);
+        if (!key) return null;
+        var id = String(currentId || '').trim();
+        for (var i = 0; i < list.length; i++) {
+            var s = list[i];
+            if (normalizeNameKey(getDisplayName(s)) !== key) continue;
+            if (id && matchesId(s, id)) continue;
+            return s;
+        }
+        return null;
+    }
+
+    /**
+     * Verificação de duplicata à prova de fantasma:
+     * 1. procura na lista autoritativa da página;
+     * 2. se ausente, consulta as fontes globais (podem estar desatualizadas);
+     * 3. se só existir nas globais, recarrega a autoritativa e re-checa;
+     * 4. se continuar ausente → fantasma: purga caches e LIBERA o save.
+     */
+    async function checkDuplicateOrGhost(opts) {
+        var o = opts || {};
+        var name = String(o.name || '').trim();
+        if (!name) return { blocked: false, ghost: false, record: null };
+        var list = readAuthoritativeList(o.authoritativeList);
+        var hit = findInList(list, name, o.currentId);
+        if (hit) return { blocked: true, ghost: false, record: hit };
+
+        var globalHit = null;
+        try {
+            var modal = global.SiswebSpeciesModal;
+            if (modal && typeof modal.getExactDuplicate === 'function') {
+                globalHit = modal.getExactDuplicate(name, o.currentId) || null;
+            }
+        } catch (_) { globalHit = null; }
+        if (!globalHit) return { blocked: false, ghost: false, record: null };
+
+        try {
+            if (typeof o.refresh === 'function') await o.refresh();
+        } catch (_) {}
+        list = readAuthoritativeList(o.authoritativeList);
+        hit = findInList(list, name, o.currentId);
+        if (hit) return { blocked: true, ghost: false, record: hit };
+
+        purgeStaleSpeciesCaches();
+        return { blocked: false, ghost: true, record: globalHit };
+    }
+
     function invalidateAll() {
         try {
             var service = svc();
@@ -305,8 +422,12 @@
         if (!result || !result.success) {
             throw new Error((result && result.error) || 'Falha ao excluir espécie');
         }
+        var gone = await verifyGone(recordId);
         invalidateAll();
-        return { success: true, id: recordId };
+        if (!gone) {
+            throw new Error('Exclusão não confirmada no Firebase — o registro ainda existe. Tente novamente.');
+        }
+        return { success: true, id: recordId, verified: true };
     }
 
     global.SpeciesCRUD = {
@@ -316,10 +437,13 @@
         resolveRecordId: resolveRecordId,
         matchesId: matchesId,
         findDuplicate: findDuplicate,
+        checkDuplicateOrGhost: checkDuplicateOrGhost,
+        purgeStaleSpeciesCaches: purgeStaleSpeciesCaches,
         getDisplayName: getDisplayName,
         getScientificName: getScientificName,
         normalizeNameKey: normalizeNameKey,
         invalidateAll: invalidateAll,
-        verifyVisible: verifyVisible
+        verifyVisible: verifyVisible,
+        verifyGone: verifyGone
     };
 })(window);

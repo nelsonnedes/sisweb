@@ -435,7 +435,15 @@ window.GerenciarEspecies = (function() {
                 isProcessing = false;
                 return;
             }
-            
+
+            // ✅ Duplicata à prova de fantasma (store como fonte + refresh + purga)
+            const dupCheck = await verificarDuplicataSegura(dadosEspecie.nome, dadosEspecie.id || editingSpeciesId);
+            if (dupCheck.blocked) {
+                mostrarErro(`Espécie já cadastrada: ${getSpeciesName(dupCheck.record)}. Use o cadastro existente para evitar duplicidade.`);
+                isProcessing = false;
+                return;
+            }
+
             const especieCompleta = prepararDadosSalvamento(dadosEspecie);
             const resultado = await executarSalvamento(especieCompleta);
             
@@ -492,16 +500,44 @@ window.GerenciarEspecies = (function() {
             return null;
         }
 
-        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
-            const currentId = campos.id || editingSpeciesId;
-            const duplicate = window.SiswebSpeciesModal.getExactDuplicate(campos.nome, currentId);
-            if (duplicate) {
-                mostrarErro(`Espécie já cadastrada: ${getSpeciesName(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
-                return null;
-            }
-        }
-        
         return campos;
+    }
+
+    /**
+     * ✅ Verificação de duplicata à prova de fantasma: usa o store central como
+     * fonte autoritativa (com refresh forçado) em vez de caches globais.
+     */
+    function lerStoreCache() {
+        try {
+            if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getCached === 'function') {
+                return window.SiswebSpeciesStore.getCached() || [];
+            }
+        } catch (_) {}
+        return [];
+    }
+
+    async function recarregarStore() {
+        try {
+            if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getAll === 'function') {
+                await window.SiswebSpeciesStore.getAll({ force: true, waitRemote: true, timeoutMs: 8000 });
+            }
+        } catch (_) {}
+    }
+
+    async function verificarDuplicataSegura(nome, currentId) {
+        if (window.SpeciesCRUD && typeof window.SpeciesCRUD.checkDuplicateOrGhost === 'function') {
+            return window.SpeciesCRUD.checkDuplicateOrGhost({
+                name: nome,
+                currentId: currentId,
+                authoritativeList: lerStoreCache,
+                refresh: recarregarStore
+            });
+        }
+        if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
+            const duplicate = window.SiswebSpeciesModal.getExactDuplicate(nome, currentId);
+            return { blocked: Boolean(duplicate), ghost: false, record: duplicate };
+        }
+        return { blocked: false, ghost: false, record: null };
     }
 
     /**

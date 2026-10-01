@@ -148,6 +148,41 @@ test('SpeciesCRUD.save com record preserva companyId na edicao', async () => {
   assert.equal(db.data.C1.nomeCientifico, 'Novo');
 });
 
+test('SpeciesCRUD.checkDuplicateOrGhost bloqueia duplicata genuina sem refresh', async () => {
+  const db = makeDb({ T3: { id: 'T3', especie: 'Teste3', nomeCientifico: '' } });
+  const sandbox = buildSandbox(db);
+  let refreshed = false;
+  const res = await sandbox.SpeciesCRUD.checkDuplicateOrGhost({
+    name: 'Teste3',
+    currentId: '',
+    authoritativeList: () => [{ id: 'T3', especie: 'Teste3' }],
+    refresh: async () => { refreshed = true; }
+  });
+  assert.equal(res.blocked, true);
+  assert.equal(res.ghost, false);
+  assert.equal(refreshed, false, 'sem refresh quando autoritativa confirma');
+});
+
+test('SpeciesCRUD.checkDuplicateOrGhost libera fantasma apos refresh e purga', async () => {
+  const db = makeDb();
+  const sandbox = buildSandbox(db);
+  // Snapshot desatualizado: Teste3 excluido do Firebase mas ainda no cache.
+  sandbox.localStorage.setItem(
+    'companies/tenant_teste/especies',
+    JSON.stringify({ GHOST1: { id: 'GHOST1', especie: 'Teste3', nomeCientifico: '' } })
+  );
+  let refreshed = false;
+  const res = await sandbox.SpeciesCRUD.checkDuplicateOrGhost({
+    name: 'Teste3',
+    currentId: '',
+    authoritativeList: () => [],
+    refresh: async () => { refreshed = true; }
+  });
+  assert.equal(refreshed, true, 'refresh executado antes de liberar');
+  assert.equal(res.blocked, false, 'fantasma nao bloqueia');
+  assert.equal(res.ghost, true);
+});
+
 test('SpeciesCRUD.remove exige id e usa deleteData', async () => {
   const db = makeDb({ DEL: { id: 'DEL', especie: 'X' } });
   db.deleteData = async (path) => {
@@ -158,5 +193,13 @@ test('SpeciesCRUD.remove exige id e usa deleteData', async () => {
   const sandbox = buildSandbox(db);
   const res = await sandbox.SpeciesCRUD.remove('DEL');
   assert.equal(res.success, true);
+  assert.equal(res.verified, true);
   await assert.rejects(() => sandbox.SpeciesCRUD.remove('  '), /inválido/);
+});
+
+test('SpeciesCRUD.remove falha quando registro persiste no Firebase', async () => {
+  const db = makeDb({ STUCK: { id: 'STUCK', especie: 'X' } });
+  db.deleteData = async () => ({ success: true }); // finge sucesso sem remover
+  const sandbox = buildSandbox(db);
+  await assert.rejects(() => sandbox.SpeciesCRUD.remove('STUCK'), /não confirmada/);
 });
