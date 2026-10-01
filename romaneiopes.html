@@ -3618,6 +3618,12 @@
         
         // Função para abrir o modal de espécie
         function openSpeciesModal(mode, specie = null) {
+            // ✅ Fechar modal de lista de espécies se estiver aberto (paridade TL/Pré)
+            const listModal = document.getElementById('speciesListModal');
+            if (listModal && (listModal.style.display === 'block' || listModal.style.display === 'flex')) {
+                listModal.style.display = 'none';
+                console.log('✅ Lista de Espécies fechada automaticamente ao abrir "Nova Espécie"');
+            }
             const modal = document.getElementById('speciesModal');
             const title = document.getElementById('speciesModalTitle');
             const form = document.getElementById('speciesForm');
