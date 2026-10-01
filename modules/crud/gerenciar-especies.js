@@ -126,7 +126,16 @@ window.GerenciarEspecies = (function() {
         if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.enhance === 'function') {
             window.SiswebSpeciesModal.enhance({
                 modal,
-                getSpeciesList: () => readLocalArray('especies')
+                // Store central (invalidado por eventos) com fallback local.
+                getSpeciesList: () => {
+                    try {
+                        if (window.SiswebSpeciesStore && typeof window.SiswebSpeciesStore.getCached === 'function') {
+                            const cached = window.SiswebSpeciesStore.getCached();
+                            if (Array.isArray(cached) && cached.length) return cached;
+                        }
+                    } catch (_) {}
+                    return readLocalArray('especies');
+                }
             });
         }
     }

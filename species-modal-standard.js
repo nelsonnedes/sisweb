@@ -223,11 +223,10 @@
             }
         } catch (_) {}
 
-        try {
-            if (typeof global.getData === 'function') {
-                sources.push(global.getData('especies'));
-            }
-        } catch (_) {}
+        // NOTA: window.getData propositalmente FORA das fontes — dezenas de módulos
+        // legados (clientes, fornecedores, correções) disputam esse nome global e o
+        // retorno para 'especies' é imprevisível (ex.: registros de clientes nas
+        // sugestões). Fontes: store central + caches namespaced do serviço.
 
         const combined = [];
         sources.forEach((source) => {
@@ -297,7 +296,24 @@
         return item;
     }
 
+    let lastSuggestSyncAt = 0;
+
+    // Dispara ressincronização do store em segundo plano (throttle 15s, sem
+    // bloquear a digitação): sugestões da próxima tecla já vêm do Firebase.
+    function kickSuggestSync() {
+        try {
+            const now = Date.now();
+            if (now - lastSuggestSyncAt < 15000) return;
+            lastSuggestSyncAt = now;
+            const st = global.SiswebSpeciesStore;
+            if (st && typeof st.getAll === 'function') {
+                st.getAll({ force: true, waitRemote: false, timeoutMs: 8000 }).catch(() => {});
+            }
+        } catch (_) {}
+    }
+
     function showSuggestions(context) {
+        kickSuggestSync();
         if (!context || !context.nameInput || document.activeElement !== context.nameInput) return;
         const reserve = context.reserve;
         if (!reserve) return;
