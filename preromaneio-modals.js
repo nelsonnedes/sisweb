@@ -552,12 +552,14 @@ if (clientForm) {
                 const v = dataToSave[k];
                 payload[k] = (v === undefined ? null : v);
             });
-            if (svc && typeof svc.saveData === 'function') {
-                result = await svc.saveData(basePath, String(id), payload);
-            } else if (svc && typeof svc.saveToFirebase === 'function') {
-                result = await svc.saveToFirebase(basePath, String(id), payload);
-            } else {
-                throw new Error('Serviço de salvamento não disponível');
+              // ✅ saveToFirebase(path, key, data) é a via granular canônica (3 args
+              // em todas as implementações). saveData é (key, data) — 2 args.
+              if (svc && typeof svc.saveToFirebase === 'function') {
+                  result = await svc.saveToFirebase(basePath, String(id), payload);
+              } else if (svc && typeof svc.saveData === 'function') {
+                  result = await svc.saveData(`${basePath}/${String(id)}`, payload);
+              } else {
+                  throw new Error('Serviço de salvamento não disponível');
             }
 
             if (result && result.success) {

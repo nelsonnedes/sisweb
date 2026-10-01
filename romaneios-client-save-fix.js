@@ -398,9 +398,9 @@ function criarFuncaoSalvarClientesUnificada() {
                     
                     if (!result || !result.success) {
                         try {
-                            if (typeof window.firebaseService.saveData === 'function') {
-                                // saveData(path, key, data): 3 args (2 args gravava em "[object Object]")
-                                const fallbackResult = await window.firebaseService.saveData(pathBase, String(client.id), payload);
+                              if (typeof window.firebaseService.saveData === 'function') {
+                                  // saveData é (key, data): caminho completo + payload.
+                                  const fallbackResult = await window.firebaseService.saveData(`${pathBase}/${String(client.id)}`, payload);
                                 if (fallbackResult && fallbackResult.success) {
                                     successCount += 1;
                                     return;
@@ -468,9 +468,8 @@ function criarFuncaoSalvarClientesUnificada() {
                         for (const c of clients) {
                             if (!c || !c.id) continue;
                             const payload = sanitizeForFirebase({ ...c, id: String(c.id) });
-                            if (typeof window.firebaseService.saveData === 'function') {
-                                // saveData(path, key, data): 3 args (2 args gravava em "[object Object]")
-                                await window.firebaseService.saveData(path, String(c.id), payload);
+                              if (typeof window.firebaseService.saveData === 'function') {
+                                  await window.firebaseService.saveData(`${path}/${String(c.id)}`, payload);
                             } else if (typeof window.firebaseService.saveToFirebase === 'function') {
                                 await window.firebaseService.saveToFirebase(path, String(c.id), payload);
                             }

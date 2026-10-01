@@ -432,6 +432,22 @@ async function handleSave(e) {
         return;
     }
 
+    // ✅ DUPLICATA: nome normalizado contra a lista autoritativa da página
+    {
+        const normKey = (v) => String(v || '').normalize('NFD').replace(/[^a-z0-9 ]/gi, '').toLowerCase().trim();
+        const editingKey = String((typeof editingId !== 'undefined' && editingId) || '').trim();
+        const dupItem = (Array.isArray(currentList) ? currentList : []).find((it) => {
+            if (normKey(it && (it.nome || it.name)) !== normKey(name)) return false;
+            if (editingKey && String((it && it.id) || '') === editingKey) return false;
+            return true;
+        });
+        if (dupItem) {
+            showToast(`Fornecedor já cadastrado: ${dupItem.nome || dupItem.name}. Use o cadastro existente para evitar duplicidade.`, 'warning');
+            elements.nameInput.focus();
+            return;
+        }
+    }
+
     showLoading(true);
     try {
         const tenantId = await ensureTenantContext();
@@ -517,11 +533,11 @@ async function handleSave(e) {
     try {
         const dataToSave = normalizeFornecedor({ ...data, id: finalId }, finalId);
         
-        let result;
-        if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-            result = await window.firebaseService.saveData('fornecedores', String(finalId), dataToSave);
-        } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            result = await window.firebaseService.saveToFirebase('fornecedores', String(finalId), dataToSave);
+          let result;
+          if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+              result = await window.firebaseService.saveToFirebase('fornecedores', String(finalId), dataToSave);
+          } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+              result = await window.firebaseService.saveData(`fornecedores/${String(finalId)}`, dataToSave);
         } else {
             throw new Error('Serviço de salvamento não disponível');
         }

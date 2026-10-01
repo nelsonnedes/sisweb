@@ -1095,6 +1095,24 @@ async function saveClient(event) {
             }
         }
 
+        // ✅ DUPLICATA: nome normalizado contra lista fresca (evita cadastros duplos;
+        // falha de leitura nunca bloqueia o salvamento)
+        try {
+            const listaForn = await fetchFornecedores({ force: true });
+            const normForn = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+            const nomeKey = normForn(nome);
+            const dupForn = (Array.isArray(listaForn) ? listaForn : []).find((f) => {
+                if (normForn(f && (f.nome || f.name)) !== nomeKey) return false;
+                if (id && String((f && (f.id || f.key)) || '') === String(id)) return false;
+                return true;
+            });
+            if (dupForn) {
+                window.__toast(`Fornecedor já cadastrado: ${dupForn.nome || dupForn.name}. Use o cadastro existente para evitar duplicidade.`, 'warning');
+                document.getElementById('fornecedorName').focus();
+                return false;
+            }
+        } catch (_) {}
+
         // Criar objeto fornecedor com dados normalizados
         const fornecedorData = {
             id: id || undefined, // Se vazio, deixar undefined para gerar novo ID
@@ -1160,23 +1178,21 @@ async function saveClient(event) {
                     await window.firebaseService.saveToFirebase(basePath, String(id), fornecedorData);
                     savedOk = true;
                     savedId = id;
-                } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-                    // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
-                    await window.firebaseService.saveData(basePath, String(id), fornecedorData);
-                    savedOk = true;
-                    savedId = id;
-                }
-            } else {
-                const newId = generateUniqueId('FORN');
-                fornecedorData.id = newId;
-                fornecedorData.created = new Date().toISOString();
-                if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                    await window.firebaseService.saveToFirebase(basePath, String(newId), fornecedorData);
-                    savedOk = true;
-                    savedId = newId;
-                } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
-                    // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
-                    await window.firebaseService.saveData(basePath, String(newId), fornecedorData);
+                  } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+                      await window.firebaseService.saveData(`${basePath}/${String(id)}`, fornecedorData);
+                      savedOk = true;
+                      savedId = id;
+                  }
+              } else {
+                  const newId = generateUniqueId('FORN');
+                  fornecedorData.id = newId;
+                  fornecedorData.created = new Date().toISOString();
+                  if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                      await window.firebaseService.saveToFirebase(basePath, String(newId), fornecedorData);
+                      savedOk = true;
+                      savedId = newId;
+                  } else if (window.firebaseService && typeof window.firebaseService.saveData === 'function') {
+                      await window.firebaseService.saveData(`${basePath}/${String(newId)}`, fornecedorData);
                     savedOk = true;
                     savedId = newId;
                 }
@@ -1509,12 +1525,13 @@ async function excluirFornecedor(fornecedorId) {
                     await window.firebaseService.removeFromFirebase(directItemPath);
                 } else if (typeof window.firebaseService.deleteFromFirebase === 'function') {
                     await window.firebaseService.deleteFromFirebase(directItemPath);
-                } else if (typeof window.firebaseService.saveToFirebase === 'function') {
-                    await window.firebaseService.saveToFirebase(basePath, String(fornecedorId), null);
-                } else if (typeof window.firebaseService.saveData === 'function') {
-                    // saveData(path, key, data) no singleton (2 args gravava "[object Object]")
-                    await window.firebaseService.saveData(basePath, String(fornecedorId), null);
-                }
+                  } else if (typeof window.firebaseService.deleteData === 'function') {
+                      await window.firebaseService.deleteData(`${basePath}/${String(fornecedorId)}`);
+                  } else if (typeof window.firebaseService.saveToFirebase === 'function') {
+                      await window.firebaseService.saveToFirebase(basePath, String(fornecedorId), null);
+                  } else if (typeof window.firebaseService.saveData === 'function') {
+                      await window.firebaseService.saveData(`${basePath}/${String(fornecedorId)}`, null);
+                  }
             } catch (fbErr) {
                 console.warn("⚠️ Erro ao remover do Firebase:", fbErr);
             }
