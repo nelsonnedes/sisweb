@@ -16,6 +16,8 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
     <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="ui-components.css">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -35,7 +37,7 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="styles/admin-premium.css?v=2026-06-11-profile-admin-v1">
+    <link rel="stylesheet" href="styles/admin-premium.css?v=7bc6e5547ede">
 
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
@@ -49,19 +51,19 @@
             <div id="sentryBellHost" style="display:none;position:relative;margin-left:12px;">
                 <button type="button" id="sentryBellBtn" class="btn small" style="position:relative;padding:6px 10px;" title="Erros de produção (Sentry) nas últimas 24h" aria-label="Abrir alertas de erros de produção">
                     <i class="fas fa-bell"></i>
-                    <span id="sentryBellBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:999px;font-size:0.65rem;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px;"></span>
+                    <span id="sentryBellBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--sw-danger);color:#fff;border-radius:999px;font-size:0.65rem;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px;"></span>
                 </button>
-                <div id="sentryBellPop" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:340px;max-height:420px;overflow:auto;background: var(--sw-surface);border: 1px solid var(--sw-border) ;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:60;padding:10px;">
+                <div id="sentryBellPop" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:340px;max-height:420px;overflow:auto;background: var(--sw-surface);border: 1px solid var(--sw-border) ;border-radius:12px;box-shadow:0 10px 30px var(--sw-shadow-pop);z-index:60;padding:10px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span style="font-weight:700;font-size:0.85rem;color:#0f172a;">Erros de produção (24h)</span>
+                        <span style="font-weight:700;font-size:0.85rem;color:var(--sw-text-1);">Erros de produção (24h)</span>
                         <button type="button" id="sentryBellMarkSeen" class="btn small" style="font-size:0.7rem;"><i class="fas fa-check"></i><span>Marcar como vistos</span></button>
                     </div>
-                    <div id="sentryBellList" style="font-size:0.78rem;color:#475569;">Carregando...</div>
+                    <div id="sentryBellList" style="font-size:0.78rem;color:var(--sw-text-2);">Carregando...</div>
                 </div>
             </div>
         </div>
         <div id="guardMessage" class="guard">Acesso restrito. Você não possui permissão para este módulo.</div>
-        <div id="adminNotice" class="guard" style="display:none;border-color:#bfdbfe;background:#eff6ff;color:#1e3a8a;"></div>
+        <div id="adminNotice" class="guard" style="display:none;border-color:var(--sw-info);background:var(--sw-surface-2);color:var(--sw-text-1);"></div>
         <div id="debugPanel" class="debug-panel">
             <div class="debug-header">
                 <span class="debug-title">Diagnóstico de chamadas admin</span>
@@ -356,7 +358,7 @@
                 <div class="section-header-inline">
                     <div>
                         <div class="section-title">Financeiro &amp; Métricas SaaS</div>
-                        <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Inteligência financeira em tempo real · Atualizado com cada carregamento</div>
+                        <div style="font-size:0.78rem;color:var(--sw-text-3);margin-top:2px;">Inteligência financeira em tempo real · Atualizado com cada carregamento</div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <span id="financialMeta" class="badge pill">0 lançamentos</span>
@@ -420,9 +422,9 @@
                         <div class="section-title">Histórico de Receita — Últimos 6 Meses</div>
                         <span id="finChartMeta" class="badge pill" style="font-size:0.72rem;">Aprovados</span>
                     </div>
-                    <div style="background:#f8fafc;border: 1px solid var(--sw-border) ;border-radius:12px;padding:16px;">
+                    <div style="background:var(--sw-surface-2);border: 1px solid var(--sw-border) ;border-radius:12px;padding:16px;">
                         <canvas id="finRevenueChart" height="120" style="width:100%;display:block;"></canvas>
-                        <div id="finChartLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:0.75rem;color:#64748b;justify-content:center;"></div>
+                        <div id="finChartLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:0.75rem;color:var(--sw-text-3);justify-content:center;"></div>
                     </div>
                 </div>
 
@@ -501,7 +503,7 @@
                 <div class="section-header-inline">
                     <div>
                         <div class="section-title">Centro de Segurança &amp; Auditoria</div>
-                        <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Monitoramento de ameaças e tentativas de acesso indevido ao painel administrativo</div>
+                        <div style="font-size:0.78rem;color:var(--sw-text-3);margin-top:2px;">Monitoramento de ameaças e tentativas de acesso indevido ao painel administrativo</div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <span class="badge pill" id="adminAccessAuditMeta">0 eventos</span>
@@ -538,8 +540,8 @@
                 <!-- Ranking de usuários suspeitos -->
                 <div class="section" style="margin-bottom:14px;">
                     <div class="section-header-inline">
-                        <div class="section-title"><i class="fas fa-user-shield" style="color:#ef4444;margin-right:6px;"></i>Usuários de Alto Risco</div>
-                        <span class="badge pill" id="secRankMeta" style="background:#fee2e2;color:#991b1b;">0 identificados</span>
+                        <div class="section-title"><i class="fas fa-user-shield" style="color:var(--sw-danger);margin-right:6px;"></i>Usuários de Alto Risco</div>
+                        <span class="badge pill" id="secRankMeta" style="background:var(--sw-surface-2);color:var(--sw-danger);">0 identificados</span>
                     </div>
                     <div id="secHighRiskList" style="display:flex;flex-wrap:wrap;gap:10px;min-height:40px;align-items:flex-start;"></div>
                 </div>
@@ -589,8 +591,8 @@
                 <div class="section" style="margin-top:18px;border-top: 1px solid var(--sw-border) ;padding-top:14px;">
                     <div class="section-header-inline">
                         <div>
-                            <div class="section-title"><i class="fas fa-bug" style="color:#ef4444;margin-right:6px;"></i>Monitoramento de Erros (Sentry)</div>
-                            <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Erros de produção reportados pelo SDK Sentry. Somente metadados — sem dados de clientes.</div>
+                            <div class="section-title"><i class="fas fa-bug" style="color:var(--sw-danger);margin-right:6px;"></i>Monitoramento de Erros (Sentry)</div>
+                            <div style="font-size:0.78rem;color:var(--sw-text-3);margin-top:2px;">Erros de produção reportados pelo SDK Sentry. Somente metadados — sem dados de clientes.</div>
                         </div>
                         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                             <span class="badge pill" id="sentryMeta">—</span>
@@ -641,7 +643,7 @@
                             <option value="error">Erro</option>
                             <option value="warning">Aviso</option>
                         </select>
-                        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:#334155;white-space:nowrap;cursor:pointer;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--sw-label);white-space:nowrap;cursor:pointer;">
                             <input type="checkbox" id="sentryHideResolved"> Ocultar resolvidos
                         </label>
                         <input id="sentrySearch" type="text" placeholder="Filtrar por mensagem, página, empresa ou release">
@@ -670,7 +672,7 @@
                         </table>
                     </div>
                     <div id="sentryPagination" class="admin-pagination-host"></div>
-                    <div id="sentryCopyFeedback" style="display:none;margin-top:8px;font-size:0.8rem;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;"></div>
+                    <div id="sentryCopyFeedback" style="display:none;margin-top:8px;font-size:0.8rem;color:var(--sw-success);background:var(--sw-surface-2);border:1px solid var(--sw-success);border-radius:8px;padding:8px 12px;"></div>
                 </div>
             </div>
             <div id="tab-settings" data-tab-panel="settings" style="display:none;margin-top:6px;">
@@ -683,54 +685,54 @@
                         <div class="card" style="flex:1 1 220px;">
                             <div class="card-title">Período de teste</div>
                             <div class="card-description">Dias de trial para novos usuários.</div>
-                            <input id="settingsFreeTrialDays" type="number" min="0" max="90" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.8rem;">
+                            <input id="settingsFreeTrialDays" type="number" min="0" max="90" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.8rem;">
                         </div>
                         <div class="card" style="flex:1 1 220px;">
                             <div class="card-title">Carência de pendência</div>
                             <div class="card-description">Dias até bloqueio após pagamento pendente.</div>
-                            <input id="settingsLateGraceDays" type="number" min="0" max="30" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.8rem;">
+                            <input id="settingsLateGraceDays" type="number" min="0" max="30" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.8rem;">
                         </div>
                     </div>
                     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
                         <div class="card" style="flex:1 1 220px;">
                             <div class="card-title">Plano mensal (R$)</div>
-                            <input id="settingsPlanMonthly" type="number" step="0.01" min="0" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.8rem;">
+                            <input id="settingsPlanMonthly" type="number" step="0.01" min="0" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.8rem;">
                         </div>
                         <div class="card" style="flex:1 1 220px;">
                             <div class="card-title">Plano anual (R$)</div>
-                            <input id="settingsPlanAnnual" type="number" step="0.01" min="0" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.8rem;">
+                            <input id="settingsPlanAnnual" type="number" step="0.01" min="0" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.8rem;">
                         </div>
                         <div class="card" style="flex:1 1 220px;">
                             <div class="card-title">Plano premium (R$)</div>
-                            <input id="settingsPlanPremium" type="number" step="0.01" min="0" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.8rem;">
+                            <input id="settingsPlanPremium" type="number" step="0.01" min="0" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.8rem;">
                         </div>
                     </div>
                     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
                         <div class="card" style="flex:1 1 320px;">
                             <div class="card-title">Dados exibidos no modal de pagamento</div>
                             <div class="card-description">Essas informações aparecem no “Realize o Pagamento” em subscription.html.</div>
-                            <input id="settingsPixKey" type="text" placeholder="Chave PIX" style="margin-top:8px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.8rem;">
-                            <input id="settingsPaymentBeneficiary" type="text" placeholder="Beneficiário" style="margin-top:8px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.8rem;">
-                            <input id="settingsPaymentSupportEmail" type="email" placeholder="Email de suporte financeiro" style="margin-top:8px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.8rem;">
+                            <input id="settingsPixKey" type="text" placeholder="Chave PIX" style="margin-top:8px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.8rem;">
+                            <input id="settingsPaymentBeneficiary" type="text" placeholder="Beneficiário" style="margin-top:8px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.8rem;">
+                            <input id="settingsPaymentSupportEmail" type="email" placeholder="Email de suporte financeiro" style="margin-top:8px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.8rem;">
                         </div>
                         <div class="card" style="flex:1 1 260px;">
                             <div class="card-title">Métodos habilitados</div>
                             <div class="card-description">Controla os métodos disponíveis para o assinante enviar comprovante.</div>
-                            <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.82rem;color:#334155;"><input id="settingsMethodPix" type="checkbox">PIX</label>
-                            <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.82rem;color:#334155;"><input id="settingsMethodBoleto" type="checkbox">Boleto</label>
-                            <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.82rem;color:#334155;"><input id="settingsMethodCard" type="checkbox">Cartão</label>
-                            <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.82rem;color:#334155;"><input id="settingsMethodTransfer" type="checkbox">Transferência</label>
+                            <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.82rem;color:var(--sw-label);"><input id="settingsMethodPix" type="checkbox">PIX</label>
+                            <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.82rem;color:var(--sw-label);"><input id="settingsMethodBoleto" type="checkbox">Boleto</label>
+                            <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.82rem;color:var(--sw-label);"><input id="settingsMethodCard" type="checkbox">Cartão</label>
+                            <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.82rem;color:var(--sw-label);"><input id="settingsMethodTransfer" type="checkbox">Transferência</label>
                         </div>
                         <div class="card" style="flex:1 1 380px;">
                             <div class="card-title">Pré-visualização do modal do assinante</div>
                             <div class="card-description">Visual de conferência antes de salvar.</div>
-                            <div style="margin-top:8px;border: 1px solid var(--sw-border) ;border-radius:10px;padding:10px;background:#f8fafc;">
-                                <div id="settingsPreviewTitle" style="font-weight:700;color:#0f172a;font-size:0.9rem;">Pagamento - Plano Mensal</div>
-                                <div style="margin-top:8px;font-size:0.82rem;color:#334155;"><strong>Chave PIX:</strong> <span id="settingsPreviewPix">-</span></div>
-                                <div style="margin-top:4px;font-size:0.82rem;color:#334155;"><strong>Valor:</strong> <span id="settingsPreviewAmount">R$ 0,00</span></div>
-                                <div style="margin-top:4px;font-size:0.82rem;color:#334155;"><strong>Beneficiário:</strong> <span id="settingsPreviewBeneficiary">-</span></div>
-                                <div style="margin-top:4px;font-size:0.82rem;color:#334155;"><strong>Email de suporte:</strong> <span id="settingsPreviewSupport">-</span></div>
-                                <div style="margin-top:8px;font-size:0.82rem;color:#334155;"><strong>Métodos visíveis:</strong> <span id="settingsPreviewMethods">PIX</span></div>
+                            <div style="margin-top:8px;border: 1px solid var(--sw-border) ;border-radius:10px;padding:10px;background:var(--sw-surface-2);">
+                                <div id="settingsPreviewTitle" style="font-weight:700;color:var(--sw-text-1);font-size:0.9rem;">Pagamento - Plano Mensal</div>
+                                <div style="margin-top:8px;font-size:0.82rem;color:var(--sw-label);"><strong>Chave PIX:</strong> <span id="settingsPreviewPix">-</span></div>
+                                <div style="margin-top:4px;font-size:0.82rem;color:var(--sw-label);"><strong>Valor:</strong> <span id="settingsPreviewAmount">R$ 0,00</span></div>
+                                <div style="margin-top:4px;font-size:0.82rem;color:var(--sw-label);"><strong>Beneficiário:</strong> <span id="settingsPreviewBeneficiary">-</span></div>
+                                <div style="margin-top:4px;font-size:0.82rem;color:var(--sw-label);"><strong>Email de suporte:</strong> <span id="settingsPreviewSupport">-</span></div>
+                                <div style="margin-top:8px;font-size:0.82rem;color:var(--sw-label);"><strong>Métodos visíveis:</strong> <span id="settingsPreviewMethods">PIX</span></div>
                             </div>
                             <div style="display:flex;gap:8px;margin-top:8px;">
                                 <button type="button" class="btn small" id="settingsPreviewMonthly">Preview Mensal</button>
@@ -782,67 +784,67 @@
                     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;">
                         <div class="card" style="flex:1 1 260px;">
                             <div class="card-title">Company ID</div>
-                            <input id="companyEditId" type="text" readonly style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;background:#f8fafc;">
+                            <input id="companyEditId" type="text" readonly style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;background:var(--sw-surface-2);">
                         </div>
                         <div class="card" style="flex:1 1 260px;">
                             <div class="card-title">Nome da empresa</div>
-                            <input id="companyEditName" type="text" placeholder="Nome da empresa" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditName" type="text" placeholder="Nome da empresa" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 260px;">
                             <div class="card-title">CNPJ</div>
-                            <input id="companyEditCnpj" type="text" placeholder="00.000.000/0000-00" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditCnpj" type="text" placeholder="00.000.000/0000-00" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 260px;">
                             <div class="card-title">Inscrição Estadual</div>
-                            <input id="companyEditStateRegistration" type="text" placeholder="Inscrição estadual" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditStateRegistration" type="text" placeholder="Inscrição estadual" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 260px;">
                             <div class="card-title">E-mail comercial</div>
-                            <input id="companyEditEmail" type="email" placeholder="contato@empresa.com.br" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditEmail" type="email" placeholder="contato@empresa.com.br" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 260px;">
                             <div class="card-title">Responsável</div>
-                            <input id="companyEditResponsible" type="text" placeholder="Nome do responsável" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditResponsible" type="text" placeholder="Nome do responsável" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                     </div>
                     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;">
                         <div class="card" style="flex:1 1 160px;">
                             <div class="card-title">CEP</div>
-                            <input id="companyEditZip" type="text" placeholder="00000-000" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditZip" type="text" placeholder="00000-000" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:2 1 380px;">
                             <div class="card-title">Endereço</div>
-                            <input id="companyEditAddress" type="text" placeholder="Endereço" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditAddress" type="text" placeholder="Endereço" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 120px;">
                             <div class="card-title">Número</div>
-                            <input id="companyEditNumber" type="text" placeholder="Nº" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditNumber" type="text" placeholder="Nº" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 220px;">
                             <div class="card-title">Bairro</div>
-                            <input id="companyEditNeighborhood" type="text" placeholder="Bairro" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditNeighborhood" type="text" placeholder="Bairro" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 180px;">
                             <div class="card-title">Cidade</div>
-                            <input id="companyEditCity" type="text" placeholder="Cidade" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditCity" type="text" placeholder="Cidade" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 120px;">
                             <div class="card-title">UF</div>
-                            <input id="companyEditState" type="text" placeholder="UF" maxlength="2" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;text-transform:uppercase;">
+                            <input id="companyEditState" type="text" placeholder="UF" maxlength="2" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;text-transform:uppercase;">
                         </div>
                         <div class="card" style="flex:1 1 220px;">
                             <div class="card-title">Telefone</div>
-                            <input id="companyEditPhone" type="text" placeholder="Telefone" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditPhone" type="text" placeholder="Telefone" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 260px;">
                             <div class="card-title">Complemento</div>
-                            <input id="companyEditComplement" type="text" placeholder="Sala, lote, ponto de referência" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 8px;font-size:0.82rem;">
+                            <input id="companyEditComplement" type="text" placeholder="Sala, lote, ponto de referência" style="margin-top:6px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:6px 8px;font-size:0.82rem;">
                         </div>
                         <div class="card" style="flex:1 1 260px;">
                             <div class="card-title">Logo da empresa</div>
                             <input id="companyEditLogoFile" type="file" accept="image/*" style="display:none;">
                             <button type="button" class="btn small" id="companyEditSelectLogo" style="margin-top:6px;"><i class="fas fa-image"></i><span>Selecionar logo</span></button>
-                            <span id="companyEditLogoFileName" style="display:block;margin-top:6px;font-size:0.75rem;color:#64748b;">Nenhuma imagem selecionada.</span>
+                            <span id="companyEditLogoFileName" style="display:block;margin-top:6px;font-size:0.75rem;color:var(--sw-text-3);">Nenhuma imagem selecionada.</span>
                             <img id="companyEditLogoPreview" alt="Preview logo" style="display:none;margin-top:8px;max-width:180px;max-height:100px;border: 1px solid var(--sw-border) ;border-radius:8px;object-fit:contain;background: var(--sw-surface);">
                         </div>
                     </div>
@@ -889,7 +891,7 @@
                 <div class="section-header-inline">
                     <div>
                         <div class="section-title">Central de Campanhas &amp; Crescimento</div>
-                        <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Gerencie campanhas, indicações e acompanhe o funil de conversão em tempo real</div>
+                        <div style="font-size:0.78rem;color:var(--sw-text-3);margin-top:2px;">Gerencie campanhas, indicações e acompanhe o funil de conversão em tempo real</div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <span id="campStatusBadge" class="status-pill status-expired" style="font-size:0.72rem;padding:3px 10px;">⬤ Inativa</span>
@@ -927,7 +929,7 @@
                         <div class="section-title"><i class="fas fa-filter" style="color:#6366f1;margin-right:6px;"></i>Funil de Conversão</div>
                         <span id="campFunnelMeta" class="badge pill">Calculando...</span>
                     </div>
-                    <div style="background:#f8fafc;border: 1px solid var(--sw-border) ;border-radius:12px;padding:16px;">
+                    <div style="background:var(--sw-surface-2);border: 1px solid var(--sw-border) ;border-radius:12px;padding:16px;">
                         <div class="camp-funnel-row">
                             <div class="camp-funnel-label"><i class="fas fa-users"></i> Total cadastrados</div>
                             <div class="camp-funnel-bar-wrap"><div id="funnelBarTotal" class="camp-funnel-bar" style="background:#6366f1;"></div></div>
@@ -935,17 +937,17 @@
                         </div>
                         <div class="camp-funnel-row">
                             <div class="camp-funnel-label"><i class="fas fa-vial"></i> Em Trial</div>
-                            <div class="camp-funnel-bar-wrap"><div id="funnelBarTrial" class="camp-funnel-bar" style="background:#3b82f6;"></div></div>
+                            <div class="camp-funnel-bar-wrap"><div id="funnelBarTrial" class="camp-funnel-bar" style="background:var(--sw-info);"></div></div>
                             <div id="funnelCountTrial" class="camp-funnel-count">0</div>
                         </div>
                         <div class="camp-funnel-row">
                             <div class="camp-funnel-label"><i class="fas fa-clock"></i> Pendentes</div>
-                            <div class="camp-funnel-bar-wrap"><div id="funnelBarPending" class="camp-funnel-bar" style="background:#f59e0b;"></div></div>
+                            <div class="camp-funnel-bar-wrap"><div id="funnelBarPending" class="camp-funnel-bar" style="background:var(--sw-warning);"></div></div>
                             <div id="funnelCountPending" class="camp-funnel-count">0</div>
                         </div>
                         <div class="camp-funnel-row">
                             <div class="camp-funnel-label"><i class="fas fa-check-circle"></i> Convertidos (Ativos)</div>
-                            <div class="camp-funnel-bar-wrap"><div id="funnelBarActive" class="camp-funnel-bar" style="background:#22c55e;"></div></div>
+                            <div class="camp-funnel-bar-wrap"><div id="funnelBarActive" class="camp-funnel-bar" style="background:var(--sw-success);"></div></div>
                             <div id="funnelCountActive" class="camp-funnel-count">0</div>
                         </div>
                     </div>
@@ -961,33 +963,33 @@
                         </div>
                         <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
                             <input id="campaignEnabledEdit" type="checkbox">
-                            <label for="campaignEnabledEdit" style="font-size:0.85rem;color:#334155;font-weight:600;">Campanha habilitada</label>
+                            <label for="campaignEnabledEdit" style="font-size:0.85rem;color:var(--sw-label);font-weight:600;">Campanha habilitada</label>
                         </div>
-                        <input id="campaignTitleEdit" type="text" placeholder="Título da campanha" style="margin-top:8px;width:100%;border-radius:8px;border:1px solid #d1d5db;padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
+                        <input id="campaignTitleEdit" type="text" placeholder="Título da campanha" style="margin-top:8px;width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
                             <div>
-                                <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:4px;">Meta mensal (clientes)</div>
-                                <input id="campaignMonthlyTargetEdit" type="number" min="0" placeholder="Ex: 10" style="width:100%;border-radius:8px;border:1px solid #d1d5db;padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
+                                <div style="font-size:0.75rem;color:var(--sw-text-3);font-weight:600;margin-bottom:4px;">Meta mensal (clientes)</div>
+                                <input id="campaignMonthlyTargetEdit" type="number" min="0" placeholder="Ex: 10" style="width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
                             </div>
                             <div>
-                                <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:4px;">Bônus ao atingir meta (%)</div>
-                                <input id="campaignBonusPercentEdit" type="number" min="0" step="0.01" placeholder="Ex: 5" style="width:100%;border-radius:8px;border:1px solid #d1d5db;padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
+                                <div style="font-size:0.75rem;color:var(--sw-text-3);font-weight:600;margin-bottom:4px;">Bônus ao atingir meta (%)</div>
+                                <input id="campaignBonusPercentEdit" type="number" min="0" step="0.01" placeholder="Ex: 5" style="width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
                             </div>
                         </div>
-                        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #e2e8f0;">
-                            <div style="font-size:0.78rem;font-weight:700;color:#475569;margin-bottom:8px;"><i class="fas fa-share-alt" style="color:#6366f1;"></i>&nbsp;Programa de Indicação</div>
+                        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--sw-border);">
+                            <div style="font-size:0.78rem;font-weight:700;color:var(--sw-text-2);margin-bottom:8px;"><i class="fas fa-share-alt" style="color:#6366f1;"></i>&nbsp;Programa de Indicação</div>
                             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                                 <input id="campaignReferralEnabledEdit" type="checkbox">
-                                <label for="campaignReferralEnabledEdit" style="font-size:0.82rem;color:#334155;">Habilitar indicação</label>
+                                <label for="campaignReferralEnabledEdit" style="font-size:0.82rem;color:var(--sw-label);">Habilitar indicação</label>
                             </div>
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                                 <div>
-                                    <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:4px;">Comissão indicador (%)</div>
-                                    <input id="campaignReferralCommissionEdit" type="number" min="0" step="0.01" placeholder="Ex: 10" style="width:100%;border-radius:8px;border:1px solid #d1d5db;padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
+                                    <div style="font-size:0.75rem;color:var(--sw-text-3);font-weight:600;margin-bottom:4px;">Comissão indicador (%)</div>
+                                    <input id="campaignReferralCommissionEdit" type="number" min="0" step="0.01" placeholder="Ex: 10" style="width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
                                 </div>
                                 <div>
-                                    <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:4px;">Desconto novo cliente (%)</div>
-                                    <input id="campaignReferralDiscountEdit" type="number" min="0" step="0.01" placeholder="Ex: 15" style="width:100%;border-radius:8px;border:1px solid #d1d5db;padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
+                                    <div style="font-size:0.75rem;color:var(--sw-text-3);font-weight:600;margin-bottom:4px;">Desconto novo cliente (%)</div>
+                                    <input id="campaignReferralDiscountEdit" type="number" min="0" step="0.01" placeholder="Ex: 15" style="width:100%;border-radius:8px;border:1px solid var(--sw-input-border);padding:7px 10px;font-size:0.82rem;box-sizing:border-box;">
                                 </div>
                             </div>
                         </div>
@@ -1000,7 +1002,7 @@
                     <!-- Cupons Promocionais -->
                     <div class="card" style="flex:1 1 280px; min-width: 320px;">
                         <div class="card-header">
-                            <div class="card-title"><i class="fas fa-ticket-alt" style="color:#f59e0b;"></i>&nbsp;Cupons Promocionais</div>
+                            <div class="card-title"><i class="fas fa-ticket-alt" style="color:var(--sw-warning);"></i>&nbsp;Cupons Promocionais</div>
                             <button type="button" class="btn small primary" id="btnNewPromoCode"><i class="fas fa-plus"></i> Novo</button>
                         </div>
                         <div style="margin-top:12px; max-height: 280px; overflow-y: auto; padding-right: 4px;" id="promoCodesListContainer">
@@ -1041,7 +1043,7 @@
                 <div class="section-header-inline">
                     <div>
                         <div class="section-title">Central de Mensagens e Suporte</div>
-                        <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Fila global de tickets enviados pelo menu Suporte e por subscription-status.html. Visivel apenas para Super Admin.</div>
+                        <div style="font-size:0.78rem;color:var(--sw-text-3);margin-top:2px;">Fila global de tickets enviados pelo menu Suporte e por subscription-status.html. Visivel apenas para Super Admin.</div>
                     </div>
                     <span id="supportTicketsMeta" class="badge pill">0 tickets</span>
                 </div>
@@ -1112,7 +1114,7 @@
                 <div class="section-header-inline">
                     <div>
                         <div class="section-title">Programa de Parceiros</div>
-                        <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Parceiros por código PAR-XXXX, empresas vinculadas e comissões geradas somente após pagamento real aprovado. Visível apenas para Super Admin.</div>
+                        <div style="font-size:0.78rem;color:var(--sw-text-3);margin-top:2px;">Parceiros por código PAR-XXXX, empresas vinculadas e comissões geradas somente após pagamento real aprovado. Visível apenas para Super Admin.</div>
                     </div>
                     <span id="partnersMeta" class="badge pill">0 parceiros</span>
                 </div>
@@ -1153,7 +1155,7 @@
                     <div class="section-header-inline">
                         <div>
                             <div class="section-title" id="partnerDetailTitle">Detalhe do parceiro</div>
-                            <div style="font-size:0.78rem;color:#64748b;margin-top:2px;" id="partnerDetailSub">Empresas vinculadas e ledger de comissões.</div>
+                            <div style="font-size:0.78rem;color:var(--sw-text-3);margin-top:2px;" id="partnerDetailSub">Empresas vinculadas e ledger de comissões.</div>
                         </div>
                         <button type="button" class="btn small" id="partnerDetailClose"><i class="fas fa-times"></i><span>Fechar</span></button>
                     </div>
@@ -1200,7 +1202,7 @@
                     <div class="section-header-inline" style="margin-top:10px;">
                         <div>
                             <div class="section-title">Próximas comissões (projeção)</div>
-                            <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Estimativa se o indicado pagar no vencimento. Não gera comissão — só o pagamento real aprovado gera.</div>
+                            <div style="font-size:0.78rem;color:var(--sw-text-3);margin-top:2px;">Estimativa se o indicado pagar no vencimento. Não gera comissão — só o pagamento real aprovado gera.</div>
                         </div>
                     </div>
                     <div class="table-wrapper">
@@ -1281,7 +1283,7 @@
                 <div class="modal-field">
                     <span class="modal-field-label">Nota do pagamento (opcional, máx. 280 caracteres)</span>
                     <textarea id="commissionPaidNote" class="modal-field-value" style="width: 100%; box-sizing: border-box; background: var(--sw-surface); resize: vertical; min-height: 70px;" maxlength="280" placeholder="Ex: Pago via PIX em 05/09/2026."></textarea>
-                    <div style="text-align:right;font-size:0.75rem;color:#64748b;margin-top:4px;"><span id="commissionPaidCount">0</span>/280</div>
+                    <div style="text-align:right;font-size:0.75rem;color:var(--sw-text-3);margin-top:4px;"><span id="commissionPaidCount">0</span>/280</div>
                 </div>
                 <input type="hidden" id="commissionPaidEntryId">
             </div>
@@ -1299,11 +1301,11 @@
                 <button type="button" class="modal-close" id="commissionBulkCloseBtn" aria-label="Fechar"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div id="commissionBulkSummary" style="background:#f8fafc;border: 1px solid var(--sw-border) ;border-radius:8px;padding:12px;margin-bottom:12px;font-size:.88rem"></div>
+                <div id="commissionBulkSummary" style="background:var(--sw-surface-2);border: 1px solid var(--sw-border) ;border-radius:8px;padding:12px;margin-bottom:12px;font-size:.88rem"></div>
                 <div class="modal-field">
                     <span class="modal-field-label">Nota do lote (opcional, máx. 280 caracteres)</span>
                     <textarea id="commissionBulkNote" class="modal-field-value" style="width:100%;box-sizing:border-box;background: var(--sw-surface);resize:vertical;min-height:70px;" maxlength="280" placeholder="Ex: Lote 05/09/2026 via PIX."></textarea>
-                    <div style="text-align:right;font-size:0.75rem;color:#64748b;margin-top:4px;"><span id="commissionBulkCount">0</span>/280</div>
+                    <div style="text-align:right;font-size:0.75rem;color:var(--sw-text-3);margin-top:4px;"><span id="commissionBulkCount">0</span>/280</div>
                 </div>
             </div>
             <div class="modal-actions">
@@ -1320,8 +1322,8 @@
                 <button type="button" class="modal-close" id="partnerDeleteCloseBtn" aria-label="Fechar"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <p style="font-size:0.85rem;color:#991b1b;font-weight:600;">Esta ação remove o parceiro e todos os seus vínculos, códigos, comissões e lembretes. Auditoria e histórico de assinaturas são preservados. Não há como desfazer.</p>
-                <div id="partnerDeleteImpact" style="font-size:0.85rem;color:#334155;margin:10px 0;">Carregando impacto...</div>
+                <p style="font-size:0.85rem;color:var(--sw-danger);font-weight:600;">Esta ação remove o parceiro e todos os seus vínculos, códigos, comissões e lembretes. Auditoria e histórico de assinaturas são preservados. Não há como desfazer.</p>
+                <div id="partnerDeleteImpact" style="font-size:0.85rem;color:var(--sw-label);margin:10px 0;">Carregando impacto...</div>
                 <div class="modal-field">
                     <span class="modal-field-label">Digite o código do parceiro para confirmar</span>
                     <input type="text" id="partnerDeleteCode" class="modal-field-value" style="width:100%;box-sizing:border-box;text-transform:uppercase;" maxlength="12" placeholder="PAR-XXXX" autocomplete="off">
