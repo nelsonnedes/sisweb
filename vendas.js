@@ -910,8 +910,20 @@ async function carregarDados() {
                      (window.clientService && window.clientService.getClients) ? window.clientService.getClients(true).catch(() => []) : getData('clients').catch(() => [])
                  ]);
                  
-                 window.produtos = typeof normalizeProdutosList === 'function' ? normalizeProdutosList([...(species || []), ...(produtos_raw || [])]) : [...(species || []), ...(produtos_raw || [])];
-                 try { if (typeof registrarIdsProdutosRaw === 'function') registrarIdsProdutosRaw(produtos_raw); } catch (_) {}
+                 // Espécies sem nenhum campo de nome são lixo (chaves avulsas) e
+                 // nunca entram nem na exibição; produtos_raw passam intactos
+                 // (produto legado sem nome continua visível/editável).
+                 const speciesExibiveis = (Array.isArray(species) ? species : []).filter(s => {
+                     if (!s || typeof s !== 'object') return false;
+                     return [s.nome, s.name, s.nomeComum, s.nomeCientifico].some(v => String(v || '').trim() !== '');
+                 });
+                 window.produtos = typeof normalizeProdutosList === 'function' ? normalizeProdutosList([...speciesExibiveis, ...(produtos_raw || [])]) : [...speciesExibiveis, ...(produtos_raw || [])];
+                 try {
+                     if (typeof registrarIdsProdutosRaw === 'function') registrarIdsProdutosRaw(produtos_raw);
+                     const comNome = window.produtos.length;
+                     const semNome = (Array.isArray(species) ? species.length : 0) - speciesExibiveis.length;
+                     if (semNome > 0) console.log(`🧹 ${semNome} espécie(s) sem nome ocultada(s) da aba Produtos`);
+                 } catch (_) {}
                  window.clientes = Array.isArray(cliRes) ? cliRes : [];
                  
                  console.log(`✅ [Lazy Load] Auxiliares carregados. Produtos: ${window.produtos.length}, Clientes: ${window.clientes.length}`);
