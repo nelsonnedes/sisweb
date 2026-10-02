@@ -1939,8 +1939,10 @@ window.closeFolhasFechadasModal = function() {
         const modal = document.getElementById('folhasFechadasModal');
         if (modal) {
             modal.style.display = 'none';
-            // ✅ CORREÇÃO: Restaurar scroll também no fallback
-            document.body.style.overflow = 'auto';
+            // ✅ CORREÇÃO: Restaurar scroll também no fallback (estado pré-modal)
+            let prevFallback = '';
+            try { prevFallback = modal.dataset.prevBodyOverflow || ''; } catch (_) {}
+            document.body.style.overflow = prevFallback;
         }
     }
 };

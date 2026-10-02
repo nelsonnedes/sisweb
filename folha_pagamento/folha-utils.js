@@ -2204,6 +2204,7 @@ class FolhaUtils {
         if (modal) {
             if (debugAll) console.log(`✅ Modal ${modalId} encontrado, abrindo...`);
             modal.style.display = 'block';
+            try { modal.dataset.prevBodyOverflow = document.body.style.overflow || ''; } catch (_) {}
             document.body.style.overflow = 'hidden';
             if (debugAll) console.log(`✅ Modal ${modalId} aberto com sucesso`);
         } else {
@@ -2219,13 +2220,16 @@ class FolhaUtils {
         if (modal) {
             if (debugAll) console.log(`✅ Modal ${modalId} encontrado, fechando...`);
             modal.style.display = 'none';
-            // ✅ CORREÇÃO: Sempre restaurar scroll
-            document.body.style.overflow = 'auto';
+            // ✅ CORREÇÃO: restaurar estado pré-modal ('') em vez de 'auto'
+            // (stylesheet usa overflow-x: clip; clip+auto quebra o wheel)
+            let prevOverflow = '';
+            try { prevOverflow = modal.dataset.prevBodyOverflow || ''; } catch (_) {}
+            document.body.style.overflow = prevOverflow;
             if (debugAll) console.log(`✅ Modal ${modalId} fechado com sucesso e scroll restaurado`);
         } else {
             console.error(`❌ Modal ${modalId} não encontrado`);
             // ✅ CORREÇÃO: Restaurar scroll mesmo se modal não for encontrado
-            document.body.style.overflow = 'auto';
+            document.body.style.overflow = '';
         }
         
         // ✅ CORREÇÃO ADICIONAL: Verificar se há outros modais abertos
@@ -2293,20 +2297,20 @@ class FolhaUtils {
             // Se não há modais visíveis, garantir que o scroll esteja habilitado
             const antes = document.body.style.overflow + '/' + document.body.style.overflowY + '/' + document.documentElement.style.overflow + '/' + document.documentElement.style.overflowY;
             if (document.body.style.overflow === 'hidden') {
-                document.body.style.overflow = 'auto';
+                document.body.style.overflow = '';
                 if (debugAll) console.log('🔧 Scroll corrigido automaticamente - nenhum modal visível');
             }
             if (document.body.style.overflowY === 'hidden') {
-                document.body.style.overflowY = 'auto';
+                document.body.style.overflowY = '';
                 if (debugAll) console.log('🔧 Scroll-Y corrigido automaticamente - nenhum modal visível');
             }
             if (document.documentElement.style.overflowY === 'hidden') {
-                document.documentElement.style.overflowY = 'auto';
+                document.documentElement.style.overflowY = '';
             }
             // Shorthand no <html> também trava a página e o trecho acima não
             // o limpa (bug: guard detectava via htmlHidden mas só limpava overflowY)
             if (document.documentElement.style.overflow === 'hidden') {
-                document.documentElement.style.overflow = 'auto';
+                document.documentElement.style.overflow = '';
                 if (debugAll) console.log('🔧 Scroll-HTML(shorthand) corrigido — nenhum modal visível');
             }
             const depois = document.body.style.overflow + '/' + document.body.style.overflowY + '/' + document.documentElement.style.overflow + '/' + document.documentElement.style.overflowY;
@@ -2322,14 +2326,14 @@ class FolhaUtils {
      */
     static corrigirScrollTravado() {
         console.log('🚨 CORREÇÃO DE EMERGÊNCIA: Desbloqueando scroll...');
-        document.body.style.overflow = 'auto';
-        document.body.style.overflowY = 'auto';
+        document.body.style.overflow = '';
+        document.body.style.overflowY = '';
         document.body.style.height = 'auto';
         if (document.documentElement.style.overflow === 'hidden') {
-            document.documentElement.style.overflow = 'auto';
+            document.documentElement.style.overflow = '';
         }
         if (document.documentElement.style.overflowY === 'hidden') {
-            document.documentElement.style.overflowY = 'auto';
+            document.documentElement.style.overflowY = '';
         }
         
         // Verificar se há modais abertos que deveriam estar fechados
@@ -3547,8 +3551,8 @@ window.corrigirScrollTravado = function() {
         window.FolhaUtils.corrigirScrollTravado();
     } else {
         console.log('🚨 CORREÇÃO DE EMERGÊNCIA DIRETA...');
-        document.body.style.overflow = 'auto';
-        document.body.style.overflowY = 'auto';
+        document.body.style.overflow = '';
+        document.body.style.overflowY = '';
         document.body.style.height = 'auto';
         console.log('✅ Scroll desbloqueado!');
     }

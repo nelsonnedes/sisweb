@@ -1482,6 +1482,11 @@ class FolhaFuncionarios {
         const modal = document.getElementById('funcionariosListModal');
         if (modal) {
             modal.style.display = 'block';
+            // Salva estado pré-modal: o stylesheet usa overflow-x: clip e o
+            // close deve restaurar '' (nunca 'auto' — clip+auto quebra o wheel)
+            try {
+                modal.dataset.prevBodyOverflow = document.body.style.overflow || '';
+            } catch (_) {}
             document.body.style.overflow = 'hidden';
             
             // Renderizar dados atuais imediatamente (se houver)
@@ -1612,7 +1617,10 @@ class FolhaFuncionarios {
         } catch (_) {}
         if (modal) {
             modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
+            // Restaura estado pré-modal (''), não 'auto'
+            let prev = '';
+            try { prev = modal.dataset.prevBodyOverflow || ''; } catch (_) {}
+            document.body.style.overflow = prev;
             // Foco preso dentro do modal oculto (ex.: filtro focado no open)
             // pode fazer o wheel não ter para onde rolar: devolve ao body
             try {

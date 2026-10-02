@@ -1014,6 +1014,7 @@ class FolhaLancamentos {
         
         const modal = document.getElementById('folhasFechadasModal');
         if (modal) {
+            try { modal.dataset.prevBodyOverflow = document.body.style.overflow || ''; } catch (_) {}
             modal.style.display = 'block';
         }
         this._setupFolhasFechadasSorting();
@@ -1052,7 +1053,9 @@ class FolhaLancamentos {
         const modal = document.getElementById('folhasFechadasModal');
         if (modal) {
             modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
+            let prev = '';
+            try { prev = modal.dataset.prevBodyOverflow || ''; } catch (_) {}
+            document.body.style.overflow = prev;
         }
     }
 
