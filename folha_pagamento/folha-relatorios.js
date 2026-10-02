@@ -5,6 +5,23 @@
  */
 
 // ✅ CONFIGURAÇÕES E CONSTANTES
+// Strangler A4: leitura via SiswebData com fallback ao global legado.
+// Preserva semântica: sucesso retorna dado cru; falha/insucesso cai no
+// window.getData legado; sem ambos, devolve `fallback`.
+async function swGet(key, fallback) {
+    try {
+        if (typeof window !== 'undefined' && window.SiswebData && typeof window.SiswebData.get === 'function') {
+            const r = await window.SiswebData.get(key);
+            if (r && r.success && r.data !== null && r.data !== undefined) return r.data;
+        }
+    } catch (_) {}
+    try {
+        if (typeof window !== 'undefined' && typeof window.getData === 'function') {
+            return await window.getData(key);
+        }
+    } catch (_) {}
+    return fallback === undefined ? null : fallback;
+}
 const RELATORIOS_CONFIG = {
     TIPOS_RELATORIO: [
         { value: 'completo', label: 'Relatório Completo', icon: 'fas fa-file-alt' },
@@ -179,7 +196,7 @@ class FolhaRelatorios {
             // Tentar carregar direto do Firebase somente se ainda não houver dados
             if (this.lancamentos.length === 0) {
                 try {
-                    const folhasData = await getData('folhas') || {};
+                    const folhasData = await swGet('folhas', {}) || {};
                     const arr = Object.entries(folhasData).map(([key, rec]) => ({
                         ...(rec || {}),
                         id: (rec && rec.id) ? rec.id : key
@@ -226,7 +243,7 @@ class FolhaRelatorios {
                     
                     for (const colecao of colecoes) {
                         try {
-                            const dados = await getData(colecao) || {};
+                            const dados = await swGet(colecao, {}) || {};
                             const funcionariosColecao = Object.values(dados).filter(f => f && f.nome);
                             todosFuncionarios.push(...funcionariosColecao);
                             console.log(`👥 Funcionários de ${colecao}: ${funcionariosColecao.length}`);
@@ -823,7 +840,7 @@ class FolhaRelatorios {
         } catch (_) {}
         try {
             const path = this.getReportColumnsRemotePath(tipoRelatorio);
-            const remote = (typeof window.getData === 'function') ? await window.getData(path, { debounceMs: 0 }) : null;
+            const remote = await swGet(path, null);
             if (remote && typeof remote === 'object') {
                 localStorage.setItem(key, JSON.stringify(remote));
             }
@@ -4314,9 +4331,9 @@ class FolhaRelatorios {
             }
 
             // ✅ ESTÁGIO 1: Perfil /profile — fonte canônica pequena para cabeçalhos
-            if (tenantId && typeof window.getData === 'function') {
+            if (tenantId) {
                 try {
-                    const byPath = await window.getData(`companies/${tenantId}/profile`, { debounceMs: 0 });
+                    const byPath = await swGet(`companies/${tenantId}/profile`, null);
                     if (byPath && typeof byPath === 'object' && (byPath.nome || byPath.name)) {
                         companyData = { ...companyData, ...byPath, id: tenantId, companyId: tenantId, tenantId: tenantId };
                     }
@@ -4325,7 +4342,7 @@ class FolhaRelatorios {
 
             if (tenantId && (!companyData || (!companyData.nome && !companyData.name))) {
                 try {
-                    const companyPayload = typeof window.getData === 'function' ? await window.getData(`companies/${tenantId}/profile`, { debounceMs: 0 }) : (typeof getData === 'function' ? await getData(`companies/${tenantId}/profile`, { debounceMs: 0 }) : null);
+                    const companyPayload = await swGet(`companies/${tenantId}/profile`, null);
                     if (companyPayload && typeof companyPayload === 'object') {
                         companyData = { ...companyData, ...companyPayload, id: tenantId, companyId: tenantId, tenantId: tenantId };
                     }
@@ -7101,9 +7118,9 @@ if (!window.getCompanyData) {
 					} catch (_) {}
 				}
 
-				if (!companyData && typeof window.getData === 'function' && tenantId) {
+				if (!companyData && tenantId) {
 					try {
-						const byPath = await window.getData(`companies/${tenantId}/profile`, { debounceMs: 0 });
+						const byPath = await swGet(`companies/${tenantId}/profile`, null);
 						if (byPath && typeof byPath === 'object') {
 							companyData = { ...byPath, id: tenantId, companyId: tenantId, tenantId: tenantId };
 						}
@@ -7122,7 +7139,7 @@ if (!window.getCompanyData) {
 
 				if (!companyData && tenantId) {
 					try {
-						const companyPayload = await getData(`companies/${tenantId}/profile`);
+						const companyPayload = await swGet(`companies/${tenantId}/profile`, null);
 						if (companyPayload && typeof companyPayload === 'object') {
 							companyData = { ...companyPayload, id: tenantId, companyId: tenantId, tenantId: tenantId };
 						}
