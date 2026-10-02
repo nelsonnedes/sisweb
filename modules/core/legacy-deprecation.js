@@ -87,17 +87,21 @@
     }
 
     var silent = global.SISWEB_LEGACY_SILENT === true;
+    var trapped = { getData: false, saveData: false };
     if (!silent) {
-        install('getData');
-        install('saveData');
+        trapped.getData = install('getData');
+        trapped.saveData = install('saveData');
     }
 
     global.__siswebLegacyTrapInstalled = true;
     global.__siswebLegacy = {
+        version: 'a4-warn-2',
+        trapped: trapped,
         stats: function () {
             return {
                 reads: stats.reads,
                 overwrites: stats.overwrites,
+                trapped: { getData: trapped.getData, saveData: trapped.saveData },
                 locations: Object.assign({}, stats.locations)
             };
         },

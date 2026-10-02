@@ -76,6 +76,14 @@ test('opt-out SISWEB_LEGACY_SILENT pula instalação sem quebrar', () => {
   assert.equal(sandbox.__siswebLegacyTrapInstalled, true);
 });
 
+test('stats expoe sucesso da instalação (trapped)', () => {
+  const { sandbox } = buildSandbox();
+  install(sandbox, SRC);
+  const s = sandbox.__siswebLegacy.stats();
+  assert.equal(s.trapped.getData, true);
+  assert.equal(s.trapped.saveData, true);
+});
+
 test('idempotente: dupla inclusão não reinstala nem duplica warns', () => {
   const { sandbox, warnings } = buildSandbox();
   sandbox.getData = () => 'x';
