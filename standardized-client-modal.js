@@ -1084,10 +1084,14 @@ async function loadClientsFromFirebase() {
     try {
         let clients = [];
         
-        // Tentar usar função getData se disponível
-        if (typeof window.getData === 'function') {
-            console.log("✅ Usando função getData para carregar clientes");
-            clients = await window.getData(CLIENT_MODAL_CONFIG.firebaseCollection);
+          // Tentar usar SiswebData (namespace canônico) e depois getData legado
+          if (window.SiswebData && typeof window.SiswebData.get === 'function') {
+              console.log("✅ Usando SiswebData para carregar clientes");
+              const sdClients = await window.SiswebData.get(CLIENT_MODAL_CONFIG.firebaseCollection);
+              clients = (sdClients && sdClients.success && Array.isArray(sdClients.data)) ? sdClients.data : [];
+          } else if (typeof window.getData === 'function') {
+              console.log("✅ Usando função getData para carregar clientes");
+              clients = await window.getData(CLIENT_MODAL_CONFIG.firebaseCollection);
         } else {
             console.warn("⚠️ Função getData não disponível, usando fallback");
             

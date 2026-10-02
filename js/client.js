@@ -68,6 +68,8 @@ async function ensureAuthAndTenant() {
 // State
 let currentList = [];
 let editingId = null;
+// ✅ Trava anti duplo-submit (duplo clique = 1 escrita)
+let saveClientInFlight = false;
 let currentPage = 1;
 const itemsPerPage = 10;
 
@@ -381,19 +383,22 @@ async function loadData() {
 
 async function handleSave(e) {
     e.preventDefault();
-    
+    if (saveClientInFlight) return;
+
     const name = elements.nameInput.value.trim();
     if (!name) {
         showToast('O nome é obrigatório', 'warning');
         return;
     }
 
+    saveClientInFlight = true;
     showLoading(true);
-    try { await ensureAuthAndTenant(); } catch (_) { showLoading(false); return; }
+    try { await ensureAuthAndTenant(); } catch (_) { saveClientInFlight = false; showLoading(false); return; }
 
     const isEditMode = !!editingId;
     if (isEditMode && !String(editingId || '').trim()) {
         showToast('Falha de integridade: edição sem ID do cliente', 'error');
+        saveClientInFlight = false;
         showLoading(false);
         return;
     }
@@ -489,6 +494,7 @@ async function handleSave(e) {
         console.error('Erro ao salvar:', error);
         showToast('Erro ao salvar: ' + error.message, 'error');
     } finally {
+        saveClientInFlight = false;
         showLoading(false);
     }
 }

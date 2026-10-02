@@ -317,10 +317,11 @@ window.ModalEspeciesPCT = (function() {
                         
                     } else {
                         // Fallback para métodos alternativos
-                        console.log('🔍 PCT: loadFromFirebase não disponível, tentando getData...');
-                        
-                        if (typeof window.getData === 'function') {
-                            const firebaseSpecies = await window.getData('especies') || [];
+                        console.log('🔍 PCT: loadFromFirebase não disponível, tentando SiswebData/getData...');
+
+                        if (window.SiswebData && typeof window.SiswebData.get === 'function') {
+                            const sdRes = await window.SiswebData.get('especies');
+                            const firebaseSpecies = (sdRes && sdRes.success && sdRes.data !== null && sdRes.data !== undefined) ? sdRes.data : [];
                             species = Array.isArray(firebaseSpecies) ? firebaseSpecies.map((item, index) => {
                                 const value = item || {};
                                 const key = String(index);
@@ -342,7 +343,7 @@ window.ModalEspeciesPCT = (function() {
                                             originalId: item.id || item.key || key
                                         };
                                      }) : [];
-                            console.log(`✅ PCT: ${species.length} espécies carregadas via getData`);
+                            console.log(`✅ PCT: ${species.length} espécies carregadas via SiswebData`);
                         } else {
                             throw new Error('Nenhum método de carregamento Firebase disponível');
                         }

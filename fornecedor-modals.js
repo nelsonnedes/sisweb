@@ -1010,8 +1010,13 @@ async function loadClientForEdit(fornecedor) {
 }
 
 // Função para salvar fornecedor
+// ✅ Trava anti duplo-submit (duplo clique = 1 escrita)
+let saveFornecedorInFlight = false;
+
 async function saveClient(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (saveFornecedorInFlight) return;
+    saveFornecedorInFlight = true;
 
     console.log("🔄 Salvando fornecedor...");
 
@@ -1310,6 +1315,8 @@ async function saveClient(event) {
         } else {
             window.__toast(`Erro ao salvar fornecedor: ${error.message}`, 'error');
         }
+    } finally {
+        saveFornecedorInFlight = false;
     }
 }
 

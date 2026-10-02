@@ -242,12 +242,15 @@ async function saveClientRomaneitoraCorrigido(e) {
         // ✅ OBTER LISTA ATUAL DE CLIENTES SEMPRE DA CHAVE 'clients'
         let clients = [];
         
-        // Tentar obter via client-service primeiro
-        if (typeof window.getClients === 'function') {
-            clients = await window.getClients(true) || [];
-        } else if (typeof window.getData === 'function') {
-            clients = await window.getData('clients') || [];
-        }
+          // Tentar obter via client-service primeiro
+          if (typeof window.getClients === 'function') {
+              clients = await window.getClients(true) || [];
+          } else if (window.SiswebData && typeof window.SiswebData.get === 'function') {
+              const sdClients = await window.SiswebData.get('clients');
+              clients = (sdClients && sdClients.success && Array.isArray(sdClients.data)) ? sdClients.data : [];
+          } else if (typeof window.getData === 'function') {
+              clients = await window.getData('clients') || [];
+          }
         
         // Garantir que é um array
         if (!Array.isArray(clients)) {

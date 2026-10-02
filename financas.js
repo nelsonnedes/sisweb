@@ -598,6 +598,7 @@ function ensureFinanceFornecedorModal() {
 }
 
 async function saveFinanceClienteModal() {
+    if (saveFinanceClienteInFlight) return;
     const id = (document.getElementById('financeClientId')?.value || '').trim() || `CLI-${Date.now()}`;
     const nome = (document.getElementById('financeClientName')?.value || '').trim();
     const estado = (document.getElementById('financeClientState')?.value || '').trim();
@@ -619,6 +620,7 @@ async function saveFinanceClienteModal() {
         mostrarNotificacao('Selecione a cidade do cliente.', 'error');
         return;
     }
+    saveFinanceClienteInFlight = true;
 
     const clienteExistente = Array.isArray(clientes) ? clientes.find((c) => String(c?.id) === String(id)) : null;
     const nowIso = new Date().toISOString();
@@ -682,10 +684,17 @@ async function saveFinanceClienteModal() {
     } catch (error) {
         console.error('❌ Erro ao salvar cliente:', error);
         mostrarNotificacao('Erro ao salvar cliente.', 'error');
+    } finally {
+        saveFinanceClienteInFlight = false;
     }
 }
 
+// ✅ Travas anti duplo-submit (duplo clique = 1 escrita)
+let saveFinanceClienteInFlight = false;
+let saveFinanceFornecedorInFlight = false;
+
 async function saveFinanceFornecedorModal() {
+    if (saveFinanceFornecedorInFlight) return;
     const id = (document.getElementById('financeFornecedorId')?.value || '').trim() || `FOR-${Date.now()}`;
     const nome = (document.getElementById('financeFornecedorName')?.value || '').trim();
     const cnpj = (document.getElementById('financeFornecedorCnpj')?.value || '').trim();
@@ -711,6 +720,7 @@ async function saveFinanceFornecedorModal() {
         mostrarNotificacao('Selecione a cidade do fornecedor.', 'error');
         return;
     }
+    saveFinanceFornecedorInFlight = true;
 
     const fornecedorExistente = Array.isArray(fornecedores) ? fornecedores.find((f) => String(f?.id) === String(id)) : null;
     const nowIso = new Date().toISOString();
@@ -771,6 +781,8 @@ async function saveFinanceFornecedorModal() {
     } catch (error) {
         console.error('❌ Erro ao salvar fornecedor:', error);
         mostrarNotificacao('Erro ao salvar fornecedor.', 'error');
+    } finally {
+        saveFinanceFornecedorInFlight = false;
     }
 }
 

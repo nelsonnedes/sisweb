@@ -5,6 +5,9 @@ let clientFormModalContext = {
     selectAfterSave: true
 };
 
+// ✅ Trava anti duplo-submit (duplo clique = 1 escrita)
+let saveNewClientInFlight = false;
+
 function clientModalText(client, ...keys) {
     for (const key of keys) {
         const value = client && client[key];
@@ -320,6 +323,7 @@ window.openClientFormModal = openClientFormModal;
 window.openNewClientModal = openNewClientModal;
 window.openEditClientModal = openEditClientModal;
 function saveNewClient() {
+    if (saveNewClientInFlight) return;
     try {
         const field = (id) => (document.getElementById(id)?.value || '').trim();
         const name = field('newClientName');
@@ -420,6 +424,13 @@ function saveNewClient() {
             throw new Error('Serviço de clientes indisponível');
         }
         
+        saveNewClientInFlight = true;
+        const saveNewClientBtn = document.getElementById('saveNewClient');
+        if (saveNewClientBtn) saveNewClientBtn.disabled = true;
+        const releaseSaveNewClient = () => {
+            saveNewClientInFlight = false;
+            if (saveNewClientBtn) saveNewClientBtn.disabled = false;
+        };
         Promise.resolve(saveFn(client)).then((saved) => {
             const savedId = (saved && saved.id) ? saved.id : (client.id || null);
             console.log("✅ Cliente salvo com ID:", savedId);
@@ -452,7 +463,9 @@ function saveNewClient() {
                 if (typeof window.__toast === 'function') window.__toast(msg, 'success');
                 else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'success');
             } catch (_) {}
+            releaseSaveNewClient();
         }).catch((e) => {
+            releaseSaveNewClient();
             try {
                 const msg = 'Erro ao salvar cliente: ' + (e && e.message ? e.message : e);
                 if (typeof window.__toast === 'function') window.__toast(msg, 'error', { duration: 5000 });
@@ -460,6 +473,9 @@ function saveNewClient() {
             } catch (_) {}
         });
     } catch (e) {
+        saveNewClientInFlight = false;
+        const stuckBtn = document.getElementById('saveNewClient');
+        if (stuckBtn) stuckBtn.disabled = false;
         try {
             const msg = 'Erro ao salvar cliente';
             if (typeof window.__toast === 'function') window.__toast(msg, 'error', { duration: 5000 });

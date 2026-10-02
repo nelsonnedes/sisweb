@@ -49,3 +49,19 @@ test('fornecedor tem checagem de duplicata por nome', () => {
     'js/fornecedor.js deve bloquear duplicata com aviso'
   );
 });
+
+test('saves de cliente/fornecedor tem trava anti duplo-submit com liberacao', () => {
+  const guards = [
+    ['openNewClientModal.js', 'saveNewClientInFlight'],
+    ['fornecedor-modals.js', 'saveFornecedorInFlight'],
+    ['js/client.js', 'saveClientInFlight'],
+    ['js/fornecedor.js', 'saveFornecedorInFlight'],
+    ['financas.js', 'saveFinanceClienteInFlight'],
+    ['financas.js', 'saveFinanceFornecedorInFlight']
+  ];
+  for (const [file, flag] of guards) {
+    const src = read(file);
+    assert.ok(src.includes(`if (${flag}) return;`), `${file} deve barrar submit concorrente`);
+    assert.ok(src.includes(`${flag} = false`), `${file} deve liberar a trava`);
+  }
+});

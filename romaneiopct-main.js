@@ -483,6 +483,10 @@ function configurarEventListeners() {
                 const clientes = await window.clientService.getClients(true);
                 window.clientes = clientes || [];
                 console.log(`✅ ${window.clientes.length} clientes recarregados via clientService`);
+            } else if (window.SiswebData && typeof window.SiswebData.get === 'function') {
+                const sdClientes = await window.SiswebData.get('clients');
+                window.clientes = (sdClientes && sdClientes.success && Array.isArray(sdClientes.data)) ? sdClientes.data : [];
+                console.log(`✅ ${window.clientes.length} clientes recarregados via SiswebData`);
             } else if (typeof window.getData === 'function') {
                 const clientes = await window.getData('clients');
                 window.clientes = clientes || [];
@@ -575,18 +579,29 @@ async function carregarDadosIniciais() {
                 console.warn('⚠️ Erro ao carregar clientes via clientService:', error);
                 window.clientes = [];
             }
-        } else if (typeof window.getData === 'function') {
-            console.log('📦 Usando getData unificada para carregar dados');
-            
-            try {
-                const clientes = await window.getData('clients');
-                window.clientes = clientes || [];
-                console.log(`✅ ${window.clientes.length} clientes carregados`);
-            } catch (error) {
-                console.warn('⚠️ Erro ao carregar clientes:', error);
-                window.clientes = [];
-            }
-        } else {
+          } else if (window.SiswebData && typeof window.SiswebData.get === 'function') {
+              console.log('🔍 Usando SiswebData para carregar dados');
+
+              try {
+                  const sdClientes = await window.SiswebData.get('clients');
+                  window.clientes = (sdClientes && sdClientes.success && Array.isArray(sdClientes.data)) ? sdClientes.data : [];
+                  console.log(`✅ ${window.clientes.length} clientes carregados`);
+              } catch (error) {
+                  console.warn('⚠️ Erro ao carregar clientes:', error);
+                  window.clientes = [];
+              }
+          } else if (typeof window.getData === 'function') {
+              console.log('🔍 Usando getData unificada para carregar dados');
+
+              try {
+                  const clientes = await window.getData('clients');
+                  window.clientes = clientes || [];
+                  console.log(`✅ ${window.clientes.length} clientes carregados`);
+              } catch (error) {
+                  console.warn('⚠️ Erro ao carregar clientes:', error);
+                  window.clientes = [];
+              }
+          } else {
             // ✅ FALLBACK PARA LOCALSTORAGE
             console.log('📦 Usando fallback localStorage');
             
@@ -604,16 +619,25 @@ async function carregarDadosIniciais() {
                 console.warn('⚠️ Erro ao carregar espécies via speciesStore:', error);
                 window.especies = [];
             }
-        } else if (typeof window.getData === 'function') {
-            try {
-                const especies = await window.getData('especies');
-                window.especies = especies || [];
-                console.log(`✅ ${window.especies.length} espécies carregadas`);
-            } catch (error) {
-                console.warn('⚠️ Erro ao carregar espécies:', error);
-                window.especies = [];
-            }
-        } else if (!Array.isArray(window.especies)) {
+          } else if (window.SiswebData && typeof window.SiswebData.get === 'function') {
+              try {
+                  const sdEspecies = await window.SiswebData.get('especies');
+                  window.especies = (sdEspecies && sdEspecies.success && Array.isArray(sdEspecies.data)) ? sdEspecies.data : [];
+                  console.log(`✅ ${window.especies.length} espécies carregadas`);
+              } catch (error) {
+                  console.warn('⚠️ Erro ao carregar espécies:', error);
+                  window.especies = [];
+              }
+          } else if (typeof window.getData === 'function') {
+              try {
+                  const especies = await window.getData('especies');
+                  window.especies = especies || [];
+                  console.log(`✅ ${window.especies.length} espécies carregadas`);
+              } catch (error) {
+                  console.warn('⚠️ Erro ao carregar espécies:', error);
+                  window.especies = [];
+              }
+          } else if (!Array.isArray(window.especies)) {
             window.especies = JSON.parse(readLocalStorageValue('especies') || '[]');
             console.log(`📦 Fallback espécies: ${window.especies.length} itens`);
         }

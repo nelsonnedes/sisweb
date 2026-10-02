@@ -3,6 +3,8 @@ const authService = window.firebaseService.authService;
 // State
 let currentList = [];
 let editingId = null;
+// ✅ Trava anti duplo-submit (duplo clique = 1 escrita)
+let saveFornecedorInFlight = false;
 let currentPage = 1;
 const itemsPerPage = 10;
 let tenantReadyPromise = null;
@@ -425,7 +427,7 @@ async function loadData() {
 
 async function handleSave(e) {
     e.preventDefault();
-    
+    if (saveFornecedorInFlight) return;
     const name = elements.nameInput.value.trim();
     if (!name) {
         showToast('O nome é obrigatório', 'warning');
@@ -457,6 +459,7 @@ async function handleSave(e) {
         showToast(error.message || 'Empresa/tenant não definido para salvar fornecedor', 'error');
         return;
     }
+    saveFornecedorInFlight = true;
 
     const targetIdFromForm = elements.fornecedorIdInput && elements.fornecedorIdInput.value ? elements.fornecedorIdInput.value.trim() : null;
     const effectiveEditingId = (editingId || targetIdFromForm || '').trim() || null;
@@ -583,6 +586,7 @@ async function handleSave(e) {
         console.error('Erro ao salvar:', error);
         showToast('Erro ao salvar: ' + error.message, 'error');
     } finally {
+        saveFornecedorInFlight = false;
         showLoading(false);
     }
 }

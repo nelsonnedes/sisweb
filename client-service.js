@@ -324,7 +324,21 @@ async function saveClients(clients) {
  * @returns {Object} Cliente salvo com ID atualizado
  * @throws {Error} Lança erro se não conseguir salvar
  */
+// ✅ Trava anti duplo-submit por registro: chamadas concorrentes para o mesmo
+// cliente aguardam a primeira em vez de disparar escritas duplicadas.
+const saveClientInflight = new Map();
 async function saveClient(client) {
+    const key = String((client && client.id) || '').trim()
+        || ('__new:' + String((client && (client.name || client.nome)) || '').toLowerCase().trim());
+    if (saveClientInflight.has(key)) return saveClientInflight.get(key);
+    const pending = saveClientInner(client).finally(() => {
+        if (saveClientInflight.get(key) === pending) saveClientInflight.delete(key);
+    });
+    saveClientInflight.set(key, pending);
+    return pending;
+}
+
+async function saveClientInner(client) {
     if (!client || (!client.name && !client.nome)) {
         throw new Error("Dados de cliente inválidos: nome é obrigatório");
     }
