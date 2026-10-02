@@ -1887,6 +1887,7 @@
             </div>
             <form id="produtoForm">
                 <input type="hidden" id="produtoId">
+                <div class="modal-body">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="produtoCodigo">Código:</label>
@@ -1922,11 +1923,12 @@
                     <label for="produtoDescricao">Descrição:</label>
                     <textarea id="produtoDescricao" rows="3"></textarea>
                 </div>
-                <div class="action-buttons">
-                    <button type="submit" class="btn-success">
+                </div>
+                <div class="modal-footer action-buttons">
+                    <button type="submit" class="btn btn-success">
                         <i class="fas fa-save"></i> Salvar
                     </button>
-                    <button type="button" onclick="fecharModal('produtoModal')" class="btn-danger">
+                    <button type="button" onclick="fecharModal('produtoModal')" class="btn btn-danger">
                         <i class="fas fa-times"></i> Cancelar
                     </button>
                 </div>
