@@ -2303,6 +2303,12 @@ class FolhaUtils {
             if (document.documentElement.style.overflowY === 'hidden') {
                 document.documentElement.style.overflowY = 'auto';
             }
+            // Shorthand no <html> também trava a página e o trecho acima não
+            // o limpa (bug: guard detectava via htmlHidden mas só limpava overflowY)
+            if (document.documentElement.style.overflow === 'hidden') {
+                document.documentElement.style.overflow = 'auto';
+                if (debugAll) console.log('🔧 Scroll-HTML(shorthand) corrigido — nenhum modal visível');
+            }
             const depois = document.body.style.overflow + '/' + document.body.style.overflowY + '/' + document.documentElement.style.overflowY;
             if (antes !== depois) console.log(`[scroll-guard] modais:0 ${antes} → ${depois}`);
         } else {
@@ -2319,6 +2325,12 @@ class FolhaUtils {
         document.body.style.overflow = 'auto';
         document.body.style.overflowY = 'auto';
         document.body.style.height = 'auto';
+        if (document.documentElement.style.overflow === 'hidden') {
+            document.documentElement.style.overflow = 'auto';
+        }
+        if (document.documentElement.style.overflowY === 'hidden') {
+            document.documentElement.style.overflowY = 'auto';
+        }
         
         // Verificar se há modais abertos que deveriam estar fechados
         const modaisAbertos = document.querySelectorAll('.modal[style*="display: block"], .modal[style*="display:block"]');

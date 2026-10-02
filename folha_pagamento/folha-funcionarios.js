@@ -1631,6 +1631,15 @@ class FolhaFuncionarios {
                     }
                 } catch (_) {}
             }, 300);
+            // Verificação tardia: pega re-travas assíncronas (ex.: reload que
+            // reabre overlay) após o refresh de 300ms
+            setTimeout(() => {
+                try {
+                    if (window.FolhaUtils && typeof window.FolhaUtils.verificarScrollGlobal === 'function') {
+                        window.FolhaUtils.verificarScrollGlobal();
+                    }
+                } catch (_) {}
+            }, 700);
         } catch (_) {}
     }
     
