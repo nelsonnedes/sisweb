@@ -7965,12 +7965,13 @@ function redistribuirProgressivoParcelas(parcelas, contaIdAlterada, novoValor, t
         if (isNaN(novo) || novo < 0) {
             return { success: false, parcelas: [], message: 'Valor informado inválido' };
         }
-        // Ordenar por dias ascendente
+        // Ordenar por dias ascendente; tiebreaker: índice original (preserva ordem visual)
         const sorted = parcelas.map((p, i) => ({ p: { ...p }, i }))
             .sort((a, b) => {
                 const da = typeof a.p.dias === 'number' ? a.p.dias : diffDaysISO(a.p.baseVencimento || a.p.vencimento, a.p.vencimento);
                 const db = typeof b.p.dias === 'number' ? b.p.dias : diffDaysISO(b.p.baseVencimento || b.p.vencimento, b.p.vencimento);
-                return da - db;
+                if (da !== db) return da - db;
+                return a.i - b.i; // tiebreaker: ordem original
             });
         const idxSortedAlterada = sorted.findIndex(s => String(s.p.id) === String(contaIdAlterada));
         if (idxSortedAlterada < 0) {

@@ -1836,7 +1836,8 @@ function redistribuirProgressivoParcelasPagar(parcelas, contaIdAlterada, novoVal
             .sort((a, b) => {
                 const da = typeof a.p.dias === 'number' ? a.p.dias : diffDaysISOConta(a.p.baseVencimento || a.p.vencimento, a.p.vencimento);
                 const db = typeof b.p.dias === 'number' ? b.p.dias : diffDaysISOConta(b.p.baseVencimento || b.p.vencimento, b.p.vencimento);
-                return da - db;
+                if (da !== db) return da - db;
+                return a.i - b.i; // tiebreaker: ordem original
             });
         const idxSortedAlterada = sorted.findIndex(s => String(s.p.id) === String(contaIdAlterada));
         if (idxSortedAlterada < 0) {
