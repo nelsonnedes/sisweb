@@ -3182,8 +3182,12 @@ async function visualizarPedido(id) {
     const tbodyPagamento = document.getElementById('viewPedidoPagamentoTable');
     let contas = pedido.contasPagar || [];
     
-    // Tentar carregar financeiro se não estiver no objeto
-    if (contas.length === 0) {
+    // Só buscar no financeiro se o status NÃO for pendente/cancelado
+    // (financeiro só é gerado para status que exigem financeiro)
+    const statusLower = String(pedido.status || '').toLowerCase();
+    const deveBuscarFinanceiro = statusLower !== 'pendente' && statusLower !== 'cancelado';
+    
+    if (contas.length === 0 && deveBuscarFinanceiro) {
         try {
             const cpFinanceiroAll = await getData('financas/pagar') || [];
             contas = cpFinanceiroAll.filter(c => String(c.origemId) === String(id));

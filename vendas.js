@@ -8231,19 +8231,29 @@ async function visualizarPedido(pedidoId) {
     }
     
     const tbodyPagamento = document.getElementById('viewPedidoPagamentoTable');
-    let contas = [];
-    try {
-        const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
-        contas = vinculadas.map(c => ({
-            id: c.id,
-            valor: typeof c.valor === 'number' ? c.valor : parseCurrencyValue(c.valor),
-            vencimento: c.dataVencimento || c.vencimento,
-            tipo: c.tipoPagamento || c.tipo,
-            observacao: c.observacoes || c.observacao || '',
-            status: c.status || 'pendente'
-        }));
-    } catch (_) {
-        contas = normalizarContasReceberLista(pedido.contasReceber || []);
+    // 1. Sempre tentar o array local do pedido primeiro (funciona para pendente/cancelado)
+    const localContas = normalizarContasReceberLista(pedido.contasReceber || []);
+    let contas = localContas;
+    
+    // 2. Só buscar no financeiro se o status NÃO for pendente/cancelado
+    // (financeiro só é gerado para status que exigem financeiro)
+    const statusLower = String(pedido.status || '').toLowerCase();
+    const deveBuscarFinanceiro = statusLower !== 'pendente' && statusLower !== 'cancelado';
+    
+    if (contas.length === 0 && deveBuscarFinanceiro) {
+        try {
+            const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
+            contas = vinculadas.map(c => ({
+                id: c.id,
+                valor: typeof c.valor === 'number' ? c.valor : parseCurrencyValue(c.valor),
+                vencimento: c.dataVencimento || c.vencimento,
+                tipo: c.tipoPagamento || c.tipo,
+                observacao: c.observacoes || c.observacao || '',
+                status: c.status || 'pendente'
+            }));
+        } catch (_) {
+            contas = localContas;
+        }
     }
     if (contas.length > 0) {
         tbodyPagamento.innerHTML = contas.map(conta => {
