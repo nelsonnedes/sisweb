@@ -7463,11 +7463,10 @@ function removerContaReceber(contaId) {
     if (index !== -1) {
         contasReceber.splice(index, 1);
         
-        // Redistribuir valores após remoção
+        // Redistribuir valores após remoção SEMPRE (mesmo com autoRedistribuirEnabled=false)
+        // A exclusão explícita de uma parcela deve sempre redistribuir o total
         if (contasReceber.length > 0) {
-            if (autoRedistribuirEnabled) {
-                redistribuirValoresContas();
-            }
+            redistribuirValoresContas();
             atualizarTabelaContasReceber();
             atualizarTotalContasReceber();
         } else {

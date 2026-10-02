@@ -2012,8 +2012,9 @@ function removerConta(contaId) {
 
     contasPagar.splice(index, 1);
 
-    // Redistribuir após remoção (igual Vendas)
-    if (contasPagar.length > 0 && autoRedistribuirEnabled) {
+    // Redistribuir após remoção SEMPRE (mesmo com autoRedistribuirEnabled=false)
+    // A exclusão explícita de uma parcela deve sempre redistribuir o total
+    if (contasPagar.length > 0) {
         redistribuirValoresContasPagar();
     }
     renderizarContasPagar();
