@@ -1613,6 +1613,14 @@ class FolhaFuncionarios {
         if (modal) {
             modal.style.display = 'none';
             document.body.style.overflow = 'auto';
+            // Foco preso dentro do modal oculto (ex.: filtro focado no open)
+            // pode fazer o wheel não ter para onde rolar: devolve ao body
+            try {
+                if (document.activeElement && modal.contains(document.activeElement)) {
+                    document.activeElement.blur();
+                    console.log('[scroll] foco devolvido ao body (estava no modal oculto)');
+                }
+            } catch (_) {}
         }
         // Auto-refresh leve ao fechar: recarrega os dados em background para
         // refletir mudanças (sem reload da página: mantém filtros e scroll) e
