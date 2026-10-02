@@ -17,7 +17,8 @@ test('nenhum saveData 3-args contra singletons de 2 args', () => {
     ['fornecedor-modals.js', 'saveData(basePath, String(id), fornecedorData)'],
     ['fornecedor-modals.js', 'saveData(basePath, String(newId), fornecedorData)'],
     ['fornecedor-modals.js', 'saveData(basePath, String(fornecedorId), null)'],
-    ['romaneio-manager.js', 'saveData(this.collectionKey, String(id), record)']
+    ['romaneio-manager.js', 'saveData(this.collectionKey, String(id), record)'],
+    ['preromaneio.js', "saveData('preromaneios', String(idToSave), dataToSave)"]
   ];
   for (const [file, snippet] of buggy) {
     assert.ok(!read(file).includes(snippet), `${file} ainda contém chamada 3-args: ${snippet}`);
@@ -30,7 +31,8 @@ test('vias corretas presentes (saveToFirebase 3-arg ou saveData caminho completo
     ['js/client.js', 'saveToFirebase(\'clients\', String(finalId), dataToSave)'],
     ['js/fornecedor.js', 'saveToFirebase(\'fornecedores\', String(finalId), dataToSave)'],
     ['fornecedor-modals.js', 'saveToFirebase(basePath, String(id), fornecedorData)'],
-    ['romaneio-manager.js', 'saveToFirebase(this.collectionKey, String(id), record']
+    ['romaneio-manager.js', 'saveToFirebase(this.collectionKey, String(id), record'],
+    ['preromaneio.js', 'saveToFirebase(\'preromaneios\', String(idToSave), dataToSave)']
   ];
   for (const [file, snippet] of expected) {
     assert.ok(read(file).includes(snippet), `${file} deve usar a via granular: ${snippet}`);
