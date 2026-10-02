@@ -25,8 +25,12 @@ Revisão agendada: **a partir de 2026-10-09** — pedir ao agente:
 - Manter `modules/core/legacy-deprecation.js` por +1 versão como rede
   de segurança (warn vira erro informativo se algo ainda chamar).
 
-## Status atual (2026-10-02)
+## Status atual (2026-10-02, commit 798aeb6)
 
 - Leituras: migradas / locais — OK.
-- Escritas: pendentes de auditoria — BLOQUEIA remoção.
-- Soak: dia 0 de 7 — BLOQUEIA remoção.
+- Escritas: auditoria completa — TODOS os sites 2-arg resolvem em
+  `saveData` local próprio (vendas/compras/notas/tora/financas) ou foram
+  migrados para strangler (`estoque_produtos.js` 1 escrita via swSave,
+  `correcao-interface-database.js` fallback via SiswebData-first).
+  Nenhum consumidor global de escrita restante conhecido.
+- Soak: dia 0 de 7 — BLOQUEIA remoção (único item pendente).
