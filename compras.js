@@ -1805,6 +1805,9 @@ function onParcelaValorBlur(contaId, valorStr) {
              if (res && res.success && Array.isArray(res.parcelas)) {
                  contasPagar = res.parcelas.map(p => ({ ...p }));
              } else {
+                 if (res && res.message) {
+                     try { ToastManager.error(res.message, 'Parcelas'); } catch (_) {}
+                 }
                  contasPagar[index].valor = novoValor;
              }
         }

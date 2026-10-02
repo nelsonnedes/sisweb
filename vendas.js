@@ -2205,11 +2205,14 @@ function atualizarTotais() {
         atualizarTabelaContasReceber();
         atualizarTotalContasReceber();
     } else {
-        // ✅ Atualizar SEMPRE o campo Valor com o Total Geral quando não há parcelas
+        // Campo Valor = RESTANTE (total - soma parcelas). Quando não há
+        // parcelas, restante = total (comportamento anterior preservado).
         const contaValorInput = document.getElementById('contaValor');
         if (contaValorInput) {
-            contaValorInput.value = totalGeral > 0 ? formatCurrency(totalGeral) : '';
-            console.log(`✅ Campo Valor sincronizado com Total Geral: ${formatCurrency(Math.max(0, totalGeral))}`);
+            const soma = (contasReceber || []).reduce((s, c) => s + (parseCurrencyValue(c.valor) || 0), 0);
+            const restante = Math.max(0, Math.round((totalGeral - soma) * 100) / 100);
+            contaValorInput.value = restante > 0 ? formatCurrency(restante) : '';
+            console.log(`✅ Campo Valor sincronizado com restante: ${formatCurrency(restante)}`);
         }
     }
 }
