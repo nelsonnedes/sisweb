@@ -1607,6 +1607,9 @@ class FolhaFuncionarios {
      */
     closeFuncionariosListModal() {
         const modal = document.getElementById('funcionariosListModal');
+        try {
+            console.log(`[scroll] fechar lista funcionarios: antes body=${document.body.style.overflow || '(vazio)'} html=${document.documentElement.style.overflow || '(vazio)'}`);
+        } catch (_) {}
         if (modal) {
             modal.style.display = 'none';
             document.body.style.overflow = 'auto';

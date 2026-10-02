@@ -2291,7 +2291,7 @@ class FolhaUtils {
 
         if (modaisVisiveis.length === 0) {
             // Se não há modais visíveis, garantir que o scroll esteja habilitado
-            const antes = document.body.style.overflow + '/' + document.body.style.overflowY + '/' + document.documentElement.style.overflowY;
+            const antes = document.body.style.overflow + '/' + document.body.style.overflowY + '/' + document.documentElement.style.overflow + '/' + document.documentElement.style.overflowY;
             if (document.body.style.overflow === 'hidden') {
                 document.body.style.overflow = 'auto';
                 if (debugAll) console.log('🔧 Scroll corrigido automaticamente - nenhum modal visível');
@@ -2309,7 +2309,7 @@ class FolhaUtils {
                 document.documentElement.style.overflow = 'auto';
                 if (debugAll) console.log('🔧 Scroll-HTML(shorthand) corrigido — nenhum modal visível');
             }
-            const depois = document.body.style.overflow + '/' + document.body.style.overflowY + '/' + document.documentElement.style.overflowY;
+            const depois = document.body.style.overflow + '/' + document.body.style.overflowY + '/' + document.documentElement.style.overflow + '/' + document.documentElement.style.overflowY;
             if (antes !== depois) console.log(`[scroll-guard] modais:0 ${antes} → ${depois}`);
         } else {
             if (debugAll) console.log(`📋 ${modaisVisiveis.length} modal(is) ainda visível(is), mantendo scroll bloqueado`);
@@ -3513,6 +3513,10 @@ window.diagnosticarRolagem = function() {
     try {
         info.bodyOverflow = document.body.style.overflow + '/' + document.body.style.overflowY;
         info.htmlOverflow = document.documentElement.style.overflow + '/' + document.documentElement.style.overflowY;
+        try {
+            info.bodyComputed = getComputedStyle(document.body).overflow + '/' + getComputedStyle(document.body).overflowY;
+            info.htmlComputed = getComputedStyle(document.documentElement).overflow + '/' + getComputedStyle(document.documentElement).overflowY;
+        } catch (e) { info.computedErro = String((e && e.message) || e); }
         info.scrollH = document.documentElement.scrollHeight;
         info.innerH = window.innerHeight;
         info.scrollY = window.scrollY;
