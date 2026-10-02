@@ -30,5 +30,15 @@ test('folha-relatorios roteia leituras via swGet', () => {
       bad.push(`${i + 1}: ${ln.trim().slice(0, 100)}`);
     }
   });
+});
+
+test('folha-main loadDataType roteia via swGet', () => {
+  const src = readFileSync(new URL('../folha_pagamento/folha-main.js', import.meta.url), 'utf8');
+  assert.ok(/async function swGet\(/.test(src), 'helper swGet presente');
+  const lines = src.split('\n');
+  const bad = lines
+    .map((ln, i) => ({ ln, i }))
+    .filter(({ ln }) => /(^|[^.A-Za-z_])getData\s*\(/.test(ln) && !/function swGet/.test(ln))
+    .map(({ ln, i }) => `${i + 1}: ${ln.trim().slice(0, 100)}`);
   assert.deepEqual(bad, [], `leituras fora do swGet: ${bad.join(' | ')}`);
 });

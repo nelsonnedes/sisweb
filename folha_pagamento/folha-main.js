@@ -7,6 +7,23 @@
 /**
  * 🚀 CLASSE PRINCIPAL DO SISTEMA
  */
+// Strangler A4: leitura via SiswebData com fallback ao global legado.
+// (debounce/useCache eram hints do impl legado; dado retornado é o mesmo)
+async function swGet(key) {
+    try {
+        if (typeof window !== 'undefined' && window.SiswebData && typeof window.SiswebData.get === 'function') {
+            const r = await window.SiswebData.get(key);
+            if (r && r.success && r.data !== null && r.data !== undefined) return r.data;
+        }
+    } catch (_) {}
+    try {
+        if (typeof window !== 'undefined' && typeof window.getData === 'function') {
+            return await window.getData(key);
+        }
+    } catch (_) {}
+    return null;
+}
+
 function persistLocalValue(storageKey, data) {
     try {
         if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {
@@ -435,13 +452,15 @@ class FolhaPagamentoSystem {
         console.log(`🔄 Carregando dados do tipo: ${dataType}`);
         
         try {
-            if (typeof getData !== 'function') {
+            const hasLegacy = (typeof getData === 'function');
+            const hasCanonical = (typeof window !== 'undefined' && window.SiswebData && typeof window.SiswebData.get === 'function');
+            if (!hasLegacy && !hasCanonical) {
                 console.error('❌ Função getData não disponível');
                 return {};
             }
             // ✅ CORREÇÃO: Para 'folhas', usar caminho canônico
             if (dataType === 'folhas') {
-                let rawFolhas = await getData('folhas', { useCache: false, debounceMs: 200 });
+                let rawFolhas = await swGet('folhas');
                 let arr = [];
                 if (Array.isArray(rawFolhas)) {
                     arr = rawFolhas.map((val) => ({
@@ -458,10 +477,7 @@ class FolhaPagamentoSystem {
                 return normalized;
             }
 
-            const raw = await getData(dataType, {
-                useCache: false,
-                debounceMs: 200
-            });
+            const raw = await swGet(dataType);
             return raw;
             
         } catch (error) {
