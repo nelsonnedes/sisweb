@@ -13,7 +13,8 @@
  * 3. localStorage namespaced (leitura) — nunca bare keys legadas
  *
  * Uso inicial: migração strangler dos consumidores de window.getData.
- * Os globais legados permanecem intactos até a Fase A4.
+ * Fase A4 (warn): modules/core/legacy-deprecation.js observa os globais
+ * legados sem alterar comportamento — remoção só após soak + migração total.
  */
 (function (global) {
     'use strict';

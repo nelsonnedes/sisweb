@@ -347,6 +347,7 @@
   "modules/crud/gerenciar-clientes.js",
     "modules/crud/gerenciar-especies.js",
     "modules/core/sisweb-data.js",
+    "modules/core/legacy-deprecation.js",
     "modules/crud/species-crud.js",
   "modules/dashboard/dashboard-core.js",
   "modules/dashboard/dashboard-layout-fix.css",
