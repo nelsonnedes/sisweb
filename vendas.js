@@ -911,6 +911,7 @@ async function carregarDados() {
                  ]);
                  
                  window.produtos = typeof normalizeProdutosList === 'function' ? normalizeProdutosList([...(species || []), ...(produtos_raw || [])]) : [...(species || []), ...(produtos_raw || [])];
+                 try { if (typeof registrarIdsProdutosRaw === 'function') registrarIdsProdutosRaw(produtos_raw); } catch (_) {}
                  window.clientes = Array.isArray(cliRes) ? cliRes : [];
                  
                  console.log(`✅ [Lazy Load] Auxiliares carregados. Produtos: ${window.produtos.length}, Clientes: ${window.clientes.length}`);
@@ -3001,7 +3002,7 @@ async function atualizarEstoqueProdutos(itens, tipo) {
                 await Promise.allSettled(ops);
             }
         } else {
-            await saveData('produtos', window.produtos);
+            await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
         }
         atualizarSelectProdutos();
         
@@ -3982,6 +3983,38 @@ function normalizeProdutosList(list) {
     return Array.from(map.values());
 }
 
+// Quarentena anti-fantasma ("Produto sem nome"): window.produtos mistura
+// espécies (merge p/ exibição/select na carga). Somente entradas
+// provindas da coleção 'produtos' ou criadas nesta sessão podem persistir
+// em writes whole-list. Espécies nunca entram em 'produtos'.
+window.__produtosRawIds = window.__produtosRawIds instanceof Set ? window.__produtosRawIds : new Set();
+window.__produtosNovosIds = window.__produtosNovosIds instanceof Set ? window.__produtosNovosIds : new Set();
+function registrarIdsProdutosRaw(lista) {
+    try {
+        const s = new Set();
+        (Array.isArray(lista) ? lista : []).forEach(r => {
+            if (!r || typeof r !== 'object') return;
+            ['id', 'firebaseKey', 'codigo', 'code', 'sku'].forEach(k => {
+                const v = r[k];
+                if (v !== undefined && v !== null && String(v).trim() !== '') s.add(String(v).trim());
+            });
+        });
+        window.__produtosRawIds = s;
+    } catch (_) {}
+}
+function filtrarProdutosPersistiveis(lista) {
+    try {
+        const raw = window.__produtosRawIds instanceof Set ? window.__produtosRawIds : new Set();
+        const novos = window.__produtosNovosIds instanceof Set ? window.__produtosNovosIds : new Set();
+        return (Array.isArray(lista) ? lista : []).filter(p => {
+            if (!p || typeof p !== 'object') return false;
+            const keys = [p.id, p.firebaseKey, p.codigo, p.code, p.sku]
+                .map(v => (v === undefined || v === null) ? '' : String(v).trim()).filter(Boolean);
+            return keys.some(k => raw.has(k) || novos.has(k));
+        });
+    } catch (_) { return Array.isArray(lista) ? lista : []; }
+}
+
 function novoProduto() {
     document.getElementById('produtoId').value = '';
     document.getElementById('produtoForm').reset();
@@ -4008,6 +4041,11 @@ async function salvarProduto(event) {
         if (isBlankValue(codigo) || !isNumericCode(codigo)) {
             codigo = ensureUniqueCode(codigo, usedCodes);
             if (codigoInput) codigoInput.value = codigo;
+        }
+        // Trava anti-fantasma: nome vazio nunca persiste ("Produto sem nome")
+        if (!String(nome || '').trim()) {
+            ToastManager.warning('Informe o nome do produto', 'Atenção');
+            return;
         }
         const produto = {
             id: produtoId || generateUniqueId('PROD'),
@@ -4040,6 +4078,7 @@ async function salvarProduto(event) {
             }
         } else {
             window.produtos.push(produto);
+            try { window.__produtosNovosIds.add(String(produto.id)); } catch (_) {}
         }
         window.produtos = normalizeProdutosList(window.produtos);
         
@@ -4053,12 +4092,12 @@ async function salvarProduto(event) {
             }
         } else {
             __rvSaveDataRemoteOk = false;
-            await saveData('produtos', window.produtos);
+            await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
             produtoRemotoOk = __rvSaveDataRemoteOk;
         }
         try {
             const storageKey = getStorageKey('produtos');
-            persistLocalValue(storageKey, window.produtos);
+            persistLocalValue(storageKey, filtrarProdutosPersistiveis(window.produtos));
         } catch (_) {}
         if (!produtoRemotoOk) {
             try { window.produtos = backupProdutos; } catch (_) {}
@@ -4255,7 +4294,7 @@ async function excluirProduto(produtoId) {
         const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
         window.produtos = window.produtos.filter(p => p.id !== produtoId);
         __rvSaveDataRemoteOk = false;
-        await saveData('produtos', window.produtos);
+        await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
         if (!__rvSaveDataRemoteOk) {
             try { window.produtos = backupProdutos; } catch (_) {}
             ToastManager.error('Não foi possível excluir o produto no servidor. Verifique sua conexão e permissões e tente novamente.', 'Falha ao excluir', 8000);
