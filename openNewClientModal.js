@@ -296,6 +296,17 @@ function openClientFormModal(options = {}) {
         console.warn('Falha ao preencher modal de cliente:', error);
     });
     
+    // Paridade com Espécies: fechar "Lista de Clientes" ao abrir o form
+    // (evita overlap — form é 100010, lista é 100000)
+    try {
+        const listModal = document.getElementById('clientListModal');
+        if (listModal && (listModal.style.display === 'block' || listModal.style.display === 'flex')) {
+            listModal.style.display = 'none';
+            console.log('✅ Lista de Clientes fechada automaticamente ao abrir "Novo Cliente"');
+        }
+        document.querySelectorAll('.autocomplete-items').forEach(s => s.remove());
+    } catch (_) {}
+
     // Mostrar modal
     modal.style.display = 'block';
     modal.classList.add('show');

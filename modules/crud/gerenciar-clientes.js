@@ -91,8 +91,18 @@ window.GerenciarClientes = (function() {
      */
     function openNewClientModal() {
         console.log('👥 Abrindo modal de novo cliente...');
-        
+
         try {
+            // Paridade com Espécies: fechar "Lista de Clientes" ao abrir o form
+            try {
+                const listModal = document.getElementById('clientListModal');
+                if (listModal && (listModal.style.display === 'block' || listModal.style.display === 'flex')) {
+                    listModal.style.display = 'none';
+                    console.log('✅ Lista de Clientes fechada automaticamente ao abrir "Novo Cliente"');
+                }
+                document.querySelectorAll('.autocomplete-items').forEach(s => s.remove());
+            } catch (_) {}
+
             // Resetar modo de edição
             editingClientId = null;
             

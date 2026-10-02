@@ -2275,7 +2275,19 @@ function ensureNewClientButtonInFooter(isFornecedor = false) {
 // ✅ NOVA FUNÇÃO PADRONIZADA PARA ABRIR MODAL DE NOVO CLIENTE/FORNECEDOR
 function openStandardizedNewClientModal() {
     console.log("📝 === ABRINDO MODAL DE NOVO CLIENTE/FORNECEDOR PADRONIZADO ===");
-    
+
+    // Paridade com Espécies/Fornecedor: fechar listas ao abrir o form
+    try {
+        for (const id of ['clientListModal', 'fornecedorListModal']) {
+            const lm = document.getElementById(id);
+            if (lm && (lm.style.display === 'block' || lm.style.display === 'flex')) {
+                lm.style.display = 'none';
+                console.log(`✅ ${id} fechada automaticamente ao abrir form`);
+            }
+        }
+        document.querySelectorAll('.autocomplete-items').forEach(s => s.remove());
+    } catch (_) {}
+
     const pageConfig = getPageConfig();
     const isFornecedor = pageConfig.title.includes('Fornecedor');
     
