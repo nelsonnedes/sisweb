@@ -301,6 +301,12 @@ function criarFallbackAdapter() {
             try {
                 console.log(`📡 Fallback: Tentando carregar ${key} via getData...`);
                 
+                if (typeof window !== 'undefined' && window.SiswebData && typeof window.SiswebData.get === 'function') {
+                    const sd = await window.SiswebData.get(key);
+                    if (sd && sd.success && sd.data !== null && sd.data !== undefined) {
+                        return { success: true, data: sd.data, source: 'sisweb-data' };
+                    }
+                }
                 if (typeof getData === 'function') {
                     const data = await getData(key);
                     return {
@@ -325,6 +331,13 @@ function criarFallbackAdapter() {
             try {
                 console.log(`💾 Fallback: Tentando salvar ${key} via saveData...`);
                 
+                if (typeof window !== 'undefined' && window.SiswebData && typeof window.SiswebData.save === 'function') {
+                    // Paridade com fallback legado: itemKey descartado (comportamento histórico)
+                    const sd = await window.SiswebData.save(key, null, data);
+                    if (sd && sd.success) {
+                        return { success: true, source: 'sisweb-data' };
+                    }
+                }
                 if (typeof saveData === 'function') {
                     const result = await saveData(key, data);
                     return {

@@ -8,6 +8,36 @@ let paginaAtualProdutos = 1;
 let produtosFiltrados = [];
 let produtosUltimaListaRenderizada = null;
 let movimentacoesProdutosCache = [];
+
+// Strangler A4: leitura/escrita via SiswebData com fallback ao global legado.
+// swGet: sucesso retorna dado cru; falha cai no window.getData; sem ambos, null.
+// swSave(path, id, data): SiswebData.save; fallback window.saveData(path, data) 2-arg.
+async function swGet(key) {
+    try {
+        if (typeof window !== 'undefined' && window.SiswebData && typeof window.SiswebData.get === 'function') {
+            const r = await window.SiswebData.get(key);
+            if (r && r.success && r.data !== null && r.data !== undefined) return r.data;
+        }
+    } catch (_) {}
+    try {
+        if (typeof window !== 'undefined' && typeof window.getData === 'function') {
+            return await window.getData(key);
+        }
+    } catch (_) {}
+    return null;
+}
+async function swSave(path, id, data) {
+    try {
+        if (typeof window !== 'undefined' && window.SiswebData && typeof window.SiswebData.save === 'function') {
+            const r = await window.SiswebData.save(path, id, data);
+            if (r && r.success) return r;
+        }
+    } catch (_) {}
+    if (typeof window !== 'undefined' && typeof window.saveData === 'function') {
+        return await window.saveData(path, data);
+    }
+    return { success: false };
+}
 let responsaveisProdutosCache = [];
 let ordemProdutos = { coluna: 'nome', direcao: 'asc' };
 let produtosSelecionados = new Set();
@@ -21,7 +51,7 @@ async function carregarEstoqueProdutos() {
 
     try {
         // Carregar dados do Firebase/Local
-        estoqueProdutos = normalizarListaProdutosFirebase(await getData('estoqueProdutos') || []);
+        estoqueProdutos = normalizarListaProdutosFirebase(await swGet('estoqueProdutos') || []);
         await carregarMovimentacoesProdutosCache();
         await carregarResponsaveisProdutosCache();
         
@@ -131,7 +161,7 @@ function atualizarProdutoUltimaMovimentacao(produto, info = {}) {
 
 async function carregarMovimentacoesProdutosCache() {
     try {
-        movimentacoesProdutosCache = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+        movimentacoesProdutosCache = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
     } catch (error) {
         console.warn('Não foi possível carregar movimentações de produtos para filtros.', error);
         movimentacoesProdutosCache = [];
@@ -195,7 +225,7 @@ async function carregarResponsaveisProdutosCache() {
 
     try {
         if (typeof getData === 'function') {
-            const funcionarios = normalizarListaProdutosFirebase(await getData('funcionarios') || []);
+            const funcionarios = normalizarListaProdutosFirebase(await swGet('funcionarios') || []);
             funcionarios
                 .filter(func => func && func.ativo !== false)
                 .forEach(func => adicionarResponsavelProduto(set, func.nome || func.name || func.displayName));
@@ -654,7 +684,7 @@ async function salvarProdutoAlmoxarifadoPeloFormulario(e) {
     try {
         await saveDataProdutos('estoqueProdutos', estoqueProdutos);
         if (quantidadeAlterada) {
-            const movsAntigas = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+            const movsAntigas = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
             const mov = {
                 id: generateUniqueId(obterPrefixoMovimentacaoProduto('ajuste', direcaoAjuste)),
                 data: dataIso,
@@ -801,7 +831,7 @@ async function registrarEntradaProduto(e) {
     };
 
     try {
-        const movsAntigas = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+        const movsAntigas = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
         const movsAtualizadas = [...movsAntigas, mov];
         await saveDataProdutos('estoqueProdutos', estoqueProdutos);
         await saveDataProdutos('movimentacoesProdutos', movsAtualizadas);
@@ -933,7 +963,7 @@ async function ensureProdutosColumnsConfigLoaded() {
     } catch (_) {}
     try {
         if (getProdutosPreferenceUser() !== 'anon' && typeof getData === 'function') {
-            const remote = await getData(getProdutosColumnsRemotePath(), { debounceMs: 0 });
+            const remote = await swGet(getProdutosColumnsRemotePath());
             if (remote && typeof remote === 'object') {
                 localStorage.setItem(getProdutosColumnsStorageKey(), JSON.stringify(remote));
             }
@@ -969,7 +999,7 @@ async function saveProdutosColumnsConfig(config = {}) {
     try { localStorage.setItem(getProdutosColumnsStorageKey(), JSON.stringify(sanitized)); } catch (_) {}
     try {
         if (getProdutosPreferenceUser() !== 'anon' && typeof saveData === 'function') {
-            await saveData(getProdutosColumnsRemotePath(), sanitized, { debounceMs: 0, showToast: false });
+            await swSave(getProdutosColumnsRemotePath(), null, sanitized);
         }
     } catch (_) {}
     applyProdutosColumnsConfig();
@@ -1407,7 +1437,7 @@ async function salvarEdicaoModalProdutoAlmoxarifado(e) {
     try {
         await saveDataProdutos('estoqueProdutos', estoqueProdutos);
         if (quantidadeAlterada) {
-            const movsAntigas = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+            const movsAntigas = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
             const mov = {
                 id: generateUniqueId(obterPrefixoMovimentacaoProduto('ajuste', direcaoAjuste)),
                 data: dataIso,
@@ -1785,7 +1815,7 @@ async function registrarSaidaProduto({ prodId, qtd, motivo, data, responsavel, t
         };
         
         // Carregar movimentações existentes
-        const movsAntigas = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+        const movsAntigas = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
         const movsAtualizadas = [...movsAntigas, mov];
         
         // Salvar tudo
@@ -1885,7 +1915,7 @@ async function gerarRelatorioProdutosSaldo(onlySelected = false, options = {}) {
         await carregarResponsaveisProdutosCache();
         let produtos = (Array.isArray(estoqueProdutos) && estoqueProdutos.length > 0)
             ? estoqueProdutos.slice()
-            : normalizarListaProdutosFirebase(await getData('estoqueProdutos') || []);
+            : normalizarListaProdutosFirebase(await swGet('estoqueProdutos') || []);
             
         if (typeof window.filtrarItensSelecionadosRelatorio === 'function') {
             produtos = window.filtrarItensSelecionadosRelatorio('produtos_saldo', produtos, p => p.id || p.nome || '', onlySelected);
@@ -2011,7 +2041,7 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
         await carregarResponsaveisProdutosCache();
         const movimentos = (Array.isArray(movimentacoesProdutosCache) && movimentacoesProdutosCache.length > 0)
             ? movimentacoesProdutosCache.slice()
-            : normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+            : normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
 
         let filtrados = movimentos.slice();
         if (dataInicio && dataFim) {
@@ -2459,7 +2489,7 @@ async function editarMovimentacaoProduto(movId) {
         const id = String(movId || '').trim();
         if (!id) return;
         ensureMovimentacaoEditModal();
-        const movs = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+        const movs = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
         const mov = movs.find(m => String(m.id) === id);
         if (!mov) { alert('Movimentação não encontrada.'); return; }
         const dataIso = mov.data ? new Date(mov.data).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
@@ -2488,7 +2518,7 @@ async function salvarEdicaoMovimentacaoProduto() {
         const origem = String(document.getElementById('editMovOrigem')?.value || '').trim();
         const responsavel = String(document.getElementById('editMovResponsavel')?.value || '').trim();
         const motivo = String(document.getElementById('editMovMotivo')?.value || '').trim();
-        const movs = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+        const movs = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
         const idx = movs.findIndex(m => String(m.id) === id);
         if (idx < 0) { alert('Movimentação não encontrada.'); return; }
         const current = movs[idx] || {};
@@ -2517,7 +2547,7 @@ async function estornarMovimentacaoProduto(movId) {
     try {
         const id = String(movId || '').trim();
         if (!id) return;
-        const movs = normalizarListaProdutosFirebase(await getData('movimentacoesProdutos') || []);
+        const movs = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
         const idx = movs.findIndex(m => String(m.id) === id);
         if (idx < 0) { alert('Movimentação não encontrada.'); return; }
         const mov = movs[idx] || {};
@@ -2532,7 +2562,7 @@ async function estornarMovimentacaoProduto(movId) {
         if (!prodId) { alert('Produto inválido.'); return; }
         if (!confirm('Confirma estornar esta movimentação? Isso irá gerar uma movimentação inversa e ajustar o estoque.')) return;
 
-        const produtos = await getData('estoqueProdutos') || [];
+        const produtos = await swGet('estoqueProdutos') || [];
         const produtosArr = Array.isArray(produtos) ? produtos.slice() : Object.values(produtos || {});
         const pIdx = produtosArr.findIndex(p => String(p.id) === prodId);
         if (pIdx < 0) { alert('Produto não encontrado no estoque.'); return; }
