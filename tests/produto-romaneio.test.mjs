@@ -54,7 +54,7 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   assert.ok(/id="secaoProdutoForm"/.test(html), 'form inline existe');
   assert.ok(/name="tipoProdutoForm"/.test(html), 'radios Comum/Romaneio existem');
   assert.ok(/id="previewProdutoRomaneio"/.test(html), 'preview existe');
-  for (const fn of ['alternarTipoProdutoForm', 'fecharProdutoForm', 'carregarItensProdutoRomaneio', 'renderPreviewProdutoRomaneio', 'adicionarEstoqueGruposRomaneio', 'renderPreviewProdutoManuel', 'carregarRomaneiosEm', 'acharProdutoSerradoExistente', 'adicionarItemProdutoManuel', 'excluirItemProdutoManuel', 'limparItensProdutoManuel', 'adicionarEstoqueManuel', 'agruparItensRomaneioExLxC', 'excluirGrupoPreviewRomaneio', 'gruposRomaneioSelecionados', 'temDimsSerrado', 'metrosLinearesDe']) {
+  for (const fn of ['alternarTipoProdutoForm', 'fecharProdutoForm', 'carregarItensProdutoRomaneio', 'renderPreviewProdutoRomaneio', 'adicionarEstoqueGruposRomaneio', 'renderPreviewProdutoManuel', 'carregarRomaneiosEm', 'acharProdutoSerradoExistente', 'adicionarItemProdutoManuel', 'excluirItemProdutoManuel', 'limparItensProdutoManuel', 'adicionarEstoqueManuel', 'agruparItensRomaneioExLxC', 'excluirGrupoPreviewRomaneio', 'gruposRomaneioSelecionados', 'temDimsSerrado', 'metrosLinearesDe', 'limparCamposProdutoManuel']) {
     assert.ok(src.includes('function ' + fn + '('), `função ${fn} existe`);
   }
   assert.ok(!/usarGrupoProdutoRomaneio/.test(src), 'usarGrupo removido (checkboxes no preview)');
@@ -62,6 +62,7 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   assert.ok(/value="manuel"[^>]*> Produto Manual/.test(html), 'radio Produto Manual existe');
   assert.ok(/id="produtoManuelFooter"/.test(html), 'footer manuel existe');
   assert.ok(/id="produtoRomaneioFooter"/.test(html), 'footer romaneio existe');
+  assert.ok(/id="unidadeItem"/.test(html), 'campo Unidade no Cadastrado existe');
   assert.ok(/id="previewProdutoManuel"/.test(html), 'preview manuel existe');
   assert.ok(/id="formProdutoBase"/.test(html), 'base do form existe');
   assert.ok(!/id="produto(Form|Manuel|Romaneio)Footer" class="modal-footer action-buttons"/.test(html), 'footers sem action-buttons (!important global quebrava o hide)');

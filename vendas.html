@@ -453,6 +453,27 @@
             white-space: nowrap;
         }
 
+        /* Modal Lista de Produtos — mesma largura do Lista de Pedidos */
+        #listaProdutosModal .modal-content {
+            max-width: 1000px;
+            padding: 0;
+            margin: 2% auto;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            width: 95%;
+        }
+
+        #listaProdutosModal .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1 1 auto;
+        }
+
+        #listaProdutosModal th {
+            white-space: nowrap;
+        }
+
         #listaPedidosModal .acoes-cell {
             white-space: nowrap;
         }
@@ -1255,6 +1276,17 @@
                         <div class="form-group form-group-small">
                             <label for="precoUnitario">Preço Unit.:</label>
                             <input type="text" id="precoUnitario" placeholder="R$ 0,00" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarItem();}">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="unidadeItem">Unidade:</label>
+                            <select id="unidadeItem">
+                                <option value="UN">UN</option>
+                                <option value="DZ">DZ</option>
+                                <option value="PC">PC</option>
+                                <option value="m³">m³</option>
+                                <option value="m²">m²</option>
+                                <option value="LN">LN</option>
+                            </select>
                         </div>
                         <div class="form-group form-group-small">
                             <label>&nbsp;</label>
@@ -2294,7 +2326,7 @@
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
-    <script src="vendas.js?v=6563a6933f94"></script>
+    <script src="vendas.js?v=c836eb53901b"></script>
 </body>
 
 </html>
