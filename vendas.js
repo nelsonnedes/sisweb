@@ -4021,13 +4021,35 @@ function filtrarProdutosPersistiveis(lista) {
     try {
         const raw = window.__produtosRawIds instanceof Set ? window.__produtosRawIds : new Set();
         const novos = window.__produtosNovosIds instanceof Set ? window.__produtosNovosIds : new Set();
-        return (Array.isArray(lista) ? lista : []).filter(p => {
+        const out = (Array.isArray(lista) ? lista : []).filter(p => {
             if (!p || typeof p !== 'object') return false;
             const keys = [p.id, p.firebaseKey, p.codigo, p.code, p.sku]
                 .map(v => (v === undefined || v === null) ? '' : String(v).trim()).filter(Boolean);
-            return keys.some(k => raw.has(k) || novos.has(k));
+            if (!keys.some(k => raw.has(k) || novos.has(k))) return false;
+            // Purge: registro puro-lixo (sem nome, sem preço, sem estoque)
+            // não tem valor de negócio e só polui a lista — descartado no save
+            return !isProdutoJunk(p);
         });
+        try {
+            const drop = (Array.isArray(lista) ? lista.length : 0) - out.length;
+            if (drop > 0) console.log(`🧹 Quarentena: ${drop} registro(s) vazio(s) purgado(s) do save em 'produtos'`);
+        } catch (_) {}
+        return out;
     } catch (_) { return Array.isArray(lista) ? lista : []; }
+}
+
+// Registro puro-lixo: nenhum campo de nome + preço zerado + estoque zerado.
+// (Produto legítimo sempre tem nome — trava no salvar — ou valor/estoque.)
+function isProdutoJunk(p) {
+    try {
+        if (!p || typeof p !== 'object') return true;
+        const temNome = [p.nome, p.name, p.nomeComum, p.nomeCientifico]
+            .some(v => String(v || '').trim() !== '');
+        if (temNome) return false;
+        const preco = parseFloat(p.preco ?? p.price) || 0;
+        const est = parseFloat(p.estoque ?? p.quantidade) || 0;
+        return !(preco > 0 || est > 0);
+    } catch (_) { return false; }
 }
 
 function novoProduto() {
@@ -4148,7 +4170,7 @@ async function carregarRomaneiosEm(tipoSelId, romSelId) {
         sel.appendChild(opt);
     });
     if (lista.length === 0) sel.innerHTML = '<option value="">Nenhum romaneio encontrado</option>';
-    try { limparPreviewProdutoRomaneio(); } catch (_) {}
+    // NÃO limpa o preview aqui: permite acumular grupos de vários romaneios/tipos
 }
 
 async function carregarRomaneiosProduto() {
@@ -4352,7 +4374,7 @@ function renderPreviewProdutoRomaneio() {
         } catch (_) {}
         html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
             + `<input type="checkbox" name="grupoRomSel" value="${idx}" checked style="width:18px;height:18px;cursor:pointer;" aria-label="Selecionar grupo">`
-            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças</span></div>`
+            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span></div>`
             + `<button type="button" class="btn btn-danger btn-small" data-excluir-gid="${String(g.gid || '').replace(/"/g, '&quot;')}" aria-label="Excluir grupo">Excluir</button></div>`;
     });
     html += `<div style="text-align:right;font-weight:700;">Total: ${total.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</div>`;
@@ -4773,7 +4795,8 @@ function listarProdutos() {
 function carregarTabelaProdutos(filtro = '') {
     const tbody = document.getElementById('produtosTable');
     window.produtos = normalizeProdutosList(window.produtos || []);
-    let produtosFiltrados = [...window.produtos];
+    // Oculta puro-lixo da exibição (segue no Firebase até o próximo save purgar)
+    let produtosFiltrados = [...window.produtos].filter(p => { try { return !isProdutoJunk(p); } catch (_) { return true; } });
     
     if (filtro) {
         const filtroLower = filtro.toLowerCase();
@@ -5728,8 +5751,10 @@ function atualizarSelectProdutos() {
     select.innerHTML = '<option value="">Selecione um produto</option>';
     
     if (window.produtos && window.produtos.length > 0) {
+        // Oculta puro-lixo do select (segue no Firebase até o próximo save purgar)
+        const exibiveis = window.produtos.filter(p => { try { return !isProdutoJunk(p); } catch (_) { return true; } });
         // Garantir que ordenação e exibição tratem nomes alternativos (name/nome)
-        window.produtos.sort((a,b) => (a.nome || a.name || '').localeCompare(b.nome || b.name || '')).forEach(p => {
+        exibiveis.sort((a,b) => (a.nome || a.name || '').localeCompare(b.nome || b.name || '')).forEach(p => {
             const option = document.createElement('option');
             option.value = p.id;
             

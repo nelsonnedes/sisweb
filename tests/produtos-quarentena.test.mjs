@@ -32,7 +32,7 @@ test('filtrarProdutosPersistiveis: mantém produtos, descarta espécies/fantasma
   sandbox.window.window = sandbox.window;
   vm.createContext(sandbox);
   vm.runInContext(
-    extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
+    extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function isProdutoJunk(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
     sandbox
   );
   vm.runInContext(`
@@ -56,4 +56,42 @@ test('filtrarProdutosPersistiveis: mantém produtos, descarta espécies/fantasma
   `, sandbox);
   assert.equal(sandbox.__out.map((p) => p.id).join(','), 'p1,p2');
   assert.equal(sandbox.__outNew.map((p) => p.id).join(','), 'PROD_999');
+});
+
+test('quarentena v2: purga puro-lixo mesmo com id registrado', () => {
+  const sandbox = { window: {} };
+  sandbox.window.window = sandbox.window;
+  vm.createContext(sandbox);
+  const src = readFileSync(new URL('../vendas.js', import.meta.url), 'utf8');
+  function extract(src, start) {
+    const i = src.indexOf(start);
+    const j = src.indexOf('{', i);
+    let d = 0;
+    for (let k = j; k < src.length; k++) {
+      if (src[k] === '{') d++;
+      if (src[k] === '}') { d--; if (d === 0) return src.slice(i, k + 1); }
+    }
+    throw new Error('unbalanced ' + start);
+  }
+  vm.runInContext(
+    extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function isProdutoJunk(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
+    sandbox
+  );
+  vm.runInContext(`
+    window.__produtosRawIds = new Set();
+    window.__produtosNovosIds = new Set();
+    registrarIdsProdutosRaw([
+      { id: 'g1', codigo: '000001' },
+      { id: 'p1', codigo: '000010', nome: 'Parafuso' },
+      { id: 'e1', codigo: '000011' }
+    ]);
+    // g1: sem nome/preço/estoque -> purge; p1: com nome -> fica;
+    // e1: sem nome MAS com estoque -> fica (dado real)
+    this.__out = filtrarProdutosPersistiveis([
+      { id: 'g1', codigo: '000001' },
+      { id: 'p1', codigo: '000010', nome: 'Parafuso' },
+      { id: 'e1', codigo: '000011', estoque: 5 }
+    ]);
+  `, sandbox);
+  assert.equal(sandbox.__out.map((p) => p.id).join(','), 'p1,e1');
 });

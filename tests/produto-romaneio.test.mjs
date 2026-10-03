@@ -59,7 +59,7 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   }
   assert.ok(!/usarGrupoProdutoRomaneio/.test(src), 'usarGrupo removido (checkboxes no preview)');
   assert.ok(!/agrProdEsp/.test(src), 'checkboxes Agrupar removidos (auto ExLxC)');
-  assert.ok(/value="manuel"[^>]*> Produto Manuel/.test(html), 'radio Produto Manuel existe');
+  assert.ok(/value="manuel"[^>]*> Produto Manual/.test(html), 'radio Produto Manual existe');
   assert.ok(/id="produtoManuelFooter"/.test(html), 'footer manuel existe');
   assert.ok(/id="produtoRomaneioFooter"/.test(html), 'footer romaneio existe');
   assert.ok(/id="previewProdutoManuel"/.test(html), 'preview manuel existe');
