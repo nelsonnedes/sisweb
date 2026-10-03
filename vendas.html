@@ -1920,6 +1920,70 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" id="produtoRomaneioCheck" onchange="toggleProdutoRomaneio()">
+                        Produto Romaneio (Madeira Serrada)
+                    </label>
+                </div>
+                <div id="produtoRomaneioFields" style="display:none;border:1px solid var(--sw-border);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--sw-surface-2);">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="produtoRomaneioTipo">Tipo de Romaneio:</label>
+                            <select id="produtoRomaneioTipo" onchange="carregarRomaneiosProduto()">
+                                <option value="">Selecione...</option>
+                                <option value="romaneiosTL">TL</option>
+                                <option value="romaneiosPct">PCT</option>
+                                <option value="romaneiosPes">PES</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group-large">
+                            <label for="produtoRomaneioId">Romaneio:</label>
+                            <select id="produtoRomaneioId" onchange="preencherDimsRomaneioProduto()">
+                                <option value="">Selecione o tipo primeiro...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group form-group-large">
+                            <label for="produtoEspecie">Espécie:</label>
+                            <input type="text" id="produtoEspecie" placeholder="Ex: Pinus">
+                        </div>
+                        <div class="form-group">
+                            <label for="produtoEspessura">Espessura (cm):</label>
+                            <input type="number" id="produtoEspessura" min="0" step="0.1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                        <div class="form-group">
+                            <label for="produtoLargura">Largura (cm):</label>
+                            <input type="number" id="produtoLargura" min="0" step="0.1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="produtoComprimento">Comprimento (cm):</label>
+                            <input type="number" id="produtoComprimento" min="0" step="0.1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                        <div class="form-group">
+                            <label for="produtoPecas">Peças:</label>
+                            <input type="number" id="produtoPecas" min="0" step="1" value="1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                        <div class="form-group">
+                            <label for="produtoPpp">Peças/Pacote:</label>
+                            <input type="number" id="produtoPpp" min="1" step="1" value="1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                    </div>
+                    <div class="form-row" style="align-items:flex-end;">
+                        <div class="form-group">
+                            <label>Volume (m³):</label>
+                            <input type="text" id="produtoVolumePreview" readonly placeholder="0,000">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-adicionar" onclick="adicionarEstoqueProdutoRomaneio()">
+                                <i class="fas fa-plus"></i> Adicionar Estoque
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label for="produtoDescricao">Descrição:</label>
                     <textarea id="produtoDescricao" rows="3"></textarea>
                 </div>
@@ -2131,7 +2195,7 @@
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
-    <script src="vendas.js?v=a46abc2e7fec"></script>
+    <script src="vendas.js?v=ba043bae6770"></script>
 </body>
 
 </html>

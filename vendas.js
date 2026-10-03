@@ -4033,7 +4033,131 @@ function novoProduto() {
     const usedCodes = new Set((window.produtos || []).map(p => String(p.codigo || '').trim()).filter(Boolean));
     document.getElementById('produtoCodigo').value = ensureUniqueCode('', usedCodes);
     document.getElementById('produtoModalTitle').textContent = 'Novo Produto';
+    try { resetProdutoRomaneioFields(); } catch (_) {}
     document.getElementById('produtoModal').style.display = 'block';
+}
+
+// volume m³ p/ madeira serrada (cm): E x L x C / 1e6 x peças x ppp
+function calcularVolumeSerradoM3(espessura, largura, comprimento, qtd, ppp) {
+    const e = parseFloat(String(espessura ?? '').replace(',', '.')) || 0;
+    const l = parseFloat(String(largura ?? '').replace(',', '.')) || 0;
+    const c = parseFloat(String(comprimento ?? '').replace(',', '.')) || 0;
+    const q = parseFloat(qtd) || 0;
+    const p = parseFloat(ppp) || 1;
+    if (e <= 0 || l <= 0 || c <= 0 || q <= 0) return 0;
+    return Math.round(((e * l * c) / 1e6) * q * p * 1000) / 1000;
+}
+
+function toggleProdutoRomaneio() {
+    const checked = !!document.getElementById('produtoRomaneioCheck')?.checked;
+    const box = document.getElementById('produtoRomaneioFields');
+    if (box) box.style.display = checked ? 'block' : 'none';
+    if (checked) {
+        const un = document.getElementById('produtoUnidade');
+        if (un) un.value = 'UN';
+        atualizarVolumeProdutoRomaneio();
+    }
+}
+
+function resetProdutoRomaneioFields() {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    const chk = document.getElementById('produtoRomaneioCheck');
+    if (chk) chk.checked = false;
+    const box = document.getElementById('produtoRomaneioFields');
+    if (box) box.style.display = 'none';
+    set('produtoRomaneioTipo', '');
+    const sel = document.getElementById('produtoRomaneioId');
+    if (sel) sel.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
+    set('produtoEspecie', '');
+    set('produtoEspessura', '');
+    set('produtoLargura', '');
+    set('produtoComprimento', '');
+    set('produtoPecas', '1');
+    set('produtoPpp', '1');
+    set('produtoVolumePreview', '');
+}
+
+async function carregarRomaneiosProduto() {
+    const tipo = document.getElementById('produtoRomaneioTipo')?.value || '';
+    const sel = document.getElementById('produtoRomaneioId');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Carregando...</option>';
+    let lista = [];
+    try {
+        if (typeof getRomaneiosMerged === 'function' && tipo) {
+            lista = await getRomaneiosMerged(tipo) || [];
+        }
+    } catch (_) { lista = []; }
+    sel.innerHTML = '<option value="">Selecione...</option>';
+    lista.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = String(r.id || r.firebaseKey || r.numero || '');
+        opt.textContent = `${r.numero || r.id || 's/n'}${r.data ? ' - ' + r.data : ''}`;
+        opt.dataset.payload = JSON.stringify({ id: r.id || r.firebaseKey || '', numero: r.numero || '', itens: Array.isArray(r.itens) ? r.itens.slice(0, 50) : (Array.isArray(r.items) ? r.items.slice(0, 50) : []) });
+        sel.appendChild(opt);
+    });
+    if (lista.length === 0) sel.innerHTML = '<option value="">Nenhum romaneio encontrado</option>';
+}
+
+function preencherDimsRomaneioProduto() {
+    try {
+        const sel = document.getElementById('produtoRomaneioId');
+        const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
+        if (!opt || !opt.dataset.payload) return;
+        const data = JSON.parse(opt.dataset.payload);
+        const item = Array.isArray(data.itens) && data.itens.length > 0 ? data.itens[0] : null;
+        if (!item) return;
+        const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null && v !== '') el.value = v; };
+        set('produtoEspecie', item.especie || item.nome || '');
+        set('produtoEspessura', item.espessura ?? '');
+        set('produtoLargura', item.largura ?? '');
+        set('produtoComprimento', item.comprimento ?? item.comp ?? '');
+        if (item.quantidade) set('produtoPecas', item.quantidade);
+        if (item.pecasPorPacote) set('produtoPpp', item.pecasPorPacote);
+        atualizarVolumeProdutoRomaneio();
+    } catch (_) {}
+}
+
+function lerDimsProdutoRomaneio() {
+    const num = (id) => {
+        const el = document.getElementById(id);
+        return el ? (parseFloat(String(el.value ?? '').replace(',', '.')) || 0) : 0;
+    };
+    const str = (id) => document.getElementById(id)?.value || '';
+    return {
+        tipo: str('produtoRomaneioTipo'),
+        romaneioId: str('produtoRomaneioId'),
+        romaneioNumero: (() => { try { const s = document.getElementById('produtoRomaneioId'); const o = s && s.selectedOptions && s.selectedOptions[0]; return o ? o.textContent.split(' - ')[0] : ''; } catch (_) { return ''; } })(),
+        especie: String(str('produtoEspecie')).trim(),
+        espessura: num('produtoEspessura'),
+        largura: num('produtoLargura'),
+        comprimento: num('produtoComprimento'),
+        pecas: num('produtoPecas') || 1,
+        ppp: num('produtoPpp') || 1
+    };
+}
+
+function atualizarVolumeProdutoRomaneio() {
+    try {
+        const d = lerDimsProdutoRomaneio();
+        const v = calcularVolumeSerradoM3(d.espessura, d.largura, d.comprimento, d.pecas, d.ppp);
+        const el = document.getElementById('produtoVolumePreview');
+        if (el) el.value = v > 0 ? v.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : '';
+        return v;
+    } catch (_) { return 0; }
+}
+
+function adicionarEstoqueProdutoRomaneio() {
+    const v = atualizarVolumeProdutoRomaneio();
+    if (!(v > 0)) {
+        ToastManager.warning('Informe Espessura, Largura, Comprimento e Peças para calcular o volume', 'Atenção');
+        return;
+    }
+    const estEl = document.getElementById('produtoEstoque');
+    const atual = estEl ? (parseFloat(String(estEl.value ?? '').replace(',', '.')) || 0) : 0;
+    const novo = Math.round((atual + v) * 1000) / 1000;
+    if (estEl) estEl.value = novo;
+    ToastManager.success(`${v.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ adicionado(s) ao estoque`, 'Estoque');
 }
 
 async function salvarProduto(event) {
@@ -4042,7 +4166,7 @@ async function salvarProduto(event) {
     try {
         const produtoId = document.getElementById('produtoId').value;
         const nomeRaw = document.getElementById('produtoNome').value;
-        const nome = isAllCaps(nomeRaw) ? toTitleCasePt(nomeRaw) : nomeRaw;
+        let nome = isAllCaps(nomeRaw) ? toTitleCasePt(nomeRaw) : nomeRaw;
         const unidadeRaw = document.getElementById('produtoUnidade').value;
         const unidade = isAllCaps(unidadeRaw) ? toTitleCasePt(unidadeRaw) : unidadeRaw;
         const descricaoRaw = document.getElementById('produtoDescricao')?.value || '';
@@ -4055,6 +4179,17 @@ async function salvarProduto(event) {
             if (codigoInput) codigoInput.value = codigo;
         }
         // Trava anti-fantasma: nome vazio nunca persiste ("Produto sem nome")
+        // (romaneio com espécie auto-preenche a partir das dimensões)
+        try {
+            if (!String(nome || '').trim() && document.getElementById('produtoRomaneioCheck')?.checked) {
+                const d = lerDimsProdutoRomaneio();
+                if (String(d.especie || '').trim()) {
+                    nome = `${d.especie} ${d.espessura}x${d.largura}x${d.comprimento}`.trim();
+                    const nomeEl = document.getElementById('produtoNome');
+                    if (nomeEl) nomeEl.value = nome;
+                }
+            }
+        } catch (_) {}
         if (!String(nome || '').trim()) {
             ToastManager.warning('Informe o nome do produto', 'Atenção');
             return;
@@ -4069,6 +4204,25 @@ async function salvarProduto(event) {
             descricao,
             updated: new Date().toISOString()
         };
+        // Produto Romaneio (Madeira Serrada): vínculo + dimensões + volume
+        try {
+            if (document.getElementById('produtoRomaneioCheck')?.checked) {
+                const d = lerDimsProdutoRomaneio();
+                produto.tipoProduto = 'romaneio';
+                produto.romaneioTipo = d.tipo;
+                produto.romaneioId = d.romaneioId;
+                produto.romaneioNumero = d.romaneioNumero;
+                produto.especie = d.especie;
+                produto.espessura = d.espessura;
+                produto.largura = d.largura;
+                produto.comprimento = d.comprimento;
+                produto.pecas = d.pecas;
+                produto.pecasPorPacote = d.ppp;
+                produto.volumeM3 = calcularVolumeSerradoM3(d.espessura, d.largura, d.comprimento, d.pecas, d.ppp);
+                if (!String(produto.unidade || '').trim() || produto.unidade === 'UN') produto.unidade = 'm³';
+                if (!String(nome || '').trim() && d.especie) produto.nome = `${d.especie} ${d.espessura}x${d.largura}x${d.comprimento}`.trim();
+            }
+        } catch (_) {}
         
         if (!produtoId) {
             produto.created = new Date().toISOString();
@@ -4292,7 +4446,35 @@ function editarProduto(produtoId) {
     document.getElementById('produtoUnidade').value = produto.unidade || 'UN';
     const descEl = document.getElementById('produtoDescricao');
     if (descEl) descEl.value = produto.descricao || '';
-    
+
+    try {
+        resetProdutoRomaneioFields();
+        if (produto.tipoProduto === 'romaneio') {
+            const chk = document.getElementById('produtoRomaneioCheck');
+            if (chk) chk.checked = true;
+            const box = document.getElementById('produtoRomaneioFields');
+            if (box) box.style.display = 'block';
+            const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
+            set('produtoRomaneioTipo', produto.romaneioTipo || '');
+            // Romaneio select é recarregado sob demanda; guarda ids para persistência
+            const sel = document.getElementById('produtoRomaneioId');
+            if (sel && produto.romaneioId) {
+                sel.innerHTML = '';
+                const opt = document.createElement('option');
+                opt.value = String(produto.romaneioId);
+                opt.textContent = produto.romaneioNumero || String(produto.romaneioId);
+                sel.appendChild(opt);
+            }
+            set('produtoEspecie', produto.especie || '');
+            set('produtoEspessura', produto.espessura ?? '');
+            set('produtoLargura', produto.largura ?? '');
+            set('produtoComprimento', produto.comprimento ?? '');
+            set('produtoPecas', produto.pecas ?? '1');
+            set('produtoPpp', produto.pecasPorPacote ?? '1');
+            atualizarVolumeProdutoRomaneio();
+        }
+    } catch (_) {}
+
     document.getElementById('produtoModalTitle').textContent = 'Editar Produto';
     document.getElementById('produtoModal').style.display = 'block';
 }
@@ -5064,7 +5246,8 @@ function atualizarSelectProdutos() {
             // Compatibilidade species/produtos
             const nomeCientifico = p.nomeCientifico || '';
             const nomeComum = p.nomeComum || p.nome || p.name || 'Produto sem nome';
-            const texto = nomeCientifico ? `${nomeCientifico} - ${nomeComum}` : nomeComum;
+            let texto = nomeCientifico ? `${nomeCientifico} - ${nomeComum}` : nomeComum;
+            if (p.tipoProduto === 'romaneio') texto += ' · Serrado';
             const preco = p.preco || p.price || 0;
             
             option.textContent = texto;
