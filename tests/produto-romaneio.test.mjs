@@ -67,9 +67,11 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   assert.ok(/adicionarItemProdutoManuel/.test(html), 'botão Adicionar item existe');
   assert.ok(/id="produtoRomaneioId2" onchange="atualizarVolumeProdutoRomaneio\(\)"/.test(html), 'troca de romaneio não apaga preview (multi)');
   assert.ok(/\[prod-form\] modo=/.test(src), 'log diagnóstico de footers presente');
-  assert.ok(/<th>Peças<\/th>/.test(html), 'coluna Peças existe');
+  assert.ok(/<th>M\. Linear<\/th>/.test(html), 'coluna M. Linear existe');
   assert.ok(/Volume \(m³\)/.test(html), 'coluna Volume existe');
   assert.ok(/existente\.pecas =/.test(src), 'acúmulo soma peças');
   assert.ok(/existente\.volumeM3 =/.test(src), 'acúmulo soma volumeM3');
+  assert.ok(/metrosLinearesDe/.test(src), 'helper metros lineares existe');
+  assert.ok(/g\.ml =/.test(src), 'grupo acumula ml');
   assert.ok(!/agrProdEsp/.test(html + src), 'checkboxes Agrupar removidos (auto ExLxC)');
 });

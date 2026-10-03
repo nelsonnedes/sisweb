@@ -4338,6 +4338,7 @@ function agruparItensRomaneioExLxC(itens, rid, numero, tipo) {
             : calcularVolumeSerradoM3(num(it.espessura), num(it.largura), num(it.comprimento ?? it.comp), q, ppp);
         g.pecas += q;
         g.volume = Math.round((g.volume + vol) * 1000) / 1000;
+        g.ml = Math.round(((g.ml || 0) + ((num(it.comprimento ?? it.comp) / 100) * q)) * 100) / 100;
         const pv = num(it.preco ?? it.precoUnitario ?? it.valorUnitario);
         if (pv > 0) g.valorTotal = Math.round((g.valorTotal + pv * q) * 100) / 100;
     });
@@ -4379,7 +4380,7 @@ function renderPreviewProdutoRomaneio() {
         } catch (_) {}
         html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
             + `<input type="checkbox" name="grupoRomSel" value="${idx}" checked style="width:18px;height:18px;cursor:pointer;" aria-label="Selecionar grupo">`
-            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span></div>`
+            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças · ${(g.ml || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span></div>`
             + `<button type="button" class="btn btn-danger btn-small" data-excluir-gid="${String(g.gid || '').replace(/"/g, '&quot;')}" aria-label="Excluir grupo">Excluir</button></div>`;
     });
     html += `<div style="text-align:right;font-weight:700;">Total: ${total.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</div>`;
@@ -4397,6 +4398,17 @@ function gruposRomaneioSelecionados() {
         const idxs = Array.from(document.querySelectorAll('input[name="grupoRomSel"]:checked')).map(el => parseInt(el.value, 10));
         return idxs.map(i => arr[i]).filter(Boolean);
     } catch (_) { return []; }
+}
+
+// Metros lineares de um produto serrado: campo ou fallback comp(m) x peças
+function metrosLinearesDe(p) {
+    try {
+        const salvo = parseFloat(p.metrosLineares);
+        if (salvo > 0) return Math.round(salvo * 100) / 100;
+        const comp = parseFloat(p.comprimento) || 0;
+        const pecas = parseFloat(p.pecas) || 0;
+        return Math.round(((comp / 100) * pecas) * 100) / 100;
+    } catch (_) { return 0; }
 }
 
 function acharProdutoSerradoExistente(romaneioId, g) {
@@ -4429,6 +4441,7 @@ async function adicionarEstoqueGruposRomaneio() {
             existente.estoque = Math.round(((parseFloat(existente.estoque) || 0) + g.volume) * 1000) / 1000;
             existente.pecas = Math.round(((parseFloat(existente.pecas) || 0) + (parseFloat(g.pecas) || 0)) * 1000) / 1000;
             existente.volumeM3 = Math.round(((parseFloat(existente.volumeM3) || 0) + g.volume) * 1000) / 1000;
+            existente.metrosLineares = Math.round(((parseFloat(existente.metrosLineares) || 0) + (parseFloat(g.ml) || 0)) * 100) / 100;
             existente.updated = new Date().toISOString();
             somados++;
             volumeTotal = Math.round((volumeTotal + g.volume) * 1000) / 1000;
@@ -4463,6 +4476,7 @@ async function adicionarEstoqueGruposRomaneio() {
             pecas: g.pecas,
             pecasPorPacote: 1,
             volumeM3: g.volume,
+            metrosLineares: Math.round((parseFloat(g.ml) || 0) * 100) / 100,
             created: new Date().toISOString(),
             updated: new Date().toISOString()
         };
@@ -4831,9 +4845,9 @@ function carregarTabelaProdutos(filtro = '') {
             <td data-label="Código">${produto.codigo || '-'}</td>
             <td data-label="Nome">${produto.nomeComum || produto.nome || produto.name || produto.nomeCientifico || 'Produto sem nome'}</td>
             <td data-label="Preço" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(produto.preco || 0)}</span></td>
-            <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}</span></td>
-            <td data-label="Peças" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(produto.pecas || 0, 0) : '-'}</span></td>
-            <td data-label="Volume (m³)" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(produto.volumeM3 ?? produto.estoque ?? 0) : '-'}</span></td>
+            <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(produto.pecas || 0, 0) : `${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}`}</span></td>
+            <td data-label="M. Linear" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(metrosLinearesDe(produto), 2) + ' ml' : '-'}</span></td>
+            <td data-label="Volume (m³)" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(produto.volumeM3 ?? produto.estoque ?? 0) + ' m³' : '-'}</span></td>
             <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
                 <div class="acoes-buttons commerce-actions-wrap">
                 <button type="button" onclick="editarProduto('${produto.id}')" class="btn-primary btn-small" title="Editar" aria-label="Editar produto">
