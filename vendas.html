@@ -1633,26 +1633,165 @@
                 </button>
             </div>
 
-            <div id="produtosList" style="display: none;">
-                <div class="search-box">
-                    <input type="text" id="searchProdutos" placeholder="Pesquisar produtos..."
-                        onkeyup="filtrarProdutos()">
+            <div id="secaoProdutoForm" style="display: none;">
+                <h3 id="produtoFormTitulo" style="text-align:center;">Novo Produto</h3>
+                <div class="form-group">
+                    <label>Tipo de Produto:</label>
+                    <div style="display:flex;gap:16px;align-items:center;">
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                            <input type="radio" name="tipoProdutoForm" value="comum" checked onchange="alternarTipoProdutoForm()"> Produto Comum
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                            <input type="radio" name="tipoProdutoForm" value="romaneio" onchange="alternarTipoProdutoForm()"> Produto Romaneio
+                        </label>
+                    </div>
                 </div>
-                <div class="table-responsive mobile-cards commerce-orders-table-wrap">
-                    <table class="table commerce-orders-table">
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Nome</th>
-                                <th>Preço</th>
-                                <th>Estoque</th>
-                                <th class="actions-col">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="produtosTable"></tbody>
-                    </table>
+                <div id="blocoRomaneioExtra" style="display:none;border:1px solid var(--sw-border);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--sw-surface-2);">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="produtoRomaneioTipo2">Tipo de Romaneio:</label>
+                            <select id="produtoRomaneioTipo2" onchange="sincronizarTipoRomaneioProduto()">
+                                <option value="">Selecione...</option>
+                                <option value="romaneiosTL">Romaneio TL</option>
+                                <option value="romaneiosPct">Romaneio PCT</option>
+                                <option value="romaneiosPes">Romaneio PES</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group-large">
+                            <label for="produtoRomaneioId2">Romaneio:</label>
+                            <select id="produtoRomaneioId2" onchange="sincronizarRomaneioProduto()">
+                                <option value="">Selecione o tipo primeiro...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <button type="button" class="btn btn-success" onclick="carregarItensProdutoRomaneio()">
+                            <i class="fas fa-download"></i> Carregar Itens
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="limparPreviewProdutoRomaneio()">
+                            <i class="fas fa-trash"></i> Limpar
+                        </button>
+                        <div class="form-group" style="margin-left:8px;">
+                            <label>Agrupar:</label>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="agrProdEsp" onchange="renderPreviewProdutoRomaneio()"> Espécie Espessura</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="agrProdEspLarg" checked onchange="renderPreviewProdutoRomaneio()"> Espécie Espessura x Largura</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="agrProdEspLargComp" onchange="renderPreviewProdutoRomaneio()"> Espécie Espessura x Largura x Comprimento</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <label style="font-weight:700;">Preview - Resumo:</label>
+                        <div id="previewProdutoRomaneio" style="border:1px solid var(--sw-border);border-radius:8px;padding:10px;background:var(--sw-surface);max-height:260px;overflow-y:auto;">
+                            <span style="color:var(--sw-text-3);">Selecione o tipo e o romaneio, depois clique em Carregar Itens.</span>
+                        </div>
+                    </div>
                 </div>
-                <div id="vendasProdutosPagination" class="pagination-controls" style="margin-top: 12px;"></div>
+                <!--PRODUTO-FORM-->
+                <form id="produtoForm">
+                <input type="hidden" id="produtoId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="produtoCodigo">Código:</label>
+                        <input type="text" id="produtoCodigo" required>
+                    </div>
+                    <div class="form-group form-group-large">
+                        <label for="produtoNome">Nome:</label>
+                        <input type="text" id="produtoNome" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="produtoPreco">Preço:</label>
+                        <input type="text" id="produtoPreco" placeholder="R$ 0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="produtoEstoque">Estoque:</label>
+                        <input type="number" id="produtoEstoque" min="0" step="0.001">
+                    </div>
+                    <div class="form-group">
+                        <label for="produtoUnidade">Unidade:</label>
+                        <select id="produtoUnidade">
+                            <option value="UN">UN - Unidade</option>
+                            <option value="DZ">DZ - Dúzia</option>
+                            <option value="PC">PC - Peça</option>
+                            <option value="m³">m³ - Metro Cúbico</option>
+                            <option value="m²">m² - Metro Quadrado</option>
+                            <option value="LN">LN - Metro Linear</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="produtoRomaneioFields" style="display:none;border:1px solid var(--sw-border);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--sw-surface-2);">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="produtoRomaneioTipo">Tipo de Romaneio:</label>
+                            <select id="produtoRomaneioTipo" onchange="carregarRomaneiosProduto()">
+                                <option value="">Selecione...</option>
+                                <option value="romaneiosTL">TL</option>
+                                <option value="romaneiosPct">PCT</option>
+                                <option value="romaneiosPes">PES</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group-large">
+                            <label for="produtoRomaneioId">Romaneio:</label>
+                            <select id="produtoRomaneioId" onchange="preencherDimsRomaneioProduto()">
+                                <option value="">Selecione o tipo primeiro...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group form-group-large">
+                            <label for="produtoEspecie">Espécie:</label>
+                            <input type="text" id="produtoEspecie" placeholder="Ex: Pinus">
+                        </div>
+                        <div class="form-group">
+                            <label for="produtoEspessura">Espessura (cm):</label>
+                            <input type="number" id="produtoEspessura" min="0" step="0.1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                        <div class="form-group">
+                            <label for="produtoLargura">Largura (cm):</label>
+                            <input type="number" id="produtoLargura" min="0" step="0.1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="produtoComprimento">Comprimento (cm):</label>
+                            <input type="number" id="produtoComprimento" min="0" step="0.1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                        <div class="form-group">
+                            <label for="produtoPecas">Peças:</label>
+                            <input type="number" id="produtoPecas" min="0" step="1" value="1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                        <div class="form-group">
+                            <label for="produtoPpp">Peças/Pacote:</label>
+                            <input type="number" id="produtoPpp" min="1" step="1" value="1" oninput="atualizarVolumeProdutoRomaneio()">
+                        </div>
+                    </div>
+                    <div class="form-row" style="align-items:flex-end;">
+                        <div class="form-group">
+                            <label>Volume (m³):</label>
+                            <input type="text" id="produtoVolumePreview" readonly placeholder="0,000">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-adicionar" onclick="adicionarEstoqueProdutoRomaneio()">
+                                <i class="fas fa-plus"></i> Adicionar Estoque
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="produtoDescricao">Descrição:</label>
+                    <textarea id="produtoDescricao" rows="3"></textarea>
+                </div>
+                <div class="modal-footer action-buttons">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                    <button type="button" onclick="fecharProdutoForm()" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+                </form>
             </div>
         </div>
 
@@ -1879,124 +2018,36 @@
     </div>
 
     <!-- Modal Produto -->
-    <div id="produtoModal" class="modal">
+    <!-- Modal Lista de Produtos -->
+    <div id="listaProdutosModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="produtoModalTitle">Novo Produto</h2>
-                <span class="close-modal" onclick="fecharModal('produtoModal')">&times;</span>
+                <h2>Lista de Produtos</h2>
+                <span class="close-modal" onclick="fecharModal('listaProdutosModal')">&times;</span>
             </div>
-            <form id="produtoForm">
-                <input type="hidden" id="produtoId">
-                <div class="modal-body">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="produtoCodigo">Código:</label>
-                        <input type="text" id="produtoCodigo" required>
-                    </div>
-                    <div class="form-group form-group-large">
-                        <label for="produtoNome">Nome:</label>
-                        <input type="text" id="produtoNome" required>
-                    </div>
+            <div class="modal-body">
+            <div id="produtosList">
+                <div class="search-box">
+                    <input type="text" id="searchProdutos" placeholder="Pesquisar produtos..."
+                        onkeyup="filtrarProdutos()">
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="produtoPreco">Preço:</label>
-                        <input type="text" id="produtoPreco" placeholder="R$ 0,00">
-                    </div>
-                    <div class="form-group">
-                        <label for="produtoEstoque">Estoque:</label>
-                        <input type="number" id="produtoEstoque" min="0" step="0.001">
-                    </div>
-                    <div class="form-group">
-                        <label for="produtoUnidade">Unidade:</label>
-                        <select id="produtoUnidade">
-                            <option value="UN">UN - Unidade</option>
-                            <option value="DZ">DZ - Dúzia</option>
-                            <option value="PC">PC - Peça</option>
-                            <option value="m³">m³ - Metro Cúbico</option>
-                            <option value="m²">m² - Metro Quadrado</option>
-                            <option value="LN">LN - Metro Linear</option>
-                        </select>
-                    </div>
+                <div class="table-responsive mobile-cards commerce-orders-table-wrap">
+                    <table class="table commerce-orders-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th class="actions-col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="produtosTable"></tbody>
+                    </table>
                 </div>
-                <div class="form-group">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="checkbox" id="produtoRomaneioCheck" onchange="toggleProdutoRomaneio()">
-                        Produto Romaneio (Madeira Serrada)
-                    </label>
-                </div>
-                <div id="produtoRomaneioFields" style="display:none;border:1px solid var(--sw-border);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--sw-surface-2);">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="produtoRomaneioTipo">Tipo de Romaneio:</label>
-                            <select id="produtoRomaneioTipo" onchange="carregarRomaneiosProduto()">
-                                <option value="">Selecione...</option>
-                                <option value="romaneiosTL">TL</option>
-                                <option value="romaneiosPct">PCT</option>
-                                <option value="romaneiosPes">PES</option>
-                            </select>
-                        </div>
-                        <div class="form-group form-group-large">
-                            <label for="produtoRomaneioId">Romaneio:</label>
-                            <select id="produtoRomaneioId" onchange="preencherDimsRomaneioProduto()">
-                                <option value="">Selecione o tipo primeiro...</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group form-group-large">
-                            <label for="produtoEspecie">Espécie:</label>
-                            <input type="text" id="produtoEspecie" placeholder="Ex: Pinus">
-                        </div>
-                        <div class="form-group">
-                            <label for="produtoEspessura">Espessura (cm):</label>
-                            <input type="number" id="produtoEspessura" min="0" step="0.1" oninput="atualizarVolumeProdutoRomaneio()">
-                        </div>
-                        <div class="form-group">
-                            <label for="produtoLargura">Largura (cm):</label>
-                            <input type="number" id="produtoLargura" min="0" step="0.1" oninput="atualizarVolumeProdutoRomaneio()">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="produtoComprimento">Comprimento (cm):</label>
-                            <input type="number" id="produtoComprimento" min="0" step="0.1" oninput="atualizarVolumeProdutoRomaneio()">
-                        </div>
-                        <div class="form-group">
-                            <label for="produtoPecas">Peças:</label>
-                            <input type="number" id="produtoPecas" min="0" step="1" value="1" oninput="atualizarVolumeProdutoRomaneio()">
-                        </div>
-                        <div class="form-group">
-                            <label for="produtoPpp">Peças/Pacote:</label>
-                            <input type="number" id="produtoPpp" min="1" step="1" value="1" oninput="atualizarVolumeProdutoRomaneio()">
-                        </div>
-                    </div>
-                    <div class="form-row" style="align-items:flex-end;">
-                        <div class="form-group">
-                            <label>Volume (m³):</label>
-                            <input type="text" id="produtoVolumePreview" readonly placeholder="0,000">
-                        </div>
-                        <div class="form-group">
-                            <button type="button" class="btn btn-adicionar" onclick="adicionarEstoqueProdutoRomaneio()">
-                                <i class="fas fa-plus"></i> Adicionar Estoque
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="produtoDescricao">Descrição:</label>
-                    <textarea id="produtoDescricao" rows="3"></textarea>
-                </div>
-                </div>
-                <div class="modal-footer action-buttons">
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save"></i> Salvar
-                    </button>
-                    <button type="button" onclick="fecharModal('produtoModal')" class="btn btn-danger">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                </div>
-            </form>
+                <div id="vendasProdutosPagination" class="pagination-controls" style="margin-top: 12px;"></div>
+            </div>
+            </div>
         </div>
     </div>
 
@@ -2195,7 +2246,7 @@
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
-    <script src="vendas.js?v=407fb51dcb40"></script>
+    <script src="vendas.js?v=4886a4d7b68f"></script>
 </body>
 
 </html>

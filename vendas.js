@@ -4035,9 +4035,45 @@ function novoProduto() {
     document.getElementById('produtoForm').reset();
     const usedCodes = new Set((window.produtos || []).map(p => String(p.codigo || '').trim()).filter(Boolean));
     document.getElementById('produtoCodigo').value = ensureUniqueCode('', usedCodes);
-    document.getElementById('produtoModalTitle').textContent = 'Novo Produto';
+    document.getElementById('produtoFormTitulo').textContent = 'Novo Produto';
     try { resetProdutoRomaneioFields(); } catch (_) {}
-    document.getElementById('produtoModal').style.display = 'block';
+    try { limparPreviewProdutoRomaneio(); } catch (_) {}
+    const sec = document.getElementById('secaoProdutoForm');
+    if (sec) {
+        sec.style.display = 'block';
+        try { sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+    }
+}
+
+function fecharProdutoForm() {
+    const sec = document.getElementById('secaoProdutoForm');
+    if (sec) sec.style.display = 'none';
+}
+
+// Radios Comum/Romaneio (substitui o checkbox antigo)
+function isProdutoRomaneioForm() {
+    try {
+        const r = document.querySelector('input[name="tipoProdutoForm"]:checked');
+        return !!r && r.value === 'romaneio';
+    } catch (_) { return false; }
+}
+
+function alternarTipoProdutoForm() {
+    const isRom = isProdutoRomaneioForm();
+    const extra = document.getElementById('blocoRomaneioExtra');
+    if (extra) extra.style.display = isRom ? 'block' : 'none';
+    const box = document.getElementById('produtoRomaneioFields');
+    if (box) box.style.display = isRom ? 'block' : 'none';
+    if (isRom) {
+        const un = document.getElementById('produtoUnidade');
+        if (un) un.value = 'UN';
+        atualizarVolumeProdutoRomaneio();
+    }
+}
+
+function toggleProdutoRomaneio() {
+    // Compat: agora dirigido pelos radios Comum/Romaneio
+    alternarTipoProdutoForm();
 }
 
 // volume m³ p/ madeira serrada (cm): E x L x C / 1e6 x peças x ppp
@@ -4051,26 +4087,22 @@ function calcularVolumeSerradoM3(espessura, largura, comprimento, qtd, ppp) {
     return Math.round(((e * l * c) / 1e6) * q * p * 1000) / 1000;
 }
 
-function toggleProdutoRomaneio() {
-    const checked = !!document.getElementById('produtoRomaneioCheck')?.checked;
-    const box = document.getElementById('produtoRomaneioFields');
-    if (box) box.style.display = checked ? 'block' : 'none';
-    if (checked) {
-        const un = document.getElementById('produtoUnidade');
-        if (un) un.value = 'UN';
-        atualizarVolumeProdutoRomaneio();
-    }
-}
-
 function resetProdutoRomaneioFields() {
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-    const chk = document.getElementById('produtoRomaneioCheck');
-    if (chk) chk.checked = false;
+    try {
+        document.querySelectorAll('input[name="tipoProdutoForm"]').forEach(r => { r.checked = r.value === 'comum'; });
+    } catch (_) {}
+    const extra = document.getElementById('blocoRomaneioExtra');
+    if (extra) extra.style.display = 'none';
     const box = document.getElementById('produtoRomaneioFields');
     if (box) box.style.display = 'none';
     set('produtoRomaneioTipo', '');
     const sel = document.getElementById('produtoRomaneioId');
     if (sel) sel.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
+    set('produtoRomaneioTipo2', '');
+    const sel2 = document.getElementById('produtoRomaneioId2');
+    if (sel2) sel2.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
+    try { limparPreviewProdutoRomaneio(); } catch (_) {}
     set('produtoEspecie', '');
     set('produtoEspessura', '');
     set('produtoLargura', '');
@@ -4100,6 +4132,11 @@ async function carregarRomaneiosProduto() {
         sel.appendChild(opt);
     });
     if (lista.length === 0) sel.innerHTML = '<option value="">Nenhum romaneio encontrado</option>';
+    // Espelha no select do bloco extra (fonte única p/ preview)
+    try {
+        const s2 = document.getElementById('produtoRomaneioId2');
+        if (s2) s2.innerHTML = sel.innerHTML;
+    } catch (_) {}
 }
 
 function preencherDimsRomaneioProduto() {
@@ -4107,6 +4144,21 @@ function preencherDimsRomaneioProduto() {
         const sel = document.getElementById('produtoRomaneioId');
         const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
         if (!opt || !opt.dataset.payload) return;
+        // Espelha nos selects do bloco extra (fonte única p/ preview)
+        try {
+            const t2 = document.getElementById('produtoRomaneioTipo2');
+            const s2 = document.getElementById('produtoRomaneioId2');
+            const t1 = document.getElementById('produtoRomaneioTipo');
+            if (t2 && t1 && !t2.value) t2.value = t1.value || '';
+            if (s2 && s2.options.length <= 1) {
+                s2.innerHTML = '';
+                const o = document.createElement('option');
+                o.value = sel.value;
+                o.textContent = opt.textContent;
+                o.dataset.payload = opt.dataset.payload;
+                s2.appendChild(o);
+            }
+        } catch (_) {}
         const data = JSON.parse(opt.dataset.payload);
         const item = Array.isArray(data.itens) && data.itens.length > 0 ? data.itens[0] : null;
         if (!item) return;
@@ -4163,6 +4215,147 @@ function adicionarEstoqueProdutoRomaneio() {
     ToastManager.success(`${v.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ adicionado(s) ao estoque`, 'Estoque');
 }
 
+// Sincronia entre selects do bloco extra e do bloco de dimensões (fonte única)
+async function sincronizarTipoRomaneioProduto() {
+    try {
+        const t2 = document.getElementById('produtoRomaneioTipo2');
+        const t1 = document.getElementById('produtoRomaneioTipo');
+        if (t1 && t2) { t1.value = t2.value || ''; await carregarRomaneiosProduto(); }
+        const s2 = document.getElementById('produtoRomaneioId2');
+        if (s2) s2.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
+        limparPreviewProdutoRomaneio();
+    } catch (_) {}
+}
+
+function sincronizarRomaneioProduto() {
+    try {
+        const s2 = document.getElementById('produtoRomaneioId2');
+        const opt = s2 && s2.selectedOptions && s2.selectedOptions[0];
+        const t1 = document.getElementById('produtoRomaneioTipo');
+        const s1 = document.getElementById('produtoRomaneioId');
+        if (t1 && !t1.value) {
+            const t2 = document.getElementById('produtoRomaneioTipo2');
+            if (t2) t1.value = t2.value || '';
+            carregarRomaneiosProduto().then(() => {
+                try { if (s1 && opt) s1.value = opt.value; } catch (_) {}
+                preencherDimsRomaneioProduto();
+            });
+            return;
+        }
+        if (s1 && opt) s1.value = opt.value;
+        preencherDimsRomaneioProduto();
+    } catch (_) {}
+}
+
+let __previewProdutoRomaneioItens = [];
+
+async function carregarItensProdutoRomaneio() {
+    const box = document.getElementById('previewProdutoRomaneio');
+    try {
+        const t2 = document.getElementById('produtoRomaneioTipo2');
+        const s2 = document.getElementById('produtoRomaneioId2');
+        const tipo = (t2 && t2.value) || document.getElementById('produtoRomaneioTipo')?.value || '';
+        const rid = (s2 && s2.value) || document.getElementById('produtoRomaneioId')?.value || '';
+        if (!tipo) { ToastManager.warning('Selecione o Tipo de Romaneio', 'Atenção'); return; }
+        if (!rid) { ToastManager.warning('Selecione o Romaneio', 'Atenção'); return; }
+        if (box) box.innerHTML = '<span style="color:var(--sw-text-3);">Carregando itens...</span>';
+        let lista = [];
+        if (typeof getRomaneiosMerged === 'function') lista = await getRomaneiosMerged(tipo) || [];
+        const rom = lista.find(r => String(r.id || r.firebaseKey || r.numero || '') === String(rid));
+        const itens = rom ? (Array.isArray(rom.itens) ? rom.itens : (Array.isArray(rom.items) ? rom.items : [])) : [];
+        // Fallback: payload embarcado no option (primeiros 50)
+        if (itens.length === 0) {
+            try {
+                const payload = JSON.parse((s2?.selectedOptions?.[0]?.dataset?.payload) || 'null');
+                if (payload && Array.isArray(payload.itens)) itens.push(...payload.itens);
+            } catch (_) {}
+        }
+        __previewProdutoRomaneioItens = itens.filter(i => i && typeof i === 'object');
+        renderPreviewProdutoRomaneio();
+    } catch (e) {
+        if (box) box.innerHTML = '<span style="color:var(--sw-danger);">Falha ao carregar itens.</span>';
+    }
+}
+
+function limparPreviewProdutoRomaneio() {
+    __previewProdutoRomaneioItens = [];
+    const box = document.getElementById('previewProdutoRomaneio');
+    if (box) box.innerHTML = '<span style="color:var(--sw-text-3);">Selecione o tipo e o romaneio, depois clique em Carregar Itens.</span>';
+}
+
+function modoAgrupamentoProdutoRomaneio() {
+    try {
+        if (document.getElementById('agrProdEspLargComp')?.checked) return 'comp';
+        if (document.getElementById('agrProdEspLarg')?.checked) return 'larg';
+        return 'esp';
+    } catch (_) { return 'larg'; }
+}
+
+function renderPreviewProdutoRomaneio() {
+    const box = document.getElementById('previewProdutoRomaneio');
+    if (!box) return;
+    const itens = __previewProdutoRomaneioItens || [];
+    if (itens.length === 0) {
+        box.innerHTML = '<span style="color:var(--sw-text-3);">Nenhum item. Clique em Carregar Itens.</span>';
+        return;
+    }
+    const modo = modoAgrupamentoProdutoRomaneio();
+    const num = (v) => parseFloat(v) || 0;
+    const grupos = new Map();
+    itens.forEach(it => {
+        const esp = `${String(it.especie || it.nome || '').trim()}`.toUpperCase();
+        const e = num(it.espessura).toFixed(3), l = num(it.largura).toFixed(3), c = num(it.comprimento ?? it.comp);
+        const key = modo === 'comp' ? `${esp}||${e}||${l}||${c}` : (modo === 'larg' ? `${esp}||${e}||${l}` : `${esp}||${e}`);
+        if (!grupos.has(key)) grupos.set(key, { especie: String(it.especie || it.nome || '').trim(), espessura: num(it.espessura), largura: num(it.largura), comprimento: num(it.comprimento ?? it.comp), pecas: 0, volume: 0 });
+        const g = grupos.get(key);
+        const q = num(it.quantidade ?? it.pecas) || 1;
+        const ppp = num(it.pecasPorPacote) || 1;
+        const vol = (typeof it.volume === 'number' && it.volume > 0) ? it.volume
+            : calcularVolumeSerradoM3(num(it.espessura), num(it.largura), num(it.comprimento ?? it.comp), q, ppp);
+        g.pecas += q;
+        g.volume = Math.round((g.volume + vol) * 1000) / 1000;
+    });
+    const arr = Array.from(grupos.values());
+    const total = Math.round(arr.reduce((s, g) => s + g.volume, 0) * 1000) / 1000;
+    let html = `<div style="font-size:0.8rem;color:var(--sw-text-2);margin-bottom:8px;">Modo ${modo === 'comp' ? 'Espécie x Espessura x Largura x Comprimento' : (modo === 'larg' ? 'Espécie x Espessura x Largura' : 'Espécie x Espessura')}: ${arr.length} grupo(s) — clique em Usar para preencher as dimensões.</div>`;
+    arr.forEach((g, idx) => {
+        let rotulo = g.especie || 'Sem espécie';
+        try {
+            const nomePeca = (typeof classificarProdutoConama === 'function')
+                ? classificarProdutoConama(g.espessura, g.largura) : '';
+            const dims = `${String(g.espessura).replace('.', ',')}cmx${String(g.largura).replace('.', ',')}cm` + (modo === 'comp' ? `x${String(g.comprimento).replace('.', ',')}cm` : '');
+            if (nomePeca) rotulo += ` — ${nomePeca} ${dims}`;
+        } catch (_) {}
+        html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
+            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças</span></div>`
+            + `<button type="button" class="btn btn-adicionar btn-small" data-grupo-idx="${idx}">Usar</button></div>`;
+    });
+    html += `<div style="text-align:right;font-weight:700;">Total: ${total.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</div>`;
+    box.innerHTML = html;
+    box.querySelectorAll('button[data-grupo-idx]').forEach(btn => {
+        btn.addEventListener('click', () => usarGrupoProdutoRomaneio(parseInt(btn.dataset.grupoIdx, 10)));
+    });
+    try { box.dataset.grupos = JSON.stringify(arr); } catch (_) {}
+}
+
+function usarGrupoProdutoRomaneio(idx) {
+    try {
+        const box = document.getElementById('previewProdutoRomaneio');
+        const arr = JSON.parse(box?.dataset?.grupos || '[]');
+        const g = arr[idx];
+        if (!g) return;
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+        set('produtoEspecie', g.especie || '');
+        set('produtoEspessura', g.espessura ?? '');
+        set('produtoLargura', g.largura ?? '');
+        set('produtoComprimento', g.comprimento ?? '');
+        set('produtoPecas', g.pecas || 1);
+        set('produtoPpp', 1);
+        atualizarVolumeProdutoRomaneio();
+        ToastManager.success('Dimensões preenchidas a partir do grupo', 'Romaneio');
+    } catch (_) {}
+}
+
 async function salvarProduto(event) {
     event.preventDefault();
     
@@ -4184,7 +4377,7 @@ async function salvarProduto(event) {
         // Trava anti-fantasma: nome vazio nunca persiste ("Produto sem nome")
         // (romaneio com espécie auto-preenche a partir das dimensões)
         try {
-            if (!String(nome || '').trim() && document.getElementById('produtoRomaneioCheck')?.checked) {
+            if (!String(nome || '').trim() && isProdutoRomaneioForm()) {
                 const d = lerDimsProdutoRomaneio();
                 if (String(d.especie || '').trim()) {
                     nome = `${d.especie} ${d.espessura}x${d.largura}x${d.comprimento}`.trim();
@@ -4209,7 +4402,7 @@ async function salvarProduto(event) {
         };
         // Produto Romaneio (Madeira Serrada): vínculo + dimensões + volume
         try {
-            if (document.getElementById('produtoRomaneioCheck')?.checked) {
+            if (isProdutoRomaneioForm()) {
                 const d = lerDimsProdutoRomaneio();
                 produto.tipoProduto = 'romaneio';
                 produto.romaneioTipo = d.tipo;
@@ -4272,22 +4465,22 @@ async function salvarProduto(event) {
             try { window.produtos = backupProdutos; } catch (_) {}
             try { atualizarSelectProdutos(); } catch (_) {}
             try {
-                if (document.getElementById('produtosList').style.display !== 'none') {
+                if (isModalOpen('listaProdutosModal')) {
                     carregarTabelaProdutos();
                 }
             } catch (_) {}
             ToastManager.error('Não foi possível salvar o produto no servidor. Verifique sua conexão e permissões e tente novamente. Nenhuma alteração foi perdida.', 'Falha ao salvar', 8000);
             return;
         }
-        
+
         // Atualizar selects
         atualizarSelectProdutos();
-        
-        // Fechar modal
-        fecharModal('produtoModal');
-        
+
+        // Fechar form inline
+        fecharProdutoForm();
+
         // Atualizar listagem se estiver visível
-        if (document.getElementById('produtosList').style.display !== 'none') {
+        if (isModalOpen('listaProdutosModal')) {
             carregarTabelaProdutos();
         }
         
@@ -4300,7 +4493,7 @@ async function salvarProduto(event) {
 }
 
 function listarProdutos() {
-    document.getElementById('produtosList').style.display = 'block';
+    document.getElementById('listaProdutosModal').style.display = 'block';
     vendasProdutosPage = 1;
     carregarTabelaProdutos();
 }
@@ -4429,6 +4622,8 @@ function editarProduto(produtoId) {
     window.produtos = normalizeProdutosList(window.produtos || []);
     const produto = window.produtos.find(p => p.id === produtoId);
     if (!produto) return;
+    // Paridade com Espécies/Clientes: fecha a lista ao abrir o form
+    try { fecharModal('listaProdutosModal'); } catch (_) {}
     
     document.getElementById('produtoId').value = produto.id;
     if (isBlankValue(produto.codigo)) {
@@ -4453,8 +4648,11 @@ function editarProduto(produtoId) {
     try {
         resetProdutoRomaneioFields();
         if (produto.tipoProduto === 'romaneio') {
-            const chk = document.getElementById('produtoRomaneioCheck');
-            if (chk) chk.checked = true;
+            try {
+                document.querySelectorAll('input[name="tipoProdutoForm"]').forEach(r => { r.checked = r.value === 'romaneio'; });
+            } catch (_) {}
+            const extra = document.getElementById('blocoRomaneioExtra');
+            if (extra) extra.style.display = 'block';
             const box = document.getElementById('produtoRomaneioFields');
             if (box) box.style.display = 'block';
             const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
@@ -4468,6 +4666,12 @@ function editarProduto(produtoId) {
                 opt.textContent = produto.romaneioNumero || String(produto.romaneioId);
                 sel.appendChild(opt);
             }
+            try {
+                const t2 = document.getElementById('produtoRomaneioTipo2');
+                if (t2) t2.value = produto.romaneioTipo || '';
+                const s2 = document.getElementById('produtoRomaneioId2');
+                if (s2 && sel) s2.innerHTML = sel.innerHTML;
+            } catch (_) {}
             set('produtoEspecie', produto.especie || '');
             set('produtoEspessura', produto.espessura ?? '');
             set('produtoLargura', produto.largura ?? '');
@@ -4478,8 +4682,12 @@ function editarProduto(produtoId) {
         }
     } catch (_) {}
 
-    document.getElementById('produtoModalTitle').textContent = 'Editar Produto';
-    document.getElementById('produtoModal').style.display = 'block';
+    document.getElementById('produtoFormTitulo').textContent = 'Editar Produto';
+    const sec = document.getElementById('secaoProdutoForm');
+    if (sec) {
+        sec.style.display = 'block';
+        try { sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+    }
 }
 
 async function excluirProduto(produtoId) {

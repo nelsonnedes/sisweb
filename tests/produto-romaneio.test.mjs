@@ -46,3 +46,15 @@ test('salvarProduto persiste campos do romaneio', () => {
   assert.ok(/produto\.volumeM3 = calcularVolumeSerradoM3/.test(src), 'volumeM3 persistido');
   assert.ok(/produto\.romaneioId = d\.romaneioId/.test(src), 'romaneioId persistido');
 });
+
+test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal', () => {
+  const html = readFileSync(new URL('../vendas.html', import.meta.url), 'utf8');
+  assert.ok(!/produtoModal/.test(html + src), 'sem referência a produtoModal');
+  assert.ok(/id="listaProdutosModal"/.test(html), 'modal Lista de Produtos existe');
+  assert.ok(/id="secaoProdutoForm"/.test(html), 'form inline existe');
+  assert.ok(/name="tipoProdutoForm"/.test(html), 'radios Comum/Romaneio existem');
+  assert.ok(/id="previewProdutoRomaneio"/.test(html), 'preview existe');
+  for (const fn of ['alternarTipoProdutoForm', 'fecharProdutoForm', 'carregarItensProdutoRomaneio', 'renderPreviewProdutoRomaneio', 'usarGrupoProdutoRomaneio', 'sincronizarTipoRomaneioProduto', 'sincronizarRomaneioProduto']) {
+    assert.ok(src.includes('function ' + fn + '('), `função ${fn} existe`);
+  }
+});
