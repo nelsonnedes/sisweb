@@ -1157,9 +1157,9 @@ function showTab(tabName) {
     const tabButton = clickedTab || document.querySelector(`.tab[onclick="showTab('${tabName}')"]`);
     if (tabButton) tabButton.classList.add('active');
     
-    // Carregar dados específicos da tab
+    // Carregar dados específicos da tab (sem abrir modais automaticamente)
     if (tabName === 'produtos') {
-        listarProdutos();
+        try { carregarTabelaProdutos(document.getElementById('searchProdutos')?.value || ''); } catch (_) {}
     } else if (tabName === 'clientes') {
         carregarClientesAbaVenda(false);
     } else if (tabName === 'relatorios') {
@@ -4038,6 +4038,7 @@ function novoProduto() {
     document.getElementById('produtoFormTitulo').textContent = 'Novo Produto';
     try { resetProdutoRomaneioFields(); } catch (_) {}
     try { limparPreviewProdutoRomaneio(); } catch (_) {}
+    try { __itensProdutoManuel = []; } catch (_) {}
     const sec = document.getElementById('secaoProdutoForm');
     if (sec) {
         sec.style.display = 'block';
@@ -4070,16 +4071,18 @@ function alternarTipoProdutoForm() {
     const box = document.getElementById('produtoRomaneioFields');
     if (box) box.style.display = (isRom && editing) ? 'block' : 'none';
     const prevM = document.getElementById('previewProdutoManuelWrap');
-    if (prevM) prevM.style.display = (!isRom || editing) ? 'block' : 'none';
+    if (prevM) prevM.style.display = (!isRom && !editing) ? 'block' : 'none';
     const foot = document.getElementById('produtoFormFooter');
-    if (foot) foot.style.display = (!isRom || editing) ? 'flex' : 'none';
+    if (foot) foot.style.display = editing ? 'flex' : 'none';
+    const footM = document.getElementById('produtoManuelFooter');
+    if (footM) footM.style.display = (!isRom && !editing) ? 'flex' : 'none';
     const footR = document.getElementById('produtoRomaneioFooter');
     if (footR) footR.style.display = (isRom && !editing) ? 'flex' : 'none';
     if (isRom) {
         const un = document.getElementById('produtoUnidade');
         if (un && !editing) un.value = 'UN';
         atualizarVolumeProdutoRomaneio();
-    } else {
+    } else if (!editing) {
         renderPreviewProdutoManuel();
     }
 }
@@ -4260,11 +4263,20 @@ async function carregarItensProdutoRomaneio() {
             } catch (_) {}
         }
         __previewProdutoRomaneioItens = itens.filter(i => i && typeof i === 'object');
+        let numeroRom = rid;
         try {
             const s2 = document.getElementById('produtoRomaneioId2');
             const opt = s2 && s2.selectedOptions && s2.selectedOptions[0];
-            __previewProdutoRomaneioMeta = { tipo, rid, numero: opt ? opt.textContent.split(' - ')[0] : rid };
-        } catch (_) { __previewProdutoRomaneioMeta = { tipo, rid, numero: rid }; }
+            numeroRom = opt ? (opt.textContent.split(' - ')[0] || rid) : rid;
+        } catch (_) {}
+        __previewProdutoRomaneioMeta = { tipo, rid, numero: numeroRom };
+        // Acumula grupos (multi-romaneio, mesmo de tipos diferentes); ignora repetidos
+        try {
+            const meta0 = __previewProdutoRomaneioMeta || {};
+            const novos = agruparItensRomaneioExLxC(__previewProdutoRomaneioItens, meta0.rid, meta0.numero, meta0.tipo);
+            const vistos = new Set(__previewRomGrupos.map(g => g.gid));
+            novos.forEach(g => { if (!vistos.has(g.gid)) { __previewRomGrupos.push(g); vistos.add(g.gid); } });
+        } catch (_) {}
         renderPreviewProdutoRomaneio();
     } catch (e) {
         if (box) box.innerHTML = '<span style="color:var(--sw-danger);">Falha ao carregar itens.</span>';
@@ -4273,31 +4285,25 @@ async function carregarItensProdutoRomaneio() {
 
 function limparPreviewProdutoRomaneio() {
     __previewProdutoRomaneioItens = [];
+    __previewRomGrupos = [];
     const box = document.getElementById('previewProdutoRomaneio');
-    if (box) box.innerHTML = '<span style="color:var(--sw-text-3);">Selecione o tipo e o romaneio, depois clique em Carregar Itens.</span>';
-}
-
-function modoAgrupamentoProdutoRomaneio() {
-    // Automático: sempre Espécie x Espessura x Largura x Comprimento
-    return 'comp';
-}
-
-function renderPreviewProdutoRomaneio() {
-    const box = document.getElementById('previewProdutoRomaneio');
-    if (!box) return;
-    const itens = __previewProdutoRomaneioItens || [];
-    if (itens.length === 0) {
-        box.innerHTML = '<span style="color:var(--sw-text-3);">Nenhum item. Clique em Carregar Itens.</span>';
-        return;
+    if (box) {
+        box.innerHTML = '<span style="color:var(--sw-text-3);">Selecione o tipo e o romaneio, depois clique em Carregar Itens. Pode carregar vários romaneios, até de tipos diferentes.</span>';
+        try { box.dataset.grupos = '[]'; } catch (_) {}
     }
-    const modo = modoAgrupamentoProdutoRomaneio();
+}
+
+let __previewRomGrupos = [];
+
+function agruparItensRomaneioExLxC(itens, rid, numero, tipo) {
     const num = (v) => parseFloat(v) || 0;
     const grupos = new Map();
-    itens.forEach(it => {
+    (itens || []).forEach(it => {
+        if (!it || typeof it !== 'object') return;
         const esp = `${String(it.especie || it.nome || '').trim()}`.toUpperCase();
         const e = num(it.espessura).toFixed(3), l = num(it.largura).toFixed(3), c = num(it.comprimento ?? it.comp);
         const key = `${esp}||${e}||${l}||${c}`;
-        if (!grupos.has(key)) grupos.set(key, { especie: String(it.especie || it.nome || '').trim(), espessura: num(it.espessura), largura: num(it.largura), comprimento: num(it.comprimento ?? it.comp), pecas: 0, volume: 0, valorTotal: 0 });
+        if (!grupos.has(key)) grupos.set(key, { gid: `${rid}||${key}`, romaneioId: rid, romaneioNumero: numero || '', romaneioTipo: tipo || '', especie: String(it.especie || it.nome || '').trim(), espessura: num(it.espessura), largura: num(it.largura), comprimento: num(it.comprimento ?? it.comp), pecas: 0, volume: 0, valorTotal: 0 });
         const g = grupos.get(key);
         const q = num(it.quantidade ?? it.pecas) || 1;
         const ppp = num(it.pecasPorPacote) || 1;
@@ -4310,6 +4316,30 @@ function renderPreviewProdutoRomaneio() {
     });
     const arr = Array.from(grupos.values());
     arr.forEach(g => { g.precoMedio = g.pecas > 0 && g.valorTotal > 0 ? Math.round((g.valorTotal / g.pecas) * 100) / 100 : 0; });
+    return arr;
+}
+
+function excluirGrupoPreviewRomaneio(gid) {
+    try {
+        __previewRomGrupos = (__previewRomGrupos || []).filter(g => String(g.gid) !== String(gid));
+        renderPreviewProdutoRomaneio();
+    } catch (_) {}
+}
+
+function modoAgrupamentoProdutoRomaneio() {
+    // Automático: sempre Espécie x Espessura x Largura x Comprimento
+    return 'comp';
+}
+
+function renderPreviewProdutoRomaneio() {
+    const box = document.getElementById('previewProdutoRomaneio');
+    if (!box) return;
+    const arr = Array.isArray(__previewRomGrupos) ? __previewRomGrupos : [];
+    if (arr.length === 0) {
+        box.innerHTML = '<span style="color:var(--sw-text-3);">Nenhum grupo. Clique em Carregar Itens (pode repetir para vários romaneios).</span>';
+        try { box.dataset.grupos = '[]'; } catch (_) {}
+        return;
+    }
     const total = Math.round(arr.reduce((s, g) => s + g.volume, 0) * 1000) / 1000;
     let html = `<div style="font-size:0.8rem;color:var(--sw-text-2);margin-bottom:8px;">Espécie x Espessura x Largura x Comprimento: ${arr.length} grupo(s) — marque e clique em Adicionar Estoque.</div>`;
     arr.forEach((g, idx) => {
@@ -4322,11 +4352,15 @@ function renderPreviewProdutoRomaneio() {
         } catch (_) {}
         html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
             + `<input type="checkbox" name="grupoRomSel" value="${idx}" checked style="width:18px;height:18px;cursor:pointer;" aria-label="Selecionar grupo">`
-            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças</span></div></div>`;
+            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças</span></div>`
+            + `<button type="button" class="btn btn-danger btn-small" data-excluir-gid="${String(g.gid || '').replace(/"/g, '&quot;')}" aria-label="Excluir grupo">Excluir</button></div>`;
     });
     html += `<div style="text-align:right;font-weight:700;">Total: ${total.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</div>`;
     box.innerHTML = html;
     try { box.dataset.grupos = JSON.stringify(arr); } catch (_) {}
+    box.querySelectorAll('button[data-excluir-gid]').forEach(btn => {
+        btn.addEventListener('click', () => excluirGrupoPreviewRomaneio(btn.dataset.excluirGid));
+    });
 }
 
 function gruposRomaneioSelecionados() {
@@ -4361,7 +4395,9 @@ async function adicionarEstoqueGruposRomaneio() {
     const fallbackLista = [];
     for (const g of grupos) {
         if (!(g.volume > 0)) continue;
-        const existente = acharProdutoSerradoExistente(meta.rid, g);
+        const grid = g.romaneioId || meta.rid;
+        const gnum = g.romaneioNumero || meta.numero;
+        const existente = acharProdutoSerradoExistente(grid, g);
         if (existente) {
             existente.estoque = Math.round(((parseFloat(existente.estoque) || 0) + g.volume) * 1000) / 1000;
             existente.updated = new Date().toISOString();
@@ -4386,11 +4422,11 @@ async function adicionarEstoqueGruposRomaneio() {
             preco: g.precoMedio || 0,
             estoque: g.volume,
             unidade: 'm³',
-            descricao: `Madeira serrada ${meta.numero ? '(' + meta.numero + ')' : ''}`.trim(),
+            descricao: `Madeira serrada ${gnum ? '(' + gnum + ')' : ''}`.trim(),
             tipoProduto: 'romaneio',
-            romaneioTipo: meta.tipo || '',
-            romaneioId: meta.rid || '',
-            romaneioNumero: meta.numero || '',
+            romaneioTipo: g.romaneioTipo || meta.tipo || '',
+            romaneioId: grid || '',
+            romaneioNumero: gnum || '',
             especie: g.especie || '',
             espessura: g.espessura,
             largura: g.largura,
@@ -4441,21 +4477,155 @@ function renderPreviewProdutoManuel() {
     try {
         const box = document.getElementById('previewProdutoManuel');
         if (!box) return;
-        const v = (id) => document.getElementById(id)?.value || '';
-        const codigo = String(v('produtoCodigo')).trim() || '-';
-        const nome = String(v('produtoNome')).trim() || '-';
-        const preco = String(v('produtoPreco')).trim() || 'R$ 0,00';
-        const estoque = String(v('produtoEstoque')).trim() || '0';
-        const unidade = String(v('produtoUnidade')).trim() || 'UN';
-        const desc = String(v('produtoDescricao')).trim();
-        box.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:0.85rem;">`
-            + `<span><strong>Código:</strong> ${codigo}</span>`
-            + `<span><strong>Nome:</strong> ${nome}</span>`
-            + `<span><strong>Preço:</strong> ${preco}</span>`
-            + `<span><strong>Estoque:</strong> ${estoque} ${unidade}</span></div>`
-            + (desc ? `<div style="font-size:0.8rem;color:var(--sw-text-2);margin-top:4px;">${desc}</div>` : '')
-            + `<div style="font-size:0.78rem;color:var(--sw-text-3);margin-top:4px;">Confira os dados — o Salvar abaixo adiciona ao estoque.</div>`;
+        const itens = Array.isArray(__itensProdutoManuel) ? __itensProdutoManuel : [];
+        if (itens.length === 0) {
+            box.innerHTML = '<span style="color:var(--sw-text-3);">Clique em Adicionar item para conferir antes de ir ao estoque.</span>';
+            return;
+        }
+        let total = 0;
+        let html = '';
+        itens.forEach((it, idx) => {
+            total = Math.round((total + (parseFloat(it.preco) || 0) * (parseFloat(it.estoque) || 0)) * 100) / 100;
+            html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
+                + `<div style="flex:1;"><strong>${it.codigo || '-'} — ${it.nome || '-'}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Preço: ${it.precoFmt || it.preco} · Estoque: ${it.estoque} ${it.unidade || 'UN'}</span></div>`
+                + `<button type="button" class="btn btn-danger btn-small" data-item-idx="${idx}" aria-label="Excluir item">Excluir</button></div>`;
+        });
+        html += `<div style="text-align:right;font-weight:700;">${itens.length} item(ns)</div>`;
+        box.innerHTML = html;
+        box.querySelectorAll('button[data-item-idx]').forEach(btn => {
+            btn.addEventListener('click', () => excluirItemProdutoManuel(parseInt(btn.dataset.itemIdx, 10)));
+        });
     } catch (_) {}
+}
+
+let __itensProdutoManuel = [];
+
+function limparCamposProdutoManuel() {
+    try {
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+        const usedCodes = new Set((window.produtos || []).map(p => String(p.codigo || '').trim()).filter(Boolean));
+        (__itensProdutoManuel || []).forEach(it => { if (it.codigo) usedCodes.add(String(it.codigo)); });
+        set('produtoCodigo', ensureUniqueCode('', usedCodes));
+        set('produtoNome', '');
+        set('produtoPreco', '');
+        set('produtoEstoque', '');
+        set('produtoUnidade', 'UN');
+        set('produtoDescricao', '');
+    } catch (_) {}
+}
+
+function adicionarItemProdutoManuel() {
+    try {
+        const v = (id) => document.getElementById(id)?.value || '';
+        const nome = String(v('produtoNome')).trim();
+        if (!nome) { ToastManager.warning('Informe o nome do produto', 'Atenção'); return; }
+        let codigo = String(v('produtoCodigo')).trim();
+        const usedCodes = new Set((window.produtos || []).map(p => String(p.codigo || '').trim()).filter(Boolean));
+        (__itensProdutoManuel || []).forEach(it => { if (it.codigo) usedCodes.add(String(it.codigo)); });
+        if (!codigo || !/^\d+$/.test(codigo)) {
+            codigo = ensureUniqueCode(codigo, usedCodes);
+            const el = document.getElementById('produtoCodigo');
+            if (el) el.value = codigo;
+        }
+        if (usedCodes.has(codigo)) {
+            ToastManager.warning('Já existe item com este código no stage ou cadastro', 'Atenção');
+            return;
+        }
+        __itensProdutoManuel.push({
+            tempId: 'TMP_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+            codigo,
+            nome,
+            preco: parseCurrencyValue(v('produtoPreco')) || 0,
+            precoFmt: String(v('produtoPreco')).trim() || 'R$ 0,00',
+            estoque: parseFloat(String(v('produtoEstoque')).replace(',', '.')) || 0,
+            unidade: String(v('produtoUnidade')).trim() || 'UN',
+            descricao: String(v('produtoDescricao')).trim()
+        });
+        limparCamposProdutoManuel();
+        renderPreviewProdutoManuel();
+    } catch (_) {}
+}
+
+function excluirItemProdutoManuel(idx) {
+    try {
+        if (Array.isArray(__itensProdutoManuel) && idx >= 0 && idx < __itensProdutoManuel.length) {
+            __itensProdutoManuel.splice(idx, 1);
+        }
+        renderPreviewProdutoManuel();
+    } catch (_) {}
+}
+
+function limparItensProdutoManuel() {
+    __itensProdutoManuel = [];
+    renderPreviewProdutoManuel();
+}
+
+async function adicionarEstoqueManuel() {
+    const itens = Array.isArray(__itensProdutoManuel) ? __itensProdutoManuel.slice() : [];
+    if (itens.length === 0) {
+        ToastManager.warning('Adicione ao menos um item no Preview', 'Atenção');
+        return;
+    }
+    const granular = (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function');
+    let criados = 0, somados = 0, precisaFallback = false;
+    for (const it of itens) {
+        const existente = (window.produtos || []).find(p => p && String(p.codigo || '').trim() !== '' && String(p.codigo).trim() === String(it.codigo).trim());
+        if (existente) {
+            existente.estoque = Math.round(((parseFloat(existente.estoque) || 0) + (parseFloat(it.estoque) || 0)) * 1000) / 1000;
+            existente.updated = new Date().toISOString();
+            somados++;
+            if (granular) {
+                try {
+                    const res = await window.firebaseService.saveToFirebase('produtos', String(existente.id), existente);
+                    if (!(res && res.success)) precisaFallback = true;
+                } catch (_) { precisaFallback = true; }
+            } else {
+                precisaFallback = true;
+            }
+            continue;
+        }
+        const prod = {
+            id: (typeof generateUniqueId === 'function') ? generateUniqueId('PROD') : ('PROD_' + Date.now()),
+            codigo: it.codigo,
+            nome: it.nome,
+            preco: it.preco || 0,
+            estoque: it.estoque || 0,
+            unidade: it.unidade || 'UN',
+            descricao: it.descricao || '',
+            created: new Date().toISOString(),
+            updated: new Date().toISOString()
+        };
+        try { sanearIndefinidosFirebase(prod); } catch (_) {}
+        window.produtos.push(prod);
+        try { window.__produtosNovosIds.add(String(prod.id)); } catch (_) {}
+        try { registrarIdsProdutosRaw([prod]); } catch (_) {}
+        criados++;
+        if (granular) {
+            try {
+                const res = await window.firebaseService.saveToFirebase('produtos', String(prod.id), prod);
+                if (!(res && res.success)) precisaFallback = true;
+            } catch (_) { precisaFallback = true; }
+        } else {
+            precisaFallback = true;
+        }
+    }
+    if (precisaFallback) {
+        try {
+            if (typeof saveData === 'function') {
+                __rvSaveDataRemoteOk = false;
+                await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
+            }
+        } catch (_) {}
+    }
+    try {
+        const svcInv = window.firebaseService || window.FirebaseService;
+        if (svcInv && typeof svcInv.invalidateReadCacheForPath === 'function') svcInv.invalidateReadCacheForPath('produtos');
+    } catch (_) {}
+    try { atualizarSelectProdutos(); } catch (_) {}
+    try { if (isModalOpen('listaProdutosModal')) carregarTabelaProdutos(); } catch (_) {}
+    __itensProdutoManuel = [];
+    renderPreviewProdutoManuel();
+    ToastManager.success(`${criados} criado(s), ${somados} somado(s) no estoque`, 'Estoque');
 }
 
 async function salvarProduto(event) {
@@ -4607,9 +4777,9 @@ function carregarTabelaProdutos(filtro = '') {
     
     if (filtro) {
         const filtroLower = filtro.toLowerCase();
-        produtosFiltrados = produtosFiltrados.filter(produto => 
+        produtosFiltrados = produtosFiltrados.filter(produto =>
             String(produto.codigo || '').toLowerCase().includes(filtroLower) ||
-            String(produto.nome || '').toLowerCase().includes(filtroLower)
+            String(produto.nome || produto.name || produto.nomeComum || produto.nomeCientifico || '').toLowerCase().includes(filtroLower)
         );
     }
     
@@ -4629,7 +4799,7 @@ function carregarTabelaProdutos(filtro = '') {
     tbody.innerHTML = produtosPaginados.map(produto => `
         <tr>
             <td data-label="Código">${produto.codigo || '-'}</td>
-            <td data-label="Nome">${produto.nome || 'Produto sem nome'}</td>
+            <td data-label="Nome">${produto.nomeComum || produto.nome || produto.name || produto.nomeCientifico || 'Produto sem nome'}</td>
             <td data-label="Preço" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(produto.preco || 0)}</span></td>
             <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}</span></td>
             <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
@@ -4801,6 +4971,7 @@ async function excluirProduto(produtoId) {
     
     try {
         const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
+        const eraEspecie = !!(window.__vendasEspeciesIds instanceof Set && window.__vendasEspeciesIds.has(String(produtoId)));
         window.produtos = window.produtos.filter(p => p.id !== produtoId);
         __rvSaveDataRemoteOk = false;
         await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
@@ -4812,8 +4983,12 @@ async function excluirProduto(produtoId) {
         
         atualizarSelectProdutos();
         carregarTabelaProdutos();
-        
-        ToastManager.success('Produto excluído com sucesso!', 'Sucesso');
+
+        if (eraEspecie) {
+            ToastManager.info('Removido da lista. Por ser um registro de espécie, ele volta ao recarregar — exclua definitivamente em Cadastros/Espécies.', 'Atenção', 7000);
+        } else {
+            ToastManager.success('Produto excluído com sucesso!', 'Sucesso');
+        }
         
     } catch (error) {
         console.error('Erro ao excluir produto:', error);

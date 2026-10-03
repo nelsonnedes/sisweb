@@ -54,13 +54,16 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   assert.ok(/id="secaoProdutoForm"/.test(html), 'form inline existe');
   assert.ok(/name="tipoProdutoForm"/.test(html), 'radios Comum/Romaneio existem');
   assert.ok(/id="previewProdutoRomaneio"/.test(html), 'preview existe');
-  for (const fn of ['alternarTipoProdutoForm', 'fecharProdutoForm', 'carregarItensProdutoRomaneio', 'renderPreviewProdutoRomaneio', 'adicionarEstoqueGruposRomaneio', 'renderPreviewProdutoManuel', 'carregarRomaneiosEm', 'acharProdutoSerradoExistente']) {
+  for (const fn of ['alternarTipoProdutoForm', 'fecharProdutoForm', 'carregarItensProdutoRomaneio', 'renderPreviewProdutoRomaneio', 'adicionarEstoqueGruposRomaneio', 'renderPreviewProdutoManuel', 'carregarRomaneiosEm', 'acharProdutoSerradoExistente', 'adicionarItemProdutoManuel', 'excluirItemProdutoManuel', 'limparItensProdutoManuel', 'adicionarEstoqueManuel', 'agruparItensRomaneioExLxC', 'excluirGrupoPreviewRomaneio', 'gruposRomaneioSelecionados']) {
     assert.ok(src.includes('function ' + fn + '('), `função ${fn} existe`);
   }
   assert.ok(!/usarGrupoProdutoRomaneio/.test(src), 'usarGrupo removido (checkboxes no preview)');
   assert.ok(!/agrProdEsp/.test(src), 'checkboxes Agrupar removidos (auto ExLxC)');
   assert.ok(/value="manuel"[^>]*> Produto Manuel/.test(html), 'radio Produto Manuel existe');
+  assert.ok(/id="produtoManuelFooter"/.test(html), 'footer manuel existe');
   assert.ok(/id="produtoRomaneioFooter"/.test(html), 'footer romaneio existe');
   assert.ok(/id="previewProdutoManuel"/.test(html), 'preview manuel existe');
   assert.ok(/id="formProdutoBase"/.test(html), 'base do form existe');
+  assert.ok(/adicionarItemProdutoManuel/.test(html), 'botão Adicionar item existe');
+  assert.ok(!/agrProdEsp/.test(html + src), 'checkboxes Agrupar removidos (auto ExLxC)');
 });
