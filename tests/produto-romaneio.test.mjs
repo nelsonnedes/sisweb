@@ -64,6 +64,10 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   assert.ok(/id="produtoRomaneioFooter"/.test(html), 'footer romaneio existe');
   assert.ok(/id="previewProdutoManuel"/.test(html), 'preview manuel existe');
   assert.ok(/id="formProdutoBase"/.test(html), 'base do form existe');
+  assert.ok(!/id="produto(Form|Manuel|Romaneio)Footer" class="modal-footer action-buttons"/.test(html), 'footers sem action-buttons (!important global quebrava o hide)');
+  for (const fn of ['isProdutoReal']) {
+    assert.ok(src.includes('function ' + fn + '('), `função ${fn} existe`);
+  }
   assert.ok(/id="produtoRomaneioVinculo"/.test(html), 'vínculo romaneio existe');
   assert.ok(/id="produtoDimsFields"/.test(html), 'bloco dims existe');
   assert.ok(/lbl-estoque/.test(html), 'labels de estoque com span existem');

@@ -4437,6 +4437,21 @@ function temDimsSerrado(p) {
     } catch (_) { return false; }
 }
 
+// Produto real: criado via Produto Manual/Romaneio — presente na coleção
+// 'produtos' (raw), criado nesta sessão, ou marcado tipoProduto romaneio.
+// (A lista exibe SÓ reais; o select mantém espécies por compatibilidade.)
+function isProdutoReal(p) {
+    try {
+        if (!p || typeof p !== 'object') return false;
+        if (p.tipoProduto === 'romaneio') return true;
+        const raw = window.__produtosRawIds instanceof Set ? window.__produtosRawIds : new Set();
+        const novos = window.__produtosNovosIds instanceof Set ? window.__produtosNovosIds : new Set();
+        const keys = [p.id, p.firebaseKey, p.codigo, p.code, p.sku]
+            .map(v => (v === undefined || v === null) ? '' : String(v).trim()).filter(Boolean);
+        return keys.some(k => raw.has(k) || novos.has(k));
+    } catch (_) { return false; }
+}
+
 function metrosLinearesDe(p) {
     try {
         const salvo = parseFloat(p.metrosLineares);
@@ -5018,8 +5033,8 @@ async function imprimirRelatorioProdutos(lista) {
 function carregarTabelaProdutos(filtro = '') {
     const tbody = document.getElementById('produtosTable');
     window.produtos = normalizeProdutosList(window.produtos || []);
-    // Oculta puro-lixo da exibição (segue no Firebase até o próximo save purgar)
-    let produtosFiltrados = [...window.produtos].filter(p => { try { return !isProdutoJunk(p); } catch (_) { return true; } });
+    // A lista exibe SÓ produtos reais (Manual/Romaneio); espécies ficam no select
+    let produtosFiltrados = [...window.produtos].filter(p => { try { return !isProdutoJunk(p) && isProdutoReal(p); } catch (_) { return true; } });
     
     if (filtro) {
         const filtroLower = filtro.toLowerCase();
