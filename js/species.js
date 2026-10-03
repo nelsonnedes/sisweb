@@ -384,7 +384,54 @@ window.deleteSpecies = async (id) => {
         if (!window.SpeciesCRUD || typeof window.SpeciesCRUD.remove !== 'function') {
             throw new Error('Módulo de espécies não carregado');
         }
-        await window.SpeciesCRUD.remove(cleanId);
+        // Tenta todos os aliases de id (firebaseKey/key/originalId/id): ids
+        // gerados (specie_N, índices) apontam para caminhos inexistentes e a
+        // verificação interna reprova — o loop segue até o alias verdadeiro.
+        const alvo = (currentSpecies || []).find(s => [s && s.id, s && s.key, s && s.firebaseKey, s && s.originalId]
+            .map(v => String(v || '').trim())
+            .filter(Boolean)
+            .includes(cleanId)) || null;
+        const candidatos = [];
+        if (alvo) {
+            [alvo.firebaseKey, alvo.key, alvo.originalId, alvo.id].forEach(v => {
+                const s = String(v || '').trim();
+                if (s && s !== 'undefined' && s !== 'null' && !candidatos.includes(s)) candidatos.push(s);
+            });
+        }
+        if (candidatos.length === 0) candidatos.push(cleanId);
+        const normId = (v) => String(v || '').trim();
+        const todosAliases = candidatos.slice();
+        const especieAindaExiste = async () => {
+            try {
+                const res = await window.firebaseService.loadFromFirebase('especies', { forceRefresh: true });
+                const data = res && res.success ? res.data : null;
+                if (!data) return false;
+                const want = new Set(todosAliases.map(normId).filter(Boolean));
+                const recs = Array.isArray(data)
+                    ? data
+                    : Object.keys(data).map(k => ({ ...(data[k] || {}), __k: k }));
+                return recs.some(r => {
+                    if (!r || typeof r !== 'object') return false;
+                    const ids = [r.id, r.key, r.firebaseKey, r.originalId, r.__k].map(normId).filter(Boolean);
+                    return ids.some(id => want.has(id));
+                });
+            } catch (_) { return true; }
+        };
+        let removido = false;
+        let ultimoErro = null;
+        for (const cand of candidatos) {
+            try {
+                await window.SpeciesCRUD.remove(cand);
+            } catch (e) {
+                ultimoErro = e;
+            }
+            try {
+                if (!(await especieAindaExiste())) { removido = true; break; }
+            } catch (e) { ultimoErro = e; }
+        }
+        if (!removido) {
+            throw ultimoErro || new Error('Falha ao excluir espécie');
+        }
 
         {
             currentSpecies = currentSpecies.filter(s => ![s && s.id, s && s.key, s && s.firebaseKey, s && s.originalId]

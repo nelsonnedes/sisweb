@@ -248,14 +248,16 @@
                 if (data) {
                     if (Array.isArray(data)) {
                         for (var a = 0; a < data.length; a++) {
+                            if (data[a] == null || typeof data[a] !== 'object') continue;
                             if (matchesId(data[a], id)) { found = true; break; }
                         }
                     } else if (typeof data === 'object') {
-                        if (Object.prototype.hasOwnProperty.call(data, id)) {
+                        if (Object.prototype.hasOwnProperty.call(data, id) && data[id] != null && typeof data[id] === 'object') {
                             found = true;
                         } else {
                             var keys = Object.keys(data);
                             for (var k = 0; k < keys.length; k++) {
+                                if (data[keys[k]] == null || typeof data[keys[k]] !== 'object') continue;
                                 if (matchesId(data[keys[k]], id)) { found = true; break; }
                             }
                         }
