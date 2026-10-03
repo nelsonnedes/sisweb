@@ -65,5 +65,9 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   assert.ok(/id="previewProdutoManuel"/.test(html), 'preview manuel existe');
   assert.ok(/id="formProdutoBase"/.test(html), 'base do form existe');
   assert.ok(/adicionarItemProdutoManuel/.test(html), 'botão Adicionar item existe');
+  assert.ok(/<th>Peças<\/th>/.test(html), 'coluna Peças existe');
+  assert.ok(/Volume \(m³\)/.test(html), 'coluna Volume existe');
+  assert.ok(/existente\.pecas =/.test(src), 'acúmulo soma peças');
+  assert.ok(/existente\.volumeM3 =/.test(src), 'acúmulo soma volumeM3');
   assert.ok(!/agrProdEsp/.test(html + src), 'checkboxes Agrupar removidos (auto ExLxC)');
 });

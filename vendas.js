@@ -4422,6 +4422,8 @@ async function adicionarEstoqueGruposRomaneio() {
         const existente = acharProdutoSerradoExistente(grid, g);
         if (existente) {
             existente.estoque = Math.round(((parseFloat(existente.estoque) || 0) + g.volume) * 1000) / 1000;
+            existente.pecas = Math.round(((parseFloat(existente.pecas) || 0) + (parseFloat(g.pecas) || 0)) * 1000) / 1000;
+            existente.volumeM3 = Math.round(((parseFloat(existente.volumeM3) || 0) + g.volume) * 1000) / 1000;
             existente.updated = new Date().toISOString();
             somados++;
             volumeTotal = Math.round((volumeTotal + g.volume) * 1000) / 1000;
@@ -4807,7 +4809,7 @@ function carregarTabelaProdutos(filtro = '') {
     }
     
     if (produtosFiltrados.length === 0) {
-        tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="5" style="text-align: center;">Nenhum produto encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="7" style="text-align: center;">Nenhum produto encontrado</td></tr>';
         refreshCommerceResponsiveTables();
         renderVendasProdutosPagination(0);
         return;
@@ -4825,6 +4827,8 @@ function carregarTabelaProdutos(filtro = '') {
             <td data-label="Nome">${produto.nomeComum || produto.nome || produto.name || produto.nomeCientifico || 'Produto sem nome'}</td>
             <td data-label="Preço" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(produto.preco || 0)}</span></td>
             <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}</span></td>
+            <td data-label="Peças" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(produto.pecas || 0, 0) : '-'}</span></td>
+            <td data-label="Volume (m³)" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(produto.volumeM3 ?? produto.estoque ?? 0) : '-'}</span></td>
             <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
                 <div class="acoes-buttons commerce-actions-wrap">
                 <button type="button" onclick="editarProduto('${produto.id}')" class="btn-primary btn-small" title="Editar" aria-label="Editar produto">
