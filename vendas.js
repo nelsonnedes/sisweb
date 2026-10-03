@@ -4100,6 +4100,11 @@ function alternarTipoProdutoForm() {
     if (footM) footM.style.display = (!isRom && !editing) ? 'flex' : 'none';
     const footR = document.getElementById('produtoRomaneioFooter');
     if (footR) footR.style.display = (isRom && !editing) ? 'flex' : 'none';
+    try {
+        const vis = ['produtoFormFooter', 'produtoManuelFooter', 'produtoRomaneioFooter']
+            .filter(id => { const e = document.getElementById(id); return e && e.style.display !== 'none'; });
+        console.log(`[prod-form] modo=${isRom ? 'romaneio' : 'manuel'} editing=${editing} footers=${vis.join(',') || 'nenhum'}`);
+    } catch (_) {}
     if (isRom) {
         const un = document.getElementById('produtoUnidade');
         if (un && !editing) un.value = 'UN';
