@@ -915,7 +915,7 @@ async function carregarDados() {
                  // (produto legado sem nome continua visível/editável).
                  const speciesExibiveis = (Array.isArray(species) ? species : []).filter(s => {
                      if (!s || typeof s !== 'object') return false;
-                     return [s.nome, s.name, s.nomeComum, s.nomeCientifico].some(v => String(v || '').trim() !== '');
+                     return nomeSignificativo(s.nome, s.name, s.nomeComum, s.nomeCientifico) !== '';
                  });
                  window.produtos = typeof normalizeProdutosList === 'function' ? normalizeProdutosList([...speciesExibiveis, ...(produtos_raw || [])]) : [...speciesExibiveis, ...(produtos_raw || [])];
                  try {
@@ -3959,9 +3959,32 @@ function ensureUniqueCode(code, usedCodes) {
     return base;
 }
 
+// Nomes-fantasma: literais que significam AUSÊNCIA de nome em qualquer campo
+function isNomeFantasma(v) {
+    const s = String(v || '').trim().toLowerCase();
+    return s === '' || s === 'produto sem nome' || s === 'nome não informado';
+}
+
+// Nome para exibição: primeiro significativo (comum→nome→científico) ou fallback
+function nomeExibicaoProduto(p) {
+    try {
+        if (!p || typeof p !== 'object') return 'Produto sem nome';
+        return nomeSignificativo(p.nomeComum, p.nome, p.name, p.nomeCientifico) || 'Produto sem nome';
+    } catch (_) { return 'Produto sem nome'; }
+}
+
+// Primeiro valor com nome significativo (ignora vazios e literais-fantasma)
+function nomeSignificativo(...vals) {
+    for (const v of vals) {
+        const s = String(v || '').trim();
+        if (s !== '' && !isNomeFantasma(s)) return s;
+    }
+    return '';
+}
+
 function normalizeProduto(raw, usedCodes) {
     if (!raw || typeof raw !== 'object') return null;
-    const nomeRaw = raw.nome || raw.name || raw.nomeComum || raw.descricao || raw.produtoNome || '';
+    const nomeRaw = nomeSignificativo(raw.nome, raw.name, raw.nomeComum, raw.descricao, raw.produtoNome);
     const nome = (isAllCaps(nomeRaw) ? toTitleCasePt(nomeRaw) : String(nomeRaw || '').trim()).replace(/^\s*[-–—]\s*/, '').trim();
     const unidadeRaw = raw.unidade || raw.unit || 'UN';
     const unidade = isAllCaps(unidadeRaw) ? toTitleCasePt(unidadeRaw) : String(unidadeRaw || 'UN').trim();
@@ -3972,11 +3995,14 @@ function normalizeProduto(raw, usedCodes) {
     const estoque = parseFloat(raw.estoque ?? raw.quantidade ?? raw.qtd ?? raw.stock ?? 0) || 0;
     const descricaoRaw = raw.descricao || raw.description || '';
     const descricao = isAllCaps(descricaoRaw) ? toTitleCasePt(descricaoRaw) : String(descricaoRaw || '').trim();
+    // Higieniza literais-fantasma vindos do banco (auto-limpeza progressiva)
+    const nomeComumLimpo = isNomeFantasma(raw.nomeComum) ? '' : (raw.nomeComum || '');
     return {
         ...raw,
         id,
         codigo,
         nome: nome || 'Produto sem nome',
+        nomeComum: nomeComumLimpo,
         preco,
         estoque,
         unidade: unidade || 'UN',
@@ -4045,10 +4071,7 @@ function isProdutoJunk(p) {
     try {
         if (!p || typeof p !== 'object') return true;
         const temNome = [p.nome, p.name, p.nomeComum, p.nomeCientifico]
-            .some(v => {
-                const s = String(v || '').trim();
-                return s !== '' && s.toLowerCase() !== 'produto sem nome';
-            });
+            .some(v => !isNomeFantasma(v));
         if (temNome) return false;
         const preco = parseFloat(p.preco ?? p.price) || 0;
         const est = parseFloat(p.estoque ?? p.quantidade) || 0;
@@ -4108,9 +4131,17 @@ function alternarTipoProdutoForm() {
     const box = document.getElementById('produtoRomaneioFields');
     if (box) { try { box.style.display = (showVinculo || showDims) ? 'block' : 'none'; } catch (_) {} }
     show('previewProdutoManuelWrap', !isRom && !editing);
-    show('produtoFormFooter', editing, 'flex');
+    show('produtoFormFooter', false, 'flex');
     show('produtoManuelFooter', !isRom && !editing, 'flex');
     show('produtoRomaneioFooter', isRom && !editing, 'flex');
+    // Botões da linha Volume: Adicionar visível só editando (no novo, o footer faz);
+    // Cancelar ao lado só editando
+    try {
+        const gAdd = document.getElementById('grupoBtnDimsAdicionar');
+        if (gAdd) gAdd.style.display = editing ? 'block' : 'none';
+        const cDims = document.getElementById('btnCancelarDims');
+        if (cDims) cDims.style.display = editing ? 'inline-flex' : 'none';
+    } catch (_) {}
     // Rótulo conforme modo: editando = Atualizar, criando = Adicionar
     try {
         document.querySelectorAll('#secaoProdutoForm .lbl-estoque').forEach(el => {
@@ -4280,6 +4311,14 @@ function atualizarVolumeProdutoRomaneio() {
 }
 
 function adicionarEstoqueProdutoRomaneio() {
+    const editando = (() => { try { return !!String(document.getElementById('produtoId')?.value || '').trim(); } catch (_) { return false; } })();
+    if (editando) {
+        // No modo edição este botão persiste o produto (equivale ao Salvar)
+        try {
+            const form = document.getElementById('produtoForm');
+            if (form && typeof form.requestSubmit === 'function') { form.requestSubmit(); return; }
+        } catch (_) {}
+    }
     const v = atualizarVolumeProdutoRomaneio();
     if (!(v > 0)) {
         ToastManager.warning('Informe Espessura, Largura, Comprimento e Peças para calcular o volume', 'Atenção');
@@ -4613,7 +4652,7 @@ function adicionarItemProdutoManuel() {
     try {
         const v = (id) => document.getElementById(id)?.value || '';
         const nome = String(v('produtoNome')).trim();
-        if (!nome || nome.toLowerCase() === 'produto sem nome') { ToastManager.warning('Informe o nome do produto', 'Atenção'); return; }
+        if (isNomeFantasma(nome)) { ToastManager.warning('Informe o nome do produto', 'Atenção'); return; }
         let codigo = String(v('produtoCodigo')).trim();
         const usedCodes = new Set((window.produtos || []).map(p => String(p.codigo || '').trim()).filter(Boolean));
         (__itensProdutoManuel || []).forEach(it => { if (it.codigo) usedCodes.add(String(it.codigo)); });
@@ -4768,7 +4807,7 @@ async function salvarProduto(event) {
             }
         } catch (_) {}
         const nomeEfetivo = String(nome || '').trim();
-        if (!nomeEfetivo || nomeEfetivo.toLowerCase() === 'produto sem nome') {
+        if (isNomeFantasma(nomeEfetivo)) {
             ToastManager.warning('Informe o nome do produto', 'Atenção');
             return;
         }
@@ -4858,8 +4897,14 @@ async function salvarProduto(event) {
         // Atualizar selects
         atualizarSelectProdutos();
 
-        // Fechar form inline
-        fecharProdutoForm();
+        // Pós-save: se estava editando, limpa e volta ao estado de novo;
+        // se estava criando via Manuel (submit direto), fecha o form
+        const estavaEditando = !!produtoId;
+        if (estavaEditando) {
+            try { novoProduto(); } catch (_) {}
+        } else {
+            fecharProdutoForm();
+        }
 
         // Atualizar listagem se estiver visível
         if (isModalOpen('listaProdutosModal')) {
@@ -4981,7 +5026,7 @@ async function imprimirRelatorioProdutos(lista) {
     try { emp = await obterDadosEmpresa(); } catch (_) {}
     const c = dadosEmpresaParaImpressao(emp);
     const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const nomeDe = (p) => p.nomeComum || p.nome || p.name || p.nomeCientifico || 'Produto sem nome';
+    const nomeDe = (p) => { try { return nomeExibicaoProduto(p); } catch (_) { return 'Produto sem nome'; } };
     const num = (v) => parseFloat(v) || 0;
     const linhas = itens.map(p => {
         const estoque = temDimsSerrado(p) ? String(Math.round(num(p.pecas))) : `${num(p.estoque).toLocaleString('pt-BR')} ${p.unidade || 'UN'}`;
@@ -5061,7 +5106,7 @@ function carregarTabelaProdutos(filtro = '') {
         <tr>
             <td data-label="Selecionar" style="text-align:center;"><input type="checkbox" ${produtosSelecionados.has(String(produto.id)) ? 'checked' : ''} onchange="toggleSelecionarProduto('${produto.id}', this.checked)" aria-label="Selecionar produto"></td>
             <td data-label="Código">${produto.codigo || '-'}</td>
-            <td data-label="Nome">${produto.nomeComum || produto.nome || produto.name || produto.nomeCientifico || 'Produto sem nome'}</td>
+            <td data-label="Nome">${nomeExibicaoProduto(produto)}</td>
             <td data-label="Preço" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(produto.preco || 0)}</span></td>
             <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(produto.pecas || 0, 0) : `${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}`}</span></td>
             <td data-label="M. Linear" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(metrosLinearesDe(produto), 2) + ' ml' : '-'}</span></td>
@@ -6004,7 +6049,7 @@ function atualizarSelectProdutos() {
             // Compatibilidade species/produtos (sem sufixo fantasma: se só há
             // nome científico, exibe só ele — nunca "X - Produto sem nome")
             const nomeCientifico = String(p.nomeCientifico || '').trim();
-            const nomeComum = String(p.nomeComum || p.nome || p.name || '').trim();
+            const nomeComum = nomeSignificativo(p.nomeComum, p.nome, p.name);
             let texto = nomeCientifico
                 ? (nomeComum ? `${nomeCientifico} - ${nomeComum}` : nomeCientifico)
                 : (nomeComum || 'Produto sem nome');

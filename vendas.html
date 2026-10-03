@@ -1773,9 +1773,12 @@
                             <label>Volume (m³):</label>
                             <input type="text" id="produtoVolumePreview" readonly placeholder="0,000">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="grupoBtnDimsAdicionar">
                             <button type="button" class="btn btn-adicionar" onclick="adicionarEstoqueProdutoRomaneio()">
                                 <i class="fas fa-plus"></i> <span class="lbl-estoque">Adicionar Estoque</span>
+                            </button>
+                            <button type="button" id="btnCancelarDims" class="btn btn-danger" onclick="fecharProdutoForm()" style="display:none;margin-left:8px;">
+                                <i class="fas fa-times"></i> Cancelar
                             </button>
                         </div>
                     </div>
@@ -2291,7 +2294,7 @@
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
-    <script src="vendas.js?v=15a1fb865679"></script>
+    <script src="vendas.js?v=582edbb05beb"></script>
 </body>
 
 </html>

@@ -32,7 +32,7 @@ test('filtrarProdutosPersistiveis: mantém produtos, descarta espécies/fantasma
   sandbox.window.window = sandbox.window;
   vm.createContext(sandbox);
   vm.runInContext(
-    extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function isProdutoJunk(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
+    extract(src, 'function isNomeFantasma(') + '\n' + extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function isProdutoJunk(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
     sandbox
   );
   vm.runInContext(`
@@ -74,7 +74,7 @@ test('quarentena v2: purga puro-lixo mesmo com id registrado', () => {
     throw new Error('unbalanced ' + start);
   }
   vm.runInContext(
-    extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function isProdutoJunk(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
+    extract(src, 'function isNomeFantasma(') + '\n' + extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function isProdutoJunk(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
     sandbox
   );
   vm.runInContext(`
@@ -112,7 +112,7 @@ test('quarentena v2: literal "Produto sem nome" vale como ausência de nome', ()
     throw new Error('unbalanced ' + start);
   }
   vm.runInContext(
-    extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function isProdutoJunk(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
+    extract(src, 'function isNomeFantasma(') + '\n' + extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function isProdutoJunk(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
     sandbox
   );
   vm.runInContext(`
@@ -122,4 +122,33 @@ test('quarentena v2: literal "Produto sem nome" vale como ausência de nome', ()
     this.__out = filtrarProdutosPersistiveis([{ id: 'g9', codigo: '000009', nome: 'Produto sem nome' }]);
   `, sandbox);
   assert.equal(sandbox.__out.length, 0);
+});
+
+test('literais Nome não informado / Produto sem nome valem como vazio', () => {
+  const sandbox = { window: {} };
+  sandbox.window.window = sandbox.window;
+  vm.createContext(sandbox);
+  const src = readFileSync(new URL('../vendas.js', import.meta.url), 'utf8');
+  function extract(src, start) {
+    const i = src.indexOf(start);
+    const j = src.indexOf('{', i);
+    let d = 0;
+    for (let k = j; k < src.length; k++) {
+      if (src[k] === '{') d++;
+      if (src[k] === '}') { d--; if (d === 0) return src.slice(i, k + 1); }
+    }
+    throw new Error('unbalanced ' + start);
+  }
+  vm.runInContext(
+    extract(src, 'function isNomeFantasma(') + '\n' + extract(src, 'function nomeSignificativo(') + '\n' + extract(src, 'function nomeExibicaoProduto('),
+    sandbox
+  );
+  vm.runInContext(`
+    this.__a = nomeExibicaoProduto({ nome: 'Nome não informado', nomeCientifico: 'Pinus sp' });
+    this.__b = nomeExibicaoProduto({ nome: 'Produto sem nome' });
+    this.__c = nomeExibicaoProduto({ nomeComum: 'Tora' });
+  `, sandbox);
+  assert.equal(sandbox.__a, 'Pinus sp');
+  assert.equal(sandbox.__b, 'Produto sem nome');
+  assert.equal(sandbox.__c, 'Tora');
 });

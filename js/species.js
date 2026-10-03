@@ -418,7 +418,7 @@ function renderTable(list = currentSpecies) {
     
     elements.tableBody.innerHTML = paginatedItems.map(item => `
         <tr>
-            <td>${escapeHtml(getSpeciesName(item) || '-')}</td>
+            <td>${escapeHtml(getSpeciesName(item) || getSpeciesScientific(item) || '-')}</td>
             <td>${escapeHtml(getSpeciesScientific(item) || '-')}</td>
             <td class="actions-cell">
                 <button onclick="editSpecies('${item.id}')" class="btn btn-sm btn-primary" title="Editar">
