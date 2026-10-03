@@ -4122,6 +4122,17 @@ function alternarTipoProdutoForm() {
             .filter(id => { const e = document.getElementById(id); return e && e.style.display !== 'none'; });
         console.log(`[prod-form] modo=${isRom ? 'romaneio' : 'manuel'} editing=${editing} footers=${vis.join(',') || 'nenhum'}`);
     } catch (_) {}
+    // Forense: display computado (detecta override de CSS !important sobre o inline)
+    try {
+        const comp = ['produtoFormFooter', 'produtoManuelFooter', 'produtoRomaneioFooter'].map(id => {
+            const e = document.getElementById(id);
+            if (!e) return `${id}=ausente`;
+            let cs = '';
+            try { cs = window.getComputedStyle(e).display; } catch (_) {}
+            return `${id}=inline:${e.style.display || '(vazio)'}/computed:${cs || '?'}`;
+        }).join(' | ');
+        console.log(`[prod-form-forense] ${comp} | produtoId=${(() => { try { return document.getElementById('produtoId')?.value || '(vazio)'; } catch (_) { return '?'; } })()}`);
+    } catch (_) {}
     if (isRom) {
         const un = document.getElementById('produtoUnidade');
         if (un && !editing) un.value = 'UN';
