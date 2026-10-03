@@ -2043,7 +2043,6 @@
         </div>
     </div>
 
-    <!-- Modal Produto -->
     <!-- Modal Lista de Produtos -->
     <div id="listaProdutosModal" class="modal">
         <div class="modal-content">
@@ -2057,10 +2056,20 @@
                     <input type="text" id="searchProdutos" placeholder="Pesquisar produtos..."
                         onkeyup="filtrarProdutos()">
                 </div>
+                <div class="form-row date-filter-row">
+                    <button type="button" class="btn-primary btn-print-selected"
+                        onclick="imprimirProdutosSelecionados()">
+                        <i class="fas fa-print"></i> Imprimir <span id="produtosPrintSelectedCount">(0)</span>
+                    </button>
+                </div>
                 <div class="table-responsive mobile-cards commerce-orders-table-wrap">
                     <table class="table commerce-orders-table">
                         <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" id="produtosSelectAll"
+                                        onchange="toggleSelecionarTodosProdutos(this.checked)" aria-label="Selecionar todos">
+                                </th>
                                 <th>Código</th>
                                 <th>Nome</th>
                                 <th>Preço</th>
@@ -2274,7 +2283,7 @@
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
-    <script src="vendas.js?v=8532cb73415f"></script>
+    <script src="vendas.js?v=119d58024030"></script>
 </body>
 
 </html>

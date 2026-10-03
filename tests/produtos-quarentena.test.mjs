@@ -95,3 +95,31 @@ test('quarentena v2: purga puro-lixo mesmo com id registrado', () => {
   `, sandbox);
   assert.equal(sandbox.__out.map((p) => p.id).join(','), 'p1,e1');
 });
+
+test('quarentena v2: literal "Produto sem nome" vale como ausência de nome', () => {
+  const sandbox = { window: {} };
+  sandbox.window.window = sandbox.window;
+  vm.createContext(sandbox);
+  const src = readFileSync(new URL('../vendas.js', import.meta.url), 'utf8');
+  function extract(src, start) {
+    const i = src.indexOf(start);
+    const j = src.indexOf('{', i);
+    let d = 0;
+    for (let k = j; k < src.length; k++) {
+      if (src[k] === '{') d++;
+      if (src[k] === '}') { d--; if (d === 0) return src.slice(i, k + 1); }
+    }
+    throw new Error('unbalanced ' + start);
+  }
+  vm.runInContext(
+    extract(src, 'function registrarIdsProdutosRaw(') + '\n' + extract(src, 'function isProdutoJunk(') + '\n' + extract(src, 'function filtrarProdutosPersistiveis('),
+    sandbox
+  );
+  vm.runInContext(`
+    window.__produtosRawIds = new Set();
+    window.__produtosNovosIds = new Set();
+    registrarIdsProdutosRaw([{ id: 'g9', codigo: '000009' }]);
+    this.__out = filtrarProdutosPersistiveis([{ id: 'g9', codigo: '000009', nome: 'Produto sem nome' }]);
+  `, sandbox);
+  assert.equal(sandbox.__out.length, 0);
+});

@@ -4039,12 +4039,16 @@ function filtrarProdutosPersistiveis(lista) {
 }
 
 // Registro puro-lixo: nenhum campo de nome + preço zerado + estoque zerado.
-// (Produto legítimo sempre tem nome — trava no salvar — ou valor/estoque.)
+// (Produto legítimo sempre tem nome — trava no salvar — ou valor/estoque.
+// O literal "Produto sem nome" conta como AUSÊNCIA de nome.)
 function isProdutoJunk(p) {
     try {
         if (!p || typeof p !== 'object') return true;
         const temNome = [p.nome, p.name, p.nomeComum, p.nomeCientifico]
-            .some(v => String(v || '').trim() !== '');
+            .some(v => {
+                const s = String(v || '').trim();
+                return s !== '' && s.toLowerCase() !== 'produto sem nome';
+            });
         if (temNome) return false;
         const preco = parseFloat(p.preco ?? p.price) || 0;
         const est = parseFloat(p.estoque ?? p.quantidade) || 0;
@@ -4561,7 +4565,7 @@ function adicionarItemProdutoManuel() {
     try {
         const v = (id) => document.getElementById(id)?.value || '';
         const nome = String(v('produtoNome')).trim();
-        if (!nome) { ToastManager.warning('Informe o nome do produto', 'Atenção'); return; }
+        if (!nome || nome.toLowerCase() === 'produto sem nome') { ToastManager.warning('Informe o nome do produto', 'Atenção'); return; }
         let codigo = String(v('produtoCodigo')).trim();
         const usedCodes = new Set((window.produtos || []).map(p => String(p.codigo || '').trim()).filter(Boolean));
         (__itensProdutoManuel || []).forEach(it => { if (it.codigo) usedCodes.add(String(it.codigo)); });
@@ -4701,7 +4705,8 @@ async function salvarProduto(event) {
                 }
             }
         } catch (_) {}
-        if (!String(nome || '').trim()) {
+        const nomeEfetivo = String(nome || '').trim();
+        if (!nomeEfetivo || nomeEfetivo.toLowerCase() === 'produto sem nome') {
             ToastManager.warning('Informe o nome do produto', 'Atenção');
             return;
         }
@@ -4813,6 +4818,64 @@ function listarProdutos() {
     carregarTabelaProdutos();
 }
 
+let produtosListFiltered = [];
+let produtosSelecionados = new Set();
+
+function toggleSelecionarTodosProdutos(checked) {
+    if (checked) {
+        produtosListFiltered.forEach(p => produtosSelecionados.add(String(p.id)));
+    } else {
+        produtosListFiltered.forEach(p => produtosSelecionados.delete(String(p.id)));
+    }
+    carregarTabelaProdutos(document.getElementById('searchProdutos')?.value || '');
+}
+
+function toggleSelecionarProduto(produtoId, checked) {
+    if (checked) produtosSelecionados.add(String(produtoId));
+    else produtosSelecionados.delete(String(produtoId));
+    atualizarContadorProdutosSelecionados();
+}
+
+function atualizarContadorProdutosSelecionados() {
+    try {
+        const el = document.getElementById('produtosPrintSelectedCount');
+        if (el) el.textContent = `(${produtosSelecionados.size})`;
+        const all = document.getElementById('produtosSelectAll');
+        if (all) {
+            const visiveis = produtosListFiltered.map(p => String(p.id));
+            all.checked = visiveis.length > 0 && visiveis.every(id => produtosSelecionados.has(id));
+        }
+    } catch (_) {}
+}
+
+function imprimirProdutosSelecionados() {
+    const lista = produtosListFiltered.filter(p => produtosSelecionados.has(String(p.id)));
+    if (lista.length === 0) {
+        ToastManager.warning('Selecione ao menos um produto para imprimir.', 'Atenção');
+        return;
+    }
+    try {
+        const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const linhas = lista.map(p => {
+            const nome = p.nomeComum || p.nome || p.name || p.nomeCientifico || 'Produto sem nome';
+            const estoque = p.tipoProduto === 'romaneio' ? String(p.pecas || 0) : `${p.estoque || 0} ${p.unidade || 'UN'}`;
+            const ml = p.tipoProduto === 'romaneio' ? Number(metrosLinearesDe(p)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' ml' : '-';
+            const vol = p.tipoProduto === 'romaneio' ? Number(p.volumeM3 ?? p.estoque ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' m³' : '-';
+            const preco = Number(p.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            return `<tr><td>${esc(p.codigo || '-')}</td><td>${esc(nome)}</td><td>${preco}</td><td>${esc(estoque)}</td><td>${ml}</td><td>${vol}</td></tr>`;
+        }).join('');
+        const w = window.open('', '_blank');
+        if (!w) { ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção'); return; }
+        w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Lista de Produtos</title>`
+            + `<style>body{font-family:Arial,sans-serif;padding:24px;color:#111;}h1{font-size:18px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px 8px;text-align:left;}th{background:#eee;}</style></head>`
+            + `<body><h1>Lista de Produtos (${lista.length})</h1><table><thead><tr><th>Código</th><th>Nome</th><th>Preço</th><th>Estoque</th><th>M. Linear</th><th>Volume (m³)</th></tr></thead><tbody>${linhas}</tbody></table>`
+            + `<script>window.onload=function(){window.print();};<\/script></body></html>`);
+        w.document.close();
+    } catch (e) {
+        ToastManager.error('Erro ao imprimir: ' + (e && e.message), 'Erro');
+    }
+}
+
 function carregarTabelaProdutos(filtro = '') {
     const tbody = document.getElementById('produtosTable');
     window.produtos = normalizeProdutosList(window.produtos || []);
@@ -4828,7 +4891,7 @@ function carregarTabelaProdutos(filtro = '') {
     }
     
     if (produtosFiltrados.length === 0) {
-        tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="7" style="text-align: center;">Nenhum produto encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td class="commerce-full-row" data-label="" colspan="8" style="text-align: center;">Nenhum produto encontrado</td></tr>';
         refreshCommerceResponsiveTables();
         renderVendasProdutosPagination(0);
         return;
@@ -4842,6 +4905,7 @@ function carregarTabelaProdutos(filtro = '') {
 
     tbody.innerHTML = produtosPaginados.map(produto => `
         <tr>
+            <td data-label="Selecionar" style="text-align:center;"><input type="checkbox" ${produtosSelecionados.has(String(produto.id)) ? 'checked' : ''} onchange="toggleSelecionarProduto('${produto.id}', this.checked)" aria-label="Selecionar produto"></td>
             <td data-label="Código">${produto.codigo || '-'}</td>
             <td data-label="Nome">${produto.nomeComum || produto.nome || produto.name || produto.nomeCientifico || 'Produto sem nome'}</td>
             <td data-label="Preço" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(produto.preco || 0)}</span></td>
@@ -4860,8 +4924,10 @@ function carregarTabelaProdutos(filtro = '') {
             </td>
         </tr>
     `).join('');
+    produtosListFiltered = produtosFiltrados;
     refreshCommerceResponsiveTables();
     renderVendasProdutosPagination(produtosFiltrados.length);
+    atualizarContadorProdutosSelecionados();
 }
 
 function renderVendasProdutosPagination(totalItems) {
