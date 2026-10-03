@@ -1721,7 +1721,10 @@ async function novoPedido() {
     
     // Mostrar formulário
     document.getElementById('pedidoForm').style.display = 'block';
-    
+
+    // Select sempre reflete window.produtos atual (evita dados obsoletos)
+    try { atualizarSelectProdutos(); } catch (_) {}
+
     // Limpar tabela de itens
     atualizarTabelaItens();
     atualizarTotais();
@@ -5243,10 +5246,13 @@ function atualizarSelectProdutos() {
             const option = document.createElement('option');
             option.value = p.id;
             
-            // Compatibilidade species/produtos
-            const nomeCientifico = p.nomeCientifico || '';
-            const nomeComum = p.nomeComum || p.nome || p.name || 'Produto sem nome';
-            let texto = nomeCientifico ? `${nomeCientifico} - ${nomeComum}` : nomeComum;
+            // Compatibilidade species/produtos (sem sufixo fantasma: se só há
+            // nome científico, exibe só ele — nunca "X - Produto sem nome")
+            const nomeCientifico = String(p.nomeCientifico || '').trim();
+            const nomeComum = String(p.nomeComum || p.nome || p.name || '').trim();
+            let texto = nomeCientifico
+                ? (nomeComum ? `${nomeCientifico} - ${nomeComum}` : nomeCientifico)
+                : (nomeComum || 'Produto sem nome');
             if (p.tipoProduto === 'romaneio') texto += ' · Serrado';
             const preco = p.preco || p.price || 0;
             
