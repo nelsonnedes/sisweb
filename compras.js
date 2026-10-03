@@ -914,11 +914,42 @@ function ensureCodigoProdutoUnico(baseCodigo, currentId = null) {
     return code;
 }
 
+// Quarentena anti-fantasma (paridade com vendas.js): registro puro-lixo
+// (sem nome — inclusive o literal "Produto sem nome" — sem preço e sem
+// estoque) nunca é persistido em writes whole-list da coleção 'produtos'.
+function isProdutoJunkCompra(p) {
+    try {
+        if (!p || typeof p !== 'object') return true;
+        const temNome = [p.nome, p.name, p.nomeComum, p.nomeCientifico]
+            .some(v => {
+                const s = String(v || '').trim();
+                return s !== '' && s.toLowerCase() !== 'produto sem nome';
+            });
+        if (temNome) return false;
+        const preco = parseFloat(p.preco ?? p.price) || 0;
+        const est = parseFloat(p.estoque ?? p.quantidade) || 0;
+        return !(preco > 0 || est > 0);
+    } catch (_) { return false; }
+}
+
+function filtrarProdutosPersistiveisCompra(lista) {
+    try {
+        const arr = Array.isArray(lista) ? lista : [];
+        const out = arr.filter(p => { try { return !isProdutoJunkCompra(p); } catch (_) { return true; } });
+        if (out.length !== arr.length) {
+            try { console.log(`🧹 Quarentena(compras): ${arr.length - out.length} registro(s) vazio(s) purgado(s)`); } catch (_) {}
+        }
+        return out;
+    } catch (_) { return Array.isArray(lista) ? lista : []; }
+}
+
 async function persistProdutosCatalog(lista) {
     const backup = Array.isArray(window.produtos) ? window.produtos.slice() : [];
     window.produtos = Array.isArray(lista) ? lista : [];
     __rcSaveDataRemoteOk = false;
-    await saveData('produtos', window.produtos);
+    // Quarentena (paridade vendas): nunca persiste puro-lixo
+    // (sem nome, sem preço, sem estoque) — impede ressuscitar fantasmas
+    await saveData('produtos', filtrarProdutosPersistiveisCompra(window.produtos));
     if (!__rcSaveDataRemoteOk) {
         window.produtos = backup;
         try { atualizarSelectProdutos(); } catch (_) {}

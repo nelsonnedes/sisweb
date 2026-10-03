@@ -561,6 +561,23 @@ async function salvarConfiguracoes() {
 }
 
 // Funções auxiliares
+// Quarentena anti-fantasma (paridade vendas/compras): nunca persiste
+// puro-lixo (sem nome, sem preço, sem estoque) em whole-list.
+function isProdutoJunkNF(p) {
+    try {
+        if (!p || typeof p !== 'object') return true;
+        const temNome = [p.nome, p.name, p.nomeComum, p.nomeCientifico]
+            .some(v => {
+                const s = String(v || '').trim();
+                return s !== '' && s.toLowerCase() !== 'produto sem nome';
+            });
+        if (temNome) return false;
+        const preco = parseFloat(p.preco ?? p.price) || 0;
+        const est = parseFloat(p.estoque ?? p.quantidade) || 0;
+        return !(preco > 0 || est > 0);
+    } catch (_) { return false; }
+}
+
 async function atualizarEstoqueProdutos(itens, tipoOperacao) {
     try {
         for (const item of itens) {
@@ -579,7 +596,15 @@ async function atualizarEstoqueProdutos(itens, tipoOperacao) {
             }
         }
         
-        await saveData('produtos', produtos);
+        try {
+            const limpa = (Array.isArray(produtos) ? produtos : []).filter(p => { try { return !isProdutoJunkNF(p); } catch (_) { return true; } });
+            if (limpa.length !== (produtos || []).length) {
+                try { console.log(`🧹 Quarentena(NF): ${(produtos || []).length - limpa.length} registro(s) vazio(s) purgado(s)`); } catch (_) {}
+            }
+            await saveData('produtos', limpa);
+        } catch (e) {
+            await saveData('produtos', produtos);
+        }
         
     } catch (error) {
         console.error('Erro ao atualizar estoque:', error);
