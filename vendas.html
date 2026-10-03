@@ -1639,7 +1639,7 @@
                     <label>Tipo de Produto:</label>
                     <div style="display:flex;gap:16px;align-items:center;">
                         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                            <input type="radio" name="tipoProdutoForm" value="comum" checked onchange="alternarTipoProdutoForm()"> Produto Comum
+                            <input type="radio" name="tipoProdutoForm" value="manuel" checked onchange="alternarTipoProdutoForm()"> Produto Manuel
                         </label>
                         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
                             <input type="radio" name="tipoProdutoForm" value="romaneio" onchange="alternarTipoProdutoForm()"> Produto Romaneio
@@ -1650,7 +1650,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="produtoRomaneioTipo2">Tipo de Romaneio:</label>
-                            <select id="produtoRomaneioTipo2" onchange="sincronizarTipoRomaneioProduto()">
+                            <select id="produtoRomaneioTipo2" onchange="carregarRomaneiosEm('produtoRomaneioTipo2','produtoRomaneioId2')">
                                 <option value="">Selecione...</option>
                                 <option value="romaneiosTL">Romaneio TL</option>
                                 <option value="romaneiosPct">Romaneio PCT</option>
@@ -1659,7 +1659,7 @@
                         </div>
                         <div class="form-group form-group-large">
                             <label for="produtoRomaneioId2">Romaneio:</label>
-                            <select id="produtoRomaneioId2" onchange="sincronizarRomaneioProduto()">
+                            <select id="produtoRomaneioId2" onchange="limparPreviewProdutoRomaneio()">
                                 <option value="">Selecione o tipo primeiro...</option>
                             </select>
                         </div>
@@ -1671,14 +1671,6 @@
                         <button type="button" class="btn btn-danger" onclick="limparPreviewProdutoRomaneio()">
                             <i class="fas fa-trash"></i> Limpar
                         </button>
-                        <div class="form-group" style="margin-left:8px;">
-                            <label>Agrupar:</label>
-                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="agrProdEsp" onchange="renderPreviewProdutoRomaneio()"> Espécie Espessura</label>
-                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="agrProdEspLarg" checked onchange="renderPreviewProdutoRomaneio()"> Espécie Espessura x Largura</label>
-                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="agrProdEspLargComp" onchange="renderPreviewProdutoRomaneio()"> Espécie Espessura x Largura x Comprimento</label>
-                            </div>
-                        </div>
                     </div>
                     <div style="margin-top:8px;">
                         <label style="font-weight:700;">Preview - Resumo:</label>
@@ -1690,28 +1682,29 @@
                 <!--PRODUTO-FORM-->
                 <form id="produtoForm">
                 <input type="hidden" id="produtoId">
+                <div id="formProdutoBase">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="produtoCodigo">Código:</label>
-                        <input type="text" id="produtoCodigo" required>
+                        <input type="text" id="produtoCodigo" required oninput="renderPreviewProdutoManuel()">
                     </div>
                     <div class="form-group form-group-large">
                         <label for="produtoNome">Nome:</label>
-                        <input type="text" id="produtoNome" required>
+                        <input type="text" id="produtoNome" required oninput="renderPreviewProdutoManuel()">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="produtoPreco">Preço:</label>
-                        <input type="text" id="produtoPreco" placeholder="R$ 0,00">
+                        <input type="text" id="produtoPreco" placeholder="R$ 0,00" oninput="renderPreviewProdutoManuel()">
                     </div>
                     <div class="form-group">
                         <label for="produtoEstoque">Estoque:</label>
-                        <input type="number" id="produtoEstoque" min="0" step="0.001">
+                        <input type="number" id="produtoEstoque" min="0" step="0.001" oninput="renderPreviewProdutoManuel()">
                     </div>
                     <div class="form-group">
                         <label for="produtoUnidade">Unidade:</label>
-                        <select id="produtoUnidade">
+                        <select id="produtoUnidade" onchange="renderPreviewProdutoManuel()">
                             <option value="UN">UN - Unidade</option>
                             <option value="DZ">DZ - Dúzia</option>
                             <option value="PC">PC - Peça</option>
@@ -1720,6 +1713,11 @@
                             <option value="LN">LN - Metro Linear</option>
                         </select>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="produtoDescricao">Descrição:</label>
+                    <textarea id="produtoDescricao" rows="3" oninput="renderPreviewProdutoManuel()"></textarea>
+                </div>
                 </div>
                 <div id="produtoRomaneioFields" style="display:none;border:1px solid var(--sw-border);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--sw-surface-2);">
                     <div class="form-row">
@@ -1779,13 +1777,23 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="produtoDescricao">Descrição:</label>
-                    <textarea id="produtoDescricao" rows="3"></textarea>
+                <div id="previewProdutoManuelWrap" style="margin-top:8px;">
+                    <label style="font-weight:700;">Preview - Resumo:</label>
+                    <div id="previewProdutoManuel" style="border:1px solid var(--sw-border);border-radius:8px;padding:10px;background:var(--sw-surface);">
+                        <span style="color:var(--sw-text-3);">Preencha os campos para conferir antes de salvar.</span>
+                    </div>
                 </div>
-                <div class="modal-footer action-buttons">
+                <div id="produtoFormFooter" class="modal-footer action-buttons">
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-save"></i> Salvar
+                    </button>
+                    <button type="button" onclick="fecharProdutoForm()" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+                <div id="produtoRomaneioFooter" class="modal-footer action-buttons" style="display:none;">
+                    <button type="button" class="btn btn-success" onclick="adicionarEstoqueGruposRomaneio()">
+                        <i class="fas fa-plus"></i> Adicionar Estoque
                     </button>
                     <button type="button" onclick="fecharProdutoForm()" class="btn btn-danger">
                         <i class="fas fa-times"></i> Cancelar
@@ -2246,7 +2254,7 @@
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
-    <script src="vendas.js?v=4886a4d7b68f"></script>
+    <script src="vendas.js?v=46b9cadfc227"></script>
 </body>
 
 </html>
