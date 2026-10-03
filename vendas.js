@@ -4876,6 +4876,8 @@ function atualizarContadorProdutosSelecionados() {
     try {
         const el = document.getElementById('produtosPrintSelectedCount');
         if (el) el.textContent = `(${produtosSelecionados.size})`;
+        const del = document.getElementById('produtosDeleteSelectedCount');
+        if (del) del.textContent = `(${produtosSelecionados.size})`;
         const all = document.getElementById('produtosSelectAll');
         if (all) {
             const visiveis = produtosListFiltered.map(p => String(p.id));
@@ -4890,21 +4892,111 @@ function imprimirProdutosSelecionados() {
         ToastManager.warning('Selecione ao menos um produto para imprimir.', 'Atenção');
         return;
     }
+    imprimirRelatorioProdutos(lista);
+}
+
+async function excluirProdutosSelecionados() {
+    const ids = Array.from(produtosSelecionados);
+    if (ids.length === 0) {
+        ToastManager.warning('Selecione ao menos um produto para excluir.', 'Atenção');
+        return;
+    }
+    if (!confirm(`Excluir ${ids.length} produto(s) selecionado(s)? Esta ação não pode ser desfeita.`)) return;
     try {
-        const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const linhas = lista.map(p => {
-            const nome = p.nomeComum || p.nome || p.name || p.nomeCientifico || 'Produto sem nome';
-            const estoque = p.tipoProduto === 'romaneio' ? String(p.pecas || 0) : `${p.estoque || 0} ${p.unidade || 'UN'}`;
-            const ml = p.tipoProduto === 'romaneio' ? Number(metrosLinearesDe(p)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' ml' : '-';
-            const vol = p.tipoProduto === 'romaneio' ? Number(p.volumeM3 ?? p.estoque ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' m³' : '-';
-            const preco = Number(p.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            return `<tr><td>${esc(p.codigo || '-')}</td><td>${esc(nome)}</td><td>${preco}</td><td>${esc(estoque)}</td><td>${ml}</td><td>${vol}</td></tr>`;
-        }).join('');
+        LoadingManager.show('Excluindo produtos...');
+        const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
+        const idSet = new Set(ids.map(String));
+        window.produtos = (window.produtos || []).filter(p => !idSet.has(String(p && p.id)));
+        __rvSaveDataRemoteOk = false;
+        await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
+        if (!__rvSaveDataRemoteOk) {
+            try { window.produtos = backupProdutos; } catch (_) {}
+            ToastManager.error('Não foi possível excluir no servidor. Verifique sua conexão e permissões.', 'Falha ao excluir', 8000);
+            return;
+        }
+        produtosSelecionados.clear();
+        atualizarSelectProdutos();
+        carregarTabelaProdutos(document.getElementById('searchProdutos')?.value || '');
+        ToastManager.success(`${ids.length} produto(s) excluído(s).`, 'Sucesso');
+    } catch (e) {
+        ToastManager.error('Erro ao excluir: ' + (e && e.message), 'Erro');
+    } finally {
+        try { LoadingManager.hide(); } catch (_) {}
+    }
+}
+
+function dadosEmpresaParaImpressao(emp) {
+    const e = (emp && typeof emp === 'object') ? emp : {};
+    const t = (v) => String(v ?? '').trim();
+    return {
+        nome: t(e.name || e.nome || e.razaoSocial || e.fantasia || e.companyName) || 'Empresa não informada',
+        cnpj: t(e.cnpj || e.documento || e.cpfCnpj || e.cpf || e.cnpjCpf) || '-',
+        endereco: t(e.address || e.endereco || e.logradouro || e.street) || '-',
+        cidade: t(e.city || e.cidade || e.municipio) || '-',
+        estado: t(e.state || e.estado || e.uf) || '-',
+        telefone: t(e.phone || e.telefone || e.tel || e.celular) || '-',
+        logo: (() => {
+            const l = t(e.logo || e.logoUrl || e.logoURL || e.logoBase64 || e.logoData);
+            if (!l) return '';
+            if (/^(data:|blob:|https?:|file:)/i.test(l)) return l;
+            if (/^[A-Za-z0-9+/=]+$/.test(l) && l.length > 80) return 'data:image/png;base64,' + l;
+            return l;
+        })()
+    };
+}
+
+async function imprimirRelatorioProdutos(lista) {
+    const itens = (Array.isArray(lista) ? lista : []).filter(Boolean);
+    if (itens.length === 0) {
+        ToastManager.warning('Selecione ao menos um produto para imprimir.', 'Atenção');
+        return;
+    }
+    let emp = {};
+    try { emp = await obterDadosEmpresa(); } catch (_) {}
+    const c = dadosEmpresaParaImpressao(emp);
+    const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const nomeDe = (p) => p.nomeComum || p.nome || p.name || p.nomeCientifico || 'Produto sem nome';
+    const num = (v) => parseFloat(v) || 0;
+    const linhas = itens.map(p => {
+        const estoque = temDimsSerrado(p) ? String(Math.round(num(p.pecas))) : `${num(p.estoque).toLocaleString('pt-BR')} ${p.unidade || 'UN'}`;
+        const ml = temDimsSerrado(p) ? metrosLinearesDe(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' ml' : '-';
+        const vol = temDimsSerrado(p) ? num(p.volumeM3 ?? p.estoque).toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' m³' : '-';
+        const preco = num(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        return `<tr><td>${esc(p.codigo || '-')}</td><td>${esc(nomeDe(p))}</td><td>${preco}</td><td>${esc(estoque)}</td><td>${ml}</td><td>${vol}</td></tr>`;
+    }).join('');
+    // Resumo por Espécie x Espessura x Largura (só serrados)
+    const grupos = new Map();
+    itens.forEach(p => {
+        if (!temDimsSerrado(p)) return;
+        const esp = String(p.especie || nomeDe(p) || '').trim().toUpperCase();
+        const key = `${esp}||${num(p.espessura).toFixed(3)}||${num(p.largura).toFixed(3)}`;
+        if (!grupos.has(key)) grupos.set(key, { especie: String(p.especie || nomeDe(p) || '').trim(), espessura: num(p.espessura), largura: num(p.largura), pecas: 0, ml: 0, volume: 0 });
+        const g = grupos.get(key);
+        g.pecas += num(p.pecas);
+        g.ml = Math.round((g.ml + metrosLinearesDe(p)) * 100) / 100;
+        g.volume = Math.round((g.volume + num(p.volumeM3 ?? p.estoque)) * 1000) / 1000;
+    });
+    const arrG = Array.from(grupos.values());
+    const totPecas = arrG.reduce((s, g) => s + g.pecas, 0);
+    const totMl = Math.round(arrG.reduce((s, g) => s + g.ml, 0) * 100) / 100;
+    const totVol = Math.round(arrG.reduce((s, g) => s + g.volume, 0) * 1000) / 1000;
+    const linhasResumo = arrG.map(g => `<tr><td>${esc(g.especie || '-')}</td><td>${String(g.espessura).replace('.', ',')} cm</td><td>${String(g.largura).replace('.', ',')} cm</td><td>${Math.round(g.pecas)}</td><td>${g.ml.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml</td><td>${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</td></tr>`).join('')
+        + `<tr><td colspan="3"><strong>Total</strong></td><td><strong>${Math.round(totPecas)}</strong></td><td><strong>${totMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml</strong></td><td><strong>${totVol.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</strong></td></tr>`;
+    const dataHoje = new Date().toLocaleDateString('pt-BR');
+    try {
         const w = window.open('', '_blank');
         if (!w) { ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção'); return; }
         w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Lista de Produtos</title>`
-            + `<style>body{font-family:Arial,sans-serif;padding:24px;color:#111;}h1{font-size:18px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px 8px;text-align:left;}th{background:#eee;}</style></head>`
-            + `<body><h1>Lista de Produtos (${lista.length})</h1><table><thead><tr><th>Código</th><th>Nome</th><th>Preço</th><th>Estoque</th><th>M. Linear</th><th>Volume (m³)</th></tr></thead><tbody>${linhas}</tbody></table>`
+            + `<style>body{font-family:Arial,sans-serif;padding:24px;color:#111;}h1{font-size:18px;text-align:center;margin:4px 0 12px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px 8px;text-align:left;}th{background:#eee;}`
+            + `.header{display:flex;gap:16px;align-items:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:12px;}.logo img{max-height:80px;}.company-name{font-size:17px;font-weight:bold;}.company-details{font-size:11px;color:#333;}`
+            + `.resumo{margin-top:20px;page-break-inside:avoid;}@media print{.no-print{display:none !important;}}</style></head>`
+            + `<body><div class="header"><div class="logo">${c.logo ? `<img src="${c.logo}" alt="logo" onerror="this.style.display='none'">` : ''}</div>`
+            + `<div><div class="company-name">${esc(c.nome)}</div><div class="company-details">CNPJ: ${esc(c.cnpj)}</div>`
+            + `<div class="company-details">Endereço: ${esc(c.endereco)}</div><div class="company-details">Cidade: ${esc(c.cidade)} - Estado: ${esc(c.estado)}</div>`
+            + `<div class="company-details">Telefone: ${esc(c.telefone)}</div></div></div>`
+            + `<h1>LISTA DE PRODUTOS — ${esc(dataHoje)}</h1>`
+            + `<table><thead><tr><th>Código</th><th>Nome</th><th>Preço</th><th>Estoque</th><th>M. Linear</th><th>Volume (m³)</th></tr></thead><tbody>${linhas}</tbody></table>`
+            + (arrG.length > 0 ? `<div class="resumo"><h1>RESUMO — ESPÉCIE x ESPESSURA x LARGURA</h1><table><thead><tr><th>Espécie</th><th>Espessura</th><th>Largura</th><th>Peças</th><th>M. Linear</th><th>Volume (m³)</th></tr></thead><tbody>${linhasResumo}</tbody></table></div>` : '')
             + `<script>window.onload=function(){window.print();};<\/script></body></html>`);
         w.document.close();
     } catch (e) {

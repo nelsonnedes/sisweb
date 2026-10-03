@@ -70,6 +70,9 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   assert.ok(/adicionarItemProdutoManuel/.test(html), 'botão Adicionar item existe');
   assert.ok(/id="produtosSelectAll"/.test(html), 'checkbox selecionar todos existe');
   assert.ok(/imprimirProdutosSelecionados/.test(html + src), 'impressão existe');
+  assert.ok(/excluirProdutosSelecionados/.test(html + src), 'exclusão em lote existe');
+  assert.ok(/imprimirRelatorioProdutos/.test(src), 'relatório com cabeçalho existe');
+  assert.ok(/RESUMO — ESPÉCIE x ESPESSURA x LARGURA/.test(src), 'resumo no rodapé existe');
   assert.ok(/id="produtoRomaneioId2" onchange="atualizarVolumeProdutoRomaneio\(\)"/.test(html), 'troca de romaneio não apaga preview (multi)');
   assert.ok(/\[prod-form\] modo=/.test(src), 'log diagnóstico de footers presente');
   assert.ok(/<th>M\. Linear<\/th>/.test(html), 'coluna M. Linear existe');
