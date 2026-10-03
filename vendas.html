@@ -1720,6 +1720,7 @@
                 </div>
                 </div>
                 <div id="produtoRomaneioFields" style="display:none;border:1px solid var(--sw-border);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--sw-surface-2);">
+                    <div id="produtoRomaneioVinculo">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="produtoRomaneioTipo">Tipo de Romaneio:</label>
@@ -1737,6 +1738,8 @@
                             </select>
                         </div>
                     </div>
+                    </div>
+                    <div id="produtoDimsFields">
                     <div class="form-row">
                         <div class="form-group form-group-large">
                             <label for="produtoEspecie">Espécie:</label>
@@ -1772,9 +1775,10 @@
                         </div>
                         <div class="form-group">
                             <button type="button" class="btn btn-adicionar" onclick="adicionarEstoqueProdutoRomaneio()">
-                                <i class="fas fa-plus"></i> Adicionar Estoque
+                                <i class="fas fa-plus"></i> <span class="lbl-estoque">Adicionar Estoque</span>
                             </button>
                         </div>
+                    </div>
                     </div>
                 </div>
                 <div id="previewProdutoManuelWrap" style="margin-top:8px;">
@@ -1803,7 +1807,7 @@
                 </div>
                 <div id="produtoManuelFooter" class="modal-footer action-buttons" style="display:none;">
                     <button type="button" class="btn btn-success" onclick="adicionarEstoqueManuel()">
-                        <i class="fas fa-plus"></i> Adicionar Estoque
+                        <i class="fas fa-plus"></i> <span class="lbl-estoque">Adicionar Estoque</span>
                     </button>
                     <button type="button" onclick="fecharProdutoForm()" class="btn btn-danger">
                         <i class="fas fa-times"></i> Cancelar
@@ -1811,7 +1815,7 @@
                 </div>
                 <div id="produtoRomaneioFooter" class="modal-footer action-buttons" style="display:none;">
                     <button type="button" class="btn btn-success" onclick="adicionarEstoqueGruposRomaneio()">
-                        <i class="fas fa-plus"></i> Adicionar Estoque
+                        <i class="fas fa-plus"></i> <span class="lbl-estoque">Adicionar Estoque</span>
                     </button>
                     <button type="button" onclick="fecharProdutoForm()" class="btn btn-danger">
                         <i class="fas fa-times"></i> Cancelar
@@ -2283,7 +2287,7 @@
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
-    <script src="vendas.js?v=119d58024030"></script>
+    <script src="vendas.js?v=2389dc60eda8"></script>
 </body>
 
 </html>

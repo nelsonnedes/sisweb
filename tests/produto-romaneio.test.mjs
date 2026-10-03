@@ -54,7 +54,7 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   assert.ok(/id="secaoProdutoForm"/.test(html), 'form inline existe');
   assert.ok(/name="tipoProdutoForm"/.test(html), 'radios Comum/Romaneio existem');
   assert.ok(/id="previewProdutoRomaneio"/.test(html), 'preview existe');
-  for (const fn of ['alternarTipoProdutoForm', 'fecharProdutoForm', 'carregarItensProdutoRomaneio', 'renderPreviewProdutoRomaneio', 'adicionarEstoqueGruposRomaneio', 'renderPreviewProdutoManuel', 'carregarRomaneiosEm', 'acharProdutoSerradoExistente', 'adicionarItemProdutoManuel', 'excluirItemProdutoManuel', 'limparItensProdutoManuel', 'adicionarEstoqueManuel', 'agruparItensRomaneioExLxC', 'excluirGrupoPreviewRomaneio', 'gruposRomaneioSelecionados']) {
+  for (const fn of ['alternarTipoProdutoForm', 'fecharProdutoForm', 'carregarItensProdutoRomaneio', 'renderPreviewProdutoRomaneio', 'adicionarEstoqueGruposRomaneio', 'renderPreviewProdutoManuel', 'carregarRomaneiosEm', 'acharProdutoSerradoExistente', 'adicionarItemProdutoManuel', 'excluirItemProdutoManuel', 'limparItensProdutoManuel', 'adicionarEstoqueManuel', 'agruparItensRomaneioExLxC', 'excluirGrupoPreviewRomaneio', 'gruposRomaneioSelecionados', 'temDimsSerrado', 'metrosLinearesDe']) {
     assert.ok(src.includes('function ' + fn + '('), `função ${fn} existe`);
   }
   assert.ok(!/usarGrupoProdutoRomaneio/.test(src), 'usarGrupo removido (checkboxes no preview)');
@@ -64,6 +64,9 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   assert.ok(/id="produtoRomaneioFooter"/.test(html), 'footer romaneio existe');
   assert.ok(/id="previewProdutoManuel"/.test(html), 'preview manuel existe');
   assert.ok(/id="formProdutoBase"/.test(html), 'base do form existe');
+  assert.ok(/id="produtoRomaneioVinculo"/.test(html), 'vínculo romaneio existe');
+  assert.ok(/id="produtoDimsFields"/.test(html), 'bloco dims existe');
+  assert.ok(/lbl-estoque/.test(html), 'labels de estoque com span existem');
   assert.ok(/adicionarItemProdutoManuel/.test(html), 'botão Adicionar item existe');
   assert.ok(/id="produtosSelectAll"/.test(html), 'checkbox selecionar todos existe');
   assert.ok(/imprimirProdutosSelecionados/.test(html + src), 'impressão existe');

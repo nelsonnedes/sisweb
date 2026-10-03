@@ -4090,20 +4090,33 @@ function isProdutoRomaneioForm() {
 function alternarTipoProdutoForm() {
     const isRom = isProdutoRomaneioForm();
     const editing = (() => { try { return !!String(document.getElementById('produtoId')?.value || '').trim(); } catch (_) { return false; } })();
-    const extra = document.getElementById('blocoRomaneioExtra');
-    if (extra) extra.style.display = isRom ? 'block' : 'none';
-    const base = document.getElementById('formProdutoBase');
-    if (base) base.style.display = (!isRom || editing) ? 'block' : 'none';
+    const show = (id, vis, display) => {
+        try {
+            const el = document.getElementById(id);
+            if (el) el.style.display = vis ? (display || 'block') : 'none';
+        } catch (_) {}
+    };
+    // Esconde tudo primeiro (estado parcial impossível), depois revela o do modo
+    const showBase = !isRom || editing;
+    const showVinculo = isRom && editing;
+    const showDims = !isRom || editing;
+    const showExtra = isRom;
+    show('blocoRomaneioExtra', showExtra);
+    show('formProdutoBase', showBase);
+    show('produtoRomaneioVinculo', showVinculo);
+    show('produtoDimsFields', showDims);
     const box = document.getElementById('produtoRomaneioFields');
-    if (box) box.style.display = (isRom && editing) ? 'block' : 'none';
-    const prevM = document.getElementById('previewProdutoManuelWrap');
-    if (prevM) prevM.style.display = (!isRom && !editing) ? 'block' : 'none';
-    const foot = document.getElementById('produtoFormFooter');
-    if (foot) foot.style.display = editing ? 'flex' : 'none';
-    const footM = document.getElementById('produtoManuelFooter');
-    if (footM) footM.style.display = (!isRom && !editing) ? 'flex' : 'none';
-    const footR = document.getElementById('produtoRomaneioFooter');
-    if (footR) footR.style.display = (isRom && !editing) ? 'flex' : 'none';
+    if (box) { try { box.style.display = (showVinculo || showDims) ? 'block' : 'none'; } catch (_) {} }
+    show('previewProdutoManuelWrap', !isRom && !editing);
+    show('produtoFormFooter', editing, 'flex');
+    show('produtoManuelFooter', !isRom && !editing, 'flex');
+    show('produtoRomaneioFooter', isRom && !editing, 'flex');
+    // Rótulo conforme modo: editando = Atualizar, criando = Adicionar
+    try {
+        document.querySelectorAll('#secaoProdutoForm .lbl-estoque').forEach(el => {
+            el.textContent = editing ? 'Atualizar Estoque' : 'Adicionar Estoque';
+        });
+    } catch (_) {}
     try {
         const vis = ['produtoFormFooter', 'produtoManuelFooter', 'produtoRomaneioFooter']
             .filter(id => { const e = document.getElementById(id); return e && e.style.display !== 'none'; });
@@ -4404,7 +4417,15 @@ function gruposRomaneioSelecionados() {
     } catch (_) { return []; }
 }
 
-// Metros lineares de um produto serrado: campo ou fallback comp(m) x peças
+// Tem dados de serrado (romaneio ou dims preenchidas): exibe Peças/Volume
+function temDimsSerrado(p) {
+    try {
+        if (!p || typeof p !== 'object') return false;
+        if (p.tipoProduto === 'romaneio') return true;
+        return (parseFloat(p.pecas) || 0) > 0 || (parseFloat(p.volumeM3) || 0) > 0 || (parseFloat(p.espessura) || 0) > 0;
+    } catch (_) { return false; }
+}
+
 function metrosLinearesDe(p) {
     try {
         const salvo = parseFloat(p.metrosLineares);
@@ -4533,8 +4554,9 @@ function renderPreviewProdutoManuel() {
         let html = '';
         itens.forEach((it, idx) => {
             total = Math.round((total + (parseFloat(it.preco) || 0) * (parseFloat(it.estoque) || 0)) * 100) / 100;
+            const dims = (it.especie || it.espessura > 0) ? ` · ${it.especie || ''} ${it.espessura || 0}x${it.largura || 0}x${it.comprimento || 0}` : '';
             html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
-                + `<div style="flex:1;"><strong>${it.codigo || '-'} — ${it.nome || '-'}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Preço: ${it.precoFmt || it.preco} · Estoque: ${it.estoque} ${it.unidade || 'UN'}</span></div>`
+                + `<div style="flex:1;"><strong>${it.codigo || '-'} — ${it.nome || '-'}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Preço: ${it.precoFmt || it.preco} · Estoque: ${it.estoque} ${it.unidade || 'UN'}${dims}</span></div>`
                 + `<button type="button" class="btn btn-danger btn-small" data-item-idx="${idx}" aria-label="Excluir item">Excluir</button></div>`;
         });
         html += `<div style="text-align:right;font-weight:700;">${itens.length} item(ns)</div>`;
@@ -4586,7 +4608,14 @@ function adicionarItemProdutoManuel() {
             precoFmt: String(v('produtoPreco')).trim() || 'R$ 0,00',
             estoque: parseFloat(String(v('produtoEstoque')).replace(',', '.')) || 0,
             unidade: String(v('produtoUnidade')).trim() || 'UN',
-            descricao: String(v('produtoDescricao')).trim()
+            descricao: String(v('produtoDescricao')).trim(),
+            especie: String(v('produtoEspecie')).trim(),
+            espessura: parseFloat(String(v('produtoEspessura')).replace(',', '.')) || 0,
+            largura: parseFloat(String(v('produtoLargura')).replace(',', '.')) || 0,
+            comprimento: parseFloat(String(v('produtoComprimento')).replace(',', '.')) || 0,
+            pecas: parseFloat(String(v('produtoPecas')).replace(',', '.')) || 0,
+            pecasPorPacote: parseFloat(String(v('produtoPpp')).replace(',', '.')) || 1,
+            volumeM3: atualizarVolumeProdutoRomaneio()
         });
         limparCamposProdutoManuel();
         renderPreviewProdutoManuel();
@@ -4639,6 +4668,13 @@ async function adicionarEstoqueManuel() {
             estoque: it.estoque || 0,
             unidade: it.unidade || 'UN',
             descricao: it.descricao || '',
+            especie: it.especie || '',
+            espessura: it.espessura || 0,
+            largura: it.largura || 0,
+            comprimento: it.comprimento || 0,
+            pecas: it.pecas || 0,
+            pecasPorPacote: it.pecasPorPacote || 1,
+            volumeM3: it.volumeM3 || 0,
             created: new Date().toISOString(),
             updated: new Date().toISOString()
         };
@@ -4909,9 +4945,9 @@ function carregarTabelaProdutos(filtro = '') {
             <td data-label="Código">${produto.codigo || '-'}</td>
             <td data-label="Nome">${produto.nomeComum || produto.nome || produto.name || produto.nomeCientifico || 'Produto sem nome'}</td>
             <td data-label="Preço" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(produto.preco || 0)}</span></td>
-            <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(produto.pecas || 0, 0) : `${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}`}</span></td>
-            <td data-label="M. Linear" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(metrosLinearesDe(produto), 2) + ' ml' : '-'}</span></td>
-            <td data-label="Volume (m³)" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${produto.tipoProduto === 'romaneio' ? formatNumber(produto.volumeM3 ?? produto.estoque ?? 0) + ' m³' : '-'}</span></td>
+            <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(produto.pecas || 0, 0) : `${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}`}</span></td>
+            <td data-label="M. Linear" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(metrosLinearesDe(produto), 2) + ' ml' : '-'}</span></td>
+            <td data-label="Volume (m³)" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(produto.volumeM3 ?? produto.estoque ?? 0) + ' m³' : '-'}</span></td>
             <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
                 <div class="acoes-buttons commerce-actions-wrap">
                 <button type="button" onclick="editarProduto('${produto.id}')" class="btn-primary btn-small" title="Editar" aria-label="Editar produto">
