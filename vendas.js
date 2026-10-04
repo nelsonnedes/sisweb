@@ -4393,7 +4393,8 @@ function rotuloRomaneioProduto(r) {
                 const tot = listaItens.reduce((s, item) => {
                     const q = parseInt(item.quantidade) || 1;
                     const vi = parseFloat(item.volume);
-                    if (!isNaN(vi) && vi > 0) return s + vi * q;
+                    // item.volume JÁ É TOTAL (PCT/TL/PES) — somar direto, sem × q.
+                    if (!isNaN(vi) && vi > 0) return s + vi;
                     const comp = parseFloat(item.comprimento) || 0, larg = parseFloat(item.largura) || 0;
                     const esp = parseFloat(item.espessura) || 0;
                     const ppp = parseInt(item.pecasPorPacote) || 1;
