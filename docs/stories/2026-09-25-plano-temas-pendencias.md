@@ -22,6 +22,21 @@ Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 te
 - [x] Commits `467a494`, `75f3788`, `c49edd9`, `ab8cd81`, `0a3f842` + publish
       produção (verificado via fetch: regra ID e `?v=` novos no ar).
 
+## 04/10 (cont.) — blindagem geral anti-stale
+- [x] Mesmo padrão ID-ancorado em `vendas.html` (IDs + `table.table.commerce-*`)
+      e `compras.html` (upgrade da regra sem `!important`).
+- [x] `scripts/sync-css-cachebusters.mjs`: 95 `?v=` estáticos → hash de conteúdo
+      em 27 páginas (fora: `backup/`, `subscription.html` — trabalho paralelo).
+      Commit `54d7d72` + publish (verificado via fetch em vendas/compras).
+- [x] SW mantido em `staleWhileRevalidate` para CSS: agora seguro (URL muda com
+      o conteúdo); JS crítico de auth já era `networkFirst`. Migração de `?v=`
+      de JS fica como trabalho futuro.
+- [x] Telemetria `theme-check` mantida (1 log/boot; valor diagnóstico provado).
+- [ ] Aguardando usuário: limpeza de espécies-lixo em Gerenciar Espécies.
+- [ ] Aguardando antigravity: `tmp/redesign-*.json` (~40MB) — avaliar ao término
+      e atualizar artefatos.
+- [ ] Soak A4: remoção física dos globais após 09/10 (`docs/legacy-removal-gate.md`).
+
 ## Fase 25.5 — modais de lista na marca + fix parcelas (28/09)
 - [x] rlc-styles (footer, thead border, paginação completa) → tokens.
 - [x] Ações dos 5 romaneios no padrão vendas (marca; excluir danger).
