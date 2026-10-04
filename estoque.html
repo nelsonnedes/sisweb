@@ -16,9 +16,9 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="ui-components.css">
-    <link rel="stylesheet" href="layout-comum.css">
+    <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
+    <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
+    <link rel="stylesheet" href="layout-comum.css?v=2fe9524bdc1a">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
     <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
     <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
@@ -495,8 +495,8 @@
         .table thead th {
             position: sticky;
             top: 0;
-            background-color: var(--sw-surface-2) ;
-            color: var(--sw-text-1);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: #fff;
             z-index: 10;
             box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
         }
@@ -530,7 +530,8 @@
         }
         .table thead th.sticky-actions {
             z-index: 16;
-            background: var(--sw-surface-2) ;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: #fff;
         }
         .table tbody tr:nth-child(even) td.sticky-actions {
             background: var(--sw-surface-2);
@@ -1229,8 +1230,8 @@
             position: sticky;
             top: 0;
             z-index: 1;
-            background: var(--sw-surface-2);
-            color: var(--sw-text-2);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: #fff;
             font-weight: 700;
         }
 
@@ -1252,7 +1253,8 @@
 
         .saida-plaqueta-results-table th.saida-plaqueta-actions-col {
             z-index: 4;
-            background: var(--sw-surface-2);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: #fff;
         }
 
         .saida-plaqueta-results-table tbody tr:hover .saida-plaqueta-actions-col,

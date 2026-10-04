@@ -11,7 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Status da Assinatura - Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
     <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
     <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
@@ -206,11 +206,16 @@
         }
         .screen-print img {
             width: 100%;
-            height: 160px;
-            object-fit: cover;
+            height: 170px;
+            object-fit: contain;
             border-radius: 6px;
             display: block;
             background: var(--sw-surface-2) ;
+            padding: 4px;
+            transition: transform 0.25s ease;
+        }
+        .screen-print:hover img {
+            transform: scale(1.02);
         }
         .screen-print figcaption {
             margin-top: 8px;
@@ -1230,7 +1235,7 @@
                         <li>Impressão e conferência final</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="assets/help-manual/romaneios-1.png?v=20260606" alt="Print sanitizado de romaneios" loading="lazy" decoding="async">
+                        <img src="assets/help-manual/mockups/mobile/romaneiotora.png" alt="Print em mockup de romaneios" loading="lazy" decoding="async">
                         <figcaption>Romaneios: seleção de cliente, espécie, itens, totais e impressão.</figcaption>
                     </figure>
                     <a class="guide-open-link" href="ajuda.html#romaneios"><i class="fas fa-arrow-right"></i> Ver capítulo Romaneios</a>
@@ -1243,7 +1248,7 @@
                         <li>Contas a receber e relatórios</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="assets/help-manual/vendas-1.png?v=20260606" alt="Print sanitizado de vendas" loading="lazy" decoding="async">
+                        <img src="assets/help-manual/mockups/desktop/vendas.png" data-sanitized-fallback="assets/help-manual/vendas-1.png" alt="Print em mockup de vendas" loading="lazy" decoding="async">
                         <figcaption>vendas.html: pedido, itens, totais, lista de pedidos e impressão.</figcaption>
                     </figure>
                     <a class="guide-open-link" href="ajuda.html#vendas"><i class="fas fa-arrow-right"></i> Ver capítulo Vendas</a>
@@ -1282,7 +1287,7 @@
                         <li>Rastreabilidade e relatórios</li>
                     </ul>
                     <figure class="screen-print">
-                        <img src="assets/help-manual/estoque-1.png?v=20260606" alt="Print sanitizado de estoque" loading="lazy" decoding="async">
+                        <img src="assets/help-manual/mockups/mobile/estoque.png" alt="Print em mockup de estoque" loading="lazy" decoding="async">
                         <figcaption>estoque.html: saldo, baixas, rastreabilidade e coluna de ações.</figcaption>
                     </figure>
                     <a class="guide-open-link" href="ajuda.html#estoque"><i class="fas fa-arrow-right"></i> Ver capítulo Estoque</a>
