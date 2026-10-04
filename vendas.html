@@ -20,9 +20,9 @@
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
     <link rel="stylesheet" href="layout-comum.css?v=2fe9524bdc1a">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -1014,6 +1014,22 @@
                 padding: 0;
                 width: 32px;
             }
+
+            /* thead marca: âncora em ID/classe-dupla + !important + posição após
+               os <link>. Vence qualquer regra marinho obsoleta em cache
+               (mesmo padrão aplicado em estoque.html em 04/10). */
+            #carrinhoItensTable.table thead th,
+            #vendasClientesTable.table thead th,
+            #relatoriosTable.table thead th,
+            #listaPedidosTable.table thead th,
+            table.table.commerce-orders-table thead th,
+            table.table.commerce-cart-table thead th,
+            table.table.commerce-payment-table thead th,
+            table.table.commerce-report-table thead th,
+            table.table.commerce-detail-table thead th {
+                background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
+                color: #fff !important;
+            }
         }
     </style>
     <style>
@@ -1047,7 +1063,7 @@
             border-color: rgba(220, 38, 38, 0.45);
         }
     </style>
-    <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">
+    <link rel="stylesheet" href="commerce-responsive.css?v=41ca2775b90e">
 </head>
 
 <body>

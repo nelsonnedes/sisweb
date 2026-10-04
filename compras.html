@@ -17,9 +17,9 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -398,12 +398,24 @@
             text-overflow: ellipsis;
         }
 
+        /* thead marca: âncora em ID/classe-dupla + !important + posição após
+           os <link>. Vence qualquer regra marinho obsoleta em cache
+           (mesmo padrão aplicado em estoque.html/vendas.html em 04/10). */
+        #carrinhoItensTable.table thead th,
+        #comprasFornecedoresTable.table thead th,
+        #relComprasPedidosTable.table thead th,
+        #listaPedidosTable.table thead th,
+        table.table.commerce-orders-table thead th,
+        table.table.commerce-cart-table thead th,
+        table.table.commerce-payment-table thead th,
+        table.table.commerce-report-table thead th,
+        table.table.commerce-detail-table thead th,
         #listaPedidosTable thead th {
             position: sticky;
             top: 0;
             z-index: 2;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-            color: #fff;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
+            color: #fff !important;
         }
 
         #listaPedidosModal #pedidosPagination {
@@ -948,7 +960,7 @@
         #listaPedidosTable th:last-child { text-align: center; }
         /* tbody#pedidosTable td:nth-child(6) { display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; } */
     </style>
-    <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">
+    <link rel="stylesheet" href="commerce-responsive.css?v=41ca2775b90e">
 </head>
 <body>
     <div class="container">
