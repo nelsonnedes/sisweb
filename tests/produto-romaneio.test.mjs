@@ -112,3 +112,14 @@ test('dropdown romaneio: item.volume é TOTAL, sem × quantidade (TL/PCT/PES)', 
   assert.ok(/return total \+ volumeInformado;/.test(src), 'dropdown soma o total direto');
   assert.ok(/volumeTotal = volumeInformado;/.test(src), 'CONAMA soma o total direto');
 });
+
+test('mobile: footers ocultos preservados + campos sem estouro (vendas produtos)', () => {
+  const css = readFileSync(new URL('../commerce-responsive.css', import.meta.url), 'utf8');
+  // grid !important vencia inline display:none e exibia os 3 footers = botões repetidos
+  assert.ok(/\.modal-footer:not\(\[style\*="display:none"\]\)/.test(css), 'footer oculto preservado no mobile');
+  // iOS zooma campos com fonte <16px
+  assert.ok(/input,\s*select,\s*textarea\s*\{\s*font-size:\s*16px/.test(css), 'anti-zoom iOS no breakpoint mobile');
+  // selects com opções longas (romaneio) em largura total
+  assert.ok(/#secaoProdutoForm select/.test(css), 'campos do form de produto em largura total');
+  assert.ok(/#listaProdutosModal select/.test(css), 'campos do modal em largura total');
+});

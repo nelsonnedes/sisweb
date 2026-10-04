@@ -359,6 +359,28 @@ html.sisweb-embedded .page-header {
         appearance: none;
     }
 
+    /* Anti-zoom iOS: fonte <16px em campo faz o Safari ampliar a viewport.
+       Vale para Android/iOS/tablet no breakpoint mobile. */
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+
+    /* Form de produto (vendas, aba Estoque de Madeira Serrada) e modal da
+       lista: campos em largura total para selects com opções longas
+       (ex.: "02/10/2026 - Cliente ... (#PCT_...)") não estourarem a tela. */
+    #secaoProdutoForm input,
+    #secaoProdutoForm select,
+    #secaoProdutoForm textarea,
+    #listaProdutosModal input,
+    #listaProdutosModal select {
+        display: block;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box;
+    }
     #pedidoForm input[type="date"]::-webkit-date-and-time-value {
         min-width: 0;
         text-align: left;
@@ -523,7 +545,10 @@ html.sisweb-embedded .page-header {
         overflow-y: auto !important;
     }
 
-    .modal-footer,
+    /* Empilha botões do footer no mobile. O :not() preserva footers ocultos
+       via inline display:none (ex.: 3 footers alternados do form de produto
+       em vendas) — sem ele o !important exibia todos = botões repetidos. */
+    .modal-footer:not([style*="display:none"]):not([style*="display: none"]),
     #visualizarPedidoModal .modal-footer {
         display: grid !important;
         grid-template-columns: 1fr;
