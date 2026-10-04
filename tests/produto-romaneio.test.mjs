@@ -57,6 +57,14 @@ test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal',
   for (const fn of ['alternarTipoProdutoForm', 'fecharProdutoForm', 'carregarItensProdutoRomaneio', 'renderPreviewProdutoRomaneio', 'adicionarEstoqueGruposRomaneio', 'renderPreviewProdutoManuel', 'carregarRomaneiosEm', 'acharProdutoSerradoExistente', 'adicionarItemProdutoManuel', 'excluirItemProdutoManuel', 'limparItensProdutoManuel', 'adicionarEstoqueManuel', 'agruparItensRomaneioExLxC', 'excluirGrupoPreviewRomaneio', 'gruposRomaneioSelecionados', 'temDimsSerrado', 'metrosLinearesDe', 'limparCamposProdutoManuel']) {
     assert.ok(src.includes('function ' + fn + '('), `função ${fn} existe`);
   }
+});
+
+test('romaneio em pedidos: usos com status + baixa na aprovação', () => {
+  const html = readFileSync(new URL('../vendas.html', import.meta.url), 'utf8');
+  for (const fn of ['statusRomaneioConferido', 'buscarUsosRomaneioVendas', 'anotarUsosPreviewProduto', 'baixarEstoqueSerradoPorAprovacao']) {
+    assert.ok(src.includes('function ' + fn + '('), `função ${fn} existe`);
+  }
+  assert.ok(/uso-romaneio-badge/.test(src), 'slot de badge no preview existe');
   assert.ok(!/usarGrupoProdutoRomaneio/.test(src), 'usarGrupo removido (checkboxes no preview)');
   assert.ok(!/agrProdEsp/.test(src), 'checkboxes Agrupar removidos (auto ExLxC)');
   assert.ok(/value="manuel"[^>]*> Produto Manual/.test(html), 'radio Produto Manual existe');

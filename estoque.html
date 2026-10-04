@@ -1447,13 +1447,13 @@
             display: block;
             min-height: 18px;
             margin-top: 5px;
-            color: #b45309;
+            color: var(--sw-warning);
             font-size: 12px;
             line-height: 1.25;
         }
 
         .responsavel-autocomplete-warning.is-ok {
-            color: #047857;
+            color: var(--sw-success);
         }
 
         #entradaForm,
@@ -3610,7 +3610,7 @@
                         <button type="button" id="btnPreviewPortrait" onclick="alterarOrientacaoPreviewRelatorio('portrait')" class="btn btn-small" style="color: #fff; background: transparent; border: none; padding: 4px 10px; font-size: 12px; cursor: pointer; border-radius: 3px;">
                             <i class="fas fa-file"></i> Retrato
                         </button>
-                        <button type="button" id="btnPreviewLandscape" onclick="alterarOrientacaoPreviewRelatorio('landscape')" class="btn btn-small active" style="color: #fff; background: #3498db; border: none; padding: 4px 10px; font-size: 12px; cursor: pointer; border-radius: 3px;">
+                        <button type="button" id="btnPreviewLandscape" onclick="alterarOrientacaoPreviewRelatorio('landscape')" class="btn btn-small active" style="color: #fff; background: var(--sw-info); border: none; padding: 4px 10px; font-size: 12px; cursor: pointer; border-radius: 3px;">
                             <i class="fas fa-file-alt"></i> Paisagem
                         </button>
                     </div>
@@ -3715,8 +3715,8 @@
     </script>
 <script src="commerce-pdf-share.js?v=e6699735105a"></script>
         <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-        <script src="estoque_produtos.js?v=f1c4cd5909b5"></script>
-        <script src="estoque.js?v=e4abd9c027af"></script>
+        <script src="estoque_produtos.js?v=a9771662306f"></script>
+        <script src="estoque.js?v=d8132cab5226"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

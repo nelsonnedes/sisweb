@@ -173,6 +173,54 @@ function mensagemUsoRomaneioVendas(idExibicao, uso) {
     return `Este romaneio (${idExibicao}) já foi utilizado no pedido de ${moduloLabel} Nº ${uso ? uso.pedidoNumero : '—'}. Selecione outro romaneio para evitar duplicidade.`;
 }
 
+// Status que conferem consumo de estoque (baixa) — pendente/cancelado não
+function statusRomaneioConferido(status) {
+    return ['aprovado', 'entregue', 'faturado', 'finalizado'].includes(String(status || '').trim().toLowerCase());
+}
+
+// Todos os usos de um romaneio COM status (para o preview de produtos:
+// alerta vermelho se conferido, âmbar se só pendente)
+async function buscarUsosRomaneioVendas(idEstavel) {
+    const id = String(idEstavel || '').trim();
+    if (!id) return [];
+    const out = [];
+    try {
+        let vendasPedidos = [];
+        let comprasPedidos = [];
+        try {
+            if (Array.isArray(window.pedidos) && window.pedidos.length > 0) {
+                vendasPedidos = window.pedidos;
+            } else if (typeof getData === 'function') {
+                vendasPedidos = await getData('vendas/pedidos') || [];
+            }
+        } catch (_) { vendasPedidos = Array.isArray(window.pedidos) ? window.pedidos : []; }
+        try {
+            if (typeof getData === 'function') {
+                comprasPedidos = await getData('pedidosCompra') || [];
+            }
+        } catch (_) { comprasPedidos = []; }
+        const varrer = (lista, modulo) => {
+            (Array.isArray(lista) ? lista : []).forEach(p => {
+                if (!p || typeof p !== 'object') return;
+                const ids = __rvExtrairIdsRomaneioDePedido(p);
+                if (ids.map(String).includes(id)) {
+                    out.push({
+                        pedidoNumero: String(p.numero || p.id || '—'),
+                        pedidoId: String(p.id || ''),
+                        modulo,
+                        status: String(p.status || 'pendente')
+                    });
+                }
+            });
+        };
+        varrer(vendasPedidos, 'venda');
+        varrer(comprasPedidos, 'compra');
+    } catch (e) {
+        console.warn('Vendas: falha ao buscar usos do romaneio (fail-open):', e);
+    }
+    return out;
+}
+
 async function construirMapaUsosRomaneioVendas() {
     const mapa = new Map();
     try {
@@ -2739,6 +2787,22 @@ async function salvarPedido(event) {
             }
         }
 
+        // Baixa automática do serrado ao APROVAR/ENTREGAR pedido pendente:
+        // só dispara entrando no conjunto conferido (idempotente por transição)
+        try {
+            if (editandoPedidoId && salvouServidor) {
+                const prev = (backupPedidos || []).find(p => String(p.id) === String(editandoPedidoId));
+                const prevS = String(prev && prev.status ? prev.status : '').toLowerCase();
+                const CONF = ['aprovado', 'entregue', 'faturado', 'finalizado'];
+                const entrando = (statusNext === 'aprovado' || statusNext === 'entregue') && !CONF.includes(prevS);
+                if (entrando) {
+                    await baixarEstoqueSerradoPorAprovacao(pedidoData);
+                }
+            }
+        } catch (e) {
+            console.warn('Falha na baixa automática do serrado (não bloqueia o save):', e);
+        }
+
         LoadingManager.hide();
         ToastManager.success('Pedido salvo com sucesso!', 'Sucesso');
         try { document.getElementById('pedidoForm').style.display = 'none'; } catch (_) {}
@@ -3039,6 +3103,83 @@ async function atualizarEstoqueProdutos(itens, tipo) {
     } catch (error) {
         console.error('Erro ao atualizar estoque:', error);
     }
+}
+
+// Baixa automática do serrado na APROVAÇÃO/ENTREGA: para cada item do pedido
+// vinculado a romaneio, deduz volume/peças/ml do produto serrado
+// correspondente (match exato por romaneio+dims, fallback maior saldo).
+// Best-effort: avisa sem bloquear; idempotência via transição de status.
+async function baixarEstoqueSerradoPorAprovacao(pedido) {
+    const itens = Array.isArray(pedido && pedido.itens) ? pedido.itens : [];
+    if (itens.length === 0) return;
+    const num = (v) => parseFloat(v) || 0;
+    let baixados = 0, volumeTotal = 0;
+    const tocados = [];
+    for (const it of itens) {
+        if (!it || typeof it !== 'object' || isCarregoItem(it)) continue;
+        const rids = [];
+        [it.origemId, it.romaneioId].forEach(v => {
+            const s = String(v || '').trim();
+            if (s) rids.push(s);
+        });
+        if (rids.length === 0) continue;
+        const qtd = num(it.quantidade) || 1;
+        const ppp = num(it.pecasPorPacote) || 1;
+        let vol = (typeof it.volume === 'number' && it.volume > 0) ? it.volume : 0;
+        if (!(vol > 0)) {
+            vol = calcularVolumeSerradoM3(num(it.espessura), num(it.largura), num(it.comprimento ?? it.comp), qtd, ppp);
+        }
+        if (!(vol > 0)) continue;
+        const esp = String(it.especie || '').trim().toUpperCase();
+        const e = num(it.espessura), l = num(it.largura), c = num(it.comprimento ?? it.comp);
+        const candidatos = (window.produtos || []).filter(p => {
+            if (!p || !temDimsSerrado(p)) return false;
+            return rids.includes(String(p.romaneioId || ''));
+        });
+        if (candidatos.length === 0) continue;
+        let alvo = candidatos.find(p =>
+            String(p.especie || '').trim().toUpperCase() === esp &&
+            num(p.espessura) === e && num(p.largura) === l && num(p.comprimento) === c
+        ) || null;
+        if (!alvo) {
+            alvo = candidatos.slice().sort((a, b) => (num(b.estoque) - num(a.estoque)))[0];
+        }
+        if (!alvo) continue;
+        const estAntes = num(alvo.estoque);
+        const usar = Math.min(vol, estAntes);
+        if (!(usar > 0)) {
+            try { ToastManager.warning(`Sem saldo: ${nomeExibicaoProduto(alvo)} (pedido ${pedido.numero || ''})`, 'Estoque', 6000); } catch (_) {}
+            continue;
+        }
+        const razao = estAntes > 0 ? (usar / estAntes) : 0;
+        alvo.estoque = Math.round((estAntes - usar) * 1000) / 1000;
+        alvo.volumeM3 = Math.round(((num(alvo.volumeM3)) - usar) * 1000) / 1000;
+        if (alvo.volumeM3 < 0) alvo.volumeM3 = 0;
+        const mlAntes = metrosLinearesDe(alvo);
+        alvo.metrosLineares = Math.round((mlAntes - mlAntes * razao) * 100) / 100;
+        if (alvo.metrosLineares < 0) alvo.metrosLineares = 0;
+        alvo.pecas = Math.max(0, Math.round((num(alvo.pecas) || 0) - Math.round(((num(alvo.pecas) || 0)) * razao)));
+        alvo.updated = new Date().toISOString();
+        tocados.push(alvo);
+        baixados++;
+        volumeTotal = Math.round((volumeTotal + usar) * 1000) / 1000;
+    }
+    if (tocados.length === 0) return;
+    try {
+        if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+            const ops = tocados.map(p => window.firebaseService.saveToFirebase('produtos', String(p.id), p));
+            await Promise.allSettled(ops);
+        } else if (typeof saveData === 'function') {
+            __rvSaveDataRemoteOk = false;
+            await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
+        }
+    } catch (_) {}
+    try {
+        const svcInv = window.firebaseService || window.FirebaseService;
+        if (svcInv && typeof svcInv.invalidateReadCacheForPath === 'function') svcInv.invalidateReadCacheForPath('produtos');
+    } catch (_) {}
+    try { atualizarSelectProdutos(); } catch (_) {}
+    try { ToastManager.success(`Baixa automática: ${volumeTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ em ${baixados} produto(s)`, 'Estoque'); } catch (_) {}
 }
 
 // Funções de listagem de pedidos
@@ -4509,9 +4650,9 @@ function renderPreviewProdutoRomaneio() {
             const dims = `${String(g.espessura).replace('.', ',')}cmx${String(g.largura).replace('.', ',')}cmx${String(g.comprimento).replace('.', ',')}cm`;
             if (nomePeca) rotulo += ` — ${nomePeca} ${dims}`;
         } catch (_) {}
-        html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
+        html += `<div data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}" style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
             + `<input type="checkbox" name="grupoRomSel" value="${idx}" checked style="width:18px;height:18px;cursor:pointer;" aria-label="Selecionar grupo">`
-            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças · ${(g.ml || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span></div>`
+            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças · ${(g.ml || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span><div class="uso-romaneio-badge" style="margin-top:4px;"></div></div>`
             + `<button type="button" class="btn btn-danger btn-small" data-excluir-gid="${String(g.gid || '').replace(/"/g, '&quot;')}" aria-label="Excluir grupo">Excluir</button></div>`;
     });
     html += `<div style="text-align:right;font-weight:700;">Total: ${total.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</div>`;
@@ -4520,6 +4661,49 @@ function renderPreviewProdutoRomaneio() {
     box.querySelectorAll('button[data-excluir-gid]').forEach(btn => {
         btn.addEventListener('click', () => excluirGrupoPreviewRomaneio(btn.dataset.excluirGid));
     });
+    // Alerta de uso em pedidos (async, não bloqueia): desmarca grupos conferidos
+    try { anotarUsosPreviewProduto(); } catch (_) {}
+}
+
+// Marca grupos cujo romaneio já foi usado em pedidos: vermelho+desmarca se
+// conferido (aprovado/entregue/...), âmbar se só pendente (baixa automática
+// ao aprovar — pode lançar o restante).
+async function anotarUsosPreviewProduto() {
+    try {
+        const grupos = Array.isArray(__previewRomGrupos) ? __previewRomGrupos : [];
+        if (grupos.length === 0) return;
+        const porRom = new Map();
+        grupos.forEach(g => {
+            const rid = String(g.romaneioId || '');
+            if (!rid) return;
+            if (!porRom.has(rid)) porRom.set(rid, []);
+            porRom.get(rid).push(g);
+        });
+        for (const [rid, gs] of porRom) {
+            let usos = [];
+            try { usos = await buscarUsosRomaneioVendas(rid); } catch (_) { usos = []; }
+            if (!usos || usos.length === 0) continue;
+            const conferidos = usos.filter(u => statusRomaneioConferido(u.status));
+            const pendentes = usos.filter(u => !statusRomaneioConferido(u.status) && String(u.status || '').toLowerCase() !== 'cancelado');
+            const box = document.getElementById('previewProdutoRomaneio');
+            if (!box) return;
+            gs.forEach(g => {
+                const card = box.querySelector(`[data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}"]`);
+                if (!card) return;
+                const slot = card.querySelector('.uso-romaneio-badge');
+                const check = card.querySelector('input[name="grupoRomSel"]');
+                if (conferidos.length > 0) {
+                    const u = conferidos[0];
+                    if (slot) slot.innerHTML = `<span style="display:inline-block;background:color-mix(in srgb, var(--sw-danger) 12%, transparent);color:var(--sw-danger);border-radius:999px;padding:2px 8px;font-size:0.72rem;font-weight:700;">EM USO · Ped. Nº ${u.pedidoNumero} (${u.status}) — desmarcado</span>`;
+                    if (check) check.checked = false;
+                    try { card.style.opacity = '0.75'; } catch (_) {}
+                } else if (pendentes.length > 0) {
+                    const u = pendentes[0];
+                    if (slot) slot.innerHTML = `<span style="display:inline-block;background:color-mix(in srgb, var(--sw-warning) 14%, transparent);color:var(--sw-warning);border-radius:999px;padding:2px 8px;font-size:0.72rem;font-weight:700;">Reservado Ped. Nº ${u.pedidoNumero} (pendente) — baixa automática ao aprovar</span>`;
+                }
+            });
+        }
+    } catch (_) {}
 }
 
 function gruposRomaneioSelecionados() {

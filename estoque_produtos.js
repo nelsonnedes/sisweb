@@ -1165,11 +1165,11 @@ function obterValorCelulaProduto(prod = {}, key = '') {
     const qtd = Number(prod.quantidade || 0);
     const estMin = Number(prod.estoqueMinimo || 0);
 
-    let statusHtml = '<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px; background:#dcfce7; color:#166534;">Normal</span>';
+    let statusHtml = '<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px; background:color-mix(in srgb, var(--sw-success) 12%, transparent); color:var(--sw-success);">Normal</span>';
     if (qtd <= 0) {
-        statusHtml = '<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px; background:#fee2e2; color:#991b1b;">Crítico</span>';
+        statusHtml = '<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px; background:color-mix(in srgb, var(--sw-danger) 12%, transparent); color:var(--sw-danger);">Crítico</span>';
     } else if (estMin > 0 && qtd <= estMin) {
-        statusHtml = '<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px; background:#fef3c7; color:#92400e;">Ponto Pedido</span>';
+        statusHtml = '<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px; background:var(--sw-alert-warning-bg); color:var(--sw-text-1);">Ponto Pedido</span>';
     }
 
     const map = {
@@ -1239,7 +1239,7 @@ function renderizarTabelaProdutos(lista) {
                 <th style="width: 40px;"><input type="checkbox" id="checkTodosProdutos" onchange="toggleTodosProdutos()"></th>
                 ${defs.map(def => {
                     const sortIcon = (ordemProdutos.coluna === def.key)
-                        ? `<i class="fas fa-sort-${ordemProdutos.direcao === 'asc' ? 'up' : 'down'} sort-icon" style="color:#2b6cb0; margin-left:4px;"></i>`
+                        ? `<i class="fas fa-sort-${ordemProdutos.direcao === 'asc' ? 'up' : 'down'} sort-icon" style="color:var(--sw-text-3); margin-left:4px;"></i>`
                         : '<i class="fas fa-sort sort-icon" style="opacity:0.35; margin-left:4px;"></i>';
                     const cls = def.align ? ` class="${def.align}"` : '';
                     return `<th data-col="${escapeProdutoHtml(def.key)}"${cls} onclick="ordenarProdutos('${escapeProdutoHtml(def.key)}')" style="cursor: pointer;">${escapeProdutoHtml(def.label)} ${sortIcon}</th>`;
@@ -2004,7 +2004,7 @@ async function gerarRelatorioProdutosSaldo(onlySelected = false, options = {}) {
                     <div class="stat-label">Valor Total em Estoque</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="statRelProdItensCriticos" style="color: ${itensCriticos > 0 ? '#e53e3e' : '#2b6cb0'};">${itensCriticos}</div>
+                    <div class="stat-value" id="statRelProdItensCriticos" style="color: ${itensCriticos > 0 ? 'var(--sw-danger)' : 'var(--sw-text-3)'};">${itensCriticos}</div>
                     <div class="stat-label">Estoque Baixo / Crítico</div>
                 </div>
             </div>
@@ -2245,25 +2245,25 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
                     return `
                         <tr>
                             <td><strong>${escapeProdutoHtml(p.nome)}</strong></td>
-                            <td class="text-right" style="color: #16a34a; font-weight: 600;">${p.entradasQtd > 0 ? formatNumber(p.entradasQtd, 2) : '-'}</td>
-                            <td class="text-right" style="color: #dc2626; font-weight: 600;">${p.saidasQtd > 0 ? formatNumber(p.saidasQtd, 2) : '-'}</td>
+                            <td class="text-right" style="color: var(--sw-success); font-weight: 600;">${p.entradasQtd > 0 ? formatNumber(p.entradasQtd, 2) : '-'}</td>
+                            <td class="text-right" style="color: var(--sw-danger); font-weight: 600;">${p.saidasQtd > 0 ? formatNumber(p.saidasQtd, 2) : '-'}</td>
                             <td class="text-right">${(p.ajustesQtd + p.devolucoesQtd) > 0 ? formatNumber(p.ajustesQtd + p.devolucoesQtd, 2) : '-'}</td>
                             <td class="text-right">${p.precoMedio > 0 ? formatCurrency(p.precoMedio) : '-'}</td>
-                            <td class="text-right" style="font-weight: 700; color: #1e293b;">${formatCurrency(valorSaidas || valorTotalMov)}</td>
+                            <td class="text-right" style="font-weight: 700; color: var(--sw-text-1);">${formatCurrency(valorSaidas || valorTotalMov)}</td>
                         </tr>
                     `;
                 }).join('');
 
                 const totaisPorProdutoCard = `
-                    <div class="resp-totais-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; margin: 10px 0 24px 0;">
-                        <div style="font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                            <span><i class="fas fa-layer-group" style="color: #3b82f6;"></i> Totais por Produto & Valor Consumido — <strong>${escapeProdutoHtml(k)}</strong></span>
-                            <span style="font-size: 12.5px; color: #475569;">Valor Consumido / Saídas: <strong style="color: #b91c1c; font-size: 13px;">${formatCurrency(respTotalValorSaidas)}</strong></span>
+                    <div class="resp-totais-card" style="background: var(--sw-surface-2); border: 1px solid var(--sw-border); border-radius: 6px; padding: 12px 14px; margin: 10px 0 24px 0;">
+                        <div style="font-size: 13px; font-weight: 700; color: var(--sw-text-2); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <span><i class="fas fa-layer-group" style="color: var(--sw-info);"></i> Totais por Produto & Valor Consumido — <strong>${escapeProdutoHtml(k)}</strong></span>
+                            <span style="font-size: 12.5px; color: var(--sw-text-2);">Valor Consumido / Saídas: <strong style="color: var(--sw-danger); font-size: 13px;">${formatCurrency(respTotalValorSaidas)}</strong></span>
                         </div>
-                        <div class="table-container" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; overflow-x: auto;">
+                        <div class="table-container" style="background: var(--sw-surface); border: 1px solid var(--sw-border); border-radius: 4px; overflow-x: auto;">
                             <table class="table table-small" style="margin: 0; font-size: 12px; width: 100%;">
                                 <thead>
-                                    <tr style="background: #f1f5f9;">
+                                    <tr style="background: var(--sw-surface-2);">
                                         <th>Produto</th>
                                         <th class="text-right">Entradas (Qtd)</th>
                                         <th class="text-right">Saídas / Consumo (Qtd)</th>
@@ -2276,13 +2276,13 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
                                     ${resumoProdutosRows}
                                 </tbody>
                                 <tfoot>
-                                    <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                                    <tr style="background: var(--sw-surface-2); font-weight: 700; border-top: 2px solid var(--sw-border);">
                                         <td>TOTAL (${escapeProdutoHtml(k)}):</td>
-                                        <td class="text-right" style="color: #16a34a;">${formatNumber(respTotalEntradasQtd, 2)}</td>
-                                        <td class="text-right" style="color: #dc2626;">${formatNumber(respTotalSaidasQtd, 2)}</td>
+                                        <td class="text-right" style="color: var(--sw-success);">${formatNumber(respTotalEntradasQtd, 2)}</td>
+                                        <td class="text-right" style="color: var(--sw-danger);">${formatNumber(respTotalSaidasQtd, 2)}</td>
                                         <td class="text-right">${formatNumber(respTotalAjustesQtd, 2)}</td>
                                         <td class="text-right">-</td>
-                                        <td class="text-right" style="color: #b91c1c; font-size: 13px;">${formatCurrency(respTotalValorSaidas)}</td>
+                                        <td class="text-right" style="color: var(--sw-danger); font-size: 13px;">${formatCurrency(respTotalValorSaidas)}</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -2291,12 +2291,12 @@ async function gerarRelatorioProdutosMovimentacao(dataInicio, dataFim, options =
                 `;
 
                 return `
-                    <div class="relatorios-grupo-header" style="margin: 20px 0 8px 0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 10px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-                        <span style="font-size: 14px; font-weight: 700; color: #1e293b; display: inline-flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-user-circle" style="color: #3b82f6; font-size: 16px;"></i>
+                    <div class="relatorios-grupo-header" style="margin: 20px 0 8px 0; display: flex; justify-content: space-between; align-items: center; background: var(--sw-surface-2); border-left: 4px solid var(--sw-info); border-radius: 4px; padding: 10px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                        <span style="font-size: 14px; font-weight: 700; color: var(--sw-text-1); display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-user-circle" style="color: var(--sw-info); font-size: 16px;"></i>
                             Responsável: <strong>${escapeProdutoHtml(k)}</strong>
                         </span>
-                        <span style="font-size: 12.5px; color: #64748b; font-weight: 500;">(${items.length} movimentações nesta página)</span>
+                        <span style="font-size: 12.5px; color: var(--sw-text-3); font-weight: 500;">(${items.length} movimentações nesta página)</span>
                     </div>
                     ${renderTable(items, k)}
                     ${totaisPorProdutoCard}

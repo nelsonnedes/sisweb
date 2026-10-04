@@ -126,13 +126,13 @@ function setEstoqueRuntimeStatus(mode, message) {
     }
     host.style.display = 'block';
     if (mode === 'warn') {
-        host.style.background = '#fff7e6';
-        host.style.border = '1px solid #ffd591';
-        host.style.color = '#8c5a00';
+        host.style.background = 'var(--sw-alert-warning-bg)';
+        host.style.border = '1px solid var(--sw-warning)';
+        host.style.color = 'var(--sw-text-1)';
     } else {
-        host.style.background = '#fff1f0';
-        host.style.border = '1px solid #ffa39e';
-        host.style.color = '#a8071a';
+        host.style.background = 'var(--sw-alert-error-bg)';
+        host.style.border = '1px solid var(--sw-danger)';
+        host.style.color = 'var(--sw-text-1)';
     }
     host.textContent = message || 'Atenção no carregamento do estoque';
 }
@@ -1082,11 +1082,11 @@ function alterarOrientacaoPreviewRelatorio(orientacao) {
     const btnLandscape = document.getElementById('btnPreviewLandscape');
     if (btnPortrait && btnLandscape) {
         if (validOrientacao === 'portrait') {
-            btnPortrait.style.background = '#3498db';
+            btnPortrait.style.background = 'var(--sw-info)';
             btnLandscape.style.background = 'transparent';
         } else {
             btnPortrait.style.background = 'transparent';
-            btnLandscape.style.background = '#3498db';
+            btnLandscape.style.background = 'var(--sw-info)';
         }
     }
 
@@ -3006,7 +3006,7 @@ async function salvarConfiguracaoColunasSaida() {
 function obterValorCelulaSaida(tora = {}, key = '') {
     const geo = normalizarCamposGeoEstoque(tora);
     const manualBadge = tora && tora.manualForaEstoque
-        ? ' <span style="display:inline-block;padding:2px 6px;border-radius:10px;background:#fff3cd;color:#856404;font-size:11px;font-weight:600;">Manual</span>'
+        ? ' <span style="display:inline-block;padding:2px 6px;border-radius:10px;background:var(--sw-alert-warning-bg);color:var(--sw-text-1);font-size:11px;font-weight:600;">Manual</span>'
         : '';
     const valor = (parseFloat(tora.volumeLiquido || 0) || 0) * (parseFloat(tora.precoCusto || 0) || 0);
     const map = {
@@ -3425,11 +3425,11 @@ function renderizarTabelaEntrada() {
                     </div>
                     <div class="text-center">
                         <div style="font-size: 14px; color: var(--sw-text-3); text-transform: uppercase; letter-spacing: 1px;">Valor Total</div>
-                        <div style="font-size: 24px; font-weight: bold; color: #27ae60;">${formatCurrency(valTotal)}</div>
+                        <div style="font-size: 24px; font-weight: bold; color: var(--sw-success);">${formatCurrency(valTotal)}</div>
                     </div>
                 </div>
 
-                <h4 style="margin-bottom: 15px; font-size: 16px; color: var(--sw-text-1); border-left: 4px solid #3498db; padding-left: 10px;">Médias de Rodo e Volume por Espécie</h4>
+                <h4 style="margin-bottom: 15px; font-size: 16px; color: var(--sw-text-1); border-left: 4px solid var(--sw-info); padding-left: 10px;">Médias de Rodo e Volume por Espécie</h4>
                 <div style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px;">
                     ${speciesHtml || '<div style="color: var(--sw-text-3); font-style: italic;">Nenhuma espécie com rodo informado</div>'}
                 </div>
@@ -4234,7 +4234,7 @@ function renderizarRomaneiosSaidaSelecionados() {
     const container = document.getElementById('romaneiosSaidaSelecionados');
     if (!container) return;
     if (romaneiosSaidaSelecionados.length === 0) {
-        container.innerHTML = '<div style="color:#999;">Nenhum romaneio selecionado</div>';
+        container.innerHTML = '<div style="color:var(--sw-text-3);">Nenhum romaneio selecionado</div>';
         return;
     }
     container.innerHTML = romaneiosSaidaSelecionados.map(r => `
@@ -4430,7 +4430,7 @@ function confirmarEstornoBaixaDetalhado(candidatos = [], remessa = '') {
                             <span class="close-modal" data-estorno-cancelar>&times;</span>
                         </div>
                         <div class="modal-body">
-                            <div id="confirmEstornoBaixaResumo" style="line-height:1.45; color:#334155;"></div>
+                            <div id="confirmEstornoBaixaResumo" style="line-height:1.45; color:var(--sw-text-2);"></div>
                         </div>
                         <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
                             <button type="button" class="btn btn-secondary" data-estorno-cancelar><i class="fas fa-times"></i> Cancelar</button>
@@ -4457,7 +4457,7 @@ function confirmarEstornoBaixaDetalhado(candidatos = [], remessa = '') {
                 <p style="margin:0 0 10px;">Origem: <strong>${escapeHtml(remessa || 'Selecionadas')}</strong></p>
                 <p style="margin:0 0 10px;">Volume a retornar: <strong>${formatNumber(totalVolume, 3)} m³</strong></p>
                 ${plaquetas ? `<p style="margin:0 0 10px;">Plaquetas: ${plaquetas}${qtd > 8 ? '...' : ''}</p>` : ''}
-                <div class="alert" style="margin:12px 0 0; background:#fff7e6; border:1px solid #ffd591; color:#8c5a00;">
+                <div class="alert" style="margin:12px 0 0; background:var(--sw-alert-warning-bg); border:1px solid var(--sw-warning); color:var(--sw-text-1);">
                     Esta ação devolve as toras ao estoque e remove as movimentações de saída correspondentes. Confirme apenas se revisou a remessa/seleção.
                 </div>
             `;
@@ -5086,7 +5086,7 @@ function carregarTabelaEstoque(filtro = {}) {
                 <th style="width: 40px;"><input type="checkbox" id="checkTodoEstoque" onchange="toggleTodoEstoque()"></th>
                 ${defs.map(def => {
                     const sortIcon = (ordemEstoque.coluna === def.key)
-                        ? `<i class="fas fa-sort-${ordemEstoque.direcao === 'asc' ? 'up' : 'down'} sort-icon" style="color:#2b6cb0; margin-left:4px;"></i>`
+                        ? `<i class="fas fa-sort-${ordemEstoque.direcao === 'asc' ? 'up' : 'down'} sort-icon" style="color:var(--sw-text-3); margin-left:4px;"></i>`
                         : '<i class="fas fa-sort sort-icon" style="opacity:0.35; margin-left:4px;"></i>';
                     return `<th data-col="${escapeHtml(def.key)}" onclick="ordenarEstoque('${escapeHtml(def.key)}')" style="cursor: pointer;">${escapeHtml(def.label)} ${sortIcon}</th>`;
                 }).join('')}
@@ -5906,7 +5906,7 @@ function obterValorCelulaMovimentacao(mov = {}, key = '', options = {}) {
     const plain = !!options.plain;
     const geo = normalizarCamposGeoEstoque(mov);
     const manualBadge = !plain && mov && mov.toraManualForaEstoque
-        ? ' <span style="display:inline-block;padding:2px 6px;border-radius:10px;background:#fff3cd;color:#856404;font-size:11px;font-weight:600;">Manual</span>'
+        ? ' <span style="display:inline-block;padding:2px 6px;border-radius:10px;background:var(--sw-alert-warning-bg);color:var(--sw-text-1);font-size:11px;font-weight:600;">Manual</span>'
         : '';
     const tipo = mov.tipo ? String(mov.tipo).toUpperCase() : '';
     const tipoHtml = plain
@@ -7464,16 +7464,16 @@ function montarTabelaRelatorioEstoque(tipo, items, selectionTipo, getKey, onlySe
 
         speciesCardsHtml += `
             <div class="stat-species-card" style="background: var(--sw-surface); padding: 12px 14px; border-radius: 6px; border: 1px solid var(--sw-border); text-align: center; min-width: 140px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex: 0 0 auto;">
-                <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; font-size: 13px;">${escapeHtml(esp)}</div>
-                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Média Rodo: <strong style="color: #0f172a;">${formatNumber(avgRodo, 1)} cm</strong></div>
-                <div style="font-size: 12px; color: #64748b;">Média Volu: <strong style="color: #0f172a;">${formatNumber(avgVol, 3)} m³</strong></div>
+                <div style="font-weight: 700; color: var(--sw-text-1); margin-bottom: 8px; border-bottom: 1px solid var(--sw-border); padding-bottom: 5px; font-size: 13px;">${escapeHtml(esp)}</div>
+                <div style="font-size: 12px; color: var(--sw-text-3); margin-bottom: 4px;">Média Rodo: <strong style="color: var(--sw-text-1);">${formatNumber(avgRodo, 1)} cm</strong></div>
+                <div style="font-size: 12px; color: var(--sw-text-3);">Média Volu: <strong style="color: var(--sw-text-1);">${formatNumber(avgVol, 3)} m³</strong></div>
             </div>
         `;
     });
 
     const speciesBlockHtml = speciesCardsHtml ? `
-        <div class="stats-species-container" style="margin-top: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
-            <h4 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 700; color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Médias de Rodo e Volume por Espécie</h4>
+        <div class="stats-species-container" style="margin-top: 16px; background: var(--sw-surface-2); border: 1px solid var(--sw-border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 700; color: var(--sw-text-2); border-left: 4px solid var(--sw-info); padding-left: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Médias de Rodo e Volume por Espécie</h4>
             <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; flex-wrap: wrap;">
                 ${speciesCardsHtml}
             </div>
