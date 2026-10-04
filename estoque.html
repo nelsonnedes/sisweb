@@ -495,8 +495,10 @@
         .table thead th {
             position: sticky;
             top: 0;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-            color: #fff;
+            /* !important cirúrgico: vence qualquer stylesheet obsoleto em cache
+               do navegador (thead marinho de versões antigas). Página-escopo. */
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
+            color: #fff !important;
             z-index: 10;
             box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
         }
@@ -530,8 +532,8 @@
         }
         .table thead th.sticky-actions {
             z-index: 16;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-            color: #fff;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
+            color: #fff !important;
         }
         .table tbody tr:nth-child(even) td.sticky-actions {
             background: var(--sw-surface-2);
@@ -1230,8 +1232,8 @@
             position: sticky;
             top: 0;
             z-index: 1;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-            color: #fff;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
+            color: #fff !important;
             font-weight: 700;
         }
 
@@ -1253,8 +1255,8 @@
 
         .saida-plaqueta-results-table th.saida-plaqueta-actions-col {
             z-index: 4;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-            color: #fff;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
+            color: #fff !important;
         }
 
         .saida-plaqueta-results-table tbody tr:hover .saida-plaqueta-actions-col,
