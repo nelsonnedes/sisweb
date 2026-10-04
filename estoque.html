@@ -19,10 +19,10 @@
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
     <link rel="stylesheet" href="layout-comum.css?v=2fe9524bdc1a">
-    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=20260926-fase25-1">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=20260926-fase25-1">
-    <link rel="stylesheet" href="styles/content-theme.css?v=20260926-fase25-1">
-    <link rel="stylesheet" href="commerce-responsive.css?v=2026-06-07-print-context-v13">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
+    <link rel="stylesheet" href="commerce-responsive.css?v=41ca2775b90e">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -492,11 +492,22 @@
                 flex: 1 1 180px;
             }
         }
+        /* Âncora em ID (1,1,2) + !important + posição após os <link>: vence
+           qualquer regra marinho obsoleta em cache (stale stylesheet), que
+           no máximo empata em (0,1,2). Forense: bgImage chegava como
+           linear-gradient(135deg, #2c3e50→#34495e) hardcoded de versão antiga. */
+        #tabelaEntrada.table thead th,
+        #tabelaSaidaToras.table thead th,
+        #tabelaEstoque.table thead th,
+        #tabelaMovimentacoes.table thead th,
+        #tabelaProdutos.table thead th,
+        #tabelaTorasDisponiveis.table thead th,
+        #rastreabilidadeModal.table thead th,
+        .saida-plaqueta-results-table.table thead th,
+        table[id^="tabela"].table thead th,
         .table thead th {
             position: sticky;
             top: 0;
-            /* !important cirúrgico: vence qualquer stylesheet obsoleto em cache
-               do navegador (thead marinho de versões antigas). Página-escopo. */
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
             color: #fff !important;
             z-index: 10;
@@ -530,6 +541,12 @@
             background: var(--sw-surface);
             box-shadow: -10px 0 14px -14px rgba(15, 23, 42, 0.55);
         }
+        #tabelaEntrada.table thead th.sticky-actions,
+        #tabelaSaidaToras.table thead th.sticky-actions,
+        #tabelaEstoque.table thead th.sticky-actions,
+        #tabelaMovimentacoes.table thead th.sticky-actions,
+        #tabelaProdutos.table thead th.sticky-actions,
+        #tabelaTorasDisponiveis.table thead th.sticky-actions,
         .table thead th.sticky-actions {
             z-index: 16;
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
