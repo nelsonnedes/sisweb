@@ -1,10 +1,13 @@
-// Sincroniza ?v= de stylesheets com o hash do conteúdo (sha256-12).
+// Sincroniza ?v= de stylesheets E scripts com o hash do conteúdo (sha256-12).
 // Uso: node scripts/sync-css-cachebusters.mjs [--check]
 // Regras:
-// - Só mexe em href="...css?v=..." relativo (pula CDN/absoluto).
+// - CSS: href="...css?v=..." relativo (pula CDN/absoluto).
+// - JS: src="...js?v=..." e import ... from "...js?v=..." relativos
+//   (cobre document.write, que contém src="..."). Dinâmicos via variável
+//   (menu-component Date.now/PWA, ADMIN_ASSET_VERSION) ficam como estão.
 // - Preserva ?v= que já for hash [0-9a-f]{12}.
-// - Escopo: *.html na raiz + folha_pagamento/*.html (fora: backup/, marqueting/,
-//   subscription.html — trabalho paralelo em andamento).
+// - Escopo: *.html na raiz + folha_pagamento/*.html (fora: backup/,
+//   .codex-worktrees/, marqueting/, subscription.html — trabalho paralelo).
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -32,6 +35,9 @@ function htmlFiles() {
 }
 
 const check = process.argv.includes('--check');
+// --resync: recalcula TUDO (inclusive ?v= que já parecem hash, pois podem ser
+// fingerprints de conteúdo antigo). Sem a flag, só normaliza não-hash.
+const resync = process.argv.includes('--resync');
 let changed = 0;
 let dirty = [];
 for (const file of htmlFiles()) {
@@ -39,7 +45,7 @@ for (const file of htmlFiles()) {
   let text = readFileSync(file, 'utf8');
   let fileChanged = 0;
   text = text.replace(/href="([^":]+\.css)\?v=([^"]+)"/g, (m, href, v) => {
-    if (/^[0-9a-f]{12}$/.test(v)) return m;
+    if (!resync && /^[0-9a-f]{12}$/.test(v)) return m;
     const rel = href.replace(/^\.\//, '');
     let abs = join(htmlDir, rel);
     if (!existsSync(abs)) abs = join(ROOT, rel);
@@ -51,6 +57,21 @@ for (const file of htmlFiles()) {
     if (h === v) return m;
     fileChanged++;
     return `href="${href}?v=${h}"`;
+  });
+  // JS: src="...js?v=..." e import/from "...js?v=..." (relativos; pula http/CDN).
+  text = text.replace(/((?:src=|from\s+|import\s*\(\s*)["'])([^"':]+\.js)\?v=([^"']+)/g, (m, prefix, href, v) => {
+    if (!resync && /^[0-9a-f]{12}$/.test(v)) return m;
+    const rel = href.replace(/^\.\//, '');
+    let abs = join(htmlDir, rel);
+    if (!existsSync(abs)) abs = join(ROOT, rel);
+    if (!existsSync(abs)) {
+      console.warn(`AVISO: JS não encontrado: ${href} (ref em ${file})`);
+      return m;
+    }
+    const h = sha12(abs);
+    if (h === v) return m;
+    fileChanged++;
+    return `${prefix}${href}?v=${h}`;
   });
   if (fileChanged) {
     changed += fileChanged;
