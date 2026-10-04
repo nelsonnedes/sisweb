@@ -502,8 +502,9 @@
         #tabelaMovimentacoes.table thead th,
         #tabelaProdutos.table thead th,
         #tabelaTorasDisponiveis.table thead th,
-        #rastreabilidadeModal.table thead th,
-        .saida-plaqueta-results-table.table thead th,
+        #rastreabilidadeModal table.table thead th,
+        #rastreabilidadeModal table thead th,
+        table.saida-plaqueta-results-table thead th,
         table[id^="tabela"].table thead th,
         .table thead th {
             position: sticky;
@@ -695,27 +696,30 @@
             border-bottom: 2px solid var(--sw-border);
         }
 
-        .tab {
+        /* Âncora (0,2,0) + !important: trava cores das abas nos tokens do tema
+           ativo, vencendo qualquer regra obsoleta em cache. */
+        .tabs .tab {
             padding: 12px 24px;
             cursor: pointer;
             border: none;
-            background: none;
             font-size: 16px;
-            color: var(--sw-text-3);
-            border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
             border-radius: 6px 6px 0 0;
             white-space: nowrap; /* Evita quebra de texto dentro da aba */
+            color: var(--sw-text-3) !important;
+            background: none !important;
+            border-bottom: 3px solid transparent !important;
         }
 
-        .tab.active {
-            color: var(--sw-brand);
-            border-bottom-color: var(--sw-brand);
+        .tabs .tab.active {
+            color: var(--sw-brand) !important;
+            border-bottom-color: var(--sw-brand) !important;
+            background: none !important;
             font-weight: bold;
         }
 
-        .tab:hover {
-            background-color: var(--sw-surface-2);
+        .tabs .tab:hover {
+            background-color: var(--sw-surface-2) !important;
         }
 
         .tab-content {
