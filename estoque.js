@@ -1409,6 +1409,18 @@ async function carregarDados() {
             firebaseAvailable,
             tenant: !!tenant
         });
+        // Telemetria de tema: cor computada REAL do thead (prova o CSS aplicado)
+        try {
+            const th = document.querySelector('#tabelaEntrada thead th, #tabelaEstoque thead th, .table thead th');
+            if (th) {
+                const cs = window.getComputedStyle(th);
+                logEstoqueEvent('theme-check', 'thead computed', {
+                    bgImage: String(cs.backgroundImage || '').slice(0, 80),
+                    bgColor: cs.backgroundColor || '',
+                    color: cs.color || ''
+                });
+            }
+        } catch (_) {}
     } catch (error) {
         logEstoqueEvent('data-load', 'Falha ao carregar dados', { error: String(error && error.message || error) }, 'error');
         setEstoqueRuntimeStatus('error', 'Falha ao carregar dados do estoque. Recarregue e, se persistir, acione suporte.');
