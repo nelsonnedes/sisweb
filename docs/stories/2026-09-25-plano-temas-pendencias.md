@@ -2,6 +2,25 @@
 
 ## Status
 Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
+Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 testes 727/0/1).
+
+## 04/10 — thead marinho fantasma no estoque (resolvido, validado pelo usuário)
+- [x] Forense no browser: `backgroundImage` chegava como
+      `linear-gradient(135deg, #2c3e50→#34495e)` hardcoded de stylesheet obsoleto
+      em cache; vars saudáveis (`--primary-color #fe6a00`), sem poisoning de tema.
+- [x] Regra thead ancorada em ID `(1,1,2)` + `!important` + posição após os `<link>`
+      (`estoque.html`): cobre `#tabelaEntrada/SaidaToras/Estoque/Movimentacoes/
+      Produtos/TorasDisponiveis`, `#rastreabilidadeModal table` (ID está no modal,
+      não na tabela), `table.saida-plaqueta-results-table` (sem classe `.table`),
+      fallback `table[id^="tabela"]` + `.table thead th`; variante `sticky-actions`.
+- [x] Lock das abas `.tabs .tab/.active/:hover` nos tokens com `!important`
+      (mesma vulnerabilidade ao stale, sem mudar layout).
+- [x] `?v=` por hash de conteúdo nos 4 CSS com versão estática em `estoque.html`
+      (commerce `41ca2775b90e`, tokens `48ded6f95e02`, shell `c1329199a1c6`,
+      content `db8b0cf45fdc`) — invalida cache HTTP + SW de uma vez.
+- [x] Telemetria `theme-check` do thead no boot (prova do CSS aplicado).
+- [x] Commits `467a494`, `75f3788`, `c49edd9`, `ab8cd81`, `0a3f842` + publish
+      produção (verificado via fetch: regra ID e `?v=` novos no ar).
 
 ## Fase 25.5 — modais de lista na marca + fix parcelas (28/09)
 - [x] rlc-styles (footer, thead border, paginação completa) → tokens.
