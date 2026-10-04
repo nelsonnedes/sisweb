@@ -7141,9 +7141,13 @@ async function carregarRomaneiosPorTipo() {
                         return total + (volumeLiquidoM3 * quantidade);
                     } else {
                         // TL/PCT/PES: priorizar volume informado; senão calcular por dimensões
+                        // item.volume JÁ É TOTAL (não multiplicar por quantidade):
+                        // PCT carregar-romaneio-pct.js (volume = unit×qtd×ppp),
+                        // TL salvar-romaneio.js (volume = unit×quantidade),
+                        // PES romaneiopes.html (totais = SUM item.volume).
                         const volumeInformado = parseFloat(item.volume);
                         if (!isNaN(volumeInformado) && volumeInformado > 0) {
-                            return total + (volumeInformado * quantidade);
+                            return total + volumeInformado;
                         }
                         const comprimento = parseFloat(item.comprimento) || 0;
                         const largura = parseFloat(item.largura) || 0;
@@ -7414,8 +7418,9 @@ function extrairResumoConama(romaneio) {
             const dimensoesKey = construirChaveDimensoes(espessura, largura);
             const categoria = `${categoriaBase} ${dimensoesKey}`;
             let volumeTotal = 0;
+            // item.volume JÁ É TOTAL nos 3 tipos serrados (PCT/TL/PES) — somar direto.
             if (!isNaN(volumeInformado) && volumeInformado > 0) {
-                volumeTotal = isPCT ? volumeInformado : (volumeInformado * quantidade);
+                volumeTotal = volumeInformado;
             } else {
                 const volumeUnitario = (comprimento / 100) * (largura / 100) * (espessura / 100);
                 volumeTotal = isPCT ? (volumeUnitario * quantidade * pecasPorPacote) : (volumeUnitario * quantidade);

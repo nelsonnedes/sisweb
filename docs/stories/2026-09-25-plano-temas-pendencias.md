@@ -106,3 +106,6 @@ Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 te
 - [x] Bump SW (`sw.js` + `PWA_VERSION`) a cada publish com mudança visual.
 - [x] Nunca reescrever arquivos via cmdlets de texto PS 5.1 (mojibake) — node/Copy-Item/edit.
 - [x] `C:\Sisweb\tmp\redesign-*.json` (40MB, untracked): decidir destino (arquivo externo).
+- [x] Após qualquer mudança em CSS/JS: `node scripts/sync-css-cachebusters.mjs --check`
+      (com `--resync` se o conteúdo mudou mas o `?v=` já era hash) — nenhum `?v=`
+      obsoleto; nunca versionar trabalho paralelo junto.

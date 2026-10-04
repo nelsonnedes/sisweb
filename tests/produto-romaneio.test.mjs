@@ -96,3 +96,11 @@ test('romaneio em pedidos: usos com status + baixa na aprovação', () => {
   assert.ok(/g\.ml =/.test(src), 'grupo acumula ml');
   assert.ok(!/agrProdEsp/.test(html + src), 'checkboxes Agrupar removidos (auto ExLxC)');
 });
+
+test('dropdown romaneio: item.volume é TOTAL, sem × quantidade (TL/PCT/PES)', () => {
+  // Itens serrados salvam volume total: PCT (unit×qtd×ppp), TL (unit×qtd),
+  // PES (totais = SUM item.volume). Multiplicar de novo inflava o m³ exibido.
+  assert.ok(!/volumeInformado \* quantidade/.test(src), 'sem dupla multiplicação');
+  assert.ok(/return total \+ volumeInformado;/.test(src), 'dropdown soma o total direto');
+  assert.ok(/volumeTotal = volumeInformado;/.test(src), 'CONAMA soma o total direto');
+});
