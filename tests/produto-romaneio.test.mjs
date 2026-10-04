@@ -47,10 +47,17 @@ test('salvarProduto persiste campos do romaneio', () => {
   assert.ok(/produto\.romaneioId = d\.romaneioId/.test(src), 'romaneioId persistido');
 });
 
-test('aba Produtos padronizada: form inline + modal de lista, sem produtoModal', () => {
+test('aba Estoque de Madeira Serrada padronizada: form inline + modal de lista, sem produtoModal', () => {
   const html = readFileSync(new URL('../vendas.html', import.meta.url), 'utf8');
   assert.ok(!/produtoModal/.test(html + src), 'sem referência a produtoModal');
-  assert.ok(/id="listaProdutosModal"/.test(html), 'modal Lista de Produtos existe');
+  assert.ok(/id="listaProdutosModal"/.test(html), 'modal existe (id mantido)');
+  assert.ok(/<h2>Lista de Madeira Serrada em Estoque<\/h2>/.test(html), 'título do modal renomeado');
+  assert.ok(/Estoque de Madeira Serrada\s*<\/button>/.test(html), 'aba renomeada');
+  assert.ok(/Listar Madeira Serrada/.test(html), 'botão que abre o modal renomeado');
+  assert.ok(/<title>Lista de Madeira Serrada em Estoque<\/title>/.test(src), 'título de impressão renomeado');
+  assert.ok(/LISTA DE MADEIRA SERRADA EM ESTOQUE/.test(src), 'cabeçalho de impressão renomeado');
+  assert.ok(/sisweb-print-back/.test(src), 'barra Voltar/Imprimir padrão no relatório');
+  assert.ok(/window\.print\(\)/.test(src), 'botão Imprimir dispara impressão');
   assert.ok(/id="secaoProdutoForm"/.test(html), 'form inline existe');
   assert.ok(/name="tipoProdutoForm"/.test(html), 'radios Comum/Romaneio existem');
   assert.ok(/id="previewProdutoRomaneio"/.test(html), 'preview existe');

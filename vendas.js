@@ -970,7 +970,7 @@ async function carregarDados() {
                      if (typeof registrarIdsProdutosRaw === 'function') registrarIdsProdutosRaw(produtos_raw);
                      const comNome = window.produtos.length;
                      const semNome = (Array.isArray(species) ? species.length : 0) - speciesExibiveis.length;
-                     if (semNome > 0) console.log(`🧹 ${semNome} espécie(s) sem nome ocultada(s) da aba Produtos`);
+                     if (semNome > 0) console.log(`🧹 ${semNome} espécie(s) sem nome ocultada(s) da aba Estoque de Madeira Serrada`);
                  } catch (_) {}
                  window.clientes = Array.isArray(cliRes) ? cliRes : [];
                  
@@ -5315,15 +5315,17 @@ async function imprimirRelatorioProdutos(lista) {
     try {
         const w = window.open('', '_blank');
         if (!w) { ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção'); return; }
-        w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Lista de Produtos</title>`
+        w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Lista de Madeira Serrada em Estoque</title>`
             + `<style>body{font-family:Arial,sans-serif;padding:24px;color:#111;}h1{font-size:18px;text-align:center;margin:4px 0 12px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px 8px;text-align:left;}th{background:#eee;}`
+            + `.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;}`
+            + `@media print{.sisweb-print-back{display:none !important;}}`
             + `.header{display:flex;gap:16px;align-items:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:12px;}.logo img{max-height:80px;}.company-name{font-size:17px;font-weight:bold;}.company-details{font-size:11px;color:#333;}`
             + `.resumo{margin-top:20px;page-break-inside:avoid;}@media print{.no-print{display:none !important;}}</style></head>`
-            + `<body><div class="header"><div class="logo">${c.logo ? `<img src="${c.logo}" alt="logo" onerror="this.style.display='none'">` : ''}</div>`
+            + `<body><div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #c83818;background:#ea580c;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div><div class="header"><div class="logo">${c.logo ? `<img src="${c.logo}" alt="logo" onerror="this.style.display='none'">` : ''}</div>`
             + `<div><div class="company-name">${esc(c.nome)}</div><div class="company-details">CNPJ: ${esc(c.cnpj)}</div>`
             + `<div class="company-details">Endereço: ${esc(c.endereco)}</div><div class="company-details">Cidade: ${esc(c.cidade)} - Estado: ${esc(c.estado)}</div>`
             + `<div class="company-details">Telefone: ${esc(c.telefone)}</div></div></div>`
-            + `<h1>LISTA DE PRODUTOS — ${esc(dataHoje)}</h1>`
+            + `<h1>LISTA DE MADEIRA SERRADA EM ESTOQUE — ${esc(dataHoje)}</h1>`
             + `<table><thead><tr><th>Código</th><th>Nome</th><th>Preço</th><th>Estoque</th><th>M. Linear</th><th>Volume (m³)</th></tr></thead><tbody>${linhas}</tbody></table>`
             + (arrG.length > 0 ? `<div class="resumo"><h1>RESUMO — ESPÉCIE x ESPESSURA x LARGURA</h1><table><thead><tr><th>Espécie</th><th>Espessura</th><th>Largura</th><th>Peças</th><th>M. Linear</th><th>Volume (m³)</th></tr></thead><tbody>${linhasResumo}</tbody></table></div>` : '')
             + `<script>window.onload=function(){window.print();};<\/script></body></html>`);
