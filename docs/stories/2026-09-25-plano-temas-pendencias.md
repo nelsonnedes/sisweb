@@ -37,6 +37,22 @@ Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 te
       e atualizar artefatos.
 - [ ] Soak A4: remoção física dos globais após 09/10 (`docs/legacy-removal-gate.md`).
 
+## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
+- [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
+      (`folha.html` document.write auth-diagnostics + commerce-pdf-share,
+      `estoque.html`/`user-profile.html` import firebaseService,
+      `portal-parceiro.html` src sisweb-theme) + 7 hashes obsoletos
+      (firebase-init, romaneio-comum, layout-comum). Fora: `.codex-worktrees/`
+      (duplicatas), `backup/`, `subscription.html`, dinâmicos via variável
+      (`menu-component` Date.now/PWA, `ADMIN_ASSET_VERSION` hash-format).
+- [x] `sync-css-cachebusters.mjs` cobre `src=` + `from`/`import()`; flags
+      `--check`/`--resync`; pós-aplicação `--check --resync` = 0.
+- [x] Deduplicação natural: mesmo arquivo → mesmo `?v=` em todas as páginas
+      (firebaseService `7e1ef38a`, commerce-pdf-share `e6699735`, etc.).
+- [x] Validação cruzada: hashes conferidos via `Get-FileHash` independente.
+- [x] Gates verdes (lint+typecheck, 727 testes 727/0/1), commit `590051d`,
+      publish verificado via fetch (estoque + romaneiopct).
+
 ## Fase 25.5 — modais de lista na marca + fix parcelas (28/09)
 - [x] rlc-styles (footer, thead border, paginação completa) → tokens.
 - [x] Ações dos 5 romaneios no padrão vendas (marca; excluir danger).
