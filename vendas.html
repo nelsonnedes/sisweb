@@ -474,6 +474,27 @@
             white-space: nowrap;
         }
 
+        /* Selecionar-todos no mobile: o thead some nos cards, então o controle
+           vive acima da tabela (só ≤768px; no desktop o do thead basta). */
+        .produtos-selectall-mobile {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .produtos-selectall-mobile {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 700;
+                color: var(--sw-text-2);
+                margin: 2px 0 10px;
+                cursor: pointer;
+            }
+            .produtos-selectall-mobile input {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
         /* Cards do Preview-Resumo (produto romaneio): linha ordenada
            [check | texto | excluir] com quebra segura; no mobile estreito o
            botão excluir ocupa a linha de baixo em largura total. */
@@ -2152,6 +2173,11 @@
                     <input type="text" id="searchProdutos" placeholder="Pesquisar produtos..."
                         onkeyup="filtrarProdutos()">
                 </div>
+                <label class="produtos-selectall-mobile" for="produtosSelectAllMobile">
+                    <input type="checkbox" id="produtosSelectAllMobile"
+                        onchange="toggleSelecionarTodosProdutos(this.checked)" aria-label="Selecionar todos">
+                    <span>Selecionar todos</span>
+                </label>
                 <div class="form-row date-filter-row">
                     <button type="button" class="btn-primary btn-print-selected"
                         onclick="imprimirProdutosSelecionados()">
@@ -2383,7 +2409,7 @@
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
-    <script src="vendas.js?v=f2601b5168ee"></script>
+    <script src="vendas.js?v=24cc0d1e106d"></script>
 </body>
 
 </html>

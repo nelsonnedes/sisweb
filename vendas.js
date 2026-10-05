@@ -4503,7 +4503,8 @@ function lerDimsProdutoRomaneio() {
         espessura: num('produtoEspessura'),
         largura: num('produtoLargura'),
         comprimento: num('produtoComprimento'),
-        pecas: num('produtoPecas') || 1,
+        // Peças pode ser 0 (zerado no estoque); só protege contra negativo.
+        pecas: Math.max(0, num('produtoPecas')),
         ppp: num('produtoPpp') || 1
     };
 }
@@ -4553,17 +4554,30 @@ async function carregarItensProdutoRomaneio() {
         if (!tipo) { ToastManager.warning('Selecione o Tipo de Romaneio', 'Atenção'); return; }
         if (!rid) { ToastManager.warning('Selecione o Romaneio', 'Atenção'); return; }
         if (box) box.innerHTML = '<span style="color:var(--sw-text-3);">Carregando itens...</span>';
-        // Cache primeiro (paridade com o pedido: sem re-fetch); fallback recarrega
+        // Refetch SEMPRE (não só cache): o romaneio pode ter sido editado
+        // (itens novos) depois da última carga; o cache só dá paridade de ordem.
         const idxSel = parseInt(rid, 10);
         let rom = null;
         const emCache = (tipo && romaneiosProdutoCache[tipo]) || [];
-        if (!isNaN(idxSel) && emCache[idxSel]) {
-            rom = emCache[idxSel];
-        } else {
-            let lista = [];
-            if (typeof getRomaneiosMerged === 'function') lista = await getRomaneiosMerged(tipo) || [];
-            try { romaneiosProdutoCache[tipo] = lista; } catch (_) {}
-            rom = lista.find(r => String(r.id || r.firebaseKey || r.numero || '') === String(rid)) || null;
+        const previo = (!isNaN(idxSel) && emCache[idxSel]) ? emCache[idxSel] : null;
+        const idEstavel = previo ? String(previo.id || previo.firebaseKey || previo.numero || '') : '';
+        try {
+            if (typeof getRomaneiosMerged === 'function' && tipo) {
+                const lista = await getRomaneiosMerged(tipo) || [];
+                try { romaneiosProdutoCache[tipo] = lista; } catch (_) {}
+                if (idEstavel) rom = lista.find(r => String(r.id || r.firebaseKey || r.numero || '') === idEstavel) || null;
+                if (!rom && !isNaN(idxSel) && lista[idxSel]) rom = lista[idxSel];
+            }
+        } catch (_) { /* mantém fallback abaixo */ }
+        if (!rom) {
+            if (previo) {
+                rom = previo;
+            } else {
+                let lista = [];
+                if (typeof getRomaneiosMerged === 'function') lista = await getRomaneiosMerged(tipo) || [];
+                try { romaneiosProdutoCache[tipo] = lista; } catch (_) {}
+                rom = lista.find(r => String(r.id || r.firebaseKey || r.numero || '') === String(rid)) || null;
+            }
         }
         const itens = rom ? (Array.isArray(rom.itens) ? rom.itens : (Array.isArray(rom.items) ? rom.items : [])) : [];
         __previewProdutoRomaneioItens = itens.filter(i => i && typeof i === 'object');
@@ -4574,8 +4588,20 @@ async function carregarItensProdutoRomaneio() {
         try {
             const meta0 = __previewProdutoRomaneioMeta || {};
             const novos = agruparItensRomaneioExLxC(__previewProdutoRomaneioItens, meta0.rid, meta0.numero, meta0.tipo);
-            const vistos = new Set(__previewRomGrupos.map(g => g.gid));
-            novos.forEach(g => { if (!vistos.has(g.gid)) { __previewRomGrupos.push(g); vistos.add(g.gid); } });
+            // Sincroniza com o romaneio recarregado: remove grupos DESTE romaneio
+            // que não existem mais (os de outros romaneios ficam), substitui no
+            // lugar (índice do checkbox preservado) e faz push dos novos.
+            const ridAtual = String(meta0.rid || '');
+            const gidNovos = new Set(novos.map(g => String(g.gid)));
+            if (ridAtual) {
+                __previewRomGrupos = __previewRomGrupos.filter(g => String(g.romaneioId || '') !== ridAtual || gidNovos.has(String(g.gid)));
+            }
+            const posPorGid = new Map(__previewRomGrupos.map((g, i) => [String(g.gid), i]));
+            novos.forEach(g => {
+                const pos = posPorGid.get(String(g.gid));
+                if (pos === undefined) { posPorGid.set(String(g.gid), __previewRomGrupos.length); __previewRomGrupos.push(g); }
+                else { __previewRomGrupos[pos] = g; }
+            });
         } catch (_) {}
         renderPreviewProdutoRomaneio();
     } catch (e) {
@@ -5217,6 +5243,13 @@ function atualizarContadorProdutosSelecionados() {
             const visiveis = produtosListFiltered.map(p => String(p.id));
             all.checked = visiveis.length > 0 && visiveis.every(id => produtosSelecionados.has(id));
         }
+        try {
+            const mob = document.getElementById('produtosSelectAllMobile');
+            if (mob) {
+                const head = document.getElementById('produtosSelectAll');
+                mob.checked = head ? !!head.checked : false;
+            }
+        } catch (_) {}
     } catch (_) {}
 }
 

@@ -143,3 +143,24 @@ test('adicionar estoque romaneio: trava + loading + save único em lote', () => 
   assert.ok(/class="grupo-rom-card"/.test(src), 'cards com classe');
   assert.ok(/class="grm-body"/.test(src), 'corpo do card com min-width:0');
 });
+
+test('estoque 0 persiste: peças sem fallback || 1', () => {
+  // Zerar peças caía em || 1 e a lista exibia 1 (coluna mostra peças p/ serrado)
+  assert.ok(!/pecas:\s*num\('produtoPecas'\)\s*\|\|\s*1/.test(src), 'sem coerção de 0 para 1');
+  assert.ok(/pecas:\s*Math\.max\(0,\s*num\('produtoPecas'\)\)/.test(src), 'zero permitido, negativo bloqueado');
+});
+
+test('mobile: selecionar-todos visível acima da tabela', () => {
+  const html = readFileSync(new URL('../vendas.html', import.meta.url), 'utf8');
+  assert.ok(/id="produtosSelectAllMobile"/.test(html), 'checkbox mobile existe');
+  assert.ok(/\.produtos-selectall-mobile/.test(html), 'visível só ≤768px');
+  assert.ok(/produtosSelectAllMobile/.test(src), 'estado espelhado no contador');
+});
+
+test('preview: refetch do romaneio + sincronia de grupos', () => {
+  // Cache stale escondia itens novos após editar o romaneio
+  assert.ok(!/Cache primeiro/.test(src), 'sem cache-first no carregar itens');
+  assert.ok(/idEstavel/.test(src), 'resolução por ID estável');
+  assert.ok(/posPorGid/.test(src), 'substituição no lugar preserva checkbox');
+  assert.ok(/gidNovos/.test(src), 'grupos removidos do romaneio saem do preview');
+});
