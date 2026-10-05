@@ -331,6 +331,29 @@ test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Pe�
   assert.equal(sbS.converterItemSerradoParaM3(prodMl, 1, 'm²').volume, 0.04);
   // select Produto exibe m² (fonte única: dimensoesEstoqueSerrado)
   assert.ok(/dimensoesEstoqueSerrado\(p\)\.area/.test(src), 'm² do select sem fórmula duplicada');
+  // inferência display-only: m³ direto que equivale a peças inteiras
+  const sbI = { window: { produtos: [{ id: 'P9', especie: 'Orelha-de-macaco', espessura: 6, largura: 12, comprimento: 700, pecas: 10, volumeM3: 0.504 }] } };
+  vm.createContext(sbI);
+  vm.runInContext(extract('normalizarUnidadeMedida'), sbI);
+  vm.runInContext(extract('dimsSerradoProduto'), sbI);
+  vm.runInContext(extract('pecaSingular'), sbI);
+  vm.runInContext(extract('pecasInteirasDetalhe'), sbI);
+  vm.runInContext(extract('detalheSerradoItem'), sbI);
+  vm.runInContext(extract('rotuloSerradoLinha'), sbI);
+  // 0,0504 = 1 peça exata → "1 Peça" (singular)
+  assert.equal(sbI.detalheSerradoItem({ produtoId: 'P9', quantidade: 0.0504, unidade: 'm³' }), '1 Peça');
+  // 0,050 ≈ 0,992 peça (0,8% off, dentro de 2%) → "1 Peça"
+  assert.equal(sbI.detalheSerradoItem({ produtoId: 'P9', quantidade: 0.05, unidade: 'm³' }), '1 Peça');
+  // 0,06 ≈ 1,19 peça (19% off) → sem detalhe
+  assert.equal(sbI.detalheSerradoItem({ produtoId: 'P9', quantidade: 0.06, unidade: 'm³' }), '');
+  // ML direto: 7 ml de peça 700cm → 1 peça
+  assert.equal(sbI.detalheSerradoItem({ produtoId: 'P9', quantidade: 7, unidade: 'LN' }), '1 Peça');
+  // espécie derivada do nome quando campo ausente
+  const sbN = { window: { produtos: [{ id: 'PX', nome: 'Orelha-de-macaco 6x12x700' }] } };
+  vm.createContext(sbN);
+  vm.runInContext(extract('dimsSerradoProduto'), sbN);
+  vm.runInContext(extract('rotuloSerradoLinha'), sbN);
+  assert.equal(sbN.rotuloSerradoLinha({ produtoId: 'PX' }), 'Orelha-de-macaco - 6cmx12cmx700cm');
   // m³ não converte; sem dims não converte; manual não converte
   assert.equal(conv(prod, 2, 'm³'), null);
   assert.equal(conv(prod, 2, 'M3'), null);

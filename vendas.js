@@ -4609,16 +4609,22 @@ function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
     } catch (_) { return null; }
 }
 
-// "Orelha-de-macaco - 7cmx14cmx850cm" a partir dos campos (fallback: nome).
+// "Orelha-de-macaco - 7cmx14cmx850cm" a partir dos campos; se espécie ausente,
+// deriva do nome removendo o padrão ExLxC final ("Orelha-de-macaco 6x12x700").
 // Null quando sem dims.
 function rotuloSerradoLinha(item) {
     try {
         const p = (window.produtos || []).find(x => x && x.id === (item && item.produtoId));
         if (!p) return null;
-        const esp = String(p.especie || '').trim();
-        if (!esp) return null;
+        let esp = String(p.especie || '').trim();
         const dims = (typeof dimsSerradoProduto === 'function') ? dimsSerradoProduto(p) : null;
         if (!dims) return null;
+        if (!esp) {
+            const nome = String(p.nome || p.name || '');
+            const m = nome.match(/^(.*)\s+(\d+(?:[.,]\d+)?)\s*x\s*(\d+(?:[.,]\d+)?)\s*x\s*(\d+(?:[.,]\d+)?)\s*$/i);
+            if (!m || !String(m[1] || '').trim()) return null;
+            esp = String(m[1]).trim();
+        }
         const { E, L, C } = dims;
         const f = (v) => {
             const n = Math.round(v * 1000) / 1000;
@@ -4629,18 +4635,67 @@ function rotuloSerradoLinha(item) {
 }
 
 // "2 Peças" / "10 ml" para a linha do carrinho. Preço continua por m³.
+// Sem origem (adicionado direto em m³/ml/m²): infere peças inteiras quando a
+// quantidade equivale a N peças exatas (tolerância 2% p/ arredondamento).
+// Display-only: totais e estoque intocados.
+function pecaSingular(n) { return n === 1 ? '1 Peça' : `${n} Peças`; }
+
 function detalheSerradoItem(item) {
     try {
-        if (!item || !item.unidadeOrigem) return '';
-        if (normalizarUnidadeMedida(item.unidadeOrigem) === 'M3') return '';
-        const fmtN = (v) => {
-            const n = Math.round((parseFloat(v) || 0) * 1000) / 1000;
-            return Number.isInteger(n) ? String(n) : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
-        };
-        const fam = normalizarUnidadeMedida(item.unidadeOrigem);
-        if ((fam === 'UN' || fam === 'DZ') && item.pecasOrigem != null) return `${fmtN(item.pecasOrigem)} Peças`;
-        if (item.qtdOrigem != null) return `${fmtN(item.qtdOrigem)} ${item.unidadeOrigem}`;
-        return '';
+        if (item && item.unidadeOrigem) {
+            if (normalizarUnidadeMedida(item.unidadeOrigem) === 'M3') return '';
+            const fmtN = (v) => {
+                const n = Math.round((parseFloat(v) || 0) * 1000) / 1000;
+                return Number.isInteger(n) ? String(n) : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+            };
+            const fam = normalizarUnidadeMedida(item.unidadeOrigem);
+            if ((fam === 'UN' || fam === 'DZ') && item.pecasOrigem != null) return `${fmtN(item.pecasOrigem)} Peças`;
+            if (item.qtdOrigem != null) return `${fmtN(item.qtdOrigem)} ${item.unidadeOrigem}`;
+            return '';
+        }
+        // Inferência: linha direta em m³/ml/m² sem origem registrada.
+        if (!item || typeof normalizarUnidadeMedida !== 'function') return '';
+        const famItem = normalizarUnidadeMedida(item.unidade);
+        if (famItem !== 'M3' && famItem !== 'ML' && famItem !== 'M2') return '';
+        const p = (window.produtos || []).find(x => x && x.id === (item && item.produtoId));
+        if (!p) return '';
+        const num = (v) => parseFloat(String(v ?? '').replace(',', '.')) || 0;
+        const qtd = num(item.quantidade);
+        if (!(qtd > 0)) return '';
+        let E = num(p.espessura), L = num(p.largura), C = num(p.comprimento);
+        if ((!(E > 0 && L > 0 && C > 0)) && typeof dimsSerradoProduto === 'function') {
+            const dd = dimsSerradoProduto(p);
+            if (dd) { E = dd.E; L = dd.L; C = dd.C; }
+        }
+        let volPeca = 0;
+        const pPecas = num(p.pecas), pVol = num(p.volumeM3);
+        if (famItem === 'M3') {
+            volPeca = (pPecas > 0 && pVol > 0) ? (pVol / pPecas) : 0;
+            if (!(volPeca > 0) && typeof dimsSerradoProduto === 'function') {
+                const d = dimsSerradoProduto(p);
+                if (d) volPeca = (d.E * d.L * d.C) / 1e6;
+            }
+        } else if (famItem === 'ML') {
+            if (!(C > 0)) return '';
+            const equiv = qtd / (C / 100);
+            return pecasInteirasDetalhe(equiv);
+        } else if (famItem === 'M2') {
+            if (!(L > 0 && C > 0)) return '';
+            const equiv = qtd / ((L / 100) * (C / 100));
+            return pecasInteirasDetalhe(equiv);
+        }
+        if (!(volPeca > 0)) return '';
+        return pecasInteirasDetalhe(qtd / volPeca);
+    } catch (_) { return ''; }
+}
+
+function pecasInteirasDetalhe(equiv) {
+    try {
+        if (!Number.isFinite(equiv)) return '';
+        const n = Math.round(equiv);
+        if (n < 1) return '';
+        if (Math.abs(equiv - n) / n > 0.02) return '';
+        return typeof pecaSingular === 'function' ? pecaSingular(n) : `${n} Peças`;
     } catch (_) { return ''; }
 }
 
