@@ -1925,26 +1925,37 @@ function montarUpdatesRemocaoContasReceberVenda(lista, options = {}) {
  * @param {number} quantidadeDesejada - Quantidade que se deseja adicionar
  * @returns {Object} { valido: boolean, mensagem: string, estoqueAtual: number }
  */
-function validarEstoque(produtoId, quantidadeDesejada, itemEmEdicao) {
+function validarEstoque(produtoId, quantidadeDesejada, itemEmEdicao, unidadeItem) {
     // Produtos manuais e de romaneio não têm controle de estoque
     if (produtoId.startsWith('manual_') || produtoId.startsWith('romaneio_')) {
         return { valido: true, mensagem: '', estoqueAtual: null };
     }
-    
+
     const produto = window.produtos.find(p => p.id === produtoId);
-    
+
     if (!produto) {
-        return { 
-            valido: false, 
-            mensagem: 'Produto não encontrado', 
-            estoqueAtual: 0 
+        return {
+            valido: false,
+            mensagem: 'Produto não encontrado',
+            estoqueAtual: 0
         };
     }
     if (isCarregoProduto(produto)) {
         return { valido: true, mensagem: '', estoqueAtual: null };
     }
-    
-    const estoqueAtual = produto.estoque || 0;
+
+    // Disponível na dimensão da unidade pedida (UN→peças, M³→volume, ML→ml, M²→área)
+    let estoqueAtual = produto.estoque || 0;
+    let unidadeRotulo = produto.unidade || 'UN';
+    try {
+        if (typeof temDimsSerrado === 'function' && temDimsSerrado(produto) && typeof razaoBaixaSerrado === 'function') {
+            const uni = unidadeItem || produto.unidade || 'UN';
+            const r = razaoBaixaSerrado(produto, 0, uni);
+            // razaoBaixaSerrado com 0 devolve disponivel da base correta
+            estoqueAtual = r.disponivel;
+            unidadeRotulo = uni;
+        }
+    } catch (_) {}
     
     // Verificar se já existe no carrinho
     const itemNoCarrinho = itensCarrinho.find(i => i.produtoId === produtoId);
@@ -1961,7 +1972,7 @@ function validarEstoque(produtoId, quantidadeDesejada, itemEmEdicao) {
     if (quantidadeTotal > estoqueAtual && VendasConfig.validarEstoque && !VendasConfig.permitirEstoqueNegativo) {
         return {
             valido: false,
-            mensagem: `Estoque insuficiente. Disponível: ${estoqueAtual} | No carrinho: ${quantidadeJaNoCarrinho} | Solicitado: ${quantidadeDesejada}`,
+            mensagem: `Estoque insuficiente. Disponível: ${estoqueAtual} ${unidadeRotulo} | No carrinho: ${quantidadeJaNoCarrinho} | Solicitado: ${quantidadeDesejada}`,
             estoqueAtual: estoqueAtual
         };
     }
@@ -2003,13 +2014,14 @@ function adicionarItem() {
     const itemEdicao = itemEmEdicaoId
         ? itensCarrinho.find(i => String(i.id) === String(itemEmEdicaoId))
         : null;
-    const validacao = validarEstoque(produtoId, quantidade, itemEdicao);
-    
+    const validacao = validarEstoque(produtoId, quantidade, itemEdicao,
+        (document.getElementById('unidadeItem') || {}).value || produto.unidade || 'UN');
+
     if (!validacao.valido) {
         ToastManager.error(validacao.mensagem, 'Estoque Insuficiente', 6000);
         return;
     }
-    
+
     // Unidade escolhida (padrão = a do produto)
     const unidadeItemEl = document.getElementById('unidadeItem');
     const unidadeItem = (unidadeItemEl && unidadeItemEl.value) ? unidadeItemEl.value : (produto.unidade || 'UN');
@@ -2774,7 +2786,8 @@ async function salvarPedido(event) {
             return;
         }
 
-        // Atualizar estoque localmente para refletir na UI imediatamente
+        // Atualizar estoque localmente para refletir na UI imediatamente.
+        // Baixa na dimensão da unidade do item (UN→peças, M³→volume, ML→ml).
         if (!editandoPedidoId) {
             const itensComEstoque = (pedidoData.itens || []).filter(it => !isCarregoItem(it));
             const alterados = new Set(itensComEstoque.map(it => it.produtoId));
@@ -2782,8 +2795,19 @@ async function salvarPedido(event) {
                 if (alterados.has(produto.id)) {
                     const item = itensComEstoque.find(it => it.produtoId === produto.id);
                     if (item) {
-                        const novoEstoque = (produto.estoque || 0) - (item.quantidade || 0);
-                        produto.estoque = novoEstoque < 0 ? 0 : novoEstoque;
+                        try {
+                            if (typeof temDimsSerrado === 'function' && temDimsSerrado(produto) && typeof aplicarBaixaSerrado === 'function') {
+                                aplicarBaixaSerrado(produto, item.quantidade, item.unidade || produto.unidade || 'm³', -1);
+                            } else if (typeof aplicarBaixaManual === 'function') {
+                                aplicarBaixaManual(produto, item.quantidade, item.unidade, -1);
+                            } else {
+                                const novoEstoque = (produto.estoque || 0) - (item.quantidade || 0);
+                                produto.estoque = novoEstoque < 0 ? 0 : novoEstoque;
+                            }
+                        } catch (_) {
+                            const novoEstoque = (produto.estoque || 0) - (item.quantidade || 0);
+                            produto.estoque = novoEstoque < 0 ? 0 : novoEstoque;
+                        }
                         produto.updated = window.firebaseService && window.firebaseService.serverTimestamp ? window.firebaseService.serverTimestamp() : new Date().toISOString();
                         // O salvamento do produto no banco deve ser feito separadamente ou via cloud function
                         // Aqui atualizamos apenas a UI/cache local
@@ -3075,10 +3099,23 @@ async function atualizarEstoqueProdutos(itens, tipo) {
             if (isCarregoItem(item)) continue;
             const produto = window.produtos.find(p => p.id === item.produtoId);
             if (produto) {
-                if (tipo === 'saida') {
-                    produto.estoque = (produto.estoque || 0) - item.quantidade;
-                } else if (tipo === 'entrada') {
-                    produto.estoque = (produto.estoque || 0) + item.quantidade;
+                // Reversão na mesma dimensão da baixa (UN→peças, M³→volume...).
+                try {
+                    if (typeof temDimsSerrado === 'function' && temDimsSerrado(produto) && typeof aplicarBaixaSerrado === 'function') {
+                        aplicarBaixaSerrado(produto, item.quantidade, item.unidade || produto.unidade || 'm³', 1);
+                    } else if (typeof aplicarBaixaManual === 'function') {
+                        aplicarBaixaManual(produto, item.quantidade, item.unidade, 1);
+                    } else if (tipo === 'saida') {
+                        produto.estoque = (produto.estoque || 0) - item.quantidade;
+                    } else if (tipo === 'entrada') {
+                        produto.estoque = (produto.estoque || 0) + item.quantidade;
+                    }
+                } catch (_) {
+                    if (tipo === 'saida') {
+                        produto.estoque = (produto.estoque || 0) - item.quantidade;
+                    } else if (tipo === 'entrada') {
+                        produto.estoque = (produto.estoque || 0) + item.quantidade;
+                    }
                 }
                 
                 // Garantir que o estoque não fique negativo
@@ -3128,13 +3165,10 @@ async function baixarEstoqueSerradoPorAprovacao(pedido) {
             if (s) rids.push(s);
         });
         if (rids.length === 0) continue;
-        const qtd = num(it.quantidade) || 1;
-        const ppp = num(it.pecasPorPacote) || 1;
-        let vol = (typeof it.volume === 'number' && it.volume > 0) ? it.volume : 0;
-        if (!(vol > 0)) {
-            vol = calcularVolumeSerradoM3(num(it.espessura), num(it.largura), num(it.comprimento ?? it.comp), qtd, ppp);
-        }
-        if (!(vol > 0)) continue;
+        // Baixa na dimensão da unidade do item (UN→peças, M³→volume, ML→ml, M²→área).
+        const unidadeItem = it.unidade || 'm³';
+        const qtd = num(it.quantidade) || 0;
+        if (!(qtd > 0)) continue;
         const esp = String(it.especie || '').trim().toUpperCase();
         const e = num(it.espessura), l = num(it.largura), c = num(it.comprimento ?? it.comp);
         const candidatos = (window.produtos || []).filter(p => {
@@ -3150,21 +3184,13 @@ async function baixarEstoqueSerradoPorAprovacao(pedido) {
             alvo = candidatos.slice().sort((a, b) => (num(b.estoque) - num(a.estoque)))[0];
         }
         if (!alvo) continue;
-        const estAntes = num(alvo.estoque);
-        const usar = Math.min(vol, estAntes);
-        if (!(usar > 0)) {
+        const volAntes = num(alvo.volumeM3 ?? alvo.estoque);
+        const res = aplicarBaixaSerrado(alvo, qtd, unidadeItem, -1);
+        if (!(res.razao > 0)) {
             try { ToastManager.warning(`Sem saldo: ${nomeExibicaoProduto(alvo)} (pedido ${pedido.numero || ''})`, 'Estoque', 6000); } catch (_) {}
             continue;
         }
-        const razao = estAntes > 0 ? (usar / estAntes) : 0;
-        alvo.estoque = Math.round((estAntes - usar) * 1000) / 1000;
-        alvo.volumeM3 = Math.round(((num(alvo.volumeM3)) - usar) * 1000) / 1000;
-        if (alvo.volumeM3 < 0) alvo.volumeM3 = 0;
-        const mlAntes = metrosLinearesDe(alvo);
-        alvo.metrosLineares = Math.round((mlAntes - mlAntes * razao) * 100) / 100;
-        if (alvo.metrosLineares < 0) alvo.metrosLineares = 0;
-        alvo.pecas = Math.max(0, Math.round((num(alvo.pecas) || 0) - Math.round(((num(alvo.pecas) || 0)) * razao)));
-        alvo.updated = new Date().toISOString();
+        const usar = Math.round(volAntes * res.razao * 1000) / 1000;
         tocados.push(alvo);
         baixados++;
         volumeTotal = Math.round((volumeTotal + usar) * 1000) / 1000;
@@ -4348,6 +4374,115 @@ function calcularVolumeSerradoM3(espessura, largura, comprimento, qtd, ppp) {
     const p = parseFloat(ppp) || 1;
     if (e <= 0 || l <= 0 || c <= 0 || q <= 0) return 0;
     return Math.round(((e * l * c) / 1e6) * q * p * 1000) / 1000;
+}
+
+// Baixa por unidade de medida: UN/PC→peças, DZ→peças×12, M³→volume,
+// ML/LN→metros lineares, M²→área derivada. Desconhecida = legado (m³).
+// As dimensões do serrado são proporcionais: deduzir por uma reduz as demais.
+function normalizarUnidadeMedida(u) {
+    const s = String(u || '').trim().toUpperCase().replace(/\./g, '').replace(/\s+/g, '');
+    if (!s) return '';
+    if (['DZ', 'DUZIA', 'DUZIAS', 'DÚZIA', 'DÚZIAS', 'DUZ', 'DZIA'].includes(s)) return 'DZ';
+    if (['UN', 'UNIDADE', 'UNIDADES', 'PC', 'PCS', 'PECA', 'PECAS', 'PEÇA', 'PEÇAS', 'PCA', 'PCAS', 'UNI', 'UND', 'UNID'].includes(s)) return 'UN';
+    if (['M3', 'M³', 'M^3', 'METROCUBICO', 'METROSCUBICOS', 'METROCÚBICO', 'METROSCÚBICOS'].includes(s)) return 'M3';
+    if (['M2', 'M²', 'M^2', 'METROQUADRADO', 'METROSQUADRADOS'].includes(s)) return 'M2';
+    if (['ML', 'LN', 'M', 'MT', 'MTS', 'METRO', 'METROS', 'METROLINEAR', 'METROSLINEARES', 'LINEAR', 'LINEARES'].includes(s)) return 'ML';
+    return s;
+}
+
+function dimensoesEstoqueSerrado(p) {
+    const num = (v) => parseFloat(v) || 0;
+    const pecas = num(p && p.pecas);
+    // volumeM3 zerado com estoque positivo = legado inconsistente: usa o estoque.
+    const vol = num(p && p.volumeM3) || num(p && p.estoque);
+    let ml = 0;
+    try { ml = (typeof metrosLinearesDe === 'function') ? metrosLinearesDe(p) : 0; } catch (_) { ml = 0; }
+    const area = (num(p && p.largura) / 100) * (num(p && p.comprimento) / 100) * pecas;
+    return { pecas, vol, ml, area };
+}
+
+// Fração do estoque consumida por (quantidade, unidade). Clamp 0..1 (sem negativo).
+function razaoBaixaSerrado(p, quantidade, unidade) {
+    const d = dimensoesEstoqueSerrado(p);
+    const q = parseFloat(quantidade) || 0;
+    const u = normalizarUnidadeMedida(unidade);
+    let base = 'vol', total = d.vol, pedido = q;
+    if (u === 'UN') { base = 'pecas'; total = d.pecas; pedido = q; }
+    else if (u === 'DZ') { base = 'pecas'; total = d.pecas; pedido = q * 12; }
+    else if (u === 'M3') { base = 'vol'; total = d.vol; pedido = q; }
+    else if (u === 'ML') { base = 'ml'; total = d.ml; pedido = q; }
+    else if (u === 'M2') { base = 'area'; total = d.area; pedido = q; }
+    if (!(total > 0) || !(pedido > 0)) return { razao: 0, base, consumido: 0, disponivel: Math.max(0, total) };
+    const cons = Math.min(pedido, total);
+    return { razao: cons / total, base, consumido: cons, disponivel: total };
+}
+
+// Aplica baixa (dir=-1) ou reversão (dir=+1) proporcional em todas as dims.
+// Retorna o consumido/devolvido na dimensão base.
+function aplicarBaixaSerrado(p, quantidade, unidade, dir) {
+    const num = (v) => parseFloat(v) || 0;
+    if (!p || typeof p !== 'object') return { razao: 0, consumido: 0 };
+    if (dir > 0) {
+        // Reversão: soma na dimensão base e reescala as demais proporcionalmente.
+        const d = dimensoesEstoqueSerrado(p);
+        const q = parseFloat(quantidade) || 0;
+        const u = normalizarUnidadeMedida(unidade);
+        let baseTot = d.vol, pedido = q;
+        if (u === 'UN') { baseTot = d.pecas; pedido = q; }
+        else if (u === 'DZ') { baseTot = d.pecas; pedido = q * 12; }
+        else if (u === 'ML') { baseTot = d.ml; pedido = q; }
+        else if (u === 'M2') { baseTot = d.area; pedido = q; }
+        if (!(pedido > 0)) return { razao: 0, consumido: 0 };
+        const f = baseTot > 0 ? ((baseTot + pedido) / baseTot) : 0;
+        if (u === 'UN' || u === 'DZ') {
+            p.pecas = Math.max(0, Math.round((num(p.pecas) + pedido) * 1000) / 1000);
+        } else if (u === 'M3') {
+            const v0 = num(p.volumeM3) || num(p.estoque);
+            if (p.volumeM3 !== undefined && p.volumeM3 !== null && p.volumeM3 !== '') p.volumeM3 = Math.round((v0 + pedido) * 1000) / 1000;
+            else p.estoque = Math.round((v0 + pedido) * 1000) / 1000;
+        }
+        if (f > 0) {
+            const vol0 = num(p.volumeM3) || num(p.estoque);
+            const volNovo = Math.round(vol0 * f * 1000) / 1000;
+            if (p.volumeM3 !== undefined && p.volumeM3 !== null && p.volumeM3 !== '') p.volumeM3 = volNovo;
+            else p.estoque = volNovo;
+            try { p.metrosLineares = Math.round((metrosLinearesDe(p) * f) * 100) / 100; } catch (_) {}
+            if (p.metrosLineares < 0) p.metrosLineares = 0;
+        }
+        p.updated = new Date().toISOString();
+        return { razao: 0, consumido: pedido };
+    }
+    const r = razaoBaixaSerrado(p, quantidade, unidade);
+    if (!(r.razao > 0)) return r;
+    const f = 1 - r.razao;
+    p.pecas = Math.max(0, Math.round(num(p.pecas) * f));
+    const vol0 = num(p.volumeM3) || num(p.estoque);
+    const volNovo = Math.round(vol0 * f * 1000) / 1000;
+    if (p.volumeM3 !== undefined && p.volumeM3 !== null && p.volumeM3 !== '') p.volumeM3 = volNovo;
+    p.estoque = volNovo;
+    try { p.metrosLineares = Math.round((metrosLinearesDe(p) * f) * 100) / 100; } catch (_) {}
+    if (p.metrosLineares < 0) p.metrosLineares = 0;
+    p.updated = new Date().toISOString();
+    return r;
+}
+
+// Manual: converte dentro da família peça (DZ×12, PC/UN×1); resto cego (legado).
+function aplicarBaixaManual(p, quantidade, unidadeItem, dir) {
+    const fam = (u) => {
+        const n = normalizarUnidadeMedida(u);
+        if (n === 'DZ') return 12;
+        if (n === 'UN') return 1;
+        return 0;
+    };
+    let qtd = parseFloat(quantidade) || 0;
+    try {
+        const fi = fam(unidadeItem), fp = fam(p && p.unidade);
+        if (fi && fp) qtd = qtd * fi / fp;
+    } catch (_) {}
+    const est = parseFloat(p.estoque) || 0;
+    p.estoque = dir > 0 ? (est + qtd) : Math.max(0, est - qtd);
+    try { p.updated = new Date().toISOString(); } catch (_) {}
+    return qtd;
 }
 
 function resetProdutoRomaneioFields() {
@@ -7350,9 +7485,18 @@ async function carregarRomaneiosPorTipo() {
             }
         }
 
-        option.textContent = totalMoeda ? 
-            `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ - ${totalMoeda}` : 
-            `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³`;
+        // Número sequencial ("Nº N") quando existir; legados sem número não mudam.
+        let sufixoNumero = '';
+        try {
+            const RU3 = window.RomaneioDataUtils;
+            if (RU3 && typeof RU3.formatarNumeroExibicao === 'function') {
+                const fmt = RU3.formatarNumeroExibicao(romaneio, '');
+                if (fmt) sufixoNumero = ` (#${fmt})`;
+            }
+        } catch (_) {}
+        option.textContent = totalMoeda ?
+            `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ - ${totalMoeda}${sufixoNumero}` :
+            `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³${sufixoNumero}`;
         option.dataset.romaneioIdx = String(index);
         selectRomaneio.appendChild(option);
     });

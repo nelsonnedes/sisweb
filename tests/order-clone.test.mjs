@@ -92,7 +92,7 @@ test('edicao de item atualiza em vez de remover e duplicar', () => {
 });
 
 test('validacao de estoque desconta a quantidade do item em edicao', () => {
-  assert.match(vendas, /function validarEstoque\(produtoId, quantidadeDesejada, itemEmEdicao\)/);
+  assert.match(vendas, /function validarEstoque\(produtoId, quantidadeDesejada, itemEmEdicao, unidadeItem\)/);
   assert.match(vendas, /String\(itemEmEdicao\.id\) === String\(itemNoCarrinho && itemNoCarrinho\.id\)/);
-  assert.match(vendas, /validarEstoque\(produtoId, quantidade, itemEdicao\)/);
+  assert.match(vendas, /validarEstoque\(produtoId, quantidade, itemEdicao,/);
 });

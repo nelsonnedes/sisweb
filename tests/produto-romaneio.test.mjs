@@ -227,3 +227,66 @@ test('disponibilidade: delta romaneio−estoque (8→9 pçs libera 1)', () => {
   assert.equal(d3.dispPecas, 1);
   assert.equal(d3.estPecas, 8);
 });
+
+test('baixa por unidade: UN→peças, M³→volume, ML→ml, DZ→×12', () => {
+  const sbU = { metrosLinearesDe: (p) => Math.round(((parseFloat(p.comprimento) || 0) / 100) * (parseFloat(p.pecas) || 0) * 100) / 100 };
+  vm.createContext(sbU);
+  vm.runInContext(extract('normalizarUnidadeMedida'), sbU);
+  vm.runInContext(extract('dimensoesEstoqueSerrado'), sbU);
+  vm.runInContext(extract('razaoBaixaSerrado'), sbU);
+  vm.runInContext(extract('aplicarBaixaSerrado'), sbU);
+  vm.runInContext(extract('aplicarBaixaManual'), sbU);
+  const norm = sbU.normalizarUnidadeMedida;
+  assert.equal(norm('UN'), 'UN');
+  assert.equal(norm('unidade'), 'UN');
+  assert.equal(norm('PC'), 'UN');
+  assert.equal(norm('DZ'), 'DZ');
+  assert.equal(norm('dúzia'), 'DZ');
+  assert.equal(norm('m³'), 'M3');
+  assert.equal(norm('M3'), 'M3');
+  assert.equal(norm('ml'), 'ML');
+  assert.equal(norm('LN'), 'ML');
+  assert.equal(norm('m²'), 'M2');
+  const mk = () => ({ pecas: 10, volumeM3: 0.112, metrosLineares: 30, largura: 15, comprimento: 300, estoque: 0.112 });
+  const rU = sbU.razaoBaixaSerrado(mk(), 2, 'UN');
+  assert.equal(rU.base, 'pecas');
+  assert.equal(rU.consumido, 2);
+  assert.equal(rU.disponivel, 10);
+  const rM = sbU.razaoBaixaSerrado(mk(), 0.056, 'm³');
+  assert.equal(rM.base, 'vol');
+  assert.ok(Math.abs(rM.razao - 0.5) < 1e-9);
+  const rD = sbU.razaoBaixaSerrado(mk(), 1, 'DZ');
+  assert.equal(rD.base, 'pecas');
+  assert.equal(rD.consumido, 10);
+  const rML = sbU.razaoBaixaSerrado(mk(), 15, 'ml');
+  assert.equal(rML.base, 'ml');
+  assert.equal(rML.consumido, 15);
+  // clamp: pedido maior que o saldo
+  const rC = sbU.razaoBaixaSerrado(mk(), 99, 'UN');
+  assert.equal(rC.razao, 1);
+  assert.equal(rC.consumido, 10);
+  // baixa proporcional em todas as dims
+  const p1 = mk();
+  sbU.aplicarBaixaSerrado(p1, 2, 'UN', -1);
+  assert.equal(p1.pecas, 8);
+  assert.ok(Math.abs(p1.volumeM3 - 0.09) < 0.001);
+  // reversão devolve
+  sbU.aplicarBaixaSerrado(p1, 2, 'UN', 1);
+  assert.equal(p1.pecas, 10);
+  // manual: DZ converte ×12
+  const pm = { estoque: 24, unidade: 'UN' };
+  sbU.aplicarBaixaManual(pm, 1, 'DZ', -1);
+  assert.equal(pm.estoque, 12);
+  sbU.aplicarBaixaManual(pm, 1, 'DZ', 1);
+  assert.equal(pm.estoque, 24);
+});
+
+test('fluxos usam baixa por unidade + pedido exibe Nº', () => {
+  assert.ok(/aplicarBaixaSerrado\(produto, item\.quantidade, item\.unidade/.test(src), 'save deduz por unidade');
+  assert.ok(/aplicarBaixaSerrado\(alvo, qtd, unidadeItem, -1\)/.test(src), 'aprovação deduz por unidade');
+  assert.ok(/aplicarBaixaSerrado\(produto, item\.quantidade, item\.unidade/.test(src), 'reversão por unidade');
+  assert.ok(/validarEstoque\(produtoId, quantidade, itemEdicao/.test(src), 'validação recebe unidade');
+  assert.ok(/sufixoNumero/.test(src), 'pedido exibe Nº do romaneio');
+  const comprasSrc = readFileSync(new URL('../compras.js', import.meta.url), 'utf8');
+  assert.ok(/sufixoNumeroC/.test(comprasSrc), 'compra exibe Nº do romaneio');
+});

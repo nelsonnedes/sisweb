@@ -5682,7 +5682,16 @@ window.carregarRomaneiosPorTipo = async function() {
             const tipoLabel = r.tipo ? `[${r.tipo}] ` : '';
             const volumeLabel = volumeTotal > 0 ? ` | ${volumeTotal.toFixed(3)}m³` : '';
             
-            opt.textContent = `${tipoLabel}${data} - ${nome} (${itensCount} itens${volumeLabel})`;
+            // Número sequencial ("Nº N") quando existir; legados sem número não mudam.
+            let sufixoNumeroC = '';
+            try {
+                const RUC = window.RomaneioDataUtils;
+                if (RUC && typeof RUC.formatarNumeroExibicao === 'function') {
+                    const fmtC = RUC.formatarNumeroExibicao(r, '');
+                    if (fmtC) sufixoNumeroC = ` (#${fmtC})`;
+                }
+            } catch (_) {}
+            opt.textContent = `${tipoLabel}${data} - ${nome} (${itensCount} itens${volumeLabel})${sufixoNumeroC}`;
             opt.dataset.romaneioId = String(r.id || r.firebaseKey || '');
             select.appendChild(opt);
         });
