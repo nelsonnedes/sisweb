@@ -4528,17 +4528,37 @@ function aplicarBaixaManual(p, quantidade, unidadeItem, dir) {
     return qtd;
 }
 
+// Extrai dims de serrado: campos primeiro; fallback no nome ("7x14x850",
+// produtos legados sem espessura/largura/comprimento). Null se nada válido.
+function dimsSerradoProduto(produto) {
+    try {
+        const num = (v) => parseFloat(String(v ?? '').replace(',', '.')) || 0;
+        let E = num(produto && produto.espessura),
+            L = num(produto && produto.largura),
+            C = num(produto && produto.comprimento);
+        if (E > 0 && L > 0 && C > 0) return { E, L, C };
+        const nome = String((produto && (produto.nome || produto.name)) || '');
+        const m = nome.match(/(\d+(?:[.,]\d+)?)\s*x\s*(\d+(?:[.,]\d+)?)\s*x\s*(\d+(?:[.,]\d+)?)/i);
+        if (m) {
+            E = num(m[1]); L = num(m[2]); C = num(m[3]);
+            if (E > 0 && L > 0 && C > 0) return { E, L, C };
+        }
+        return null;
+    } catch (_) { return null; }
+}
+
 // Converte item serrado com unidade ≠ m³ para m³ (totais corretos).
 // Retorna {volume, qtdOrigem, pecasOrigem, unidadeOrigem} ou null (sem conversão).
-// Só serrado COM dimensões; resto segue legado.
+// Só serrado COM dimensões (campos ou nome); resto segue legado.
 function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
     try {
         const u = normalizarUnidadeMedida(unidadeItem);
         if (u === 'M3' || !u) return null;
         if (typeof temDimsSerrado !== 'function' || !temDimsSerrado(produto)) return null;
-        const num = (v) => parseFloat(v) || 0;
-        const E = num(produto.espessura), L = num(produto.largura), C = num(produto.comprimento);
-        if (!(E > 0 && L > 0 && C > 0)) return null;
+        const dims = (typeof dimsSerradoProduto === 'function') ? dimsSerradoProduto(produto) : null;
+        if (!dims) return null;
+        const E = dims.E, L = dims.L, C = dims.C;
+        const num = (v) => parseFloat(String(v ?? '').replace(',', '.')) || 0;
         const q = num(quantidade);
         if (!(q > 0)) return null;
         const r3 = (v) => Math.round(v * 1000) / 1000;
@@ -4565,15 +4585,17 @@ function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
     } catch (_) { return null; }
 }
 
-// "Orelha-de-macaco - 7cmx14cmx850cm" a partir dos campos (não do nome,
-// que pode vir colado). Null quando sem dims.
+// "Orelha-de-macaco - 7cmx14cmx850cm" a partir dos campos (fallback: nome).
+// Null quando sem dims.
 function rotuloSerradoLinha(item) {
     try {
         const p = (window.produtos || []).find(x => x && x.id === (item && item.produtoId));
         if (!p) return null;
         const esp = String(p.especie || '').trim();
-        const E = parseFloat(p.espessura), L = parseFloat(p.largura), C = parseFloat(p.comprimento);
-        if (!esp || !(E > 0 && L > 0 && C > 0)) return null;
+        if (!esp) return null;
+        const dims = (typeof dimsSerradoProduto === 'function') ? dimsSerradoProduto(p) : null;
+        if (!dims) return null;
+        const { E, L, C } = dims;
         const f = (v) => {
             const n = Math.round(v * 1000) / 1000;
             return (Number.isInteger(n) ? String(n) : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 })).replace('.', ',');

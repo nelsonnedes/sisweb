@@ -295,6 +295,7 @@ test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Pe�
   const sbC = { temDimsSerrado: (p) => !!(p && p.tipoProduto === 'romaneio') };
   vm.createContext(sbC);
   vm.runInContext(extract('normalizarUnidadeMedida'), sbC);
+  vm.runInContext(extract('dimsSerradoProduto'), sbC);
   vm.runInContext(extract('converterItemSerradoParaM3'), sbC);
   vm.runInContext(extract('detalheSerradoItem'), sbC);
   const conv = sbC.converterItemSerradoParaM3;
@@ -329,9 +330,24 @@ test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Pe�
   const sbR = { produtos: [{ id: 'P1', especie: 'Orelha-de-macaco', espessura: 7, largura: 14, comprimento: 850 }] };
   vm.createContext(sbR);
   sbR.window = { produtos: sbR.produtos };
+  vm.runInContext(extract('dimsSerradoProduto'), sbR);
   vm.runInContext(extract('rotuloSerradoLinha'), sbR);
   assert.equal(sbR.rotuloSerradoLinha({ produtoId: 'P1' }), 'Orelha-de-macaco - 7cmx14cmx850cm');
   assert.equal(sbR.rotuloSerradoLinha({ produtoId: 'XX' }), null);
+  // fallback: produto legado sem dims, só nome com padrão ExLxC
+  const sbL = { window: { produtos: [{ id: 'L1', especie: 'Orelha-de-macaco', nome: 'Orelha-de-macaco 7x14x850' }] } };
+  vm.createContext(sbL);
+  vm.runInContext(extract('normalizarUnidadeMedida'), sbL);
+  vm.runInContext(extract('dimsSerradoProduto'), sbL);
+  vm.runInContext(extract('converterItemSerradoParaM3'), sbL);
+  sbL.temDimsSerrado = () => true;
+  const dLeg = sbL.dimsSerradoProduto(sbL.window.produtos[0]);
+  assert.deepEqual(JSON.parse(JSON.stringify(dLeg)), { E: 7, L: 14, C: 850 });
+  const cLeg = sbL.converterItemSerradoParaM3(sbL.window.produtos[0], 2, 'UN');
+  assert.equal(cLeg.volume, 0.167);
+  // decimal com vírgula
+  const dVir = sbL.dimsSerradoProduto({ nome: 'Pinus 2,5x15x300' });
+  assert.deepEqual(JSON.parse(JSON.stringify(dVir)), { E: 2.5, L: 15, C: 300 });
   // render usa detalhe quando há origem
   assert.ok(/detalheSerradoItem\(item\)/.test(src), 'tabela do carrinho usa detalhe');
   assert.ok(/converterItemSerradoParaM3\(produto, quantidade, unidadeItem\)/.test(src), 'adicionar converte');
