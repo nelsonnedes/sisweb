@@ -1395,6 +1395,17 @@ async function salvarRomaneio() {
             console.log(`✅ Novo romaneio ${romaneio.id} criado`);
         }
         
+        // ✅ NUMERAÇÃO SEQUENCIAL DE EXIBIÇÃO ("Nº 1, 2, ...") — display only,
+        // id/numero (chaves) nunca mudam. Preserva em edição; atribui se ausente
+        // (migração gradual dos legados).
+        try {
+            const RU = window.RomaneioDataUtils;
+            if (RU && typeof RU.numeroExibicaoValido === 'function' && typeof RU.proximoNumeroExibicao === 'function') {
+                const atual = RU.numeroExibicaoValido(window.romaneioEmEdicao ? window.romaneioEmEdicao.numeroExibicao : romaneio.numeroExibicao);
+                romaneio.numeroExibicao = atual > 0 ? atual : RU.proximoNumeroExibicao(romaneios);
+            }
+        } catch (_) {}
+        
         // ✅ SINCRONIZAR localStorage com dados atualizados
         const storageKey = getStorageKey('romaneiosPct');
         persistRomaneiosPctLocalCache(storageKey, romaneios);

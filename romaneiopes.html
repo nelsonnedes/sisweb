@@ -1478,7 +1478,7 @@
     <script src="schema-migration-contatos.js?v=3a574e7e3324"></script>
     <script src="romaneios-client-save-fix.js?v=9f4df8ca50a8"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
-    <script src="romaneio-table-enhancements.js?v=708a76a4d63c"></script>
+    <script src="romaneio-table-enhancements.js?v=290d67a3557c"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="romaneio-print-config.js?v=0c4709b882a7"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
@@ -2858,6 +2858,16 @@
                 timestamp: Date.now(),
                 companyId: companyId
             };
+            // Numeração sequencial de exibição ("Nº 1, 2, ...") — display only.
+            // id/numero (chaves) nunca mudam; preserva em edição.
+            try {
+                const RU = window.RomaneioDataUtils;
+                if (RU && typeof RU.numeroExibicaoValido === 'function' && typeof RU.proximoNumeroExibicao === 'function') {
+                    const atual = RU.numeroExibicaoValido(registroEmEdicao ? registroEmEdicao.numeroExibicao : 0);
+                    if (atual > 0) dataObj.numeroExibicao = atual;
+                    else dataObj.numeroExibicao = RU.proximoNumeroExibicao(romaneiosEdicaoBase);
+                }
+            } catch (_) {}
             // Salvar romaneio (PRIORIZANDO FIREBASE SERVICE MODULAR)
             console.log('💾 Salvando Romaneio PES...', dataObj);
             

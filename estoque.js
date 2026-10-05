@@ -386,7 +386,7 @@ function normalizarListaFirebaseEstoque(raw, options = {}) {
 
 function obterNumeroRomaneioDisplay(romaneio = {}) {
     const source = romaneio || {};
-    return String(
+    const legado = String(
         source.numeroRomaneio ||
         source.numero ||
         source.codigo ||
@@ -395,6 +395,14 @@ function obterNumeroRomaneioDisplay(romaneio = {}) {
         source.firebaseKey ||
         ''
     ).trim();
+    // Numeração sequencial ("Nº N") quando existir; senão legado. Display only.
+    try {
+        const RU = window.RomaneioDataUtils;
+        if (RU && typeof RU.formatarNumeroExibicao === 'function') {
+            return RU.formatarNumeroExibicao(source, legado);
+        }
+    } catch (_) {}
+    return legado;
 }
 
 function obterDataRomaneioDisplay(romaneio = {}) {

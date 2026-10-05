@@ -402,14 +402,41 @@ window.SalvarRomaneio = (function() {
     }
 
     /**
+     * Lista do cache local (mapa id→registro) para max da numeração de exibição
+     */
+    function listarRomaneiosTlCache() {
+        try {
+            const key = typeof resolveStorageKey === 'function' ? resolveStorageKey('romaneios/tl') : '';
+            if (!key) return [];
+            const raw = localStorage.getItem(key);
+            const obj = raw ? JSON.parse(raw) : null;
+            if (!obj || typeof obj !== 'object') return [];
+            return Object.values(obj).filter(r => r && typeof r === 'object');
+        } catch (_) { return []; }
+    }
+
+    /**
      * Preparar dados para salvamento
      */
     function prepararDadosSalvamento(dados, isEdicao) {
         const romaneioId = isEdicao ? currentRomaneioId : gerarIdRomaneio();
         const companyId = resolveCompanyId();
+        // Numeração sequencial de exibição ("Nº 1, 2, ...") — display only.
+        // Preserva em edição; senão max+1 do cache local (id/chave nunca mudam).
+        let numeroExibicao = 0;
+        try {
+            const RU = window.RomaneioDataUtils;
+            if (RU && typeof RU.numeroExibicaoValido === 'function') {
+                if (isEdicao) numeroExibicao = RU.numeroExibicaoValido(getCurrentRomaneioData()?.numeroExibicao);
+                if (!(numeroExibicao > 0) && typeof RU.proximoNumeroExibicao === 'function') {
+                    numeroExibicao = RU.proximoNumeroExibicao(listarRomaneiosTlCache());
+                }
+            }
+        } catch (_) { numeroExibicao = 0; }
         
         return {
             id: romaneioId,
+            ...(numeroExibicao > 0 ? { numeroExibicao } : {}),
             cliente: dados.cliente, // Objeto principal
             clienteNome: dados.clienteNome, // String (compatibilidade)
             fornecedor: dados.cliente, // ✅ ALIAS: Facilita filtros unificados (Compras/Vendas)

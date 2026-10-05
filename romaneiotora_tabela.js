@@ -926,7 +926,17 @@ async function salvarRomaneio() {
         }
         
         console.log(`📋 Lista atual: ${romaneios.length} romaneios`);
-        
+
+        // Guarda o número de exibição anterior ANTES de substituir (edição preserva).
+        let numeroExibicaoAnterior = 0;
+        try {
+            const RU0 = window.RomaneioDataUtils;
+            if (isEdicao && RU0 && typeof RU0.numeroExibicaoValido === 'function') {
+                const prev = romaneios.find(r => r.id === romaneioId || r.firebaseKey === romaneioId) || {};
+                numeroExibicaoAnterior = RU0.numeroExibicaoValido(prev.numeroExibicao);
+            }
+        } catch (_) { numeroExibicaoAnterior = 0; }
+
         // Adicionar ou atualizar romaneio
         if (isEdicao) {
             // Encontrar e substituir o romaneio existente
@@ -942,6 +952,17 @@ async function salvarRomaneio() {
             // Adicionar novo romaneio
             romaneios.push(romaneio);
         }
+
+        // Numeração sequencial de exibição ("Nº 1, 2, ...") — display only.
+        // id/numero (chaves) nunca mudam; preserva em edição.
+        try {
+            const RU = window.RomaneioDataUtils;
+            if (RU && typeof RU.numeroExibicaoValido === 'function' && typeof RU.proximoNumeroExibicao === 'function') {
+                romaneio.numeroExibicao = numeroExibicaoAnterior > 0 ? numeroExibicaoAnterior : RU.proximoNumeroExibicao(romaneios);
+                const idxSync = romaneios.findIndex(r => r.id === romaneioId || r.firebaseKey === romaneioId);
+                if (idxSync !== -1) romaneios[idxSync] = romaneio;
+            }
+        } catch (_) {}
         
         // Salvar usando o RomaneioManager (Firebase + localStorage)
         let salvoComSucesso = false;

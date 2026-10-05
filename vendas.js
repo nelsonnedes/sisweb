@@ -84,8 +84,13 @@ function obterIdEstavelRomaneioVendas(romaneio) {
 
 function obterNumeroExibicaoRomaneioVendas(romaneio, fallbackId) {
     if (!romaneio || typeof romaneio !== 'object') return String(fallbackId || '—');
-    const v = romaneio.numero || romaneio.numeroRomaneio || romaneio.id || romaneio.firebaseKey || fallbackId || '—';
-    return String(v);
+    const legado = romaneio.numero || romaneio.numeroRomaneio || romaneio.id || romaneio.firebaseKey || fallbackId || '—';
+    // Numeração sequencial ("Nº N") quando existir; senão legado. Display only.
+    try {
+        const RU = window.RomaneioDataUtils;
+        if (RU && typeof RU.formatarNumeroExibicao === 'function') return RU.formatarNumeroExibicao(romaneio, legado);
+    } catch (_) {}
+    return String(legado);
 }
 
 function chaveCategoriaPreviewVendas(especie, categoria) {
@@ -4405,7 +4410,13 @@ function rotuloRomaneioProduto(r) {
         }
     } catch (_) {}
     const numero = r.numero || r.id || 's/n';
-    let rotuloFinal = `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ (#${numero})`;
+    // Exibe "Nº N" quando houver numeroExibicao; senão legado. Display only.
+    let numeroFmt = String(numero);
+    try {
+        const RU2 = window.RomaneioDataUtils;
+        if (RU2 && typeof RU2.formatarNumeroExibicao === 'function') numeroFmt = RU2.formatarNumeroExibicao(r, numero);
+    } catch (_) {}
+    let rotuloFinal = `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ (#${numeroFmt})`;
     // Espelha o aviso de pedidos ("USADO Ped."): romaneio já em estoque.
     // Match por qualquer chave (id/key/número) dos dois lados.
     try {

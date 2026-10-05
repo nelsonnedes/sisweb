@@ -603,8 +603,13 @@ function obterIdEstavelRomaneioCompra(r) {
 
 function obterNumeroExibicaoRomaneioCompra(r, fallbackId) {
     if (!r || typeof r !== 'object') return String(fallbackId || '—');
-    const v = r.numero || r.numeroRomaneio || r.id || r.firebaseKey || fallbackId || '—';
-    return String(v);
+    const legado = r.numero || r.numeroRomaneio || r.id || r.firebaseKey || fallbackId || '—';
+    // Numeração sequencial ("Nº N") quando existir; senão legado. Display only.
+    try {
+        const RU = window.RomaneioDataUtils;
+        if (RU && typeof RU.formatarNumeroExibicao === 'function') return RU.formatarNumeroExibicao(r, legado);
+    } catch (_) {}
+    return String(legado);
 }
 
 function __rcStatusEhCancelado(status) {

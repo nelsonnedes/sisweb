@@ -368,6 +368,34 @@
         parseNumber
     };
 
+    // Numeração sequencial de exibição ("Nº 1, 2, ...") — DISPLAY ONLY.
+    // O id/chave do registro NUNCA muda; numeroExibicao é só rótulo.
+    // Prefixo "Nº " aplicado só na formatação, nunca gravado.
+    function numeroExibicaoValido(v) {
+        const n = typeof v === 'number' ? v : parseInt(String(v ?? '').trim(), 10);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+    }
+
+    function proximoNumeroExibicao(lista) {
+        try {
+            let max = 0;
+            (Array.isArray(lista) ? lista : []).forEach(r => {
+                if (!r || typeof r !== 'object') return;
+                const n = numeroExibicaoValido(r.numeroExibicao);
+                if (n > max) max = n;
+            });
+            return max + 1;
+        } catch (_) { return 1; }
+    }
+
+    function formatarNumeroExibicao(r, fallback) {
+        try {
+            const n = r && typeof r === 'object' ? numeroExibicaoValido(r.numeroExibicao) : 0;
+            if (n > 0) return 'Nº ' + n;
+        } catch (_) {}
+        return String(fallback ?? '').trim();
+    }
+
     window.RomaneioDataUtils = {
         getCanonicalRomaneioPath,
         getRomaneioItems,
@@ -377,6 +405,9 @@
         normalizePrintMode,
         normalizeRomaneioCollection,
         parseRomaneioTimestamp,
-        sortRomaneiosByRecency
+        sortRomaneiosByRecency,
+        numeroExibicaoValido,
+        proximoNumeroExibicao,
+        formatarNumeroExibicao
     };
 })();
