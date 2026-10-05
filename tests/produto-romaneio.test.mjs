@@ -164,3 +164,12 @@ test('preview: refetch do romaneio + sincronia de grupos', () => {
   assert.ok(/posPorGid/.test(src), 'substituição no lugar preserva checkbox');
   assert.ok(/gidNovos/.test(src), 'grupos removidos do romaneio saem do preview');
 });
+
+test('lista oculta serrado zerado; select-all mobile após Imprimir/Excluir', () => {
+  assert.ok(/function estoqueZeradoNaLista/.test(src), 'filtro de zerados existe');
+  assert.ok(/!estoqueZeradoNaLista\(p\)/.test(src), 'lista aplica o filtro');
+  const html = readFileSync(new URL('../vendas.html', import.meta.url), 'utf8');
+  const iBtns = html.indexOf('excluirProdutosSelecionados');
+  const iSel = html.indexOf('produtosSelectAllMobile');
+  assert.ok(iBtns > 0 && iSel > iBtns, 'select-all mobile abaixo dos botões');
+});

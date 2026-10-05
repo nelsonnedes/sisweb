@@ -4766,6 +4766,17 @@ function isProdutoReal(p) {
     } catch (_) { return false; }
 }
 
+// Lista "em Estoque" oculta serrado zerado; campos ausentes (legado) e
+// manuais continuam visíveis.
+function estoqueZeradoNaLista(p) {
+    try {
+        if (!p || typeof p !== 'object') return false;
+        if (!(temDimsSerrado(p) || p.tipoProduto === 'romaneio')) return false;
+        if (p.pecas === undefined || p.pecas === null || p.pecas === '') return false;
+        return Number(p.pecas) <= 0;
+    } catch (_) { return false; }
+}
+
 function metrosLinearesDe(p) {
     try {
         const salvo = parseFloat(p.metrosLineares);
@@ -5377,7 +5388,7 @@ function carregarTabelaProdutos(filtro = '') {
     const tbody = document.getElementById('produtosTable');
     window.produtos = normalizeProdutosList(window.produtos || []);
     // A lista exibe SÓ produtos reais (Manual/Romaneio); espécies ficam no select
-    let produtosFiltrados = [...window.produtos].filter(p => { try { return !isProdutoJunk(p) && isProdutoReal(p); } catch (_) { return true; } });
+    let produtosFiltrados = [...window.produtos].filter(p => { try { return !isProdutoJunk(p) && isProdutoReal(p) && !estoqueZeradoNaLista(p); } catch (_) { return true; } });
     
     if (filtro) {
         const filtroLower = filtro.toLowerCase();
