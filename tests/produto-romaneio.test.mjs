@@ -290,3 +290,36 @@ test('fluxos usam baixa por unidade + pedido exibe Nº', () => {
   const comprasSrc = readFileSync(new URL('../compras.js', import.meta.url), 'utf8');
   assert.ok(/sufixoNumeroC/.test(comprasSrc), 'compra exibe Nº do romaneio');
 });
+
+test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Peças"', () => {
+  const sbC = { temDimsSerrado: (p) => !!(p && p.tipoProduto === 'romaneio') };
+  vm.createContext(sbC);
+  vm.runInContext(extract('normalizarUnidadeMedida'), sbC);
+  vm.runInContext(extract('converterItemSerradoParaM3'), sbC);
+  vm.runInContext(extract('detalheSerradoItem'), sbC);
+  const conv = sbC.converterItemSerradoParaM3;
+  const prod = { tipoProduto: 'romaneio', espessura: 7, largura: 14, comprimento: 850 };
+  // 7*14*850/1e6 = 0.0833 m³/pç × 2 = 0.167 (3 casas)
+  const c1 = conv(prod, 2, 'UN');
+  assert.equal(c1.volume, 0.167);
+  assert.equal(c1.pecasOrigem, 2);
+  assert.equal(c1.unidadeOrigem, 'UN');
+  assert.equal(sbC.detalheSerradoItem({ unidadeOrigem: 'UN', pecasOrigem: 2 }), '2 Peças');
+  // DZ multiplica ×12
+  const cDz = conv(prod, 1, 'DZ');
+  assert.equal(cDz.pecasOrigem, 12);
+  assert.equal(cDz.volume, 1);
+  // ML e M² convertem
+  const cMl = conv(prod, 10, 'ml');
+  assert.ok(cMl.volume > 0 && cMl.unidadeOrigem === 'ml');
+  const cM2 = conv(prod, 5, 'm²');
+  assert.ok(cM2.volume > 0);
+  // m³ não converte; sem dims não converte; manual não converte
+  assert.equal(conv(prod, 2, 'm³'), null);
+  assert.equal(conv(prod, 2, 'M3'), null);
+  assert.equal(conv({ tipoProduto: 'romaneio' }, 2, 'UN'), null);
+  assert.equal(conv({ tipoProduto: 'manual', estoque: 5 }, 2, 'UN'), null);
+  // render usa detalhe quando há origem
+  assert.ok(/detalheSerradoItem\(item\)/.test(src), 'tabela do carrinho usa detalhe');
+  assert.ok(/converterItemSerradoParaM3\(produto, quantidade, unidadeItem\)/.test(src), 'adicionar converte');
+});

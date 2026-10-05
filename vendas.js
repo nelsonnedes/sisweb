@@ -1986,7 +1986,7 @@ function validarEstoque(produtoId, quantidadeDesejada, itemEmEdicao, unidadeItem
 
 function adicionarItem() {
     const produtoId = document.getElementById('produtoSelect').value;
-    const quantidade = parseFloat(document.getElementById('quantidade').value);
+    let quantidade = parseFloat(document.getElementById('quantidade').value);
     const precoUnitario = parseCurrencyValue(document.getElementById('precoUnitario').value);
     
     if (!produtoId) {
@@ -2010,21 +2010,35 @@ function adicionarItem() {
         return;
     }
 
+    // Quantidade e unidade (podem ser convertidas p/ m³ abaixo)
+    const unidadeItemEl = document.getElementById('unidadeItem');
+    let unidadeItem = (unidadeItemEl && unidadeItemEl.value) ? unidadeItemEl.value : (produto.unidade || 'UN');
+    let qtdOrigem = null, pecasOrigem = null, unidadeOrigem = null;
+    // Serrado com unidade ≠ m³: quantidade sempre em m³ (totais corretos);
+    // origem guardada p/ exibir "2 Peças" na linha. Só com dims válidas.
+    try {
+        if (typeof converterItemSerradoParaM3 === 'function') {
+            const conv = converterItemSerradoParaM3(produto, quantidade, unidadeItem);
+            if (conv) {
+                quantidade = conv.volume;
+                unidadeItem = 'm³';
+                qtdOrigem = conv.qtdOrigem;
+                pecasOrigem = conv.pecasOrigem;
+                unidadeOrigem = conv.unidadeOrigem;
+            }
+        }
+    } catch (_) {}
+
     // ✅ VALIDAÇÃO DE ESTOQUE (na edição, descontar a quantidade antiga do item)
     const itemEdicao = itemEmEdicaoId
         ? itensCarrinho.find(i => String(i.id) === String(itemEmEdicaoId))
         : null;
-    const validacao = validarEstoque(produtoId, quantidade, itemEdicao,
-        (document.getElementById('unidadeItem') || {}).value || produto.unidade || 'UN');
+    const validacao = validarEstoque(produtoId, quantidade, itemEdicao, unidadeItem);
 
     if (!validacao.valido) {
         ToastManager.error(validacao.mensagem, 'Estoque Insuficiente', 6000);
         return;
     }
-
-    // Unidade escolhida (padrão = a do produto)
-    const unidadeItemEl = document.getElementById('unidadeItem');
-    const unidadeItem = (unidadeItemEl && unidadeItemEl.value) ? unidadeItemEl.value : (produto.unidade || 'UN');
 
     // ✅ EDIÇÃO DE ITEM: atualizar o item marcado em vez de criar um novo
     if (itemEmEdicaoId) {
@@ -2037,6 +2051,26 @@ function adicionarItem() {
             alvo.quantidade = quantidade;
             alvo.precoUnitario = precoUnitario;
             alvo.unidade = unidadeItem;
+            // Sem conversão nova (ex.: já em m³): mantém a origem anterior,
+            // recalculando peças pelo novo volume quando der.
+            if (qtdOrigem != null || unidadeOrigem != null || pecasOrigem != null) {
+                alvo.qtdOrigem = qtdOrigem;
+                alvo.pecasOrigem = pecasOrigem;
+                alvo.unidadeOrigem = unidadeOrigem;
+            } else if (alvo.unidadeOrigem) {
+                try {
+                    const E = parseFloat(produto.espessura) || 0, L = parseFloat(produto.largura) || 0, C = parseFloat(produto.comprimento) || 0;
+                    const fam = typeof normalizarUnidadeMedida === 'function' ? normalizarUnidadeMedida(alvo.unidadeOrigem) : '';
+                    if (E > 0 && L > 0 && C > 0 && (fam === 'UN' || fam === 'DZ')) {
+                        const volPeca = (E * L * C) / 1e6;
+                        if (volPeca > 0) {
+                            const pecas = quantidade / volPeca;
+                            alvo.pecasOrigem = Math.round(pecas * 1000) / 1000;
+                            alvo.qtdOrigem = fam === 'DZ' ? (Math.round(pecas * 1000) / 1000) / 12 : alvo.pecasOrigem;
+                        }
+                    }
+                } catch (_) {}
+            }
             alvo.total = quantidade * precoUnitario;
             alvo.isCarrego = isCarregoProduto(produto);
             alvo.tipo = 'cadastrado';
@@ -2050,14 +2084,20 @@ function adicionarItem() {
         }
     }
     
-    // Verificar se o item já existe no carrinho
-    const itemExistente = itensCarrinho.find(item => item.produtoId === produtoId);
-    
+    // Mesma origem (unidade) acumula na linha; origem diferente cria linha nova
+    // para o detalhe ("2 Peças" vs "10 ml") não misturar.
+    const mesmaOrigem = (it) => String(it.unidadeOrigem || it.unidade || '') === String(unidadeOrigem || unidadeItem);
+    const itemExistente = itensCarrinho.find(item => item.produtoId === produtoId && mesmaOrigem(item));
+
     if (itemExistente) {
         itemExistente.quantidade += quantidade;
+        if (qtdOrigem != null && itemExistente.qtdOrigem != null) itemExistente.qtdOrigem += qtdOrigem;
+        else if (qtdOrigem != null) { itemExistente.qtdOrigem = qtdOrigem; itemExistente.unidadeOrigem = unidadeOrigem; }
+        if (pecasOrigem != null && itemExistente.pecasOrigem != null) itemExistente.pecasOrigem += pecasOrigem;
+        else if (pecasOrigem != null) itemExistente.pecasOrigem = pecasOrigem;
         itemExistente.total = itemExistente.quantidade * itemExistente.precoUnitario;
         if (isCarregoProduto(produto)) itemExistente.isCarrego = true;
-        ToastManager.success(`Quantidade atualizada: ${formatNumber(itemExistente.quantidade)} ${produto.unidade}`, 'Item atualizado', 2000);
+        ToastManager.success(`Quantidade atualizada: ${formatNumber(itemExistente.quantidade)} ${itemExistente.unidade}`, 'Item atualizado', 2000);
     } else {
         const novoItem = {
             id: Date.now(),
@@ -2066,6 +2106,9 @@ function adicionarItem() {
             produtoCodigo: produto.codigo,
             quantidade: quantidade,
             unidade: unidadeItem,
+            qtdOrigem: qtdOrigem,
+            pecasOrigem: pecasOrigem,
+            unidadeOrigem: unidadeOrigem,
             precoUnitario: precoUnitario,
             total: quantidade * precoUnitario,
             isCarrego: isCarregoProduto(produto)
@@ -4483,6 +4526,50 @@ function aplicarBaixaManual(p, quantidade, unidadeItem, dir) {
     p.estoque = dir > 0 ? (est + qtd) : Math.max(0, est - qtd);
     try { p.updated = new Date().toISOString(); } catch (_) {}
     return qtd;
+}
+
+// Converte item serrado com unidade ≠ m³ para m³ (totais corretos).
+// Retorna {volume, qtdOrigem, pecasOrigem, unidadeOrigem} ou null (sem conversão).
+// Só serrado COM dimensões; resto segue legado.
+function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
+    try {
+        const u = normalizarUnidadeMedida(unidadeItem);
+        if (u === 'M3' || !u) return null;
+        if (typeof temDimsSerrado !== 'function' || !temDimsSerrado(produto)) return null;
+        const num = (v) => parseFloat(v) || 0;
+        const E = num(produto.espessura), L = num(produto.largura), C = num(produto.comprimento);
+        if (!(E > 0 && L > 0 && C > 0)) return null;
+        const q = num(quantidade);
+        if (!(q > 0)) return null;
+        const r3 = (v) => Math.round(v * 1000) / 1000;
+        if (u === 'UN' || u === 'DZ') {
+            const pecas = u === 'DZ' ? q * 12 : q;
+            return { volume: r3((E * L * C / 1e6) * pecas), qtdOrigem: q, pecasOrigem: pecas, unidadeOrigem: unidadeItem };
+        }
+        if (u === 'ML') {
+            return { volume: r3((E * L / 1e6) * q), qtdOrigem: q, pecasOrigem: null, unidadeOrigem: unidadeItem };
+        }
+        if (u === 'M2') {
+            return { volume: r3(q * (E / 1000)), qtdOrigem: q, pecasOrigem: null, unidadeOrigem: unidadeItem };
+        }
+        return null;
+    } catch (_) { return null; }
+}
+
+// "2 Peças" / "10 ml" para a linha do carrinho. Preço continua por m³.
+function detalheSerradoItem(item) {
+    try {
+        if (!item || !item.unidadeOrigem) return '';
+        if (normalizarUnidadeMedida(item.unidadeOrigem) === 'M3') return '';
+        const fmtN = (v) => {
+            const n = Math.round((parseFloat(v) || 0) * 1000) / 1000;
+            return Number.isInteger(n) ? String(n) : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+        };
+        const fam = normalizarUnidadeMedida(item.unidadeOrigem);
+        if ((fam === 'UN' || fam === 'DZ') && item.pecasOrigem != null) return `${fmtN(item.pecasOrigem)} Peças`;
+        if (item.qtdOrigem != null) return `${fmtN(item.qtdOrigem)} ${item.unidadeOrigem}`;
+        return '';
+    } catch (_) { return ''; }
 }
 
 function resetProdutoRomaneioFields() {
@@ -9833,11 +9920,18 @@ async function visualizarPedido(pedidoId) {
         tbodyItens.innerHTML = itensPedido.map((item, index) => {
             const nomeLimpo = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
             let produtoDescricao;
-            if (item.tipo === 'manual' || item.tipo === 'romaneio' || item.tipo === 'romaneio_agrupado' || item.tipo === 'romaneio_dimensoes') {
-                produtoDescricao = nomeLimpo;
-            } else {
-                produtoDescricao = item.produtoCodigo ? `${item.produtoCodigo} - ${nomeLimpo}` : nomeLimpo;
-            }
+        if (item.tipo === 'manual' || item.tipo === 'romaneio' || item.tipo === 'romaneio_agrupado' || item.tipo === 'romaneio_dimensoes') {
+            produtoDescricao = nomeLimpo;
+        } else {
+            produtoDescricao = item.produtoCodigo ? `${item.produtoCodigo} - ${nomeLimpo}` : nomeLimpo;
+            // Serrado convertido: "000099 - Nome ExLxC - 2 Peças"
+            try {
+                if (typeof detalheSerradoItem === 'function') {
+                    const det = detalheSerradoItem(item);
+                    if (det) produtoDescricao += ` - ${det}`;
+                }
+            } catch (_) {}
+        }
             produtoDescricao += getCarregoBadgeHtml(item);
 
             // Formatar quantidade com unidade
