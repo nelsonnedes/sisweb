@@ -4690,11 +4690,23 @@ function renderPreviewProdutoRomaneio() {
     let corpo = '';
     let algumTravado = false;
     arr.forEach((g, idx) => {
-        // Trava de reuso (espelha pedidos): grupo já em estoque = inativo
-        // (checkbox desabilitado + desmarcado, card esmaecido, cadeado).
-        let travado = false;
-        try { travado = !!(typeof acharProdutoSerradoExistente === 'function' && acharProdutoSerradoExistente(g.romaneioId, g)); } catch (_) { travado = false; }
+        // Trava de reuso (espelha pedidos): grupo já em estoque = inativo.
+        // Parcial (romaneio com mais que o estoque, ex.: 8→9 pçs) fica
+        // habilitado exibindo só o delta disponível.
+        let travado = false, parcial = null;
+        try {
+            if (typeof disponibilidadeGrupoRomaneio === 'function') {
+                const d = disponibilidadeGrupoRomaneio(g);
+                if (d && d.travado) travado = true;
+                else if (d && d.parcial) parcial = d;
+            } else if (typeof acharProdutoSerradoExistente === 'function' && acharProdutoSerradoExistente(g.romaneioId, g)) {
+                travado = true;
+            }
+        } catch (_) { travado = false; parcial = null; }
         if (travado) algumTravado = true;
+        const exPecas = parcial ? parcial.dispPecas : (parseFloat(g.pecas) || 0);
+        const exVol = parcial ? parcial.dispVol : (parseFloat(g.volume) || 0);
+        const exMl = parcial ? parcial.dispMl : (parseFloat(g.ml) || 0);
         let rotulo = g.especie || 'Sem espécie';
         try {
             const nomePeca = (typeof classificarProdutoConama === 'function')
@@ -4704,10 +4716,12 @@ function renderPreviewProdutoRomaneio() {
         } catch (_) {}
         const badgeTravado = travado
             ? `<div class="uso-romaneio-badge" style="margin-top:4px;"><span style="display:inline-block;background:var(--sw-alert-warning-bg);border:1px solid var(--sw-warning);color:var(--sw-alert-title);border-radius:999px;padding:2px 8px;font-size:0.72rem;font-weight:700;"><i class="fas fa-lock"></i> Já em estoque — desativado</span></div>`
-            : `<div class="uso-romaneio-badge" style="margin-top:4px;"></div>`;
+            : (parcial
+                ? `<div class="uso-romaneio-badge" style="margin-top:4px;"><span style="display:inline-block;background:color-mix(in srgb, var(--sw-info) 12%, transparent);color:var(--sw-info);border-radius:999px;padding:2px 8px;font-size:0.72rem;font-weight:700;">${parcial.estPecas} pçs já em estoque — disponível: ${exPecas}</span></div>`
+                : `<div class="uso-romaneio-badge" style="margin-top:4px;"></div>`);
         corpo += `<div class="grupo-rom-card" data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}" style="background:var(--sw-surface);${travado ? 'opacity:0.65;' : ''}">`
             + `<input type="checkbox" class="grm-check" name="grupoRomSel" value="${idx}"${travado ? '' : ' checked'}${travado ? ' disabled' : ''} aria-label="Selecionar grupo">`
-            + `<div class="grm-body"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças · ${(g.ml || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span>${badgeTravado}</div>`
+            + `<div class="grm-body"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${exVol.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${exPecas} Peças · ${exMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span>${badgeTravado}</div>`
             + `<button type="button" class="btn btn-danger btn-small grm-del" data-excluir-gid="${String(g.gid || '').replace(/"/g, '&quot;')}" aria-label="Excluir grupo">Excluir</button></div>`;
     });
     if (algumTravado) {
@@ -4725,6 +4739,49 @@ function renderPreviewProdutoRomaneio() {
     // Alerta de uso em pedidos (async, não bloqueia; sobrescreve o slot,
     // inclusive o cadeado de estoque, quando há pedido conferido)
     try { anotarUsosPreviewProduto(); } catch (_) {}
+}
+
+// Disponibilidade de um grupo do preview frente ao estoque.
+// Soma TODOS os produtos em estoque com mesmo romaneio+dims e devolve o
+// delta (romaneio − estoque). travado=true só quando nada resta.
+// Mesma base do save: aviso e ação nunca discordam.
+function disponibilidadeGrupoRomaneio(g) {
+    const vazio = { travado: false, parcial: false, dispPecas: 0, dispVol: 0, dispMl: 0, estPecas: 0 };
+    try {
+        if (!g || typeof g !== 'object') return vazio;
+        const lista = Array.isArray(window.produtos) ? window.produtos : [];
+        const gid = String(g.gid || '');
+        const rid = String(g.romaneioId || '');
+        const esp = String(g.especie || '').trim().toUpperCase();
+        let estPecas = 0, estVol = 0, estMl = 0, achou = false;
+        lista.forEach(p => {
+            if (!p || p.tipoProduto !== 'romaneio') return;
+            if (rid && String(p.romaneioId || '') !== rid) return;
+            if (String(p.especie || '').trim().toUpperCase() !== esp) return;
+            if (Number(p.espessura) !== Number(g.espessura)) return;
+            if (Number(p.largura) !== Number(g.largura)) return;
+            if (Number(p.comprimento) !== Number(g.comprimento)) return;
+            achou = true;
+            estPecas += parseFloat(p.pecas) || 0;
+            estVol += parseFloat(p.volumeM3 ?? p.estoque) || 0;
+            estMl += parseFloat(p.metrosLineares) || 0;
+        });
+        if (!achou) return vazio;
+        const EPS = 0.000001;
+        const dispPecas = (parseFloat(g.pecas) || 0) - estPecas;
+        const dispVol = (parseFloat(g.volume) || 0) - estVol;
+        const dispMl = (parseFloat(g.ml) || 0) - estMl;
+        if (dispPecas > EPS || dispVol > EPS) {
+            return {
+                travado: false, parcial: true,
+                dispPecas: Math.max(0, Math.round(dispPecas * 1000) / 1000),
+                dispVol: Math.max(0, Math.round(dispVol * 1000000) / 1000000),
+                dispMl: Math.max(0, Math.round(dispMl * 100) / 100),
+                estPecas: Math.round(estPecas * 1000) / 1000
+            };
+        }
+        return { travado: true, parcial: false, dispPecas: 0, dispVol: 0, dispMl: 0, estPecas: Math.round(estPecas * 1000) / 1000 };
+    } catch (_) { return vazio; }
 }
 
 // IDs de romaneio com ao menos um produto em estoque (tipoProduto romaneio).
@@ -4869,14 +4926,21 @@ async function adicionarEstoqueGruposRomaneio() {
         if (!(g.volume > 0)) continue;
         const grid = g.romaneioId || meta.rid;
         const gnum = g.romaneioNumero || meta.numero;
-        // Trava de reuso (espelha preview): pula grupos já em estoque —
-        // cobre corrida (adicionado entre o preview e o clique).
+        // Mesma disponibilidade do preview: travado pula; parcial salva o delta.
+        let qPecas = parseFloat(g.pecas) || 0;
+        let qVol = parseFloat(g.volume) || 0;
+        let qMl = parseFloat(g.ml) || 0;
         try {
-            if (typeof acharProdutoSerradoExistente === 'function' && acharProdutoSerradoExistente(grid, g)) {
+            if (typeof disponibilidadeGrupoRomaneio === 'function') {
+                const d = disponibilidadeGrupoRomaneio(g);
+                if (d && d.travado) { puladosTravados++; continue; }
+                if (d && d.parcial) { qPecas = d.dispPecas; qVol = d.dispVol; qMl = d.dispMl; }
+            } else if (typeof acharProdutoSerradoExistente === 'function' && acharProdutoSerradoExistente(grid, g)) {
                 puladosTravados++;
                 continue;
             }
         } catch (_) {}
+        if (!(qVol > 0) && !(qPecas > 0)) { puladosTravados++; continue; }
         const nome = `${g.especie} ${g.espessura}x${g.largura}x${g.comprimento}`.trim();
         const codigo = ensureUniqueCode('', usedCodes);
         usedCodes.add(codigo);
@@ -4885,7 +4949,7 @@ async function adicionarEstoqueGruposRomaneio() {
             codigo,
             nome: nome || 'Produto serrado',
             preco: g.precoMedio || 0,
-            estoque: g.volume,
+            estoque: qVol,
             unidade: 'm³',
             descricao: `Madeira serrada ${gnum ? '(' + gnum + ')' : ''}`.trim(),
             tipoProduto: 'romaneio',
@@ -4896,10 +4960,10 @@ async function adicionarEstoqueGruposRomaneio() {
             espessura: g.espessura,
             largura: g.largura,
             comprimento: g.comprimento,
-            pecas: g.pecas,
+            pecas: qPecas,
             pecasPorPacote: 1,
-            volumeM3: g.volume,
-            metrosLineares: Math.round((parseFloat(g.ml) || 0) * 100) / 100,
+            volumeM3: qVol,
+            metrosLineares: Math.round(qMl * 100) / 100,
             created: new Date().toISOString(),
             updated: new Date().toISOString()
         };
@@ -4908,7 +4972,7 @@ async function adicionarEstoqueGruposRomaneio() {
         try { window.__produtosNovosIds.add(String(prod.id)); } catch (_) {}
         try { registrarIdsProdutosRaw([prod]); } catch (_) {}
         criados++;
-        volumeTotal = Math.round((volumeTotal + g.volume) * 1000) / 1000;
+        volumeTotal = Math.round((volumeTotal + qVol) * 1000) / 1000;
     }
     // Save ÚNICO em lote (antes: 1 round-trip por grupo = lento no mobile).
     let saveOk = false;

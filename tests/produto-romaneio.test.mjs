@@ -193,3 +193,36 @@ test('preview: trava JÁ EM ESTOQUE igual pedidos (inativo + cadeado)', () => {
   // Sufixo na option espelha o "USADO Ped." dos pedidos
   assert.ok(/EM ESTOQUE/.test(src), 'sufixo na option existe');
 });
+
+test('disponibilidade: delta romaneio−estoque (8→9 pçs libera 1)', () => {
+  const sandbox2 = { window: { produtos: [] } };
+  vm.createContext(sandbox2);
+  vm.runInContext(extract('disponibilidadeGrupoRomaneio'), sandbox2);
+  const disp = sandbox2.disponibilidadeGrupoRomaneio;
+  const grupo = { gid: 'R1||X', romaneioId: 'R1', especie: 'Orelha-de-macaco', espessura: 4, largura: 7, comprimento: 700, pecas: 9, volume: 0.196, ml: 63 };
+  // sem estoque: livre (vm tem protótipo próprio: compara campo a campo)
+  const d0 = disp(grupo);
+  assert.equal(d0.travado, false);
+  assert.equal(d0.parcial, false);
+  // estoque com 8: parcial de 1
+  sandbox2.window.produtos = [{ tipoProduto: 'romaneio', romaneioId: 'R1', especie: 'orelha-de-macaco', espessura: 4, largura: 7, comprimento: 700, pecas: 8, volumeM3: 0.174, metrosLineares: 56 }];
+  const d1 = disp(grupo);
+  assert.equal(d1.travado, false);
+  assert.equal(d1.parcial, true);
+  assert.equal(d1.dispPecas, 1);
+  assert.equal(d1.estPecas, 8);
+  // estoque com 9: travado
+  sandbox2.window.produtos = [{ tipoProduto: 'romaneio', romaneioId: 'R1', especie: 'Orelha-de-macaco', espessura: 4, largura: 7, comprimento: 700, pecas: 9, volumeM3: 0.196, metrosLineares: 63 }];
+  const d2 = disp(grupo);
+  assert.equal(d2.travado, true);
+  assert.equal(d2.parcial, false);
+  // soma múltiplos produtos em estoque
+  sandbox2.window.produtos = [
+    { tipoProduto: 'romaneio', romaneioId: 'R1', especie: 'Orelha-de-macaco', espessura: 4, largura: 7, comprimento: 700, pecas: 5, volumeM3: 0.1, metrosLineares: 35 },
+    { tipoProduto: 'romaneio', romaneioId: 'R1', especie: 'Orelha-de-macaco', espessura: 4, largura: 7, comprimento: 700, pecas: 3, volumeM3: 0.074, metrosLineares: 21 }
+  ];
+  const d3 = disp(grupo);
+  assert.equal(d3.parcial, true);
+  assert.equal(d3.dispPecas, 1);
+  assert.equal(d3.estPecas, 8);
+});
