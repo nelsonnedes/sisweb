@@ -4614,6 +4614,14 @@ async function carregarItensProdutoRomaneio() {
             });
         } catch (_) {}
         renderPreviewProdutoRomaneio();
+        // Espelha o aviso dos pedidos: romaneio totalmente em estoque.
+        try {
+            const checks = Array.from(document.querySelectorAll('#previewProdutoRomaneio input[name="grupoRomSel"]'));
+            const travados = document.querySelectorAll('#previewProdutoRomaneio input[name="grupoRomSel"]:disabled').length;
+            if (checks.length > 0 && travados === checks.length) {
+                ToastManager.warning('Este romaneio já foi adicionado ao estoque — grupos desativados', 'Romaneio já em estoque', 6000);
+            }
+        } catch (_) {}
     } catch (e) {
         if (box) box.innerHTML = '<span style="color:var(--sw-danger);">Falha ao carregar itens.</span>';
     }
@@ -4679,7 +4687,14 @@ function renderPreviewProdutoRomaneio() {
     }
     const total = Math.round(arr.reduce((s, g) => s + g.volume, 0) * 1000) / 1000;
     let html = `<div style="font-size:0.8rem;color:var(--sw-text-2);margin-bottom:8px;">Espécie x Espessura x Largura x Comprimento: ${arr.length} grupo(s) — marque e clique em Adicionar Estoque.</div>`;
+    let corpo = '';
+    let algumTravado = false;
     arr.forEach((g, idx) => {
+        // Trava de reuso (espelha pedidos): grupo já em estoque = inativo
+        // (checkbox desabilitado + desmarcado, card esmaecido, cadeado).
+        let travado = false;
+        try { travado = !!(typeof acharProdutoSerradoExistente === 'function' && acharProdutoSerradoExistente(g.romaneioId, g)); } catch (_) { travado = false; }
+        if (travado) algumTravado = true;
         let rotulo = g.especie || 'Sem espécie';
         try {
             const nomePeca = (typeof classificarProdutoConama === 'function')
@@ -4687,19 +4702,28 @@ function renderPreviewProdutoRomaneio() {
             const dims = `${String(g.espessura).replace('.', ',')}cmx${String(g.largura).replace('.', ',')}cmx${String(g.comprimento).replace('.', ',')}cm`;
             if (nomePeca) rotulo += ` — ${nomePeca} ${dims}`;
         } catch (_) {}
-        html += `<div class="grupo-rom-card" data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}" style="background:var(--sw-surface);">`
-            + `<input type="checkbox" class="grm-check" name="grupoRomSel" value="${idx}" checked aria-label="Selecionar grupo">`
-            + `<div class="grm-body"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças · ${(g.ml || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span><div class="uso-romaneio-badge" style="margin-top:4px;"></div></div>`
+        const badgeTravado = travado
+            ? `<div class="uso-romaneio-badge" style="margin-top:4px;"><span style="display:inline-block;background:var(--sw-alert-warning-bg);border:1px solid var(--sw-warning);color:var(--sw-alert-title);border-radius:999px;padding:2px 8px;font-size:0.72rem;font-weight:700;"><i class="fas fa-lock"></i> Já em estoque — desativado</span></div>`
+            : `<div class="uso-romaneio-badge" style="margin-top:4px;"></div>`;
+        corpo += `<div class="grupo-rom-card" data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}" style="background:var(--sw-surface);${travado ? 'opacity:0.65;' : ''}">`
+            + `<input type="checkbox" class="grm-check" name="grupoRomSel" value="${idx}"${travado ? '' : ' checked'}${travado ? ' disabled' : ''} aria-label="Selecionar grupo">`
+            + `<div class="grm-body"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças · ${(g.ml || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span>${badgeTravado}</div>`
             + `<button type="button" class="btn btn-danger btn-small grm-del" data-excluir-gid="${String(g.gid || '').replace(/"/g, '&quot;')}" aria-label="Excluir grupo">Excluir</button></div>`;
     });
+    if (algumTravado) {
+        html += `<div style="background:var(--sw-alert-warning-bg);border:1px solid var(--sw-warning);color:var(--sw-alert-title);padding:10px 12px;border-radius:4px;margin-bottom:10px;font-size:13px;">`
+            + `<strong><i class="fas fa-lock"></i> Romaneio já adicionado ao estoque.</strong><br>`
+            + `<span>Os grupos abaixo estão desativados. Novos itens do romaneio continuam disponíveis.</span></div>`;
+    }
+    html += corpo;
     html += `<div style="text-align:right;font-weight:700;">Total: ${total.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</div>`;
     box.innerHTML = html;
     try { box.dataset.grupos = JSON.stringify(arr); } catch (_) {}
     box.querySelectorAll('button[data-excluir-gid]').forEach(btn => {
         btn.addEventListener('click', () => excluirGrupoPreviewRomaneio(btn.dataset.excluirGid));
     });
-    // Alerta de estoque (síncrono, badge) + uso em pedidos (async, não bloqueia)
-    try { anotarEstoquePreviewProduto(); } catch (_) {}
+    // Alerta de uso em pedidos (async, não bloqueia; sobrescreve o slot,
+    // inclusive o cadeado de estoque, quando há pedido conferido)
     try { anotarUsosPreviewProduto(); } catch (_) {}
 }
 
@@ -4712,33 +4736,6 @@ function romaneioIdsEmEstoque() {
         });
         return s;
     } catch (_) { return new Set(); }
-}
-
-// Marca grupos cujo romaneio/itens JÁ estão em estoque: aviso informativo
-// (NÃO desmarca — adicionar é aditivo por desenho, cai no caminho "somados").
-// Roda antes de anotarUsosPreviewProduto e só escreve em slot vazio: o alerta
-// de pedido conferido continua vencendo.
-function anotarEstoquePreviewProduto() {
-    try {
-        const grupos = Array.isArray(__previewRomGrupos) ? __previewRomGrupos : [];
-        if (grupos.length === 0) return;
-        if (typeof acharProdutoSerradoExistente !== 'function') return;
-        const box = document.getElementById('previewProdutoRomaneio');
-        if (!box) return;
-        grupos.forEach(g => {
-            let existente = null;
-            try { existente = acharProdutoSerradoExistente(g.romaneioId, g); } catch (_) { existente = null; }
-            if (!existente) return;
-            const card = box.querySelector(`[data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}"]`);
-            if (!card) return;
-            const slot = card.querySelector('.uso-romaneio-badge');
-            if (!slot || (slot.innerHTML || '').trim()) return;
-            const cod = String(existente.codigo || '').trim();
-            let estTxt = '';
-            try { estTxt = Number(existente.pecas || 0).toLocaleString('pt-BR'); } catch (_) { estTxt = ''; }
-            slot.innerHTML = `<span style="display:inline-block;background:color-mix(in srgb, var(--sw-info) 12%, transparent);color:var(--sw-info);border-radius:999px;padding:2px 8px;font-size:0.72rem;font-weight:700;">JÁ EM ESTOQUE${cod ? ' · ' + cod : ''}${estTxt ? ' (' + estTxt + ' pçs)' : ''} — será somado</span>`;
-        });
-    } catch (_) {}
 }
 
 // Marca grupos cujo romaneio já foi usado em pedidos: vermelho+desmarca se
@@ -4867,22 +4864,19 @@ async function adicionarEstoqueGruposRomaneio() {
     try {
     const meta = __previewProdutoRomaneioMeta || {};
     const usedCodes = new Set((window.produtos || []).map(p => String(p.codigo || '').trim()).filter(Boolean));
-    let criados = 0, somados = 0, volumeTotal = 0;
+    let criados = 0, volumeTotal = 0, puladosTravados = 0;
     for (const g of grupos) {
         if (!(g.volume > 0)) continue;
         const grid = g.romaneioId || meta.rid;
         const gnum = g.romaneioNumero || meta.numero;
-        const existente = acharProdutoSerradoExistente(grid, g);
-        if (existente) {
-            existente.estoque = Math.round(((parseFloat(existente.estoque) || 0) + g.volume) * 1000) / 1000;
-            existente.pecas = Math.round(((parseFloat(existente.pecas) || 0) + (parseFloat(g.pecas) || 0)) * 1000) / 1000;
-            existente.volumeM3 = Math.round(((parseFloat(existente.volumeM3) || 0) + g.volume) * 1000) / 1000;
-            existente.metrosLineares = Math.round(((parseFloat(existente.metrosLineares) || 0) + (parseFloat(g.ml) || 0)) * 100) / 100;
-            existente.updated = new Date().toISOString();
-            somados++;
-            volumeTotal = Math.round((volumeTotal + g.volume) * 1000) / 1000;
-            continue;
-        }
+        // Trava de reuso (espelha preview): pula grupos já em estoque —
+        // cobre corrida (adicionado entre o preview e o clique).
+        try {
+            if (typeof acharProdutoSerradoExistente === 'function' && acharProdutoSerradoExistente(grid, g)) {
+                puladosTravados++;
+                continue;
+            }
+        } catch (_) {}
         const nome = `${g.especie} ${g.espessura}x${g.largura}x${g.comprimento}`.trim();
         const codigo = ensureUniqueCode('', usedCodes);
         usedCodes.add(codigo);
@@ -4934,11 +4928,17 @@ async function adicionarEstoqueGruposRomaneio() {
     } catch (_) {}
     try { atualizarSelectProdutos(); } catch (_) {}
     try { if (isModalOpen('listaProdutosModal')) carregarTabelaProdutos(); } catch (_) {}
-    if (criados === 0 && somados === 0) {
-        ToastManager.warning('Nenhum grupo com volume para adicionar', 'Atenção');
+    if (criados === 0) {
+        if (puladosTravados > 0) {
+            try { ToastManager.warning(`${puladosTravados} grupo(s) já estavam em estoque e foram ignorados`, 'Nada a adicionar'); } catch (_) {}
+        } else {
+            ToastManager.warning('Nenhum grupo com volume para adicionar', 'Atenção');
+        }
         return;
     }
-    ToastManager.success(`${criados} criado(s), ${somados} somado(s) — ${volumeTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ no estoque`, 'Estoque');
+    let msgOk = `${criados} criado(s) — ${volumeTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ no estoque`;
+    if (puladosTravados > 0) msgOk += ` (${puladosTravados} já em estoque ignorado(s))`;
+    ToastManager.success(msgOk, 'Estoque');
     // Limpa o formulário após gravar (pronto p/ próximo lançamento)
     try {
         const t2 = document.getElementById('produtoRomaneioTipo2');

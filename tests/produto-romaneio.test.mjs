@@ -97,8 +97,8 @@ test('romaneio em pedidos: usos com status + baixa na aprovação', () => {
   assert.ok(/\[prod-form\] modo=/.test(src), 'log diagnóstico de footers presente');
   assert.ok(/<th>M\. Linear<\/th>/.test(html), 'coluna M. Linear existe');
   assert.ok(/Volume \(m³\)/.test(html), 'coluna Volume existe');
-  assert.ok(/existente\.pecas =/.test(src), 'acúmulo soma peças');
-  assert.ok(/existente\.volumeM3 =/.test(src), 'acúmulo soma volumeM3');
+  assert.ok(!/existente\.pecas =/.test(src), 'ramo somados removido (trava substitui)');
+  assert.ok(/puladosTravados/.test(src), 'save pula travados e informa');
   assert.ok(/metrosLinearesDe/.test(src), 'helper metros lineares existe');
   assert.ok(/g\.ml =/.test(src), 'grupo acumula ml');
   assert.ok(!/agrProdEsp/.test(html + src), 'checkboxes Agrupar removidos (auto ExLxC)');
@@ -181,19 +181,15 @@ test('mobile: pares Adicionar/Cancelar empilhados (sem sobreposição)', () => {
   assert.ok(/margin-left: 0 !important/.test(html), 'mata o margin inline no mobile');
 });
 
-test('preview: aviso JÁ EM ESTOQUE sem desmarcar (aditivo por desenho)', () => {
-  assert.ok(/function romaneioIdsEmEstoque/.test(src), 'helper de ids em estoque existe');
-  assert.ok(/function anotarEstoquePreviewProduto/.test(src), 'anotação de estoque existe');
-  // Usa o mesmo matcher do save (acharProdutoSerradoExistente) — aviso e ação concordam
-  assert.ok(/acharProdutoSerradoExistente\(g\.romaneioId, g\)/.test(src), 'badge usa o matcher do somados');
-  // Não desmarca nem altera opacidade (só o alerta de pedido conferido faz isso)
-  const ini = src.indexOf('function anotarEstoquePreviewProduto()');
-  const fim = src.indexOf('async function anotarUsosPreviewProduto', ini);
-  const fn = ini >= 0 && fim > ini ? src.slice(ini, fim) : '';
-  assert.ok(fn.length > 0, 'função localizada');
-  assert.ok(!/\.checked\s*=\s*false/.test(fn), 'não desmarca grupos');
-  assert.ok(!/opacity/.test(fn), 'não esmaece card');
-  assert.ok(/slot vazio|slot\.innerHTML \(\|\| ''\)/.test(fn) || /\(slot\.innerHTML/.test(fn), 'só escreve em slot vazio');
+test('preview: trava JÁ EM ESTOQUE igual pedidos (inativo + cadeado)', () => {
+  assert.ok(/algumTravado/.test(src), 'flag de trava no render existe');
+  assert.ok(/Romaneio já adicionado ao estoque/.test(src), 'banner com cadeado existe');
+  assert.ok(/Já em estoque — desativado/.test(src), 'badge com cadeado no grupo existe');
+  assert.ok(!/function anotarEstoquePreviewProduto/.test(src), 'anotação antiga removida (lock é no render)');
+  // Grupos travados: checkbox desabilitado + desmarcado + card esmaecido
+  assert.ok(/disabled/.test(src), 'checkbox desativado existe');
+  // Corrida coberta no save: pula travados e informa
+  assert.ok(/puladosTravados/.test(src), 'contador de pulados existe');
   // Sufixo na option espelha o "USADO Ped." dos pedidos
   assert.ok(/EM ESTOQUE/.test(src), 'sufixo na option existe');
 });
