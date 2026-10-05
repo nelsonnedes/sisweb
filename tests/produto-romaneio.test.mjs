@@ -174,6 +174,13 @@ test('lista oculta serrado zerado; select-all mobile após Imprimir/Excluir', ()
   assert.ok(iBtns > 0 && iSel > iBtns, 'select-all mobile abaixo dos botões');
 });
 
+test('mobile: pares Adicionar/Cancelar empilhados (sem sobreposição)', () => {
+  const html = readFileSync(new URL('../vendas.html', import.meta.url), 'utf8');
+  assert.ok(/#grupoBtnDimsAdicionar/.test(html), 'bloco de botões do editar existe');
+  assert.ok(/#botoesItensManuel/.test(html), 'bloco de botões do manuel existe');
+  assert.ok(/margin-left: 0 !important/.test(html), 'mata o margin inline no mobile');
+});
+
 test('preview: aviso JÁ EM ESTOQUE sem desmarcar (aditivo por desenho)', () => {
   assert.ok(/function romaneioIdsEmEstoque/.test(src), 'helper de ids em estoque existe');
   assert.ok(/function anotarEstoquePreviewProduto/.test(src), 'anotação de estoque existe');

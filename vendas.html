@@ -536,6 +536,23 @@
             }
         }
 
+        /* Pares Adicionar/Cancelar do form (editar produto): lado a lado no
+           desktop, empilhados full-width no mobile (sem sobreposição). */
+        @media (max-width: 768px) {
+            #grupoBtnDimsAdicionar,
+            #botoesItensManuel .form-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            #grupoBtnDimsAdicionar .btn,
+            #botoesItensManuel .btn {
+                width: 100%;
+                margin-left: 0 !important;
+                justify-content: center;
+            }
+        }
+
         #listaPedidosModal .acoes-cell {
             white-space: nowrap;
         }
