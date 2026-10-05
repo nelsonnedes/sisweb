@@ -173,3 +173,20 @@ test('lista oculta serrado zerado; select-all mobile após Imprimir/Excluir', ()
   const iSel = html.indexOf('produtosSelectAllMobile');
   assert.ok(iBtns > 0 && iSel > iBtns, 'select-all mobile abaixo dos botões');
 });
+
+test('preview: aviso JÁ EM ESTOQUE sem desmarcar (aditivo por desenho)', () => {
+  assert.ok(/function romaneioIdsEmEstoque/.test(src), 'helper de ids em estoque existe');
+  assert.ok(/function anotarEstoquePreviewProduto/.test(src), 'anotação de estoque existe');
+  // Usa o mesmo matcher do save (acharProdutoSerradoExistente) — aviso e ação concordam
+  assert.ok(/acharProdutoSerradoExistente\(g\.romaneioId, g\)/.test(src), 'badge usa o matcher do somados');
+  // Não desmarca nem altera opacidade (só o alerta de pedido conferido faz isso)
+  const ini = src.indexOf('function anotarEstoquePreviewProduto()');
+  const fim = src.indexOf('async function anotarUsosPreviewProduto', ini);
+  const fn = ini >= 0 && fim > ini ? src.slice(ini, fim) : '';
+  assert.ok(fn.length > 0, 'função localizada');
+  assert.ok(!/\.checked\s*=\s*false/.test(fn), 'não desmarca grupos');
+  assert.ok(!/opacity/.test(fn), 'não esmaece card');
+  assert.ok(/slot vazio|slot\.innerHTML \(\|\| ''\)/.test(fn) || /\(slot\.innerHTML/.test(fn), 'só escreve em slot vazio');
+  // Sufixo na option espelha o "USADO Ped." dos pedidos
+  assert.ok(/EM ESTOQUE/.test(src), 'sufixo na option existe');
+});

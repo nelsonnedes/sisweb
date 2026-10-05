@@ -4405,7 +4405,17 @@ function rotuloRomaneioProduto(r) {
         }
     } catch (_) {}
     const numero = r.numero || r.id || 's/n';
-    return `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ (#${numero})`;
+    let rotuloFinal = `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ (#${numero})`;
+    // Espelha o aviso de pedidos ("USADO Ped."): romaneio já em estoque.
+    // Match por qualquer chave (id/key/número) dos dois lados.
+    try {
+        const chaves = [r.id, r.firebaseKey, r.numero].map(v => String(v || '')).filter(Boolean);
+        if (chaves.length > 0 && typeof romaneioIdsEmEstoque === 'function') {
+            const emEst = romaneioIdsEmEstoque();
+            if (chaves.some(k => emEst.has(k))) rotuloFinal += ' • EM ESTOQUE';
+        }
+    } catch (_) {}
+    return rotuloFinal;
 }
 
 async function carregarRomaneiosEm(tipoSelId, romSelId) {
@@ -4688,8 +4698,47 @@ function renderPreviewProdutoRomaneio() {
     box.querySelectorAll('button[data-excluir-gid]').forEach(btn => {
         btn.addEventListener('click', () => excluirGrupoPreviewRomaneio(btn.dataset.excluirGid));
     });
-    // Alerta de uso em pedidos (async, não bloqueia): desmarca grupos conferidos
+    // Alerta de estoque (síncrono, badge) + uso em pedidos (async, não bloqueia)
+    try { anotarEstoquePreviewProduto(); } catch (_) {}
     try { anotarUsosPreviewProduto(); } catch (_) {}
+}
+
+// IDs de romaneio com ao menos um produto em estoque (tipoProduto romaneio).
+function romaneioIdsEmEstoque() {
+    try {
+        const s = new Set();
+        (window.produtos || []).forEach(p => {
+            if (p && p.tipoProduto === 'romaneio' && p.romaneioId) s.add(String(p.romaneioId));
+        });
+        return s;
+    } catch (_) { return new Set(); }
+}
+
+// Marca grupos cujo romaneio/itens JÁ estão em estoque: aviso informativo
+// (NÃO desmarca — adicionar é aditivo por desenho, cai no caminho "somados").
+// Roda antes de anotarUsosPreviewProduto e só escreve em slot vazio: o alerta
+// de pedido conferido continua vencendo.
+function anotarEstoquePreviewProduto() {
+    try {
+        const grupos = Array.isArray(__previewRomGrupos) ? __previewRomGrupos : [];
+        if (grupos.length === 0) return;
+        if (typeof acharProdutoSerradoExistente !== 'function') return;
+        const box = document.getElementById('previewProdutoRomaneio');
+        if (!box) return;
+        grupos.forEach(g => {
+            let existente = null;
+            try { existente = acharProdutoSerradoExistente(g.romaneioId, g); } catch (_) { existente = null; }
+            if (!existente) return;
+            const card = box.querySelector(`[data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}"]`);
+            if (!card) return;
+            const slot = card.querySelector('.uso-romaneio-badge');
+            if (!slot || (slot.innerHTML || '').trim()) return;
+            const cod = String(existente.codigo || '').trim();
+            let estTxt = '';
+            try { estTxt = Number(existente.pecas || 0).toLocaleString('pt-BR'); } catch (_) { estTxt = ''; }
+            slot.innerHTML = `<span style="display:inline-block;background:color-mix(in srgb, var(--sw-info) 12%, transparent);color:var(--sw-info);border-radius:999px;padding:2px 8px;font-size:0.72rem;font-weight:700;">JÁ EM ESTOQUE${cod ? ' · ' + cod : ''}${estTxt ? ' (' + estTxt + ' pçs)' : ''} — será somado</span>`;
+        });
+    } catch (_) {}
 }
 
 // Marca grupos cujo romaneio já foi usado em pedidos: vermelho+desmarca se
