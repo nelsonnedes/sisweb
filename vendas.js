@@ -2286,13 +2286,27 @@ function atualizarTabelaItens() {
             produtoDescricao = nomeLimpo;
         } else {
             produtoDescricao = item.produtoCodigo ? `${item.produtoCodigo} - ${nomeLimpo}` : nomeLimpo;
+            // Serrado convertido: "000099 - Orelha-de-macaco - 7cmx14cmx850cm - 2 Peças"
+            try {
+                if (typeof detalheSerradoItem === 'function') {
+                    const det = detalheSerradoItem(item);
+                    if (det) {
+                        let base = produtoDescricao;
+                        if (typeof rotuloSerradoLinha === 'function') {
+                            const rot = rotuloSerradoLinha(item);
+                            if (rot) base = item.produtoCodigo ? `${item.produtoCodigo} - ${rot}` : rot;
+                        }
+                        produtoDescricao = `${base} - ${det}`;
+                    }
+                }
+            } catch (_) {}
         }
         if (isCarregoItem(item)) {
             produtoDescricao += ' (Carrego)';
         }
         produtoDescricao += getCarregoBadgeHtml(item);
-        
-        const quantidadeFormatada = item.unidade 
+
+        const quantidadeFormatada = item.unidade
             ? `${formatNumber(item.quantidade)} ${item.unidade}`
             : formatNumber(item.quantidade);
         

@@ -348,7 +348,8 @@ test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Pe�
   // decimal com vírgula
   const dVir = sbL.dimsSerradoProduto({ nome: 'Pinus 2,5x15x300' });
   assert.deepEqual(JSON.parse(JSON.stringify(dVir)), { E: 2.5, L: 15, C: 300 });
-  // render usa detalhe quando há origem
-  assert.ok(/detalheSerradoItem\(item\)/.test(src), 'tabela do carrinho usa detalhe');
+  // render usa detalhe quando há origem (carrinho E visualização do pedido)
+  const detUses = (src.match(/detalheSerradoItem\(item\)/g) || []).length;
+  assert.ok(detUses >= 2, 'carrinho e visualização usam detalhe');
   assert.ok(/converterItemSerradoParaM3\(produto, quantidade, unidadeItem\)/.test(src), 'adicionar converte');
 });
