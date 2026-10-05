@@ -179,6 +179,7 @@ test('mobile: pares Adicionar/Cancelar empilhados (sem sobreposição)', () => {
   assert.ok(/#grupoBtnDimsAdicionar/.test(html), 'bloco de botões do editar existe');
   assert.ok(/#botoesItensManuel/.test(html), 'bloco de botões do manuel existe');
   assert.ok(/margin-left: 0 !important/.test(html), 'mata o margin inline no mobile');
+  assert.ok(/\.btn \+ \.btn/.test(html) && /margin-top: 10px/.test(html), 'espaço explícito entre botões empilhados');
 });
 
 test('preview: trava JÁ EM ESTOQUE igual pedidos (inativo + cadeado)', () => {
