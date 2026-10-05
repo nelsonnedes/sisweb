@@ -319,6 +319,19 @@ test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Pe�
   assert.equal(conv(prod, 2, 'M3'), null);
   assert.equal(conv({ tipoProduto: 'romaneio' }, 2, 'UN'), null);
   assert.equal(conv({ tipoProduto: 'manual', estoque: 5 }, 2, 'UN'), null);
+  // PC = pacote × ppp do produto (2 pac c/6 = 12); UN ignora ppp
+  const prodPpp = { tipoProduto: 'romaneio', espessura: 7, largura: 14, comprimento: 850, pecasPorPacote: 6 };
+  const cPc = conv(prodPpp, 2, 'PC');
+  assert.equal(cPc.pecasOrigem, 12);
+  const cUnPpp = conv(prodPpp, 2, 'UN');
+  assert.equal(cUnPpp.pecasOrigem, 2);
+  // rótulo com dims separadas
+  const sbR = { produtos: [{ id: 'P1', especie: 'Orelha-de-macaco', espessura: 7, largura: 14, comprimento: 850 }] };
+  vm.createContext(sbR);
+  sbR.window = { produtos: sbR.produtos };
+  vm.runInContext(extract('rotuloSerradoLinha'), sbR);
+  assert.equal(sbR.rotuloSerradoLinha({ produtoId: 'P1' }), 'Orelha-de-macaco - 7cmx14cmx850cm');
+  assert.equal(sbR.rotuloSerradoLinha({ produtoId: 'XX' }), null);
   // render usa detalhe quando há origem
   assert.ok(/detalheSerradoItem\(item\)/.test(src), 'tabela do carrinho usa detalhe');
   assert.ok(/converterItemSerradoParaM3\(produto, quantidade, unidadeItem\)/.test(src), 'adicionar converte');

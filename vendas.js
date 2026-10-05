@@ -4542,8 +4542,17 @@ function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
         const q = num(quantidade);
         if (!(q > 0)) return null;
         const r3 = (v) => Math.round(v * 1000) / 1000;
+        // PC cru = pacote: multiplica pelas peças/pacote do produto
+        // (ex.: 2 pac c/6 = 12). UN = peça avulsa (sem regressão).
+        // (normalizarUnidadeMedida mapeia PC→UN; por isso o teste é no cru.)
+        const cruPC = String(unidadeItem || '').trim().toUpperCase().replace(/\./g, '') === 'PC';
+        const pack = (() => {
+            if (!cruPC) return 1;
+            const p = parseFloat(produto.pecasPorPacote) || 0;
+            return p > 1 ? p : 1;
+        })();
         if (u === 'UN' || u === 'DZ') {
-            const pecas = u === 'DZ' ? q * 12 : q;
+            const pecas = (u === 'DZ' ? q * 12 : q) * pack;
             return { volume: r3((E * L * C / 1e6) * pecas), qtdOrigem: q, pecasOrigem: pecas, unidadeOrigem: unidadeItem };
         }
         if (u === 'ML') {
@@ -4553,6 +4562,23 @@ function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
             return { volume: r3(q * (E / 1000)), qtdOrigem: q, pecasOrigem: null, unidadeOrigem: unidadeItem };
         }
         return null;
+    } catch (_) { return null; }
+}
+
+// "Orelha-de-macaco - 7cmx14cmx850cm" a partir dos campos (não do nome,
+// que pode vir colado). Null quando sem dims.
+function rotuloSerradoLinha(item) {
+    try {
+        const p = (window.produtos || []).find(x => x && x.id === (item && item.produtoId));
+        if (!p) return null;
+        const esp = String(p.especie || '').trim();
+        const E = parseFloat(p.espessura), L = parseFloat(p.largura), C = parseFloat(p.comprimento);
+        if (!esp || !(E > 0 && L > 0 && C > 0)) return null;
+        const f = (v) => {
+            const n = Math.round(v * 1000) / 1000;
+            return (Number.isInteger(n) ? String(n) : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 })).replace('.', ',');
+        };
+        return `${esp} - ${f(E)}cmx${f(L)}cmx${f(C)}cm`;
     } catch (_) { return null; }
 }
 
@@ -9924,11 +9950,18 @@ async function visualizarPedido(pedidoId) {
             produtoDescricao = nomeLimpo;
         } else {
             produtoDescricao = item.produtoCodigo ? `${item.produtoCodigo} - ${nomeLimpo}` : nomeLimpo;
-            // Serrado convertido: "000099 - Nome ExLxC - 2 Peças"
+            // Serrado convertido: "000099 - Orelha-de-macaco - 7cmx14cmx850cm - 12 Peças"
             try {
                 if (typeof detalheSerradoItem === 'function') {
                     const det = detalheSerradoItem(item);
-                    if (det) produtoDescricao += ` - ${det}`;
+                    if (det) {
+                        let base = produtoDescricao;
+                        if (typeof rotuloSerradoLinha === 'function') {
+                            const rot = rotuloSerradoLinha(item);
+                            if (rot) base = item.produtoCodigo ? `${item.produtoCodigo} - ${rot}` : rot;
+                        }
+                        produtoDescricao = `${base} - ${det}`;
+                    }
                 }
             } catch (_) {}
         }
