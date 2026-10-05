@@ -2062,7 +2062,8 @@ function adicionarItem() {
                     const E = parseFloat(produto.espessura) || 0, L = parseFloat(produto.largura) || 0, C = parseFloat(produto.comprimento) || 0;
                     const fam = typeof normalizarUnidadeMedida === 'function' ? normalizarUnidadeMedida(alvo.unidadeOrigem) : '';
                     if (E > 0 && L > 0 && C > 0 && (fam === 'UN' || fam === 'DZ')) {
-                        const volPeca = (E * L * C) / 1e6;
+                        const pPecas = parseFloat(produto.pecas) || 0, pVol = parseFloat(produto.volumeM3) || 0;
+                        const volPeca = (pPecas > 0 && pVol > 0) ? (pVol / pPecas) : (E * L * C) / 1e6;
                         if (volPeca > 0) {
                             const pecas = quantidade / volPeca;
                             alvo.pecasOrigem = Math.round(pecas * 1000) / 1000;
@@ -4564,6 +4565,8 @@ function dimsSerradoProduto(produto) {
 // Converte item serrado com unidade ≠ m³ para m³ (totais corretos).
 // Retorna {volume, qtdOrigem, pecasOrigem, unidadeOrigem} ou null (sem conversão).
 // Só serrado COM dimensões (campos ou nome); resto segue legado.
+// Prefere a contabilidade do próprio produto (exato em qualquer convenção);
+// cai para a fórmula cm quando o registro está incompleto.
 function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
     try {
         const u = normalizarUnidadeMedida(unidadeItem);
@@ -4576,6 +4579,10 @@ function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
         const q = num(quantidade);
         if (!(q > 0)) return null;
         const r3 = (v) => Math.round(v * 1000) / 1000;
+        const pPecas = num(produto.pecas), pVol = num(produto.volumeM3);
+        let mlTotal = 0;
+        try { mlTotal = (typeof metrosLinearesDe === 'function') ? metrosLinearesDe(produto) : 0; } catch (_) { mlTotal = 0; }
+        const areaTotal = (L / 100) * (C / 100) * pPecas;
         // PC cru = pacote: multiplica pelas peças/pacote do produto
         // (ex.: 2 pac c/6 = 12). UN = peça avulsa (sem regressão).
         // (normalizarUnidadeMedida mapeia PC→UN; por isso o teste é no cru.)
@@ -4587,13 +4594,16 @@ function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
         })();
         if (u === 'UN' || u === 'DZ') {
             const pecas = (u === 'DZ' ? q * 12 : q) * pack;
-            return { volume: r3((E * L * C / 1e6) * pecas), qtdOrigem: q, pecasOrigem: pecas, unidadeOrigem: unidadeItem };
+            const volPeca = (pPecas > 0 && pVol > 0) ? (pVol / pPecas) : (E * L * C / 1e6);
+            return { volume: r3(volPeca * pecas), qtdOrigem: q, pecasOrigem: pecas, unidadeOrigem: unidadeItem };
         }
         if (u === 'ML') {
-            return { volume: r3((E * L / 1e6) * q), qtdOrigem: q, pecasOrigem: null, unidadeOrigem: unidadeItem };
+            const secao = (mlTotal > 0 && pVol > 0) ? (pVol / mlTotal) : (E * L / 1e4);
+            return { volume: r3(secao * q), qtdOrigem: q, pecasOrigem: null, unidadeOrigem: unidadeItem };
         }
         if (u === 'M2') {
-            return { volume: r3(q * (E / 1000)), qtdOrigem: q, pecasOrigem: null, unidadeOrigem: unidadeItem };
+            const volM2 = (areaTotal > 0 && pVol > 0) ? (pVol / areaTotal) : (E / 100);
+            return { volume: r3(volM2 * q), qtdOrigem: q, pecasOrigem: null, unidadeOrigem: unidadeItem };
         }
         return null;
     } catch (_) { return null; }
@@ -6777,13 +6787,20 @@ function atualizarSelectProdutos() {
                 ? (nomeComum ? `${nomeCientifico} - ${nomeComum}` : nomeCientifico)
                 : (nomeComum || 'Produto sem nome');
             if (p.tipoProduto === 'romaneio') texto += ' · Serrado';
-            // Info de estoque no option (usuário confere antes de adicionar)
+            // Info de estoque no option (usuário confere antes de adicionar).
+            // Mesma base da baixa (dimensoesEstoqueSerrado): sem duplicar fórmula.
             try {
                 if (temDimsSerrado(p)) {
                     const nPecas = Math.round(parseFloat(p.pecas) || 0);
                     const nVol = Number(p.volumeM3 ?? p.estoque ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 3 });
                     const nMl = metrosLinearesDe(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-                    texto += ` — ${nPecas} pç · ${nVol} m³ · ${nMl} ml`;
+                    let nArea = '0,00';
+                    try {
+                        if (typeof dimensoesEstoqueSerrado === 'function') {
+                            nArea = dimensoesEstoqueSerrado(p).area.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                        }
+                    } catch (_) {}
+                    texto += ` — ${nPecas} pç · ${nVol} m³ · ${nMl} ml · ${nArea} m²`;
                 } else {
                     texto += ` — Est: ${Number(p.estoque || 0).toLocaleString('pt-BR')} ${p.unidade || 'UN'}`;
                 }

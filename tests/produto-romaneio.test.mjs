@@ -315,6 +315,22 @@ test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Pe�
   assert.ok(cMl.volume > 0 && cMl.unidadeOrigem === 'ml');
   const cM2 = conv(prod, 5, 'm²');
   assert.ok(cM2.volume > 0);
+  // stored-ratio: 24 ml de produto com 0,067 m³ → 0,067 (não 0,001)
+  const sbS = { metrosLinearesDe: (p) => parseFloat(p.metrosLineares) || 0 };
+  vm.createContext(sbS);
+  vm.runInContext(extract('normalizarUnidadeMedida'), sbS);
+  vm.runInContext(extract('dimsSerradoProduto'), sbS);
+  vm.runInContext(extract('converterItemSerradoParaM3'), sbS);
+  sbS.temDimsSerrado = () => true;
+  const prodMl = { tipoProduto: 'romaneio', espessura: 4, largura: 7, comprimento: 400, pecas: 6, volumeM3: 0.067, metrosLineares: 24 };
+  assert.equal(sbS.converterItemSerradoParaM3(prodMl, 24, 'LN').volume, 0.067);
+  // sem registro: fórmula cm → 4*7/1e4*24 = 0,0672
+  const prodMl2 = { tipoProduto: 'romaneio', espessura: 4, largura: 7, comprimento: 400 };
+  assert.equal(sbS.converterItemSerradoParaM3(prodMl2, 24, 'LN').volume, 0.067);
+  // M² stored-ratio: área total 0,07*4*6=1,68 m² com 0,067 → 1 m² ≈ 0,04
+  assert.equal(sbS.converterItemSerradoParaM3(prodMl, 1, 'm²').volume, 0.04);
+  // select Produto exibe m² (fonte única: dimensoesEstoqueSerrado)
+  assert.ok(/dimensoesEstoqueSerrado\(p\)\.area/.test(src), 'm² do select sem fórmula duplicada');
   // m³ não converte; sem dims não converte; manual não converte
   assert.equal(conv(prod, 2, 'm³'), null);
   assert.equal(conv(prod, 2, 'M3'), null);
