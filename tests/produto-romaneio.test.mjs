@@ -123,3 +123,23 @@ test('mobile: footers ocultos preservados + campos sem estouro (vendas produtos)
   assert.ok(/#secaoProdutoForm select/.test(css), 'campos do form de produto em largura total');
   assert.ok(/#listaProdutosModal select/.test(css), 'campos do modal em largura total');
 });
+
+test('adicionar estoque romaneio: trava + loading + save único em lote', () => {
+  // Trava anti-duplo-clique (mobile lento, risco de duplicar produtos)
+  assert.ok(/__adicionarEstoqueRomaneioEmAndamento/.test(src), 'flag in-flight existe');
+  assert.ok(/já em andamento/.test(src), 'aviso quando ocupado');
+  // Feedback durante a gravação + restauração garantida
+  assert.ok(/LoadingManager\.show\(`Adicionando/.test(src), 'loading com progresso');
+  assert.ok(/finally\s*\{/.test(src), 'bloco finally restaura estado');
+  assert.ok(/LoadingManager\.hide/.test(src), 'loading sempre escondido');
+  // 1 round-trip em vez de N (era 1 saveToFirebase por grupo)
+  const ini = src.indexOf('async function adicionarEstoqueGruposRomaneio()');
+  const fim = src.indexOf('\nfunction renderPreviewProdutoManuel()', ini);
+  const fluxo = ini >= 0 && fim > ini ? src.slice(ini, fim) : '';
+  assert.ok(fluxo.length > 0, 'fluxo localizado');
+  assert.ok(!/saveToFirebase\('produtos'/.test(fluxo), 'sem save por item no fluxo de grupos');
+  assert.ok(/await saveData\('produtos', filtrarProdutosPersistiveis/.test(src), 'save único em lote');
+  // Cards do preview com classe (layout ordenado desktop/mobile)
+  assert.ok(/class="grupo-rom-card"/.test(src), 'cards com classe');
+  assert.ok(/class="grm-body"/.test(src), 'corpo do card com min-width:0');
+});

@@ -474,6 +474,47 @@
             white-space: nowrap;
         }
 
+        /* Cards do Preview-Resumo (produto romaneio): linha ordenada
+           [check | texto | excluir] com quebra segura; no mobile estreito o
+           botão excluir ocupa a linha de baixo em largura total. */
+        .grupo-rom-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            border: 1px solid var(--sw-border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: var(--sw-surface);
+        }
+        .grupo-rom-card .grm-check {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            flex: 0 0 auto;
+            cursor: pointer;
+        }
+        .grupo-rom-card .grm-body {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+        .grupo-rom-card .grm-del {
+            flex: 0 0 auto;
+            align-self: center;
+        }
+        @media (max-width: 560px) {
+            .grupo-rom-card {
+                flex-wrap: wrap;
+            }
+            .grupo-rom-card .grm-body {
+                flex: 1 1 calc(100% - 30px);
+            }
+            .grupo-rom-card .grm-del {
+                flex: 1 1 100%;
+            }
+        }
+
         #listaPedidosModal .acoes-cell {
             white-space: nowrap;
         }
@@ -2342,7 +2383,7 @@
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="commerce-pdf-share.js?v=e6699735105a"></script>
-    <script src="vendas.js?v=9447666aaa88"></script>
+    <script src="vendas.js?v=f2601b5168ee"></script>
 </body>
 
 </html>

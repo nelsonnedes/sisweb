@@ -4651,10 +4651,10 @@ function renderPreviewProdutoRomaneio() {
             const dims = `${String(g.espessura).replace('.', ',')}cmx${String(g.largura).replace('.', ',')}cmx${String(g.comprimento).replace('.', ',')}cm`;
             if (nomePeca) rotulo += ` — ${nomePeca} ${dims}`;
         } catch (_) {}
-        html += `<div data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}" style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
-            + `<input type="checkbox" name="grupoRomSel" value="${idx}" checked style="width:18px;height:18px;cursor:pointer;" aria-label="Selecionar grupo">`
-            + `<div style="flex:1;"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças · ${(g.ml || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span><div class="uso-romaneio-badge" style="margin-top:4px;"></div></div>`
-            + `<button type="button" class="btn btn-danger btn-small" data-excluir-gid="${String(g.gid || '').replace(/"/g, '&quot;')}" aria-label="Excluir grupo">Excluir</button></div>`;
+        html += `<div class="grupo-rom-card" data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}" style="background:var(--sw-surface);">`
+            + `<input type="checkbox" class="grm-check" name="grupoRomSel" value="${idx}" checked aria-label="Selecionar grupo">`
+            + `<div class="grm-body"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${g.pecas} Peças · ${(g.ml || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span><div class="uso-romaneio-badge" style="margin-top:4px;"></div></div>`
+            + `<button type="button" class="btn btn-danger btn-small grm-del" data-excluir-gid="${String(g.gid || '').replace(/"/g, '&quot;')}" aria-label="Excluir grupo">Excluir</button></div>`;
     });
     html += `<div style="text-align:right;font-weight:700;">Total: ${total.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</div>`;
     box.innerHTML = html;
@@ -4761,16 +4761,27 @@ function acharProdutoSerradoExistente(romaneioId, g) {
     } catch (_) { return null; }
 }
 
+let __adicionarEstoqueRomaneioEmAndamento = false;
+
 async function adicionarEstoqueGruposRomaneio() {
+    // Trava anti-duplo-clique: saves sequenciais demoram no mobile e o
+    // usuário não sabia o que acontecia (risco de fechar/duplicar).
+    if (__adicionarEstoqueRomaneioEmAndamento) {
+        try { ToastManager.info('Adição ao estoque já em andamento, aguarde...', 'Aguarde'); } catch (_) {}
+        return;
+    }
     const grupos = gruposRomaneioSelecionados();
     if (grupos.length === 0) {
         ToastManager.warning('Marque ao menos um grupo no Preview', 'Atenção');
         return;
     }
+    __adicionarEstoqueRomaneioEmAndamento = true;
+    try { if (typeof LoadingManager !== 'undefined' && LoadingManager.show) LoadingManager.show(`Adicionando ${grupos.length} grupo(s) ao estoque...`); } catch (_) {}
+    try { document.querySelectorAll('[onclick*="adicionarEstoqueGruposRomaneio"]').forEach(b => { try { b.disabled = true; } catch (_) {} }); } catch (_) {}
+    try {
     const meta = __previewProdutoRomaneioMeta || {};
     const usedCodes = new Set((window.produtos || []).map(p => String(p.codigo || '').trim()).filter(Boolean));
     let criados = 0, somados = 0, volumeTotal = 0;
-    const fallbackLista = [];
     for (const g of grupos) {
         if (!(g.volume > 0)) continue;
         const grid = g.romaneioId || meta.rid;
@@ -4784,13 +4795,6 @@ async function adicionarEstoqueGruposRomaneio() {
             existente.updated = new Date().toISOString();
             somados++;
             volumeTotal = Math.round((volumeTotal + g.volume) * 1000) / 1000;
-            try {
-                if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                    await window.firebaseService.saveToFirebase('produtos', String(existente.id), existente);
-                } else {
-                    fallbackLista.push(existente);
-                }
-            } catch (_) { fallbackLista.push(existente); }
             continue;
         }
         const nome = `${g.especie} ${g.espessura}x${g.largura}x${g.comprimento}`.trim();
@@ -4825,22 +4829,18 @@ async function adicionarEstoqueGruposRomaneio() {
         try { registrarIdsProdutosRaw([prod]); } catch (_) {}
         criados++;
         volumeTotal = Math.round((volumeTotal + g.volume) * 1000) / 1000;
-        try {
-            if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                const res = await window.firebaseService.saveToFirebase('produtos', String(prod.id), prod);
-                if (!(res && res.success)) fallbackLista.push(prod);
-            } else {
-                fallbackLista.push(prod);
-            }
-        } catch (_) { fallbackLista.push(prod); }
     }
-    if (fallbackLista.length > 0) {
-        try {
-            if (typeof saveData === 'function') {
-                __rvSaveDataRemoteOk = false;
-                await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
-            }
-        } catch (_) {}
+    // Save ÚNICO em lote (antes: 1 round-trip por grupo = lento no mobile).
+    let saveOk = false;
+    try {
+        if (typeof saveData === 'function') {
+            __rvSaveDataRemoteOk = false;
+            await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
+            saveOk = !!__rvSaveDataRemoteOk;
+        }
+    } catch (_) { saveOk = false; }
+    if (!saveOk) {
+        try { ToastManager.error('Itens aplicados localmente, mas a gravação no servidor falhou. Verifique a conexão.', 'Falha ao gravar', 8000); } catch (_) {}
     }
     try {
         const svcInv = window.firebaseService || window.FirebaseService;
@@ -4861,6 +4861,11 @@ async function adicionarEstoqueGruposRomaneio() {
         if (s2) s2.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
         limparPreviewProdutoRomaneio();
     } catch (_) {}
+    } finally {
+        __adicionarEstoqueRomaneioEmAndamento = false;
+        try { if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}
+        try { document.querySelectorAll('[onclick*="adicionarEstoqueGruposRomaneio"]').forEach(b => { try { b.disabled = false; } catch (_) {} }); } catch (_) {}
+    }
 }
 
 function renderPreviewProdutoManuel() {
