@@ -6022,10 +6022,6 @@ async function carregarTabelaMovimentacoes(filtro = {}) {
         const obs = normalizarTextoBuscaEstoque(filtro.observacoes);
         movFiltradas = movFiltradas.filter(m => normalizarTextoBuscaEstoque(formatarRomaneiosVinculadosMovimentacao(m, { plain: true })).includes(obs));
     }
-    if (filtro.buscaTora) {
-        const buscaT = normalizarTextoBuscaEstoque(filtro.buscaTora);
-        movFiltradas = movFiltradas.filter(m => obterTextoBuscaMovimentacao(m).includes(buscaT));
-    }
 
     // Ordenação dinâmica
     const { coluna, direcao } = ordemMovimentacoes;
@@ -6278,8 +6274,6 @@ function limparFiltrosMovimentacoes() {
     if (inputRem) inputRem.value = '';
     const inputObs = document.getElementById('filtroObservacoesMov');
     if (inputObs) inputObs.value = '';
-    const inputBuscaT = document.getElementById('filtroBuscaToraMov');
-    if (inputBuscaT) inputBuscaT.value = '';
 
     movimentacoesSelecionadas.clear();
     const masterCheck = document.getElementById('checkTodasMovimentacoes');

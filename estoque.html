@@ -2918,7 +2918,7 @@
                     </div>
                     <div class="form-group">
                         <label for="searchEstoque">Buscar:</label>
-                        <input type="text" id="searchEstoque" placeholder="Plaqueta, descrição/espécie ou custódia" onkeyup="filtrarEstoque()" onkeydown="onBuscaEstoqueEnter(event)">
+                        <input type="text" id="searchEstoque" placeholder="Plaqueta, descrição/espécie, custódia ou AUTEF" onkeyup="filtrarEstoque()" onkeydown="onBuscaEstoqueEnter(event)">
                     </div>
                 </div>
             </div>
@@ -3003,15 +3003,11 @@
                     </div>
                     <div class="form-group">
                         <label for="filtroBuscaToraMov">Buscar tora:</label>
-                        <input type="text" id="filtroBuscaToraMov" placeholder="Plaqueta, descrição/espécie ou custódia" oninput="filtrarMovimentacoes()">
+                        <input type="text" id="filtroBuscaToraMov" placeholder="Plaqueta, descrição/espécie, custódia ou AUTEF" oninput="filtrarMovimentacoes()">
                     </div>
                     <div class="form-group">
                         <label for="filtroRemessaBaixa">Remessa de Baixa:</label>
                         <input type="text" id="filtroRemessaBaixa" placeholder="Ex: REM..." oninput="filtrarMovimentacoes()">
-                    </div>
-                    <div class="form-group">
-                        <label for="filtroBuscaToraMov">Buscar tora:</label>
-                        <input type="text" id="filtroBuscaToraMov" placeholder="Plaqueta, descrição/espécie ou custódia" oninput="filtrarMovimentacoes()">
                     </div>
                     <div class="form-group">
                         <label for="filtroObservacoesMov">Romaneio Vinculado:</label>
@@ -3020,12 +3016,12 @@
                 </div>
                 <div class="form-row mov-acoes-row">
                     <div class="form-group">
-                        <button type="button" onclick="limparFiltrosMovimentacoes()" class="btn btn-secondary" title="Limpar filtros" style="width: 100%;">
+                        <button type="button" onclick="limparFiltrosMovimentacoes()" class="btn btn-secondary" title="Limpar filtros">
                             <i class="fas fa-eraser"></i> Limpar Filtros
                         </button>
                     </div>
                     <div class="form-group">
-                        <button type="button" onclick="excluirMovimentacoesSelecionadas()" class="btn btn-danger" title="Excluir movimentações selecionadas" style="width: 100%;">
+                        <button type="button" onclick="excluirMovimentacoesSelecionadas()" class="btn btn-danger" title="Excluir movimentações selecionadas">
                             <i class="fas fa-trash"></i> Excluir <span id="movExcluirSelectedCount">(0)</span>
                         </button>
                     </div>
@@ -3748,7 +3744,7 @@
 <script src="commerce-pdf-share.js?v=e6699735105a"></script>
         <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
         <script src="estoque_produtos.js?v=a9771662306f"></script>
-        <script src="estoque.js?v=6dc1a07570c6"></script>
+        <script src="estoque.js?v=bee109d77131"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

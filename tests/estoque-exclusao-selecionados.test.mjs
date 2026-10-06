@@ -59,3 +59,21 @@ test('movimentacoes: limpar filtros em linha propria + excluir selecionados', ()
   assert.match(block, /__excluirMovEmAndamento/);
   assert.match(js2, /atualizarContadorMovExcluir/);
 });
+
+test('movimentacoes: buscar tora unico cobre plaqueta/especie/custodia/autef', () => {
+  const html3 = read('estoque.html');
+  const js3 = read('estoque.js');
+  // id duplicado eliminado (era 2x filtroBuscaToraMov)
+  assert.equal((html3.match(/id="filtroBuscaToraMov"/g) || []).length, 1);
+  // placeholder anuncia AUTEF
+  assert.match(html3, /custódia ou AUTEF/);
+  // match cobre AUTEF (via obterTextoBuscaTora)
+  assert.match(js3, /geo\.autef \|\| item\.autef/);
+  // filtro aplicado uma única vez (resíduo removido)
+  const carrega = js3.match(/async function carregarTabelaMovimentacoes[\s\S]*?Ordenação dinâmica/)?.[0] || '';
+  assert.equal((carrega.match(/if \(filtro\.buscaTora\)/g) || []).length, 1);
+  // consulta usa o mesmo matcher (com AUTEF)
+  assert.match(js3, /toraCorrespondeBusca\(t, filtro\.busca\)/);
+  // botoes em largura padrao (sem width 100% inline)
+  assert.doesNotMatch(html3, /mov-acoes-row[\s\S]{0,400}?style="width: 100%;"/);
+});
