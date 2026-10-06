@@ -74,6 +74,7 @@ test('movimentacoes: buscar tora unico cobre plaqueta/especie/custodia/autef', (
   assert.equal((carrega.match(/if \(filtro\.buscaTora\)/g) || []).length, 1);
   // consulta usa o mesmo matcher (com AUTEF)
   assert.match(js3, /toraCorrespondeBusca\(t, filtro\.busca\)/);
-  // botoes em largura padrao (sem width 100% inline)
-  assert.doesNotMatch(html3, /mov-acoes-row[\s\S]{0,400}?style="width: 100%;"/);
+  // botoes lado a lado com gap padrao (nao afastados)
+  assert.match(html3, /\.mov-acoes-row \{[^}]*display: flex[^}]*gap: 10px/);
+  assert.match(html3, /\.mov-acoes-row \.form-group \{[^}]*flex: 0 0 auto/);
 });
