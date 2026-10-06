@@ -3448,7 +3448,39 @@ async function excluirRomaneio(romaneioId) {
 // âœ… FUNÃ‡ÃƒO PRINCIPAL PARA IMPRIMIR ROMANEIO - VERSÃƒO AVANÃ‡ADA ATUALIZADA
 async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
     console.log(`ðŸ–¨ï¸ Imprimindo romaneio ${romaneioId} no modo ${modoImpressao}`);
-    
+    // Janela SÍNCRONA no gesto do clique (anti popup-block) + trava duplo-clique.
+    if (window.__imprimirToraEmAndamento) {
+        try {
+            if (typeof window.__toast === 'function') window.__toast('Impressão já em andamento, aguarde...', 'info');
+            else if (window.Utils && window.Utils.showToast) window.Utils.showToast('Impressão já em andamento, aguarde...', 'info');
+        } catch (_) {}
+        return;
+    }
+    window.__imprimirToraEmAndamento = true;
+    let janelaPlaceholder = null;
+    try {
+        janelaPlaceholder = window.open('', '_blank', 'width=800,height=600');
+    } catch (_) { janelaPlaceholder = null; }
+    if (janelaPlaceholder) {
+        try {
+            janelaPlaceholder.document.open();
+            janelaPlaceholder.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Preparando impressão</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:90vh;color:#334155}div{text-align:center}</style></head><body><div>Gerando documento de impressão…</div></body></html>');
+            janelaPlaceholder.document.close();
+        } catch (_) {}
+    } else {
+        window.__imprimirToraEmAndamento = false;
+        console.error("❌ Erro ao abrir nova janela - pode estar sendo bloqueada pelo navegador");
+        try {
+            const msg = "Não foi possível abrir a janela de impressão. Verifique se o bloqueador de pop-ups está ativo.";
+            if (typeof window.__toast === 'function') {
+                window.__toast(msg, 'error', { duration: 5000 });
+            } else if (window.Utils && window.Utils.showToast) {
+                window.Utils.showToast(msg, 'error');
+            }
+        } catch (_) {}
+        return;
+    }
+
     try {
         // âœ… CARREGAR DADOS DO FIREBASE
         let romaneiosData = await getData('romaneios/tora') || {};
@@ -3728,29 +3760,34 @@ async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
             </html>
         `;
         
-        // âœ… ABRIR NOVA JANELA PARA IMPRESSÃƒO
-        const novaJanela = window.open('', '_blank', 'width=800,height=600');
-        if (novaJanela) {
-            novaJanela.document.write(htmlCompleto);
-            novaJanela.document.close();
-            
-            // Aguardar carregamento e focar na nova janela
-            novaJanela.onload = () => {
-                novaJanela.focus();
-            };
-        } else {
-            console.error("âŒ Erro ao abrir nova janela - pode estar sendo bloqueada pelo navegador");
+        // ✅ ESCREVER NA JANELA ABERTA NO CLIQUE (evita popup-block)
+        try {
+            if (typeof janelaPlaceholder !== 'undefined' && janelaPlaceholder && !janelaPlaceholder.closed) {
+                janelaPlaceholder.document.open();
+                janelaPlaceholder.document.write(htmlCompleto);
+                janelaPlaceholder.document.close();
+                try { janelaPlaceholder.focus(); } catch (_) {}
+            } else {
+                throw new Error('janela indisponível');
+            }
+        } catch (eWin) {
             try {
-                const msg = "NÃ£o foi possÃ­vel abrir a janela de impressÃ£o. Verifique se o bloqueador de pop-ups estÃ¡ ativo.";
-                if (typeof window.__toast === 'function') {
-                    window.__toast(msg, 'error', { duration: 5000 });
-                } else if (window.Utils && window.Utils.showToast) {
-                    window.Utils.showToast(msg, 'error');
+                const novaJanela2 = window.open('', '_blank', 'width=800,height=600');
+                if (novaJanela2) {
+                    novaJanela2.document.write(htmlCompleto);
+                    novaJanela2.document.close();
+                    novaJanela2.onload = () => {
+                        novaJanela2.focus();
+                    };
+                } else {
+                    throw new Error('bloqueador de pop-ups ativo');
                 }
-            } catch (_) {}
+            } catch (_) {
+                console.error("Erro ao abrir nova janela - pode estar sendo bloqueada pelo navegador");
+            }
         }
-        
-        
+
+
     } catch (error) {
         console.error("âŒ Erro ao imprimir romaneio:", error);
         try {
@@ -3760,6 +3797,8 @@ async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
                 window.Utils.showToast("Erro ao imprimir romaneio: " + error.message, 'error');
             }
         } catch (_) {}
+    } finally {
+        window.__imprimirToraEmAndamento = false;
     }
 }
 

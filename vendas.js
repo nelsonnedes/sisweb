@@ -123,6 +123,31 @@ function __rvExtrairIdsRomaneioDePedido(pedido) {
     return ids;
 }
 
+// Leituras de pedidos p/ verificação de uso de romaneio — paralelas
+// (antes: 2 round-trips sequenciais em cada chamador). Fail-open.
+async function carregarPedidosParaUsoRomaneio() {
+    let vendasPedidos = [];
+    let comprasPedidos = [];
+    try {
+        const temLocal = Array.isArray(window.pedidos) && window.pedidos.length > 0;
+        const pVendas = temLocal
+            ? Promise.resolve(window.pedidos)
+            : ((typeof getData === 'function') ? getData('vendas/pedidos').catch(() => []) : Promise.resolve([]));
+        const pCompras = (typeof getData === 'function')
+            ? getData('pedidosCompra').catch(() => [])
+            : Promise.resolve([]);
+        const res = await Promise.all([pVendas, pCompras]);
+        vendasPedidos = Array.isArray(res[0]) ? res[0] : (temLocal ? window.pedidos : []);
+        comprasPedidos = Array.isArray(res[1]) ? res[1] : [];
+    } catch (_) {
+        vendasPedidos = Array.isArray(window.pedidos) ? window.pedidos : [];
+        comprasPedidos = [];
+    }
+    if (!Array.isArray(vendasPedidos)) vendasPedidos = [];
+    if (!Array.isArray(comprasPedidos)) comprasPedidos = [];
+    return { vendasPedidos, comprasPedidos };
+}
+
 async function buscarUsoRomaneioVendas(idEstavel) {
     const id = String(idEstavel || '').trim();
     if (!id) return null;
@@ -132,22 +157,8 @@ async function buscarUsoRomaneioVendas(idEstavel) {
             return __rvUsoCache.result;
         }
         const ignorarId = String((typeof editandoPedidoId !== 'undefined' && editandoPedidoId) || (typeof pedidoAtual !== 'undefined' && pedidoAtual && pedidoAtual.id) || '').trim();
-        let vendasPedidos = [];
-        let comprasPedidos = [];
-        try {
-            if (Array.isArray(window.pedidos) && window.pedidos.length > 0) {
-                vendasPedidos = window.pedidos;
-            } else if (typeof getData === 'function') {
-                vendasPedidos = await getData('vendas/pedidos') || [];
-            }
-        } catch (_) { vendasPedidos = Array.isArray(window.pedidos) ? window.pedidos : []; }
-        try {
-            if (typeof getData === 'function') {
-                comprasPedidos = await getData('pedidosCompra') || [];
-            }
-        } catch (_) { comprasPedidos = []; }
-        if (!Array.isArray(vendasPedidos)) vendasPedidos = [];
-        if (!Array.isArray(comprasPedidos)) comprasPedidos = [];
+        // Leituras paralelas (antes: 2 round-trips sequenciais por chamada).
+        const { vendasPedidos, comprasPedidos } = await carregarPedidosParaUsoRomaneio();
         const verificar = (lista, modulo) => {
             for (let i = 0; i < lista.length; i++) {
                 const p = lista[i];
@@ -190,20 +201,8 @@ async function buscarUsosRomaneioVendas(idEstavel) {
     if (!id) return [];
     const out = [];
     try {
-        let vendasPedidos = [];
-        let comprasPedidos = [];
-        try {
-            if (Array.isArray(window.pedidos) && window.pedidos.length > 0) {
-                vendasPedidos = window.pedidos;
-            } else if (typeof getData === 'function') {
-                vendasPedidos = await getData('vendas/pedidos') || [];
-            }
-        } catch (_) { vendasPedidos = Array.isArray(window.pedidos) ? window.pedidos : []; }
-        try {
-            if (typeof getData === 'function') {
-                comprasPedidos = await getData('pedidosCompra') || [];
-            }
-        } catch (_) { comprasPedidos = []; }
+        // Leituras paralelas (antes: 2 round-trips sequenciais por chamada).
+        const { vendasPedidos, comprasPedidos } = await carregarPedidosParaUsoRomaneio();
         const varrer = (lista, modulo) => {
             (Array.isArray(lista) ? lista : []).forEach(p => {
                 if (!p || typeof p !== 'object') return;
@@ -230,20 +229,8 @@ async function construirMapaUsosRomaneioVendas() {
     const mapa = new Map();
     try {
         const ignorarId = String((typeof editandoPedidoId !== 'undefined' && editandoPedidoId) || (typeof pedidoAtual !== 'undefined' && pedidoAtual && pedidoAtual.id) || '').trim();
-        let vendasPedidos = [];
-        let comprasPedidos = [];
-        try {
-            if (Array.isArray(window.pedidos) && window.pedidos.length > 0) {
-                vendasPedidos = window.pedidos;
-            } else if (typeof getData === 'function') {
-                vendasPedidos = await getData('vendas/pedidos') || [];
-            }
-        } catch (_) { vendasPedidos = Array.isArray(window.pedidos) ? window.pedidos : []; }
-        try {
-            if (typeof getData === 'function') {
-                comprasPedidos = await getData('pedidosCompra') || [];
-            }
-        } catch (_) { comprasPedidos = []; }
+        // Leituras paralelas (antes: 2 round-trips sequenciais por chamada).
+        const { vendasPedidos, comprasPedidos } = await carregarPedidosParaUsoRomaneio();
         const absorver = (lista, modulo) => {
             (Array.isArray(lista) ? lista : []).forEach(p => {
                 if (!p || typeof p !== 'object') return;
@@ -2396,7 +2383,18 @@ function sanearIndefinidosFirebase(valor) {
 // Função para salvar pedido
 async function salvarPedido(event) {
     event.preventDefault();
-    
+
+    // Trava anti-duplo-clique/Enter (auto-expira em 5s: sem estado preso).
+    // O overlay do LoadingManager já bloqueia cliques durante o save.
+    try {
+        const agora = Date.now();
+        if (window.__salvarPedidoVendaTs && (agora - window.__salvarPedidoVendaTs) < 5000) {
+            try { ToastManager.info('Salvamento já em andamento, aguarde...', 'Aguarde'); } catch (_) {}
+            return;
+        }
+        window.__salvarPedidoVendaTs = agora;
+    } catch (_) {}
+
     try {
         // Validações iniciais (sem loading para evitar travamento visual em caso de erro simples)
         if (itensCarrinho.length === 0) {
@@ -3829,6 +3827,23 @@ function filtrarPedidos() {
     carregarTabelaPedidos(filtro);
 }
 
+// Debounce genérico (mesmo padrão financas.js): evita re-render por tecla.
+if (typeof debounceFn !== 'function') {
+    var debounceFn = function (fn, delay) {
+        let t = null;
+        return function () {
+            const args = arguments, self = this;
+            if (t) clearTimeout(t);
+            t = setTimeout(() => fn.apply(self, args), delay || 200);
+        };
+    };
+}
+
+// Versão com debounce para o onkeyup da busca (preserva chamada direta).
+const filtrarPedidosDebounced = (typeof debounceFn === 'function')
+    ? debounceFn(function () { try { filtrarPedidos(); } catch (_) {} }, 220)
+    : function () { try { filtrarPedidos(); } catch (_) {} };
+
 async function editarPedido(pedidoId) {
     const pedido = resolverPedidoVenda(pedidoId);
     if (!pedido) return;
@@ -4027,7 +4042,17 @@ async function excluirPedido(pedidoId) {
     if (!confirm('Deseja excluir este pedido? Esta ação não pode ser desfeita.')) {
         return;
     }
-    
+    // Trava anti-duplo-clique (auto-expira em 10s: sem estado preso).
+    try {
+        const agoraX = Date.now();
+        if (window.__excluirPedidoVendaTs && (agoraX - window.__excluirPedidoVendaTs) < 10000) {
+            try { ToastManager.info('Exclusão já em andamento, aguarde...', 'Aguarde'); } catch (_) {}
+            return;
+        }
+        window.__excluirPedidoVendaTs = agoraX;
+    } catch (_) {}
+    try { LoadingManager.show('Excluindo pedido...'); } catch (_) {}
+
     try {
         const pedido = resolverPedidoVenda(pedidoId);
         // Snapshots para rollback se o servidor não confirmar a exclusão.
@@ -4102,9 +4127,14 @@ async function excluirPedido(pedidoId) {
         if (!pedidoRemotoOk) {
             try { window.pedidos = backupPedidosVenda; } catch (_) {}
             try {
-                if (backupEstoqueVenda) {
+                if (Array.isArray(backupEstoqueVenda)) {
+                    const porId = new Map(backupEstoqueVenda.map(p => [p && p.id, p]));
                     (window.produtos || []).forEach(p => {
-                        if (p && backupEstoqueVenda.has(p.id)) p.estoque = backupEstoqueVenda.get(p.id);
+                        if (p && porId.has(p.id)) {
+                            const b = porId.get(p.id);
+                            Object.keys(p).forEach(k => { try { delete p[k]; } catch (_) {} });
+                            Object.assign(p, JSON.parse(JSON.stringify(b)));
+                        }
                     });
                 }
             } catch (_) {}
@@ -4122,6 +4152,8 @@ async function excluirPedido(pedidoId) {
     } catch (error) {
         console.error('Erro ao excluir pedido:', error);
         ToastManager.error('Erro ao excluir pedido: ' + error.message, 'Erro');
+    } finally {
+        try { LoadingManager.hide(); } catch (_) {}
     }
 }
 
@@ -6079,7 +6111,8 @@ async function excluirProduto(produtoId) {
     try {
         const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
         const eraEspecie = !!(window.__vendasEspeciesIds instanceof Set && window.__vendasEspeciesIds.has(String(produtoId)));
-        window.produtos = window.produtos.filter(p => p.id !== produtoId);
+        // Comparação tolerante a tipo (id numérico vs string)
+        window.produtos = window.produtos.filter(p => String(p && p.id) !== String(produtoId));
         __rvSaveDataRemoteOk = false;
         await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
         if (!__rvSaveDataRemoteOk) {
@@ -7468,15 +7501,21 @@ async function saveData(key, data) {
                 // Evitar sobrescrita em coleções sensíveis: salvar por registro
                 const perRecordKeys = new Set(['contasReceber', 'contasPagar', 'romaneiosPct']);
                 if (Array.isArray(data) && perRecordKeys.has(String(key))) {
+                    // Lote com concorrência limitada (antes: 1 round-trip sequencial
+                    // por registro; 200 contas ≈ 1min). Mesma semântica por registro.
+                    const alvos = data.filter(item => item && item.id);
+                    const tentados = alvos.length;
                     let ok = 0;
-                    let tentados = 0;
-                    for (const item of data) {
-                        if (!item || !item.id) continue;
-                        tentados++;
-                        const payload = { ...item };
-                        Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
-                        const res = await window.firebaseService.saveToFirebase(String(key), String(item.id), payload);
-                        if (res && res.success) ok++;
+                    const LIMITE = 8;
+                    for (let i = 0; i < alvos.length; i += LIMITE) {
+                        const lote = alvos.slice(i, i + LIMITE).map(item => {
+                            const payload = { ...item };
+                            Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
+                            return window.firebaseService.saveToFirebase(String(key), String(item.id), payload)
+                                .then(res => { if (res && res.success) ok++; })
+                                .catch(() => {});
+                        });
+                        await Promise.allSettled(lote);
                     }
                     __rvSaveDataRemoteOk = tentados > 0 && ok === tentados;
                     console.log(`✅ ${key}: ${ok} registro(s) salvos por registro (sem sobrescrever)`);

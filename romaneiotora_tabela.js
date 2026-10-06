@@ -818,6 +818,15 @@ async function salvarRomaneio() {
         if (window.Utils && window.Utils.showToast) window.Utils.showToast('Adicione pelo menos um item ao romaneio antes de salvar.', 'warning');
         return;
     }
+
+    // Trava anti-duplo-clique + feedback (save pode levar segundos no mobile)
+    if (window.isSavingRomaneio) {
+        if (window.Utils && window.Utils.showToast) window.Utils.showToast('Salvamento já em andamento, aguarde...', 'info');
+        return;
+    }
+    window.isSavingRomaneio = true;
+    try { if (typeof LoadingManager !== 'undefined' && LoadingManager.show) LoadingManager.show('Salvando romaneio...'); } catch (_) {}
+    try { const bS = document.getElementById('btnSalvar'); if (bS) bS.disabled = true; } catch (_) {}
     
     try {
         // ✅ PRIMEIRO: Calcular totais antes de criar o objeto romaneio
@@ -1219,6 +1228,10 @@ async function salvarRomaneio() {
     } catch (error) {
         console.error("❌ Erro ao salvar romaneio:", error);
         if (window.Utils && window.Utils.showToast) window.Utils.showToast(`Erro ao salvar romaneio: ${error.message}`, 'error');
+    } finally {
+        window.isSavingRomaneio = false;
+        try { if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}
+        try { const bS = document.getElementById('btnSalvar'); if (bS) bS.disabled = false; } catch (_) {}
     }
 }
 

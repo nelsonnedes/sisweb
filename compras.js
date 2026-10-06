@@ -1124,11 +1124,13 @@ window.excluirProdutoCadastro = async function(produtoId) {
     if (!confirm(`Excluir produto "${getProdutoNomeCadastro(produto)}"?`)) return;
     const novaLista = (window.produtos || []).filter(p => String(p?.id || '') !== String(produtoId || ''));
     const okCatalogo = await persistProdutosCatalog(novaLista);
-    renderProdutosCadastroTable();
     if (!okCatalogo) {
         ToastManager.error('Não foi possível excluir o produto no servidor. Verifique sua conexão e permissões e tente novamente.');
+        try { renderProdutosCadastroTable(); } catch (_) {}
         return;
     }
+    window.produtos = novaLista;
+    renderProdutosCadastroTable();
     ToastManager.success('Produto excluído com sucesso!');
 };
 
@@ -2376,6 +2378,15 @@ function sanearIndefinidosFirebase(valor) {
 async function salvarPedido(event) {
     if (event) event.preventDefault();
     console.log('🚀 Iniciando salvamento do pedido...');
+    // Trava anti-duplo-clique/Enter (auto-expira em 5s: sem estado preso).
+    try {
+        const agoraC = Date.now();
+        if (window.__salvarPedidoCompraTs && (agoraC - window.__salvarPedidoCompraTs) < 5000) {
+            try { ToastManager.info('Salvamento já em andamento, aguarde...', 'Aguarde'); } catch (_) {}
+            return;
+        }
+        window.__salvarPedidoCompraTs = agoraC;
+    } catch (_) {}
     LoadingManager.show('Salvando pedido...');
 
     // Sincroniza edições de parcelas ainda pendentes (debounce) para a

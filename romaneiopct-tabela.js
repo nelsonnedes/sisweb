@@ -1245,7 +1245,9 @@ async function salvarRomaneio() {
         }
         
         window.isSavingRomaneio = true;
-        
+        // Feedback durante o bloco Firebase (lento no mobile); trava já existe acima.
+        try { if (typeof LoadingManager !== 'undefined' && LoadingManager.show) LoadingManager.show('Salvando romaneio...'); } catch (_) {}
+
         console.log("💾 Iniciando salvamento do romaneio PCT");
         
         // ✅ VALIDAÇÕES MELHORADAS DO CLIENTE
@@ -1527,6 +1529,7 @@ async function salvarRomaneio() {
         alert('Erro ao salvar romaneio: ' + error.message);
     } finally {
         window.isSavingRomaneio = false;
+        try { if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}
     }
 }
 

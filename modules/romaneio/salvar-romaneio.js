@@ -138,7 +138,9 @@ window.SalvarRomaneio = (function() {
         }
         
         isProcessing = true;
-        
+        // Feedback visual durante coletar→salvar (Firebase pode levar segundos)
+        try { if (typeof LoadingManager !== 'undefined' && LoadingManager.show) LoadingManager.show('Salvando romaneio...'); } catch (_) {}
+
         try {
             // Validar dados do romaneio
             const dadosRomaneio = await coletarDadosRomaneio();
@@ -175,6 +177,7 @@ window.SalvarRomaneio = (function() {
             return false;
         } finally {
             isProcessing = false;
+            try { if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}
         }
     }
 

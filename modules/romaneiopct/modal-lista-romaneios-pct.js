@@ -1015,15 +1015,40 @@ window.ModalListaRomaneiosPCT = (function() {
     async function deleteRomaneio(romaneioId) {
         if (!confirm(MSG_CONFIRM_DELETE)) return;
         console.log(` PCT: Excluindo romaneio ${romaneioId}`);
+        // Chave real pode divergir do id normalizado (firebaseKey/key/numero).
+        let rec = null;
         try {
-            state.romaneios = state.romaneios.filter(r => r.id !== romaneioId);
-            state.filteredRomaneios = state.filteredRomaneios.filter(r => r.id !== romaneioId);
+            rec = (state.romaneios || []).find(r => r && [r.id, r.firebaseKey, r.key, r.numero].some(v => String(v || '') === String(romaneioId))) || null;
+        } catch (_) { rec = null; }
+        const chaves = [];
+        [romaneioId, rec && rec.firebaseKey, rec && rec.key, rec && rec.numero, rec && rec.id].forEach(v => {
+            const s = String(v || '').trim();
+            if (s && !chaves.includes(s)) chaves.push(s);
+        });
+        try {
+            // Remoto PRIMEIRO com gate de sucesso (fail-closed: sem confirmação,
+            // mantém na lista — antes filtrava local e ressuscitava no reload).
+            let ok = false;
+            let ultimoErro = '';
             if (window.firebaseService && typeof window.firebaseService.saveToFirebase === "function") {
                 // ✅ Remover por registro (evita sobrescrever coleção)
-                await window.firebaseService.saveToFirebase("romaneios/pct", String(romaneioId), null);
+                for (const k of chaves) {
+                    try {
+                        const res = await window.firebaseService.saveToFirebase("romaneios/pct", String(k), null);
+                        if (res && res.success) ok = true;
+                    } catch (e) { ultimoErro = String((e && e.message) || e); }
+                }
+            } else {
+                ultimoErro = 'FirebaseService indisponível';
             }
-                renderRomaneiosList();
-                renderPagination();
+            if (!ok) {
+                showError(MSG_ERROR_DELETE_FAILED + (ultimoErro ? ` (${ultimoErro.slice(0, 120)})` : ''));
+                return;
+            }
+            state.romaneios = state.romaneios.filter(r => !chaves.includes(String(r && (r.id ?? r.firebaseKey ?? r.key ?? r.numero))));
+            state.filteredRomaneios = state.filteredRomaneios.filter(r => !chaves.includes(String(r && (r.id ?? r.firebaseKey ?? r.key ?? r.numero))));
+            renderRomaneiosList();
+            renderPagination();
             showSuccess(MSG_SUCCESS_DELETE);
         } catch (error) {
             console.error(" PCT: Erro ao excluir romaneio:", error);

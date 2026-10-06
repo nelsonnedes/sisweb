@@ -161,7 +161,11 @@ const NFStorage = (() => {
   // ─── Remover NF (apenas rascunho) ────────────────────────────────────────
   async function removerNF(tenantId, modelo, nfId) {
     const path = `${modeloPath(tenantId, modelo)}/${nfId}`;
-    await fb().removeFromFirebase(path);
+    const res = await fb().removeFromFirebase(path);
+    if (res && res.success === false) {
+      throw new Error((res && res.error) || 'Falha ao remover NF no servidor');
+    }
+    return res;
   }
 
   return {

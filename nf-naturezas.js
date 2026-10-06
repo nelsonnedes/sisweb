@@ -104,8 +104,12 @@ const NFNaturezas = (() => {
 
   // ─── Remover natureza ─────────────────────────────────────────────────────
   async function remover(tenantId, id) {
-    await fb().removeFromFirebase(getPath(tenantId, id));
-    if (_cache) _cache = _cache.filter(n => n.id !== id);
+    // Fail-closed: só purga local/UI após confirmação remota.
+    const res = await fb().removeFromFirebase(getPath(tenantId, id));
+    if (res && res.success === false) {
+      throw new Error((res && res.error) || 'Falha ao remover natureza no servidor');
+    }
+    if (_cache) _cache = _cache.filter(n => String(n && n.id) !== String(id));
     _persistirLocal(tenantId);
   }
 

@@ -660,18 +660,38 @@ window.ModalListaRomaneios = (function() {
 
             const sid = String(romaneioId);
             const alvo = (state.romaneios || []).find(r => String(r && (r.firebaseKey || r.id)) === sid) || null;
-            const key = String((alvo && (alvo.firebaseKey || alvo.id)) || sid);
+            const chaves = [];
+            [sid, alvo && alvo.firebaseKey, alvo && alvo.id, alvo && alvo.key, alvo && alvo.numero].forEach(v => {
+                const s = String(v || '').trim();
+                if (s && !chaves.includes(s)) chaves.push(s);
+            });
 
             const io = getIoService();
+            let ok = false;
+            let ultimoErro = '';
             if (io && typeof io.save === 'function') {
-                await io.save('romaneios/tl', key, null);
+                // Purga todas as chaves candidatas; exige 1 sucesso (fail-closed).
+                for (const key of chaves) {
+                    try {
+                        const res = await io.save('romaneios/tl', key, null);
+                        if (!res || res.success !== false) ok = true;
+                    } catch (e) { ultimoErro = String((e && e.message) || e); }
+                }
             } else {
-                console.warn('⚠️ Serviço Firebase indisponível para exclusão.');
+                ultimoErro = 'Serviço Firebase indisponível para exclusão.';
+                console.warn('⚠️ ' + ultimoErro);
+            }
+            if (!ok) {
+                showError(MSG_ERROR_DELETE_FAILED + (ultimoErro ? ` (${ultimoErro.slice(0, 120)})` : ''));
+                return;
             }
 
-            removeFromLocalCachesById(key);
-            state.romaneios = (state.romaneios || []).filter(r => String(r && (r.firebaseKey || r.id)) !== key);
-            state.filteredRomaneios = (state.filteredRomaneios || []).filter(r => String(r && (r.firebaseKey || r.id)) !== key);
+            chaves.forEach(key => {
+                try { removeFromLocalCachesById(key); } catch (_) {}
+            });
+            const fora = (r) => !chaves.includes(String(r && (r.firebaseKey || r.id || r.key || r.numero)));
+            state.romaneios = (state.romaneios || []).filter(fora);
+            state.filteredRomaneios = (state.filteredRomaneios || []).filter(fora);
             if (state.currentPage > 1) {
                 const totalPages = Math.max(1, Math.ceil(state.filteredRomaneios.length / CONFIG.itemsPerPage));
                 if (state.currentPage > totalPages) state.currentPage = totalPages;

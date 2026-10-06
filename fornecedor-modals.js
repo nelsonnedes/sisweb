@@ -1523,25 +1523,49 @@ async function excluirFornecedor(fornecedorId) {
         }
 
         const basePath = getFornecedorBasePath();
-        const directItemPath = `${basePath}/${fornecedorId}`;
+        const idStr = String(fornecedorId);
+        // Chave real pode divergir (firebaseKey/key); tenta candidatas.
+        const chavesForn = [];
+        [idStr, fornecedor && fornecedor.firebaseKey, fornecedor && fornecedor.key].forEach(v => {
+            const s = String(v || '').trim();
+            if (s && !chavesForn.includes(s)) chavesForn.push(s);
+        });
 
-        // 1. Remover do Firebase se disponível
+        // 1. Remover do Firebase se disponível (fail-closed: exige 1 sucesso)
+        let remotoOk = false;
+        let ultimoErroFb = '';
         if (window.firebaseService) {
-            try {
-                if (typeof window.firebaseService.removeFromFirebase === 'function') {
-                    await window.firebaseService.removeFromFirebase(directItemPath);
-                } else if (typeof window.firebaseService.deleteFromFirebase === 'function') {
-                    await window.firebaseService.deleteFromFirebase(directItemPath);
-                  } else if (typeof window.firebaseService.deleteData === 'function') {
-                      await window.firebaseService.deleteData(`${basePath}/${String(fornecedorId)}`);
-                  } else if (typeof window.firebaseService.saveToFirebase === 'function') {
-                      await window.firebaseService.saveToFirebase(basePath, String(fornecedorId), null);
-                  } else if (typeof window.firebaseService.saveData === 'function') {
-                      await window.firebaseService.saveData(`${basePath}/${String(fornecedorId)}`, null);
-                  }
-            } catch (fbErr) {
-                console.warn("⚠️ Erro ao remover do Firebase:", fbErr);
+            for (const k of chavesForn) {
+                const p = `${basePath}/${k}`;
+                try {
+                    let res = null;
+                    if (typeof window.firebaseService.removeFromFirebase === 'function') {
+                        res = await window.firebaseService.removeFromFirebase(p);
+                    } else if (typeof window.firebaseService.deleteFromFirebase === 'function') {
+                        res = await window.firebaseService.deleteFromFirebase(p);
+                    } else if (typeof window.firebaseService.deleteData === 'function') {
+                        res = await window.firebaseService.deleteData(p);
+                    } else if (typeof window.firebaseService.saveToFirebase === 'function') {
+                        res = await window.firebaseService.saveToFirebase(basePath, String(k), null);
+                    } else if (typeof window.firebaseService.saveData === 'function') {
+                        res = await window.firebaseService.saveData(p, null);
+                    } else {
+                        throw new Error('Método de exclusão não encontrado no serviço Firebase');
+                    }
+                    if (res && res.success === false) throw new Error((res && res.error) || 'Falha remota');
+                    remotoOk = true;
+                } catch (fbErr) {
+                    ultimoErroFb = String((fbErr && fbErr.message) || fbErr);
+                    console.warn("⚠️ Erro ao remover do Firebase:", fbErr);
+                }
+                // Sem break: purga todas as chaves candidatas (id/key legados).
             }
+        } else {
+            ultimoErroFb = 'FirebaseService indisponível';
+        }
+        if (!remotoOk) {
+            window.__toast(`Não foi possível excluir no servidor. Verifique sua conexão.${ultimoErroFb ? ' (' + ultimoErroFb.slice(0, 100) + ')' : ''}`, 'error');
+            return;
         }
 
         // 2. Remover do localStorage (cache local)
@@ -1807,7 +1831,7 @@ function ensureModalStructure() {
                 </div>
                 <div class="modal-body">
                     <div class="search-box">
-                        <input type="text" id="fornecedorListFilter" placeholder="Filtrar fornecedores..." oninput="filterFornecedorList()">
+                        <input type="text" id="fornecedorListFilter" placeholder="Filtrar fornecedores..." oninput="filterFornecedorListDebounced()">
                     </div>
                     <div class="table-responsive modal-table-scroll">
                         <table class="table">
@@ -2049,6 +2073,15 @@ function filterFornecedorList() {
     if (!input) return;
     renderFornecedorListBasic(input.value);
 }
+
+// Versão com debounce para o oninput (evita re-render por tecla).
+var filterFornecedorListDebounced = (function () {
+    let t = null;
+    return function () {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => { try { filterFornecedorList(); } catch (_) {} }, 220);
+    };
+})();
 
 // ✅ ABRIR MODAL LISTA DE FORNECEDORES (NATIVO)
 async function openFornecedorListModal() {

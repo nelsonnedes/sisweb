@@ -550,10 +550,13 @@ window.deleteItem = async (id) => {
         console.log('🗑️ Excluindo cliente via window.deleteClient:', cleanId);
         
         // Usar a função global corrigida que lida com multi-tenancy e limpeza de cache
+        // (fail-closed: exige sucesso explícito antes de toast/refresh)
         if (typeof window.deleteClient === 'function') {
-            await window.deleteClient(cleanId);
+            const rDel = await window.deleteClient(cleanId);
+            if (rDel && rDel.success === false) throw new Error(rDel.error || 'Falha ao excluir cliente');
         } else if (window.clientService && typeof window.clientService.deleteClient === 'function') {
-            await window.clientService.deleteClient(cleanId);
+            const rDel = await window.clientService.deleteClient(cleanId);
+            if (rDel && rDel.success === false) throw new Error(rDel.error || 'Falha ao excluir cliente');
         } else {
             // Fallback
             const result = await window.firebaseService.deleteData(`clients/${cleanId}`);
