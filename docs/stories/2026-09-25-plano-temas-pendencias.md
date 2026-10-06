@@ -37,6 +37,19 @@ Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 te
       e atualizar artefatos.
 - [ ] Soak A4: remoção física dos globais após 09/10 (`docs/legacy-removal-gate.md`).
 
+## 04–05/10 — sessão vendas/estoque/romaneios (resumo operacional)
+- [x] thead marca anti-stale (ID + `?v=` hash) + `sync-css-cachebusters.mjs` (CSS+JS, `--check/--resync`).
+- [x] Produto romaneio em vendas: volume sem ×duplo, preview (refetch, sincronia, trava, delta), trava/lock igual pedidos, pecas 0 persiste, zerados ocultos, select-all mobile, renames, Voltar/Imprimir no relatório.
+- [x] Baixa por unidade (UN/m³/ml/m²/DZ) + carrinho sempre em m³ com detalhe ("2 Peças", pack PC, inferência).
+- [x] Estoque ponto-único na aprovação (deduz ao entrar, reverte ao sair; manual incluso).
+- [x] Nº display sequencial TL/PCT/PES/Tora (id intacto) + backfill 183 regs (`migrar-numero-exibicao-romaneios.cjs`).
+- [x] Pré-romaneio excluir persiste (multi-chave, fail-closed, limpa espelho).
+- [x] Varreduras: deletes fail-closed (PCT/TL/fornecedor/vendas/nf/cliente/compras), loading+travas (saves Tora/PCT/TL/pedidos, delete, impressão), dual-fetch paralelo, debounce, lote saveData, rollback delete corrigido.
+- [ ] Aguardando usuário: espécies-lixo; validar telas após Ctrl+F5.
+- [ ] Aguardando antigravity: `tmp/redesign-*.json`.
+- [ ] Soak A4 pós-09/10.
+- [ ] Futuro (baixo retorno/risco): skeleton em selects, alert→toast PCT, whole-list→granular, onValue sem off, `ADMIN_ASSET_VERSION` dinâmica.
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,
