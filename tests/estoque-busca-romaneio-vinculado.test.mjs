@@ -107,3 +107,12 @@ test('Romaneio Vinculado exibe número, pessoa e volume com fallback legado segu
   assert.match(js, /observacoes: formatarRomaneiosVinculadosMovimentacao\(mov, \{ plain \}\)/);
   assert.match(html, /\.romaneio-vinculado-item/);
 });
+
+test('fornecedor select sem sem-nome: quarentena e dedup', () => {
+  const js = read('estoque.js');
+  const block = js.match(/function atualizarSelectFornecedores\(\)[\s\S]*?\n\}/)?.[0] || '';
+  assert.ok(/vistosForn/.test(block), 'dedup por id');
+  assert.ok(/razaoSocial/.test(block), 'fallback razaoSocial/fantasia');
+  assert.ok(!/Fornecedor sem nome/.test(block), 'sem rotulo sem-nome');
+  assert.ok(/!id && !nome/.test(block), 'pula registros sem id e sem nome');
+});

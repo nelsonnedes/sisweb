@@ -1554,10 +1554,21 @@ function atualizarSelectFornecedores() {
         carregarRomaneiosParaSelect(val);
     };
 
+    // Quarentena de exibição: pula nulos de array esparso, metadados e
+    // registros sem id e sem nome; dedup por id; nome com fallbacks.
+    // (Só display — o array original segue intacto p/ lookups por id.)
+    const vistosForn = new Set();
     fornecedores.forEach(f => {
+        if (!f || typeof f !== 'object') return;
+        const id = String(f.id || f.firebaseKey || f.key || '').trim();
+        const nome = String(f.nome || f.name || f.razaoSocial || f.fantasia || f.nomeFantasia || '').trim();
+        if (!id && !nome) return;
+        const chave = (id || ('nome:' + nome.toLowerCase()));
+        if (vistosForn.has(chave)) return;
+        vistosForn.add(chave);
         const option = document.createElement('option');
-        option.value = f.id;
-        option.textContent = f.nome || f.name || 'Fornecedor sem nome';
+        option.value = id || nome;
+        option.textContent = nome || `(${id})`;
         select.appendChild(option);
     });
 }
