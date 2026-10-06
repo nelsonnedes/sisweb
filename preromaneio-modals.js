@@ -1162,25 +1162,74 @@ async function carregarPreRomaneio(id, dadosPreCarregados = null) {
 
 async function excluirPreRomaneio(id) {
     if (!confirm('Tem certeza que deseja excluir este Pré-Romaneio?')) return;
+    const idStr = String(id || '').trim();
+    if (!idStr) return;
+
+    // Chaves candidatas: a chave real no Firebase pode divergir do id
+    // normalizado (id/key/firebaseKey/numero). Delete é idempotente.
+    let rec = null;
+    try { rec = (cachedRomaneios || []).find(r => String(r.id) === idStr) || null; } catch (_) { rec = null; }
+    const chaves = [];
+    [idStr, rec && rec.firebaseKey, rec && rec.key, rec && rec.numero].forEach(v => {
+        const s = String(v || '').trim();
+        if (s && !chaves.includes(s)) chaves.push(s);
+    });
+    const excluirNoFirebase = async (path) => {
+        if (window.firebaseService.deleteFromFirebase) return window.firebaseService.deleteFromFirebase(path);
+        if (window.firebaseService.removeFromFirebase) return window.firebaseService.removeFromFirebase(path);
+        if (window.firebaseService.deleteData) return window.firebaseService.deleteData(path);
+        if (window.firebaseService.removeData) return window.firebaseService.removeData(path);
+        throw new Error('Método de exclusão não encontrado no serviço Firebase');
+    };
 
     try {
-        // deleteFromFirebase(path)/removeFromFirebase(path): 1 arg com caminho completo
-        // (deleteData não existe no singleton — verificar antes para não lançar TypeError)
-        if (window.firebaseService.deleteFromFirebase) {
-            await window.firebaseService.deleteFromFirebase(`preromaneios/${id}`);
-        } else if (window.firebaseService.removeFromFirebase) {
-            await window.firebaseService.removeFromFirebase(`preromaneios/${id}`);
-        } else if (window.firebaseService.deleteData) {
-            await window.firebaseService.deleteData(`preromaneios/${id}`);
-        } else if (window.firebaseService.removeData) {
-            await window.firebaseService.removeData(`preromaneios/${id}`);
+        let ok = false;
+        let ultimoErro = '';
+        if (window.firebaseService) {
+            for (const k of chaves) {
+                try {
+                    const res = await excluirNoFirebase(`preromaneios/${k}`);
+                    if (res && res.success) ok = true;
+                } catch (e) { ultimoErro = String((e && e.message) || e); }
+            }
         } else {
-            throw new Error('Método de exclusão não encontrado no serviço Firebase');
+            ultimoErro = 'FirebaseService indisponível';
         }
-        
-        // Remove from cache and re-render
-        cachedRomaneios = cachedRomaneios.filter(r => r.id !== id);
-        renderRomaneiosList(cachedRomaneios); 
+
+        // Limpa o espelho local (senão repopula a lista no reload offline).
+        try {
+            let tid = null;
+            const svc = window.firebaseServiceTL || window.firebaseService || window.FirebaseService;
+            if (svc && typeof svc.getTenantId === 'function') tid = svc.getTenantId();
+            if (!tid && svc && typeof svc.getCurrentTenantId === 'function') tid = svc.getCurrentTenantId();
+            if (!tid && window.appTenantId) tid = window.appTenantId;
+            if (!tid) {
+                const info = JSON.parse(localStorage.getItem('company_info') || 'null');
+                tid = info && (info.companyId || info.companyID || info.tenantId || info.id);
+            }
+            if (tid) {
+                const nsKey = `companies/${String(tid)}/preromaneios`;
+                const raw = localStorage.getItem(nsKey);
+                if (raw) {
+                    const obj = JSON.parse(raw);
+                    let mudou = false;
+                    chaves.forEach(k => {
+                        if (obj && Object.prototype.hasOwnProperty.call(obj, k)) { delete obj[k]; mudou = true; }
+                    });
+                    if (mudou) localStorage.setItem(nsKey, JSON.stringify(obj));
+                }
+            }
+        } catch (_) {}
+
+        // Fail-closed: sem confirmação do servidor, mantém na lista.
+        if (!ok) {
+            alert('Não foi possível excluir no servidor. Verifique sua conexão e permissões.' + (ultimoErro ? ' (' + ultimoErro.slice(0, 120) + ')' : ''));
+            return;
+        }
+
+        // Remove da UI (comparação por string: id pode vir numérico)
+        cachedRomaneios = cachedRomaneios.filter(r => !chaves.includes(String(r.id)));
+        renderRomaneiosList(cachedRomaneios);
     } catch (error) {
         console.error('Erro ao excluir:', error);
         alert('Erro ao excluir registro: ' + error.message);
