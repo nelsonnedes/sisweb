@@ -2844,50 +2844,28 @@ async function salvarPedido(event) {
             return;
         }
 
-        // Atualizar estoque localmente para refletir na UI imediatamente.
-        // Baixa na dimensão da unidade do item (UN→peças, M³→volume, ML→ml).
-        if (!editandoPedidoId) {
-            const itensComEstoque = (pedidoData.itens || []).filter(it => !isCarregoItem(it));
-            const alterados = new Set(itensComEstoque.map(it => it.produtoId));
-            for (const produto of window.produtos) {
-                if (alterados.has(produto.id)) {
-                    const item = itensComEstoque.find(it => it.produtoId === produto.id);
-                    if (item) {
-                        try {
-                            if (typeof temDimsSerrado === 'function' && temDimsSerrado(produto) && typeof aplicarBaixaSerrado === 'function') {
-                                aplicarBaixaSerrado(produto, item.quantidade, item.unidade || produto.unidade || 'm³', -1);
-                            } else if (typeof aplicarBaixaManual === 'function') {
-                                aplicarBaixaManual(produto, item.quantidade, item.unidade, -1);
-                            } else {
-                                const novoEstoque = (produto.estoque || 0) - (item.quantidade || 0);
-                                produto.estoque = novoEstoque < 0 ? 0 : novoEstoque;
-                            }
-                        } catch (_) {
-                            const novoEstoque = (produto.estoque || 0) - (item.quantidade || 0);
-                            produto.estoque = novoEstoque < 0 ? 0 : novoEstoque;
-                        }
-                        produto.updated = window.firebaseService && window.firebaseService.serverTimestamp ? window.firebaseService.serverTimestamp() : new Date().toISOString();
-                        // O salvamento do produto no banco deve ser feito separadamente ou via cloud function
-                        // Aqui atualizamos apenas a UI/cache local
-                    }
-                }
-            }
-        }
+        // Estoque: ponto único na APROVAÇÃO (entrar/sair do conferido).
+        // Criação nunca muta estoque (evita duplo-desconto e dado não persistido).
 
-        // Baixa automática do serrado ao APROVAR/ENTREGAR pedido pendente:
-        // só dispara entrando no conjunto conferido (idempotente por transição)
+        // Baixa/reversão automática ao ENTRAR/SAIR do conjunto conferido
+        // (aprovado/entregue/faturado/finalizado). Idempotente por estado:
+        // novo-aprovado deduz; pendente→aprovado deduz; aprovado→aprovado com
+        // itens trocados reverte o anterior e deduz o atual; aprovado→
+        // pendente/cancelado reverte. Usa helper canônico statusRomaneioConferido.
         try {
-            if (editandoPedidoId && salvouServidor) {
-                const prev = (backupPedidos || []).find(p => String(p.id) === String(editandoPedidoId));
-                const prevS = String(prev && prev.status ? prev.status : '').toLowerCase();
-                const CONF = ['aprovado', 'entregue', 'faturado', 'finalizado'];
-                const entrando = (statusNext === 'aprovado' || statusNext === 'entregue') && !CONF.includes(prevS);
-                if (entrando) {
-                    await baixarEstoqueSerradoPorAprovacao(pedidoData);
+            if (salvouServidor && typeof statusRomaneioConferido === 'function') {
+                const prev = (backupPedidos || []).find(p => String(p.id) === String(editandoPedidoId || ''));
+                const eraConferido = !!(prev && statusRomaneioConferido(prev.status));
+                const ehConferido = statusRomaneioConferido(statusNext);
+                if (eraConferido) {
+                    try { await reverterBaixaPedido(prev); } catch (e) { console.warn('Falha ao reverter baixa anterior (segue):', e); }
+                }
+                if (ehConferido) {
+                    try { await baixarEstoquePorAprovacao(pedidoData); } catch (e) { console.warn('Falha na baixa automática do estoque (não bloqueia o save):', e); }
                 }
             }
         } catch (e) {
-            console.warn('Falha na baixa automática do serrado (não bloqueia o save):', e);
+            console.warn('Falha na baixa automática do estoque (não bloqueia o save):', e);
         }
 
         LoadingManager.hide();
@@ -3150,83 +3128,74 @@ async function gerarContasReceberFinanceiro(pedido) {
     }
 }
 
-// Função para atualizar estoque
-async function atualizarEstoqueProdutos(itens, tipo) {
-    try {
-        for (const item of itens) {
-            if (isCarregoItem(item)) continue;
-            const produto = window.produtos.find(p => p.id === item.produtoId);
-            if (produto) {
-                // Reversão na mesma dimensão da baixa (UN→peças, M³→volume...).
-                try {
-                    if (typeof temDimsSerrado === 'function' && temDimsSerrado(produto) && typeof aplicarBaixaSerrado === 'function') {
-                        aplicarBaixaSerrado(produto, item.quantidade, item.unidade || produto.unidade || 'm³', 1);
-                    } else if (typeof aplicarBaixaManual === 'function') {
-                        aplicarBaixaManual(produto, item.quantidade, item.unidade, 1);
-                    } else if (tipo === 'saida') {
-                        produto.estoque = (produto.estoque || 0) - item.quantidade;
-                    } else if (tipo === 'entrada') {
-                        produto.estoque = (produto.estoque || 0) + item.quantidade;
-                    }
-                } catch (_) {
-                    if (tipo === 'saida') {
-                        produto.estoque = (produto.estoque || 0) - item.quantidade;
-                    } else if (tipo === 'entrada') {
-                        produto.estoque = (produto.estoque || 0) + item.quantidade;
-                    }
-                }
-                
-                // Garantir que o estoque não fique negativo
-                if (produto.estoque < 0) {
-                    produto.estoque = 0;
-                }
-                produto.updated = window.firebaseService && window.firebaseService.serverTimestamp ? window.firebaseService.serverTimestamp() : new Date().toISOString();
-            }
-        }
-        
-        if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            const alterados = new Set((itens || []).filter(it => !isCarregoItem(it)).map(it => it.produtoId));
-            const ops = [];
-            for (const produto of window.produtos) {
-                if (alterados.has(produto.id)) {
-                    ops.push(window.firebaseService.saveToFirebase('produtos', String(produto.id), produto));
-                }
-            }
-            if (ops.length > 0) {
-                await Promise.allSettled(ops);
-            }
-        } else {
-            await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
-        }
-        atualizarSelectProdutos();
-        
-    } catch (error) {
-        console.error('Erro ao atualizar estoque:', error);
-    }
+// Baixa automática do estoque na APROVAÇÃO/ENTREGA (ponto único):
+// ver baixarEstoquePorAprovacao / reverterBaixaPedido abaixo.
+// Best-effort: avisa sem bloquear; idempotência por estado (era/é conferido).
+// Ponto único de BAIXA de estoque (entra no conferido: aprovado/entregue/
+// faturado/finalizado). Deduz do produto EXATO (produtoId) na dimensão da
+// unidade do item; legado sem produtoId usa match romaneio+dims (serrado).
+// Manuais via aplicarBaixaManual. Persiste os tocados.
+async function baixarEstoquePorAprovacao(pedido) {
+    const tocados = await aplicarMovimentoEstoquePedido(pedido, -1);
+    if (tocados.length === 0) return { baixados: 0, volumeTotal: 0 };
+    const volumeTotal = tocados.reduce((s, t) => s + (t.volUsado || 0), 0);
+    try { atualizarSelectProdutos(); } catch (_) {}
+    try { ToastManager.success(`Baixa automática: ${volumeTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ em ${tocados.length} produto(s)`, 'Estoque'); } catch (_) {}
+    return { baixados: tocados.length, volumeTotal };
 }
 
-// Baixa automática do serrado na APROVAÇÃO/ENTREGA: para cada item do pedido
-// vinculado a romaneio, deduz volume/peças/ml do produto serrado
-// correspondente (match exato por romaneio+dims, fallback maior saldo).
-// Best-effort: avisa sem bloquear; idempotência via transição de status.
+// Alias legado (compatibilidade).
 async function baixarEstoqueSerradoPorAprovacao(pedido) {
+    return baixarEstoquePorAprovacao(pedido);
+}
+
+// Reversão simétrica (sai do conferido: excluir pedido conferido ou editar
+// para pendente/cancelado). Soma de volta na mesma dimensão. Silenciosa.
+async function reverterBaixaPedido(pedido) {
+    const tocados = await aplicarMovimentoEstoquePedido(pedido, 1);
+    try { atualizarSelectProdutos(); } catch (_) {}
+    return tocados;
+}
+
+// Núcleo compartilhado: dir -1 baixa, +1 reverte. Retorna [{produto, volUsado}].
+async function aplicarMovimentoEstoquePedido(pedido, dir) {
     const itens = Array.isArray(pedido && pedido.itens) ? pedido.itens : [];
-    if (itens.length === 0) return;
+    if (itens.length === 0) return [];
     const num = (v) => parseFloat(v) || 0;
-    let baixados = 0, volumeTotal = 0;
     const tocados = [];
     for (const it of itens) {
         if (!it || typeof it !== 'object' || isCarregoItem(it)) continue;
+        const qtd = num(it.quantidade) || 0;
+        if (!(qtd > 0)) continue;
+        const unidadeItem = it.unidade || 'm³';
+        // 1) produto exato
+        let alvo = null;
+        try {
+            if (it.produtoId) alvo = (window.produtos || []).find(p => p && String(p.id) === String(it.produtoId)) || null;
+        } catch (_) { alvo = null; }
+        if (alvo && typeof temDimsSerrado === 'function' && temDimsSerrado(alvo) && typeof aplicarBaixaSerrado === 'function') {
+            const volAntes = num(alvo.volumeM3) || num(alvo.estoque);
+            const res = aplicarBaixaSerrado(alvo, qtd, unidadeItem, dir);
+            if (dir < 0 && !(res.razao > 0)) {
+                try { ToastManager.warning(`Sem saldo: ${nomeExibicaoProduto(alvo)} (pedido ${pedido.numero || ''})`, 'Estoque', 6000); } catch (_) {}
+                continue;
+            }
+            tocados.push({ produto: alvo, volUsado: dir < 0 ? (Math.round(volAntes * (res.razao || 0) * 1000) / 1000) : 0 });
+            continue;
+        }
+        if (alvo && typeof aplicarBaixaManual === 'function') {
+            try { aplicarBaixaManual(alvo, qtd, unidadeItem, dir); } catch (_) { continue; }
+            tocados.push({ produto: alvo, volUsado: 0 });
+            continue;
+        }
+        if (dir > 0) continue;
+        // 2) legado sem produtoId: match romaneio+dims (só serrado)
         const rids = [];
         [it.origemId, it.romaneioId].forEach(v => {
             const s = String(v || '').trim();
             if (s) rids.push(s);
         });
         if (rids.length === 0) continue;
-        // Baixa na dimensão da unidade do item (UN→peças, M³→volume, ML→ml, M²→área).
-        const unidadeItem = it.unidade || 'm³';
-        const qtd = num(it.quantidade) || 0;
-        if (!(qtd > 0)) continue;
         const esp = String(it.especie || '').trim().toUpperCase();
         const e = num(it.espessura), l = num(it.largura), c = num(it.comprimento ?? it.comp);
         const candidatos = (window.produtos || []).filter(p => {
@@ -3234,29 +3203,26 @@ async function baixarEstoqueSerradoPorAprovacao(pedido) {
             return rids.includes(String(p.romaneioId || ''));
         });
         if (candidatos.length === 0) continue;
-        let alvo = candidatos.find(p =>
+        let alvo2 = candidatos.find(p =>
             String(p.especie || '').trim().toUpperCase() === esp &&
             num(p.espessura) === e && num(p.largura) === l && num(p.comprimento) === c
         ) || null;
-        if (!alvo) {
-            alvo = candidatos.slice().sort((a, b) => (num(b.estoque) - num(a.estoque)))[0];
+        if (!alvo2) {
+            alvo2 = candidatos.slice().sort((a, b) => (num(b.estoque) - num(a.estoque)))[0];
         }
-        if (!alvo) continue;
-        const volAntes = num(alvo.volumeM3 ?? alvo.estoque);
-        const res = aplicarBaixaSerrado(alvo, qtd, unidadeItem, -1);
-        if (!(res.razao > 0)) {
-            try { ToastManager.warning(`Sem saldo: ${nomeExibicaoProduto(alvo)} (pedido ${pedido.numero || ''})`, 'Estoque', 6000); } catch (_) {}
+        if (!alvo2) continue;
+        const volAntes2 = num(alvo2.volumeM3) || num(alvo2.estoque);
+        const res2 = aplicarBaixaSerrado(alvo2, qtd, unidadeItem, -1);
+        if (!(res2.razao > 0)) {
+            try { ToastManager.warning(`Sem saldo: ${nomeExibicaoProduto(alvo2)} (pedido ${pedido.numero || ''})`, 'Estoque', 6000); } catch (_) {}
             continue;
         }
-        const usar = Math.round(volAntes * res.razao * 1000) / 1000;
-        tocados.push(alvo);
-        baixados++;
-        volumeTotal = Math.round((volumeTotal + usar) * 1000) / 1000;
+        tocados.push({ produto: alvo2, volUsado: Math.round(volAntes2 * (res2.razao || 0) * 1000) / 1000 });
     }
-    if (tocados.length === 0) return;
+    if (tocados.length === 0) return [];
     try {
         if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            const ops = tocados.map(p => window.firebaseService.saveToFirebase('produtos', String(p.id), p));
+            const ops = tocados.map(t => window.firebaseService.saveToFirebase('produtos', String(t.produto.id), t.produto));
             await Promise.allSettled(ops);
         } else if (typeof saveData === 'function') {
             __rvSaveDataRemoteOk = false;
@@ -3267,8 +3233,7 @@ async function baixarEstoqueSerradoPorAprovacao(pedido) {
         const svcInv = window.firebaseService || window.FirebaseService;
         if (svcInv && typeof svcInv.invalidateReadCacheForPath === 'function') svcInv.invalidateReadCacheForPath('produtos');
     } catch (_) {}
-    try { atualizarSelectProdutos(); } catch (_) {}
-    try { ToastManager.success(`Baixa automática: ${volumeTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ em ${baixados} produto(s)`, 'Estoque'); } catch (_) {}
+    return tocados;
 }
 
 // Funções de listagem de pedidos
@@ -4069,11 +4034,18 @@ async function excluirPedido(pedidoId) {
         const backupPedidosVenda = Array.isArray(window.pedidos) ? window.pedidos.slice() : [];
         let backupEstoqueVenda = null;
         try {
-            backupEstoqueVenda = new Map((window.produtos || []).map(p => [p && p.id, p && p.estoque]));
+            // Clone profundo: a reversão mexe em estoque/peças/volume/ml.
+            backupEstoqueVenda = JSON.parse(JSON.stringify(window.produtos || []));
         } catch (_) { backupEstoqueVenda = null; }
         if (pedido) {
-            // Reverter estoque
-            await atualizarEstoqueProdutos(pedido.itens, 'entrada');
+            // Reverter estoque SOMENTE se o pedido tinha baixa (era conferido);
+            // pendente nunca consumiu — reverter inflaria.
+            try {
+                const eraConferido = typeof statusRomaneioConferido === 'function' && statusRomaneioConferido(pedido.status);
+                if (eraConferido && typeof reverterBaixaPedido === 'function') {
+                    await reverterBaixaPedido(pedido);
+                }
+            } catch (_) {}
             
             // Remover contas a receber relacionadas (fail-closed: sem confirmação, aborta)
             const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
@@ -4095,9 +4067,14 @@ async function excluirPedido(pedidoId) {
             }
             if (!finRemotoOk) {
                 try {
-                    if (backupEstoqueVenda) {
+                    if (Array.isArray(backupEstoqueVenda)) {
+                        const porId = new Map(backupEstoqueVenda.map(p => [p && p.id, p]));
                         (window.produtos || []).forEach(p => {
-                            if (p && backupEstoqueVenda.has(p.id)) p.estoque = backupEstoqueVenda.get(p.id);
+                            if (p && porId.has(p.id)) {
+                                const b = porId.get(p.id);
+                                Object.keys(p).forEach(k => { try { delete p[k]; } catch (_) {} });
+                                Object.assign(p, JSON.parse(JSON.stringify(b)));
+                            }
                         });
                     }
                 } catch (_) {}

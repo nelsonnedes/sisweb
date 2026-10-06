@@ -282,13 +282,32 @@ test('baixa por unidade: UN→peças, M³→volume, ML→ml, DZ→×12', () => {
 });
 
 test('fluxos usam baixa por unidade + pedido exibe Nº', () => {
-  assert.ok(/aplicarBaixaSerrado\(produto, item\.quantidade, item\.unidade/.test(src), 'save deduz por unidade');
-  assert.ok(/aplicarBaixaSerrado\(alvo, qtd, unidadeItem, -1\)/.test(src), 'aprovação deduz por unidade');
-  assert.ok(/aplicarBaixaSerrado\(produto, item\.quantidade, item\.unidade/.test(src), 'reversão por unidade');
   assert.ok(/validarEstoque\(produtoId, quantidade, itemEdicao/.test(src), 'validação recebe unidade');
   assert.ok(/sufixoNumero/.test(src), 'pedido exibe Nº do romaneio');
   const comprasSrc = readFileSync(new URL('../compras.js', import.meta.url), 'utf8');
   assert.ok(/sufixoNumeroC/.test(comprasSrc), 'compra exibe Nº do romaneio');
+});
+
+test('estoque ponto-único na aprovação: deduz ao entrar, reverte ao sair', () => {
+  // Funções do ponto-único existem (+ alias legado)
+  for (const fn of ['baixarEstoquePorAprovacao', 'reverterBaixaPedido', 'aplicarMovimentoEstoquePedido', 'baixarEstoqueSerradoPorAprovacao']) {
+    assert.ok(src.includes('function ' + fn + '('), `função ${fn} existe`);
+  }
+  // Criação NÃO muta estoque (era duplo-desconto + dado não persistido)
+  assert.ok(!/Atualizar estoque localmente para refletir na UI imediatamente/.test(src), 'sem mutação na criação');
+  // Save usa era/é conferido com helper canônico (vale p/ novo e edição)
+  assert.ok(/eraConferido/.test(src) && /ehConferido/.test(src), 'lógica era/é conferido existe');
+  assert.ok(/statusRomaneioConferido\(statusNext\)/.test(src), 'usa helper canônico no save');
+  assert.ok(/await reverterBaixaPedido\(prev\)/.test(src), 'reverte anterior antes de deduzir atual');
+  assert.ok(/await baixarEstoquePorAprovacao\(pedidoData\)/.test(src), 'deduz atual ao entrar');
+  // Manual também deduz na aprovação (antes só serrado)
+  assert.ok(/aplicarBaixaManual\(alvo, qtd, unidadeItem, dir\)/.test(src), 'manual deduz na aprovação');
+  // Legado sem produtoId preservado (match romaneio+dims)
+  assert.ok(/legado sem produtoId/.test(src), 'fallback legado documentado');
+  // Delete: reverte SOMENTE se era conferido (pendente nunca consumiu)
+  assert.ok(/eraConferido && typeof reverterBaixaPedido/.test(src) || /somente se o pedido tinha baixa/.test(src), 'delete condicional ao conferido');
+  // Função cega removida (sem resíduos)
+  assert.ok(!/async function atualizarEstoqueProdutos\(/.test(src), 'atualizarEstoqueProdutos removida');
 });
 
 test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Peças"', () => {
