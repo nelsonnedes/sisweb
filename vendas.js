@@ -6836,11 +6836,31 @@ function atualizarSelectProdutos() {
     
     if (window.produtos && window.produtos.length > 0) {
         // Produto Cadastrado lista SÓ produtos reais (Manual/Romaneio);
-        // espécies ficam no fluxo Produto Romaneio do pedido
+        // espécies ficam no fluxo Produto Romaneio do pedido.
+        // Sem estoque não aparece (coerente com a validação que bloquearia):
+        // serrado zerado (mesma regra da lista) e manual com estoque explícito 0.
+        // Respeita permitirEstoqueNegativo; legado sem campo continua visível.
+        let bloqueiaSemEstoque = true;
+        try {
+            bloqueiaSemEstoque = !!(window.VendasConfig && window.VendasConfig.validarEstoque && !window.VendasConfig.permitirEstoqueNegativo);
+        } catch (_) { bloqueiaSemEstoque = true; }
+        const semEstoqueVenda = (p) => {
+            try {
+                if (!bloqueiaSemEstoque) return false;
+                // Serrado: mesma regra da Lista em Estoque (estoqueZeradoNaLista).
+                if (typeof estoqueZeradoNaLista === 'function' && estoqueZeradoNaLista(p)) return true;
+                // Manual: estoque explícito zerado (legado sem campo continua visível).
+                if (typeof temDimsSerrado === 'function' && temDimsSerrado(p)) return false;
+                if (p.estoque === undefined || p.estoque === null || p.estoque === '') return false;
+                return Number(p.estoque) <= 0;
+            } catch (_) { return false; }
+        };
         const exibiveis = window.produtos.filter(p => {
             try {
                 if (isProdutoJunk(p)) return false;
-                return isProdutoReal(p);
+                if (!isProdutoReal(p)) return false;
+                if (typeof semEstoqueVenda === 'function' && semEstoqueVenda(p)) return false;
+                return true;
             } catch (_) { return true; }
         });
         // Garantir que ordenação e exibição tratem nomes alternativos (name/nome)

@@ -428,3 +428,10 @@ test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Pe�
   assert.ok(detUses >= 2, 'carrinho e visualização usam detalhe');
   assert.ok(/converterItemSerradoParaM3\(produto, quantidade, unidadeItem\)/.test(src), 'adicionar converte');
 });
+
+test('select Produto oculta zerados (coerente com validação e lista)', () => {
+  assert.ok(/semEstoqueVenda/.test(src), 'filtro do select existe');
+  assert.ok(/estoqueZeradoNaLista\(p\)/.test(src), 'reusa a regra da lista p/ serrado');
+  assert.ok(/bloqueiaSemEstoque/.test(src), 'respeita permitirEstoqueNegativo');
+  assert.ok(/legado sem campo continua visível/.test(src), 'legado preservado');
+});
