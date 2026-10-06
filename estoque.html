@@ -3017,9 +3017,16 @@
                         <label for="filtroObservacoesMov">Romaneio Vinculado:</label>
                         <input type="text" id="filtroObservacoesMov" placeholder="Filtrar romaneio, motivo ou observação..." oninput="filtrarMovimentacoes()">
                     </div>
-                    <div class="form-group" style="align-self: flex-end;">
+                </div>
+                <div class="form-row mov-acoes-row">
+                    <div class="form-group">
                         <button type="button" onclick="limparFiltrosMovimentacoes()" class="btn btn-secondary" title="Limpar filtros" style="width: 100%;">
                             <i class="fas fa-eraser"></i> Limpar Filtros
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" onclick="excluirMovimentacoesSelecionadas()" class="btn btn-danger" title="Excluir movimentações selecionadas" style="width: 100%;">
+                            <i class="fas fa-trash"></i> Excluir <span id="movExcluirSelectedCount">(0)</span>
                         </button>
                     </div>
                 </div>
@@ -3741,7 +3748,7 @@
 <script src="commerce-pdf-share.js?v=e6699735105a"></script>
         <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
         <script src="estoque_produtos.js?v=a9771662306f"></script>
-        <script src="estoque.js?v=d60cbf238fa9"></script>
+        <script src="estoque.js?v=6dc1a07570c6"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

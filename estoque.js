@@ -6163,6 +6163,63 @@ async function carregarTabelaMovimentacoes(filtro = {}) {
     }).catch(() => {});
 }
 
+function atualizarContadorMovExcluir() {
+    try {
+        const el = document.getElementById('movExcluirSelectedCount');
+        if (el) el.textContent = `(${(movimentacoesSelecionadas ? movimentacoesSelecionadas.size : 0)})`;
+    } catch (_) {}
+}
+
+let __excluirMovEmAndamento = false;
+
+// Exclui movimentações selecionadas (NÃO estorna toras: use Estornar para
+// devolver ao estoque). Fail-closed: sem confirmação remota, restaura a lista.
+async function excluirMovimentacoesSelecionadas() {
+    let ids = [];
+    try { ids = Array.from(movimentacoesSelecionadas || []); } catch (_) { ids = []; }
+    if (ids.length === 0) {
+        try {
+            ids = Array.from(document.querySelectorAll('.check-movimentacao:checked')).map(c => String(c.value));
+        } catch (_) { ids = []; }
+    }
+    if (ids.length === 0) {
+        alert('Selecione ao menos uma movimentação para excluir.');
+        return;
+    }
+    if (!confirm(`Excluir ${ids.length} movimentação(ões) selecionada(s)? Esta ação não pode ser desfeita. (Não devolve toras ao estoque — use Estornar para isso.)`)) return;
+    if (__excluirMovEmAndamento) return;
+    __excluirMovEmAndamento = true;
+    try {
+        const backup = Array.isArray(movimentacoes) ? movimentacoes.slice() : [];
+        movimentacoes = (movimentacoes || []).filter(m => !ids.includes(String(m && m.id)));
+        let ok = false;
+        try {
+            if (window.firebaseService && typeof window.firebaseService.updatePaths === 'function') {
+                const updates = {};
+                ids.forEach(id => { updates[`movimentacoesToras/${String(id)}`] = null; });
+                const res = await window.firebaseService.updatePaths(updates);
+                ok = !!(res && res.success);
+            } else if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
+                const ops = ids.map(id => window.firebaseService.saveToFirebase('movimentacoesToras', String(id), null));
+                const rs = await Promise.allSettled(ops);
+                ok = rs.some(r => r.status === 'fulfilled' && (!r.value || r.value.success !== false));
+            }
+        } catch (_) { ok = false; }
+        if (!ok) {
+            try { movimentacoes = backup; } catch (_) {}
+            alert('Não foi possível excluir no servidor. Verifique sua conexão e permissões.');
+            return;
+        }
+        try { movimentacoesSelecionadas.clear(); } catch (_) {}
+        try { const mc = document.getElementById('checkTodasMovimentacoes'); if (mc) mc.checked = false; } catch (_) {}
+        try { await carregarTabelaMovimentacoes(filtroMovimentacoesAtual); } catch (_) {}
+        try { atualizarContadorMovExcluir(); } catch (_) {}
+        alert(`${ids.length} movimentação(ões) excluída(s).`);
+    } finally {
+        __excluirMovEmAndamento = false;
+    }
+}
+
 function filtrarMovimentacoes() {
     const filtro = {
         dataInicio: document.getElementById('filtroDataInicio').value,
@@ -6195,6 +6252,7 @@ function toggleTodasMovimentacoes() {
     });
     // Atualizar resumo do rodapé para refletir as seleções
     carregarTabelaMovimentacoes(filtroMovimentacoesAtual);
+    try { atualizarContadorMovExcluir(); } catch (_) {}
 }
 
 function toggleMovimentacao(id, isChecked) {
@@ -6207,6 +6265,7 @@ function toggleMovimentacao(id, isChecked) {
     }
     // Atualizar resumo do rodapé para refletir as seleções
     carregarTabelaMovimentacoes(filtroMovimentacoesAtual);
+    try { atualizarContadorMovExcluir(); } catch (_) {}
 }
 
 function limparFiltrosMovimentacoes() {
@@ -6225,6 +6284,7 @@ function limparFiltrosMovimentacoes() {
     movimentacoesSelecionadas.clear();
     const masterCheck = document.getElementById('checkTodasMovimentacoes');
     if (masterCheck) masterCheck.checked = false;
+    try { atualizarContadorMovExcluir(); } catch (_) {}
 
     filtrarMovimentacoes();
 }

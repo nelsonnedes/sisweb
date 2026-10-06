@@ -925,7 +925,25 @@ window.abrirListaRomaneios = window.abrirListaRomaneiosTora;
 
 // Funções Genéricas
 window.editarRomaneioGeneric = (type, id) => { if (type === 'tora') window.editarRomaneioTora(id); else console.log('Edit', type, id); };
-window.excluirRomaneioGeneric = (type, id) => { if (confirm('Excluir?')) window.getRomaneioManager(type).deleteData(id); };
+window.excluirRomaneioGeneric = (type, id) => {
+    if (!confirm('Excluir?')) return;
+    try {
+        const p = window.getRomaneioManager(type).deleteData(id);
+        if (p && typeof p.catch === 'function') {
+            p.catch((e) => {
+                try {
+                    const msg = 'Não foi possível excluir no servidor. Verifique sua conexão.';
+                    if (typeof window.__toast === 'function') window.__toast(msg, 'error');
+                    else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'error');
+                    else alert(msg);
+                } catch (_) {}
+                console.error('Falha ao excluir romaneio:', (e && e.message) || e);
+            });
+        }
+    } catch (e) {
+        console.error('Falha ao excluir romaneio:', (e && e.message) || e);
+    }
+};
 window.imprimirRomaneioGeneric = (type, id) => { if (type === 'tora') window.imprimirRomaneioTora(id); };
 window.romaneioManagerNavigate = (type, dir) => window.getRomaneioManager(type).navigate(dir);
 window.romaneioManagerGoToPage = (type, page) => {

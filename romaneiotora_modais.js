@@ -3018,10 +3018,10 @@ async function editarRomaneio(romaneioId) {
                     romaneioProcessado = romaneio;
                 }
                 
-                if (romaneioProcessado && 
-                    (romaneioProcessado.id === romaneioId || 
-                     chaveFirebase === romaneioId ||
-                     romaneioProcessado.firebaseKey === romaneioId)) {
+                if (romaneioProcessado &&
+                    (String(romaneioProcessado.id) === String(romaneioId) ||
+                     String(chaveFirebase) === String(romaneioId) ||
+                     String(romaneioProcessado.firebaseKey) === String(romaneioId))) {
                     
                     if (!romaneioParaEditar) {
                         romaneioParaEditar = {
@@ -3301,7 +3301,7 @@ async function excluirRomaneio(romaneioId) {
                         const timestampAtual = romaneioParaExcluir.timestamp || 0;
                         const timestampNovo = romaneioProcessado.timestamp || 0;
                         
-                        if (chaveFirebase === romaneioId) {
+                        if (String(chaveFirebase) === String(romaneioId)) {
                             // Se a chave Firebase Ã© exatamente o ID solicitado, usar esta
                             chaveFirebaseParaExcluir = chaveFirebase;
                             romaneioParaExcluir = romaneioProcessado;

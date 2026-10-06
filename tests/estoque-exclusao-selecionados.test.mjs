@@ -47,3 +47,15 @@ test('exclusão individual reutiliza a mesma transação em lote', () => {
   assert.match(block, /return excluirTorasDoEstoqueEmLote\(\[toraId\]/);
   assert.doesNotMatch(block, /saveToFirebase|saveData|estoqueAtual = estoqueAtual\.filter/);
 });
+
+test('movimentacoes: limpar filtros em linha propria + excluir selecionados', () => {
+  const html2 = read('estoque.html');
+  const js2 = read('estoque.js');
+  assert.match(html2, /<div class="form-row mov-acoes-row">/);
+  assert.match(html2, /onclick="excluirMovimentacoesSelecionadas\(\)"/);
+  assert.match(html2, /id="movExcluirSelectedCount"/);
+  const block = js2.match(/async function excluirMovimentacoesSelecionadas\(\)[\s\S]*?\n\}/)?.[0] || '';
+  assert.match(block, /movimentacoesToras\//);
+  assert.match(block, /__excluirMovEmAndamento/);
+  assert.match(js2, /atualizarContadorMovExcluir/);
+});
