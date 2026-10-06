@@ -4648,10 +4648,23 @@ function detalheSerradoItem(item) {
                 const n = Math.round((parseFloat(v) || 0) * 1000) / 1000;
                 return Number.isInteger(n) ? String(n) : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
             };
-            const fam = normalizarUnidadeMedida(item.unidadeOrigem);
-            if ((fam === 'UN' || fam === 'DZ') && item.pecasOrigem != null) return `${fmtN(item.pecasOrigem)} Peças`;
-            if (item.qtdOrigem != null) return `${fmtN(item.qtdOrigem)} ${item.unidadeOrigem}`;
-            return '';
+        const fam = normalizarUnidadeMedida(item.unidadeOrigem);
+        if ((fam === 'UN' || fam === 'DZ') && item.pecasOrigem != null) return `${fmtN(item.pecasOrigem)} Peças`;
+        if (item.qtdOrigem != null) {
+            let base = `${fmtN(item.qtdOrigem)} ${item.unidadeOrigem}`;
+            // ML/M²: anexa equivalência em peças quando inteira ("105 LN · 21 Peças").
+            if (fam === 'ML' || fam === 'M2') {
+                try {
+                    const p = (window.produtos || []).find(x => x && x.id === (item && item.produtoId));
+                    if (p && typeof pecasEquivalentesSerrado === 'function' && typeof pecasInteirasDetalhe === 'function') {
+                        const s = pecasInteirasDetalhe(pecasEquivalentesSerrado(item.qtdOrigem, fam, p));
+                        if (s) base += ` · ${s}`;
+                    }
+                } catch (_) {}
+            }
+            return base;
+        }
+        return '';
         }
         // Inferência: linha direta em m³/ml/m² sem origem registrada.
         if (!item || typeof normalizarUnidadeMedida !== 'function') return '';
@@ -4662,11 +4675,6 @@ function detalheSerradoItem(item) {
         const num = (v) => parseFloat(String(v ?? '').replace(',', '.')) || 0;
         const qtd = num(item.quantidade);
         if (!(qtd > 0)) return '';
-        let E = num(p.espessura), L = num(p.largura), C = num(p.comprimento);
-        if ((!(E > 0 && L > 0 && C > 0)) && typeof dimsSerradoProduto === 'function') {
-            const dd = dimsSerradoProduto(p);
-            if (dd) { E = dd.E; L = dd.L; C = dd.C; }
-        }
         let volPeca = 0;
         const pPecas = num(p.pecas), pVol = num(p.volumeM3);
         if (famItem === 'M3') {
@@ -4675,14 +4683,10 @@ function detalheSerradoItem(item) {
                 const d = dimsSerradoProduto(p);
                 if (d) volPeca = (d.E * d.L * d.C) / 1e6;
             }
-        } else if (famItem === 'ML') {
-            if (!(C > 0)) return '';
-            const equiv = qtd / (C / 100);
-            return pecasInteirasDetalhe(equiv);
-        } else if (famItem === 'M2') {
-            if (!(L > 0 && C > 0)) return '';
-            const equiv = qtd / ((L / 100) * (C / 100));
-            return pecasInteirasDetalhe(equiv);
+        } else if (famItem === 'ML' || famItem === 'M2') {
+            // Direto sem origem: só peças inteiras ("21 Peças"); resto segue sem detalhe.
+            if (typeof pecasEquivalentesSerrado !== 'function' || typeof pecasInteirasDetalhe !== 'function') return '';
+            return pecasInteirasDetalhe(pecasEquivalentesSerrado(qtd, famItem, p));
         }
         if (!(volPeca > 0)) return '';
         return pecasInteirasDetalhe(qtd / volPeca);
@@ -4697,6 +4701,39 @@ function pecasInteirasDetalhe(equiv) {
         if (Math.abs(equiv - n) / n > 0.02) return '';
         return typeof pecaSingular === 'function' ? pecaSingular(n) : `${n} Peças`;
     } catch (_) { return ''; }
+}
+
+// Peças equivalentes a uma qtd em ML/M² (display-only). Prefere a
+// contabilidade do produto (exato em qualquer convenção); cai para dims em cm.
+function pecasEquivalentesSerrado(qtd, unidadeNorm, p) {
+    try {
+        const num = (v) => parseFloat(String(v ?? '').replace(',', '.')) || 0;
+        const q = num(qtd);
+        if (!(q > 0) || !p || typeof p !== 'object') return NaN;
+        const pPecas = num(p.pecas);
+        if (unidadeNorm === 'ML') {
+            let mlTot = 0;
+            try { mlTot = (typeof metrosLinearesDe === 'function') ? metrosLinearesDe(p) : 0; } catch (_) { mlTot = 0; }
+            if (pPecas > 0 && mlTot > 0) return q / (mlTot / pPecas);
+            let C = num(p.comprimento);
+            if (!(C > 0) && typeof dimsSerradoProduto === 'function') {
+                const dd = dimsSerradoProduto(p);
+                if (dd) C = dd.C;
+            }
+            if (!(C > 0)) return NaN;
+            return q / (C / 100);
+        }
+        if (unidadeNorm === 'M2') {
+            let L = num(p.largura), C = num(p.comprimento);
+            if ((!(L > 0 && C > 0)) && typeof dimsSerradoProduto === 'function') {
+                const dd = dimsSerradoProduto(p);
+                if (dd) { L = dd.L; C = dd.C; }
+            }
+            if (!(L > 0 && C > 0)) return NaN;
+            return q / ((L / 100) * (C / 100));
+        }
+        return NaN;
+    } catch (_) { return NaN; }
 }
 
 function resetProdutoRomaneioFields() {

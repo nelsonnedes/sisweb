@@ -338,6 +338,7 @@ test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Pe�
   vm.runInContext(extract('dimsSerradoProduto'), sbI);
   vm.runInContext(extract('pecaSingular'), sbI);
   vm.runInContext(extract('pecasInteirasDetalhe'), sbI);
+  vm.runInContext(extract('pecasEquivalentesSerrado'), sbI);
   vm.runInContext(extract('detalheSerradoItem'), sbI);
   vm.runInContext(extract('rotuloSerradoLinha'), sbI);
   // 0,0504 = 1 peça exata → "1 Peça" (singular)
@@ -354,6 +355,22 @@ test('carrinho serrado não-m³: quantidade vira m³ + linha "COD - Nome - N Pe�
   vm.runInContext(extract('dimsSerradoProduto'), sbN);
   vm.runInContext(extract('rotuloSerradoLinha'), sbN);
   assert.equal(sbN.rotuloSerradoLinha({ produtoId: 'PX' }), 'Orelha-de-macaco - 6cmx12cmx700cm');
+  // equivalência ML/M²: origem com peças inteiras anexa "· N Peças"
+  const sbE = {
+    window: { produtos: [{ id: 'PE', especie: 'X', espessura: 4, largura: 7, comprimento: 500, pecas: 21, volumeM3: 0.294, metrosLineares: 105 }] }
+  };
+  vm.createContext(sbE);
+  vm.runInContext(extract('normalizarUnidadeMedida'), sbE);
+  vm.runInContext(extract('dimsSerradoProduto'), sbE);
+  vm.runInContext(extract('pecaSingular'), sbE);
+  vm.runInContext(extract('pecasInteirasDetalhe'), sbE);
+  vm.runInContext(extract('pecasEquivalentesSerrado'), sbE);
+  vm.runInContext(extract('detalheSerradoItem'), sbE);
+  assert.equal(sbE.detalheSerradoItem({ produtoId: 'PE', quantidade: 0.294, unidade: 'm³', qtdOrigem: 105, unidadeOrigem: 'LN' }), '105 LN · 21 Peças');
+  assert.equal(sbE.detalheSerradoItem({ produtoId: 'PE', quantidade: 0.294, unidade: 'm³' }), '21 Peças');
+  sbE.window.produtos.push({ id: 'PM', especie: 'Y', espessura: 1, largura: 100, comprimento: 100, pecas: 1, volumeM3: 0.01 });
+  assert.equal(sbE.detalheSerradoItem({ produtoId: 'PM', quantidade: 1, unidade: 'm²' }), '1 Peça');
+  assert.equal(sbE.detalheSerradoItem({ produtoId: 'PM', quantidade: 0.5, unidade: 'm²' }), '');
   // m³ não converte; sem dims não converte; manual não converte
   assert.equal(conv(prod, 2, 'm³'), null);
   assert.equal(conv(prod, 2, 'M3'), null);
