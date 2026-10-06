@@ -2353,6 +2353,8 @@ async function atualizarToraEditada() {
         origemRomaneioId: romaneioId || null,
         updatedAt
     };
+    // Espécie validada acima: limpa flag de revisão pendente.
+    try { delete atualizado.especiePendenteRevisao; } catch (_) {}
 
     if (fornecedorId) {
         atualizado.fornecedorId = fornecedorId;
@@ -3292,7 +3294,7 @@ function obterValorCelulaConsultaEstoque(tora = {}, key = '') {
         plaqueta: escapeHtml(tora.plaqueta || '-'),
         custodia: escapeHtml(geo.custodia || '-'),
         autef: escapeHtml(geo.autef || tora.autef || '-'),
-        especie: escapeHtml(tora.especie || '-'),
+        especie: escapeHtml(tora.especie || '-') + (tora.especiePendenteRevisao ? ' <span class="badge-especie-revisar" title="Espécie fora do cadastro — edite a tora para corrigir">revisar</span>' : ''),
         diametro: formatNumber(tora.diametro || tora.rodo || 0, 1),
         comprimento: formatNumber(tora.comprimento || 0, 1),
         oco1: (tora.oco1 || tora.oco1Cm || tora.oco) ? `${formatNumber(tora.oco1 || tora.oco1Cm || tora.oco, 1)} cm` : '-',
@@ -3559,18 +3561,25 @@ async function registrarEntrada(event) {
     }
 
     const especiesInvalidas = [];
+    const especiesPendentes = [];
     itensEntrada.forEach((item) => {
         const validacao = validarEspecieEntrada(item.especie, false);
         if (validacao.ok) {
             item.especie = validacao.nome;
+            try { delete item.especiePendenteRevisao; } catch (_) {}
         } else {
-            especiesInvalidas.push(String(item.especie || 'Sem espécie').trim() || 'Sem espécie');
+            // Não bloqueia: importa mantendo o nome e sinaliza p/ revisão.
+            // (Acento/case já normalizados em validarEspecieEntrada; o que cai
+            // aqui realmente não consta no cadastro.)
+            const nomeOrig = String(item.especie || 'Sem espécie').trim() || 'Sem espécie';
+            try { item.especiePendenteRevisao = true; } catch (_) {}
+            especiesPendentes.push(nomeOrig);
+            especiesInvalidas.push(nomeOrig);
         }
     });
     if (especiesInvalidas.length > 0) {
         const lista = [...new Set(especiesInvalidas)].slice(0, 5).join(', ');
-        alert(`Existem itens com espécie fora do cadastro: ${lista}. Corrija ou cadastre a espécie antes de salvar a entrada.`);
-        return;
+        console.warn(`Espécies fora do cadastro importadas p/ revisão: ${lista}`);
     }
 
     const plaquetasEntrada = new Set();
@@ -3626,6 +3635,9 @@ async function registrarEntrada(event) {
 
                 status: 'disponivel',
                 origemRomaneioId: item.origemRomaneioId ? String(item.origemRomaneioId) : (romaneioSelecionadoId ? String(romaneioSelecionadoId) : null),
+                // Espécie fora do cadastro: importada com o nome original + flag
+                // de revisão (evidência na consulta; usuário corrige depois).
+                ...(item.especiePendenteRevisao ? { especiePendenteRevisao: true } : {}),
                 created: new Date().toISOString()
             };
 
@@ -3678,7 +3690,12 @@ async function registrarEntrada(event) {
         }
 
         hideLoading();
-        alert(`Entrada de ${totalItens} toras realizada com sucesso!`);
+        if (especiesPendentes.length > 0) {
+            const listaP = [...new Set(especiesPendentes)].slice(0, 5).join(', ');
+            alert(`Entrada de ${totalItens} toras realizada com sucesso! Atenção: espécie(s) fora do cadastro importada(s) para revisão: ${listaP}. Corrija na Consulta (editar tora).`);
+        } else {
+            alert(`Entrada de ${totalItens} toras realizada com sucesso!`);
+        }
 
         // Limpar tudo
         itensEntrada = [];

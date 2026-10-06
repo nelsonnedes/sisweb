@@ -116,3 +116,13 @@ test('fornecedor select sem sem-nome: quarentena e dedup', () => {
   assert.ok(!/Fornecedor sem nome/.test(block), 'sem rotulo sem-nome');
   assert.ok(/!id && !nome/.test(block), 'pula registros sem id e sem nome');
 });
+
+test('entrada: especie fora do cadastro importa com flag e evidencia', () => {
+  const js = read('estoque.js');
+  const html = read('estoque.html');
+  assert.ok(/especiePendenteRevisao/.test(js), 'flag existe');
+  assert.ok(!/Corrija ou cadastre a esp\u00e9cie antes de salvar/.test(js), 'sem bloqueio na entrada');
+  assert.ok(/badge-especie-revisar/.test(js), 'badge na consulta');
+  assert.ok(/badge-especie-revisar/.test(html), 'CSS do badge existe');
+  assert.ok(/delete atualizado\.especiePendenteRevisao/.test(js), 'edicao com especie valida limpa a flag');
+});
