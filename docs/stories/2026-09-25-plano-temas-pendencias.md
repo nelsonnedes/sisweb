@@ -7,6 +7,7 @@ Em dia — 07/10 onda 3 folha FolhaDB + company fallback (gates verdes: lint+typ
 Em dia — 07/10 onda 4 equipe paralela: bump SW + barra BH (gates verdes: lint+typecheck OK, 766 testes 766/0/1).
 Em dia — 07/10 onda 5 strangler PCT + publish (gates verdes: lint+typecheck OK, 767 testes 767/0/1; commit c81a423 + deploy hosting verificado via fetch).
 Em dia — 07/10 onda 6 trap-silence + pendências 14/10 (gates verdes: lint+typecheck OK, 769 testes 769/0/1).
+Em dia — 07/10 onda 7 orientação folha: barra única + Layout nativo no portrait (gates verdes: lint+typecheck OK, 770 testes 770/0/1; publish verificado via fetch).
 Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
 Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 testes 727/0/1).
 Em dia — 06/10 continuação Antigravity ceecf69f (gates verdes: lint+typecheck OK, 756 testes 756/0/1).
@@ -212,6 +213,14 @@ Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/pr
 - [ ] Soak A4: dia 0 em 07/10 (publish onda 5 no ar) → gate avaliável a partir de 14/10.
 - [ ] Espécies-lixo: aguardando usuário desde 04/10.
 - [ ] `tmp/redesign-*.json`: aguardando término do antigravity.
+
+## 07/10 — onda 7 (orientação de impressão da folha: análise equipe A+B+C + correções)
+- [x] Veredito sobre a hipótese: seletor `Orientação de Impressão/PDF` + botões Retrato/Paisagem NÃO são redundantes — comandam preview em tela (210/297mm, --fs, pageWidthPx 793/1122), defaults por tipo e orientação inicial. Só deixam de ser autoridade final.
+- [x] DUP real na captura: 2 barras empilhadas no caminho genérico (`folha-print-back` clara + `print-control-bar` escura). Fix: clara só no recibo (genérico usa a escura com Fechar+Imprimir+orientação).
+- [x] Layout nativo onde é seguro: `omitSize` quando orientation resolved = portrait (recibo já omitia; landscape largo mantém size forçado — fidelidade, sem corte silencioso). Inclui `trocarOrientacao` styleTag (size só no landscape; tela intacta).
+- [x] Preservado: `exportarPDF` com size forçado (auto-print sem diálogo), provisão (`5572/5576`) e resumo compacto (`6901`, teste `company-logo-storage-policy:280` intacto), seletor + botões + preview.
+- [x] Trava nova (`romaneio-print-mobile-blank`, `Folha impressao: barra unica + Layout nativo no portrait`); `?v=` resync em `folha.html`; gates verdes (lint+typecheck OK, 770/0/1).
+- [ ] Validar com Ctrl+F5 (requer login): genérico com 1 barra; portrait com Layout editável no diálogo; landscape largo segue forçado; provisão de férias igual à captura mas sem DUP.
 
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas

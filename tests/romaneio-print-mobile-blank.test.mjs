@@ -109,6 +109,22 @@ test('Mobile print fase 3: folha injeta viewport + Voltar sem quebrar contratos'
     assert.match(js, /@media print\{\.folha-print-back\{display:none !important;\}\}/);
 });
 
+test('Folha impressao: barra unica + Layout nativo no portrait', () => {
+    const js = read('folha_pagamento/folha-relatorios.js');
+    // Sem DUP: barra clara só no recibo (genérico usa a escura com Fechar+Imprimir+orientação)
+    assert.match(js, /if \(isReciboDoc && !\/folha-print-back\/\.test\(finalHTML\)\)/);
+    // Portrait omite size (Layout nativo de volta); landscape largo mantém forçado
+    assert.match(js, /const omitSize = isLikelyReciboDoc/);
+    assert.match(js, /orientation !== 'landscape'/);
+    // trocarOrientacao: size só no landscape; preview em tela intacto
+    assert.match(js, /var pageRule = orient === 'landscape'/);
+    assert.match(js, /@media screen \{ \.relatorio-container/);
+    // Seletor e botões seguem como orientação inicial + preview (não removidos)
+    assert.match(js, /relatorioOrientacaoImpressao/);
+    assert.match(js, /window\.trocarOrientacao = function/);
+    assert.match(js, /print-control-bar/);
+});
+
 test('Pedidos: logo em cache + espera de imagem + lote 1x + warm-up', () => {
     const helper = read('commerce-pdf-share.js');
     assert.match(helper, /logoDataUrlCache/);

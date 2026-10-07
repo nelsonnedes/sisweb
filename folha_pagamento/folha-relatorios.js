@@ -2043,12 +2043,17 @@ class FolhaRelatorios {
         }
 
         const resolvedPrintOptions = printOptions ? this.normalizeRelatorioPrintOptions(printOptions) : null;
-        const commonCssOptions = isLikelyReciboDoc
+        // Layout nativo de volta onde é seguro: portrait (conteúdo estreito,
+        // sem risco de corte) omite o size; landscape largo mantém size forçado
+        // (fidelidade da tabela). Recibo já omitia. Seletor/botões seguem como
+        // orientação inicial + controle do preview em tela.
+        const omitSize = isLikelyReciboDoc || (resolvedPrintOptions && resolvedPrintOptions.orientation !== 'landscape');
+        const commonCssOptions = omitSize
             ? { ...(resolvedPrintOptions || {}), omitPageSize: true }
             : (resolvedPrintOptions || undefined);
         const commonCss = this.getRelatorioCSS(commonCssOptions);
         const orientationCss = resolvedPrintOptions
-            ? this.getRelatorioOrientationOverrideCSS({ ...resolvedPrintOptions, omitPageSize: isLikelyReciboDoc })
+            ? this.getRelatorioOrientationOverrideCSS({ ...resolvedPrintOptions, omitPageSize: omitSize })
             : '';
 
         // Detectar se o HTML já é um documento completo
@@ -2082,11 +2087,13 @@ class FolhaRelatorios {
         }
 
         // MOBILE: garante viewport + barra Voltar/Imprimir (visível na tela, oculta no print).
+        // Barra clara só no recibo: no caminho genérico a barra escura de preview
+        // (Fechar + Imprimir + Retrato/Paisagem) já cobre Voltar/Imprimir — sem DUP.
         try {
             if (!/name=["']viewport["']/i.test(finalHTML)) {
                 finalHTML = finalHTML.replace(/<head[^>]*>/i, (m) => `${m}<meta name="viewport" content="width=device-width, initial-scale=1.0">`);
             }
-            if (!/folha-print-back/.test(finalHTML)) {
+            if (isReciboDoc && !/folha-print-back/.test(finalHTML)) {
                 const folhaBackBar = `<style>@media print{.folha-print-back{display:none !important;}}</style><div class="folha-print-back" style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #2c3e50;background:#2c3e50;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>`;
                 if (/<body[^>]*>/i.test(finalHTML)) {
                     finalHTML = finalHTML.replace(/<body[^>]*>/i, (m) => `${m}${folhaBackBar}`);
@@ -2194,7 +2201,13 @@ class FolhaRelatorios {
                     var paddingMm = orient === 'landscape' ? '10mm' : '12mm';
                     var pageW = orient === 'landscape' ? 1122 : 793;
                     
-                    styleTag.innerHTML = '@page { size: A4 ' + orient + ' !important; margin: ' + margin + ' !important; }' +
+                    // @page sem size no portrait: Layout nativo (Retrato/Paisagem)
+                    // de volta no diálogo; landscape largo mantém size forçado.
+                    // Preview em tela (210/297mm, --fs) independe do @page.
+                    var pageRule = orient === 'landscape'
+                        ? '@page { size: A4 landscape !important; margin: ' + margin + ' !important; }'
+                        : '@page { margin: ' + margin + ' !important; }';
+                    styleTag.innerHTML = pageRule +
                         'html { --relatorio-page-width-px: ' + pageW + '; --relatorio-print-margin: ' + margin + '; }' +
                         '@media screen { .relatorio-container { width: ' + widthMm + ' !important; min-height: ' + minHeightMm + ' !important; padding: ' + paddingMm + ' !important; } }' +
                         '@media print { .relatorio-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; } }';
