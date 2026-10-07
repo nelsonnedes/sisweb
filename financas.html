@@ -2384,6 +2384,17 @@
                 if (window.appTenantId) {
                     return String(window.appTenantId);
                 }
+                // Fallbacks canônicos antes do company_info (evita tenant stale
+                // de outro usuário, que gera permission_denied em tudo).
+                try {
+                    const svc = window.firebaseService || window.FirebaseService || null;
+                    const t = (svc && typeof svc.getTenantId === 'function' && svc.getTenantId())
+                        || (svc && typeof svc.getCurrentTenantId === 'function' && svc.getCurrentTenantId())
+                        || null;
+                    if (t && !/^(users|companies|roles|__no_tenant__)$/i.test(String(t).trim())) {
+                        return String(t).trim();
+                    }
+                } catch (_) {}
                 const raw = localStorage.getItem('company_info');
                 if (raw) {
                     const obj = JSON.parse(raw);
@@ -2434,6 +2445,14 @@
                             return true;
                         }
                         const now = Date.now();
+                        // Throttle por path (60s): N denies do mesmo loop de
+                        // leitura não inundam o console.
+                        try {
+                            window.__finPermWarnMap = window.__finPermWarnMap || {};
+                            const last = Number(window.__finPermWarnMap[path] || 0);
+                            if (last && (now - last) < 60000) return true;
+                            window.__finPermWarnMap[path] = now;
+                        } catch (_) {}
                         const lastWarnAt = Number(window.__finPermWarnAt || 0);
                         if (!lastWarnAt || (now - lastWarnAt) > 15000) {
                             window.__finPermWarnAt = now;
@@ -2447,19 +2466,16 @@
             }
             const financeFirebaseLocalService = {
                 loadFromFirebase: async (path) => {
-                    const base = String(path || '');
-
-                    const alts = new Set([base]);
-                    if (base.startsWith('contasPagar/')) {
-                        alts.add(base.replace('contasPagar/', 'contaspagar/'));
-                        alts.add(base.replace('contasPagar/', 'contas_pagar/'));
-                    }
-                    if (base.startsWith('contasReceber/')) {
-                        alts.add(base.replace('contasReceber/', 'contas_receber/'));
-                        alts.add(base.replace('contasReceber/', 'contasreceber/'));
-                    }
-                    const candidates = [];
-                    alts.forEach(a => { candidates.push(getNamespacedPath(a)); });
+                    let base = String(path || '');
+                    // Normaliza legados para o canônico ANTES de ler (essas
+                    // variantes não têm cobertura nas rules = deny garantido).
+                    const legado = /^contas_?pagar(\/|$)/i.test(base) || /^contaspagar(\/|$)/i.test(base)
+                        ? base.replace(/^contas_?pagar/i, 'financas/pagar').replace(/^contaspagar/i, 'financas/pagar')
+                        : (/^contas_?receber(\/|$)/i.test(base) || /^contasreceber(\/|$)/i.test(base)
+                            ? base.replace(/^contas_?receber/i, 'financas/receber').replace(/^contasreceber/i, 'financas/receber')
+                            : null);
+                    if (legado) base = legado;
+                    const candidates = [getNamespacedPath(base)];
                     const dbRef = ref(window.database);
                     let successfulRead = false;
                     let lastReadError = null;
@@ -2634,7 +2650,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/pix-brcode.js?v=1714fb7d79ee"></script>
     <script src="js/commerce-boleto-pix.js?v=304de555a465"></script>
-    <script src="financas.js?v=ab8489a6467f"></script>
+    <script src="financas.js?v=fedc4dac4fa2"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
 </body>
 </html>

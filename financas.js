@@ -8744,8 +8744,8 @@ async function cleanupTombstones() {
             }
             writeTombstones(key, keep);
         };
-        await cleanOne('contasReceber_deletedIds', 'contasReceber');
-        await cleanOne('contasPagar_deletedIds', 'contasPagar');
+        await cleanOne('contasReceber_deletedIds', 'financas/receber');
+        await cleanOne('contasPagar_deletedIds', 'financas/pagar');
     } catch(_) {}
 }
 function normalizeTipoKey(val) {
