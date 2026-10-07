@@ -2539,7 +2539,10 @@ async function imprimirTabela(tipo) {
         const totalsByStatus = {};
         let tOrig = 0, tJuros = 0, tGeral = 0;
 
-        const itemsWithInfo = items.map(conta => {
+        // Em chunks com yield (getContaFinanceInfo é pesado por item).
+        const itemsWithInfo = [];
+        for (let ii = 0; ii < items.length; ii += 250) {
+            const fatia = items.slice(ii, ii + 250).map(conta => {
             const info = getContaFinanceInfo(conta);
             const statusFinal = info.statusNorm;
             const valDisplay = statusFinal === 'pago' ? 0 : (statusFinal === 'parcial' ? info.valorRestante : info.valorOriginal);
@@ -2553,7 +2556,10 @@ async function imprimirTabela(tipo) {
                 tGeral += totalComJuros;
             }
             return { conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha };
-        });
+            });
+            itemsWithInfo.push(...fatia);
+            try { await new Promise(r => setTimeout(r, 0)); } catch (_) {}
+        }
 
         const company = await prepareFinanceReportCompany();
         const helper = getFinanceReportDocumentHelper();
@@ -2615,9 +2621,15 @@ async function imprimirTabela(tipo) {
             return map[k] !== undefined ? map[k] : '-';
         };
         const thead = `<thead><tr>${order.map(k => `<th class="${columnClassMap[k] || ''}">${labelMap[k]}</th>`).join('')}</tr></thead>`;
-        const tbody = itemsWithInfo.map(({ conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha }) => `
+        // Build em chunks com yield (relatório grande travava ~20s num handler só).
+        const montarLinhaImpressao = ({ conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha }) => `
             <tr>${order.map(k => `<td class="${columnClassMap[k] || ''}">${escapeFinanceHtml(_cellVal(conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha, k))}</td>`).join('')}</tr>
-        `).join('');
+        `;
+        let tbody = '';
+        for (let li = 0; li < itemsWithInfo.length; li += 250) {
+            tbody += itemsWithInfo.slice(li, li + 250).map(montarLinhaImpressao).join('');
+            try { await new Promise(r => setTimeout(r, 0)); } catch (_) {}
+        }
 
         const summaryItems = Object.entries(totalsByStatus).map(([st, sum]) => `<tr><td>Subtotal ${escapeFinanceHtml(st.toUpperCase())}</td><td class="right">${escapeFinanceHtml(formatCurrency(sum))}</td></tr>`).join('');
         const bodyHtml = `
@@ -4438,8 +4450,21 @@ function getTodayISODateUTC() {
     }
 }
 
+let __tsHojeCacheDia = '';
+let __tsHojeCacheTs = 0;
 function getTodayStartTimestampLocal() {
-    return normalizeDateToTimestamp(getTodayISODateUTC()) || 0;
+    // Memo por dia (toLocaleDateString com timezone é caro e se repete
+    // milhares de vezes por filtro/impressão).
+    try {
+        const dia = getTodayISODateUTC();
+        if (dia && dia === __tsHojeCacheDia) return __tsHojeCacheTs;
+        const ts = normalizeDateToTimestamp(dia) || 0;
+        __tsHojeCacheDia = dia || '';
+        __tsHojeCacheTs = ts;
+        return ts;
+    } catch (_) {
+        return normalizeDateToTimestamp(getTodayISODateUTC()) || 0;
+    }
 }
 
 function mergeFinanceMonthData(existingArr, incomingArr, monthKey, tombstoneStorageKey) {
@@ -9427,6 +9452,9 @@ function formatDate(dateValue) {
 }
 
 // ✅ NORMALIZAÇÃO DE DATAS PARA COMPARAÇÃO (UTC — alinhado com backend)
+// Cache de parse (datas se repetem entre milhares de registros; imperativo
+// em filtros/sorts/merge — sem ele, ~100k parses por filtro).
+const __tsDateCache = new Map();
 function normalizeDateToTimestamp(value) {
     if (!value && value !== 0) return null;
     if (typeof value === 'number') {
@@ -9434,18 +9462,27 @@ function normalizeDateToTimestamp(value) {
     }
     if (typeof value === 'string') {
         const v = value.trim();
+        try {
+            if (__tsDateCache.has(v)) return __tsDateCache.get(v);
+        } catch (_) {}
+        let out = null;
         if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
             const [y, m, d] = v.split('-').map(Number);
             const t = Date.UTC(y, m - 1, d);
-            return isNaN(t) ? null : t;
-        }
-        if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+            out = isNaN(t) ? null : t;
+        } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
             const [d, m, y] = v.split('/');
             const t = Date.UTC(Number(y), Number(m) - 1, Number(d));
-            return isNaN(t) ? null : t;
+            out = isNaN(t) ? null : t;
+        } else {
+            const t = new Date(v).getTime();
+            out = isNaN(t) ? null : t;
         }
-        const t = new Date(v).getTime();
-        return isNaN(t) ? null : t;
+        try {
+            if (__tsDateCache.size > 3000) __tsDateCache.clear();
+            __tsDateCache.set(v, out);
+        } catch (_) {}
+        return out;
     }
     const t = new Date(value).getTime();
     return isNaN(t) ? null : t;

@@ -53,3 +53,13 @@ test('relatorio e filtro: @page sem size (layout de volta) + ts com cache', () =
   const uses = (src4.match(/tsVencConta\(/g) || []).length;
   assert.ok(uses >= 10, 'hot paths usam cache');
 });
+
+test('print landscape usa largura real + build em chunks', () => {
+  const src5 = readFileSync(new URL('../commerce-pdf-share.js', import.meta.url), 'utf8');
+  assert.ok(/orientation: landscape/.test(src5), 'landscape com largura real');
+  assert.ok(!/@page \{\s*size:/.test(src5), 'sem size fixo no helper');
+  const fin = readFileSync(new URL('../financas.js', import.meta.url), 'utf8');
+  assert.ok(/li \+= 250/.test(fin) || /i \+= 250/.test(fin), 'tbody em chunks');
+  assert.ok(/__tsHojeCacheDia/.test(fin), 'tsHoje memoizado');
+  assert.ok(/__tsDateCache/.test(fin), 'parse de data com cache');
+});

@@ -376,8 +376,12 @@
     function getPrintStyles(extraCss = '') {
         return `
             @page {
-                size: A4;
                 margin: 10mm;
+            }
+            /* SEM size fixo: com size o Chrome oculta Retrato/Paisagem.
+               Paisagem usa a largura real (257mm) em vez de 190mm. */
+            @media print and (orientation: landscape) {
+                .sisweb-print-page { max-width: 257mm; }
             }
 
             * {
