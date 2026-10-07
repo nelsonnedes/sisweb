@@ -3,6 +3,104 @@
 ## Status
 Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
 Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 testes 727/0/1).
+Em dia — 06/10 continuação Antigravity ceecf69f (gates verdes: lint+typecheck OK, 756 testes 756/0/1).
+
+## 06/10 — continuação da conversa Antigravity ceecf69f (prints reais + mockups ajuda)
+- Contexto: conversa parou em 04/10 13:52 com `429 RESOURCE_EXHAUSTED` após gerar
+  os mockups; faltavam integração final, revisão e gates. Inventário em
+  `C:\Users\Nelson\.gemini\antigravity\conversations\ceecf69f-*.db` (406 steps).
+- [x] `ajuda.js` reescrito p/ prints reais + mockups desktop/mobile
+  (`HELP_VERSION 2026-10-06-manual-prints-reais-mockups`); menção
+  `Lista de Pedidos` restaurada (contrato `ajuda-manual-ilustrado.test.mjs`).
+- [x] `subscription.html`: 8 figuras migradas p/ `mockups/desktop|mobile` com
+  `data-guide-fallback` p/ prints `-1.png`.
+- [x] `landing-vendas.css`: vitrine real com hover elevado + grid mobile 2-col.
+- [x] `firebase.json`: ignore `**/*.py`, `**/*.pyc`, `**/__pycache__/**`
+  (scripts de captura fora do deploy).
+- [x] Credenciais de teste removidas de `gerar_mockups.py` e
+  `scripts/capturar_prints_reais_ajuda.py` → `SISWEB_TEST_EMAIL/PASSWORD`
+  via env (com guarda sem-login); `logs.md` revertido (ruído local).
+- [x] Gates: `npm run lint` OK, `npm run typecheck` OK,
+  `npm test` 756 pass / 0 fail / 1 skip.
+- [ ] Pendente do usuário: `publish` (build+deploy) + `push`; validar telas após Ctrl+F5.
+- [x] 06/10 (cont.) — hero `landing-vendas`: device frames premium no carrossel
+  (bezel black-piano com rim da marca, vidro, tilt 3D com settle no hover,
+  suporte em alumínio + sombra de chão, glow ambiente, float suave com
+  `prefers-reduced-motion` e fallback estático no mobile; `neck/base` agora
+  existem no HTML). Screenshot local validado, suíte 756/0/1.
+- [x] 06/10 (cont.2) — `landing-vendas` hero/topbar (pedido usuário via
+  localhost:5500): removido selo `CAPTURA REAL` dos carrosséis; hero desktop
+  ampliado/centralizado (stage 800px, monitor 720px); topbar mobile virou
+  sidebar (hamburger + drawer + backdrop, fecha em link/Escape/fora; mesma
+  lógica em `landing-vendas.js:initTopbarMenu`); hero mobile empilhado e
+  centralizado; controles do carrossel sobrepostos à tela (sem "queixo");
+  breakpoint do nav 1430→1560 (overflow comprovado a 1440px); `?v=` dos assets
+  ressincronizado. Corrigido `</div>` extra da inserção do suporte (phone
+  havia saído do stage). Screenshots 1440px/390px validados, gates verdes
+  (lint+typecheck OK, 756/0/1).
+- [x] 06/10 (cont.3) — execução do prompt enterprise (auditoria 5 breakpoints):
+  zero overflow real e zero erros JS em 390/768/1024/1440/1920 (só skip-link
+  e drawer off-canvas, ambos intencionais); seções vitrine/simulador/diagrama/
+  cupons/parceiros aprovadas sem alteração; copy congelado. Fixes aplicados:
+  topbar ≥1561 sem overlap (container 1440px + compactação), hero ultrawide
+  contido (container 1280/stage 880/monitor 800 ≥1600px), legenda com respiro
+  dos controles + sombra de texto. `?v=` ressincronizado (script + manual).
+  Gates verdes (lint+typecheck OK, 756/0/1).
+- [x] 06/10 (cont.4) — sidebar com marca + renders premium dos devices:
+  drawer ganhou cabeçalho com logo+nome (só mobile); gerador
+  `scripts/gerar_hero_devices.py` compõe 6 PNGs (monitor alumínio + iPhone
+  titânio, fundo transparente, screenshots reais) em
+  `assets/help-manual/mockups/hero/`; carrossel do hero usa os renders
+  (molduras CSS removidas só no hero, mecânica/autoplay/swipe intactos,
+  carrossel com efeito preservado); legenda do phone oculta no mobile via
+  visually-hidden. Corrigido bug PIL (`paste` c/ mask apagava alfa do vidro).
+  3 testes `partner-program` atualizados p/ novo contrato + allowlist.
+  Screenshots 1440/390 validados, gates verdes (lint+typecheck OK, 756/0/1).
+- [x] 06/10 (cont.5) — hero sem textos + cantos suavizados: legendas dos 2
+  carrosséis removidas do visual (`display:none`, sem teste dependente);
+  sombras dos PNGs refeitas (halo 0.42→0.22, blur menor, filetes 90→45) +
+  `drop-shadow` CSS atenuado; `?v=` ressincronizado. Screenshots 1440/390
+  validados, gates verdes (lint+typecheck OK, 756/0/1).
+- [x] 06/10 (cont.6) — fundo atrás dos devices eliminado: devices flutuam
+  direto sobre o fundo da página (glow do palco + `drop-shadow` CSS + sombras
+  assadas nos PNGs removidos; canvas aparado); botões do carrossel mobile
+  descolados do mockup (restava `position:absolute` legado — forçado fluxo
+  estático no hero, 12px de respiro comprovado por medição). `?v=`
+  ressincronizado. Screenshots 1440/390 validados, gates verdes
+  (lint+typecheck OK, 756/0/1).
+- [x] 06/10 (cont.8) — hero 100% dark com capturas reais do usuário:
+  importadas `dektop1` (dashboard 146/R$ 282.600,13/R$ 407.199,30) e `dektop7`
+  (estoque) p/ `assets/help-manual/dark/` (fora do deploy, allowlist);
+  capturadas as 4 faltantes via Playwright c/ conta de teste + tema escuro
+  (vendas desktop, dashboard/estoque/vendas mobile); descartado modal vazio
+  ("Nenhum pedido encontrado" não vai para vitrine comercial); gerador
+  apontado p/ fontes dark, 6 renders refeitos. Screenshots 1440/390 validados,
+  gates verdes (lint+typecheck OK, 756/0/1). Nota: PNGs trocaram sob mesma
+  URL — validar com Ctrl+F5.
+- [x] 06/10 (cont.9) — cards padronizados + diagrama com 14 módulos: CTAs
+  e pills com mesma métrica (`flex:1`, centralizados; CTA full-width e pills
+  em pilha uniforme no mobile), hover in/out com easing da marca + press
+  `scale(.98)`, hover dark com `var(--sw-brand)`; diagrama 8→14 satélites
+  (Dashboard, TL, PCT, Pés, Pré-romaneio, Empresa + existentes) c/ setas
+  radiais recalculadas e TOOLTIPS novos no JS (data-driven, teclado intacto).
+  Screenshots 1440/390 + hover/focus validados, gates verdes (lint+typecheck
+  OK, 756/0/1).
+- [x] 06/10 (cont.7) — execução dos prompts refeitos (mockups do zero):
+  6 renders refeitos na spec final (fundo transparente, sem sombra assada,
+  prints reais, tokens da marca, sem trademarks/URLs fake); float movido dos
+  wrappers p/ imagem do slide ativo (alvos de clique estáveis — Playwright
+  validou cliques nos 2 carrosséis, slide 1→2 com efeito preservado).
+  `?v=` ressincronizado. Screenshots 1440/390 validados, gates verdes
+  (lint+typecheck OK, 756/0/1).
+- [x] 06/10 (cont.9) — cards/diagrama refeitos + recuperação de encoding:
+  reescrita via PS corrompeu `landing-vendas.html` (BOM+CRLF+mojibake);
+  restaurado do HEAD e reaplicadas as 7 edições via edit tool (diff final
+  29+/16-, verificado byte a byte). NUNCA reescrever arquivos via cmdlets
+  de texto do PS 5.1. Servidor :5500 próprio no ar p/ teste. Gates verdes
+  (lint+typecheck OK, 759 testes 758/0/1 — +2 por nós novos no diagrama).
+  `hosting-files.json`, `gerar_mockups.py`,
+  `scripts/capturar_prints_reais_ajuda.py`, `assets/help-manual/*-1.png`,
+  `assets/help-manual/mockups/desktop|mobile/*`, `assets/mockup_*_template.png`.
 
 ## 04/10 — thead marinho fantasma no estoque (resolvido, validado pelo usuário)
 - [x] Forense no browser: `backgroundImage` chegava como
@@ -49,6 +147,11 @@ Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 te
 - [ ] Aguardando antigravity: `tmp/redesign-*.json`.
 - [ ] Soak A4 pós-09/10.
 - [ ] Futuro (baixo retorno/risco): skeleton em selects, alert→toast PCT, whole-list→granular, onValue sem off, `ADMIN_ASSET_VERSION` dinâmica.
+- [x] Impressão financeira: colunas texto quebram + larguras por coluna; `@page` sem `size` (Layout Retrato/Paisagem de volta); helper compartilhado sem `size` + 257mm em landscape; parse de data com cache + `tsHoje` memo + build em chunks (anti-20s).
+
+## PENDENTE P/ NOVA SESSÃO (invocar literalmente)
+> Orquestrar uma equipe de especialistas para revisar todos as impressões do sistema em todas as paginas e módulos e modais de todo o sistema para aplicar estas correções desta mesma forma pontual, e sem falhas, e sem equívocos, sem quebrar o que já esta funcionado corretamente.
+Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/printService.js, romaneiotora.html size:landscape forçado), teto de largura por orientação, colunas nowrap vs wrap + colgroup, build síncrono gigante (chunks), placeholder Voltar/Imprimir padrão, ?v= dos assets de impressão.
 
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
