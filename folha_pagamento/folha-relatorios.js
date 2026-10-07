@@ -5,9 +5,10 @@
  */
 
 // ✅ CONFIGURAÇÕES E CONSTANTES
-// Strangler A4: leitura via SiswebData com fallback ao global legado.
+// Strangler A4: leitura via SiswebData com fallback ao namespace próprio FolhaDB.
+// (nunca toca window.getData/window.saveData — observados por legacy-deprecation.js)
 // Preserva semântica: sucesso retorna dado cru; falha/insucesso cai no
-// window.getData legado; sem ambos, devolve `fallback`.
+// window.FolhaDB.getData; sem ambos, devolve `fallback`.
 async function swGet(key, fallback) {
     try {
         if (typeof window !== 'undefined' && window.SiswebData && typeof window.SiswebData.get === 'function') {
@@ -16,8 +17,8 @@ async function swGet(key, fallback) {
         }
     } catch (_) {}
     try {
-        if (typeof window !== 'undefined' && typeof window.getData === 'function') {
-            return await window.getData(key);
+        if (typeof window !== 'undefined' && window.FolhaDB && typeof window.FolhaDB.getData === 'function') {
+            return await window.FolhaDB.getData(key);
         }
     } catch (_) {}
     return fallback === undefined ? null : fallback;
@@ -855,8 +856,8 @@ class FolhaRelatorios {
         try { localStorage.setItem(key, JSON.stringify(sanitized)); } catch (_) {}
         try {
             const path = this.getReportColumnsRemotePath(tipoRelatorio);
-            if (typeof window.saveData === 'function') {
-                await window.saveData(path, sanitized, { debounceMs: 0, showToast: false });
+            if (window.FolhaDB && typeof window.FolhaDB.saveData === 'function') {
+                await window.FolhaDB.saveData(path, sanitized, { debounceMs: 0, showToast: false });
             }
         } catch (_) {}
         try { this.updateReportColumnsButton(); } catch (_) {}

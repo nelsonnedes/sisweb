@@ -151,8 +151,8 @@ async function bhResolveEmpresa() {
     const tenantId = getTenantId();
     let data = {};
     // Estágio 1: /profile. Evita carregar a raiz inteira do tenant em relatórios.
-    if (tenantId && typeof window.getData === 'function') {
-        try { const r = await window.getData(`companies/${tenantId}/profile`, { debounceMs: 0 }); if (r && typeof r === 'object' && (r.nome || r.name)) data = { ...data, ...r, id: tenantId }; } catch (_) {}
+    if (tenantId && window.FolhaDB && typeof window.FolhaDB.getData === 'function') {
+        try { const r = await window.FolhaDB.getData(`companies/${tenantId}/profile`, { debounceMs: 0 }); if (r && typeof r === 'object' && (r.nome || r.name)) data = { ...data, ...r, id: tenantId }; } catch (_) {}
     }
     // Estágio 2: localStorage
     if (!data.nome && !data.name) {

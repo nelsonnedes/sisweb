@@ -1,6 +1,10 @@
 # Backlog: refinamentos tema light/dark (base C:\Sisweb, pós-Fase 20)
 
 ## Status
+Em dia — 07/10 revisão @page sistema-wide (gates verdes: lint+typecheck OK, 765 testes 765/0/1).
+Em dia — 07/10 onda 2 impressão (wrap estoque + anywhere PES + guard BH + ?v= resync; gates verdes: lint+typecheck OK, 765 testes 765/0/1).
+Em dia — 07/10 onda 3 folha FolhaDB + company fallback (gates verdes: lint+typecheck OK, 766 testes 766/0/1).
+Em dia — 07/10 onda 4 equipe paralela: bump SW + barra BH (gates verdes: lint+typecheck OK, 766 testes 766/0/1).
 Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
 Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 testes 727/0/1).
 Em dia — 06/10 continuação Antigravity ceecf69f (gates verdes: lint+typecheck OK, 756 testes 756/0/1).
@@ -152,6 +156,39 @@ Em dia — 06/10 continuação Antigravity ceecf69f (gates verdes: lint+typechec
 ## PENDENTE P/ NOVA SESSÃO (invocar literalmente)
 > Orquestrar uma equipe de especialistas para revisar todos as impressões do sistema em todas as paginas e módulos e modais de todo o sistema para aplicar estas correções desta mesma forma pontual, e sem falhas, e sem equívocos, sem quebrar o que já esta funcionado corretamente.
 Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/printService.js, romaneiotora.html size:landscape forçado), teto de largura por orientação, colunas nowrap vs wrap + colgroup, build síncrono gigante (chunks), placeholder Voltar/Imprimir padrão, ?v= dos assets de impressão.
+
+## 07/10 — execução PENDENTE (revisão @page sistema-wide, pontual sem regressão)
+- [x] Inventário via subagente explore: núcleo (`print-styles.css`, `printService.js` morto, `commerce-pdf-share.js`), romaneios TL/Tora/PCT/PES, vendas/compras, finanças, estoque (preview modal+iframe), folha (motor próprio), company/NF/MDF.
+- [x] Padrão financeiro já canônico em `commerce-pdf-share.js:376` (`@page{margin}` sem size + landscape 257mm) e `financas.js:8083` — replicado pontualmente, sem tocar em motores funcionais.
+- [x] Correções aplicadas (só CSS @page, zero lógica): `print-styles.css:1588` `size:A4` removido + cap landscape 257mm; `romaneiotora.html:983` `size:landscape` → `margin:8mm`; `src/services/printService.js:605` `size:${paperSize}` → `margin:1cm`.
+- [x] Fora de escopo preservado: `estoque.js` @page dinâmico do preview Retrato/Paisagem, folha 2º motor com orientação própria, BH one-liners, builds gigantes/chunks, nowrap/wrap por coluna — alto risco/baixo retorno, ficam p/ próxima onda.
+- [x] `sync-css-cachebusters --check` = 0; gates verdes (lint+typecheck OK, 765/0/1).
+- [ ] Restante próxima onda: colgroup/wrap por módulo, chunk em builds gigantes (vendas/compras/romaneios/PES), placeholder Voltar/Imprimir onde falta (BH/NF), ?v= assets impressão.
+
+## 07/10 — onda 2 (wrap/anywhere/guard BH/?v=, pontual sem regressão)
+- [x] Auditoria via subagente explore: wrap/colgroup por motor, builds gigantes (síncrono vs chunks), Voltar/Imprimir faltantes, ?v= assets impressão.
+- [x] `estoque.js:obterRelatorioStylesImpressao` — aditivo: `td{overflow-wrap:anywhere}` + util `.num/.nowrap` (texto quebra, numéricos intactos) + cap landscape 257mm; `table-layout` preservado (sem shift de layout).
+- [x] `romaneiopes.html:5017` — aditivo: `overflow-wrap:anywhere !important` ao lado do `break-word` existente (CONAMA/dims).
+- [x] `folha_pagamento/banco-horas-ui.js:1374,1418,1479` — guarda anti-popup fail-closed (toast + return, padrão finanças/vendas); 1547 já tinha guarda.
+- [x] Preservado: `romaneiotora_modais.js` btn-print (já `no-print`, janela própria — sem mudança visual); builds gigantes/chunks (PCT/estoque/vendas) e colgroup por coluna — próxima onda dedicada.
+- [x] `sync-css-cachebusters --resync`: 8 trocas ?v=-only (estoque.js + print-styles.css da onda 1 que estava stale); diff verificado.
+- [x] Gates verdes (lint+typecheck OK, 765/0/1).
+
+## 07/10 — onda 3 (warnings legacy-deprecation da folha + fallback company)
+- [x] Causa dos warns: `folha-firebase-manager.js` sobrescrevia `window.getData/saveData` (2 warns) + fallbacks `swGet`/`typeof` liam o global com armadilha (3 warns). Armadilha é Fase A4 warn-by-design; a cura é migrar o consumidor.
+- [x] Migração `window.FolhaDB` (mesma semântica do manager, zero disputa de global): namespace `{getData, saveData, setupListener, getManager}` no manager; swGet (main+relatorios) com fallback FolhaDB; 8 guards de capacidade migrados (funcionarios/lancamentos/relatorios/BH-relatorios); 14 chamadas migradas.
+- [x] Verificado: só `folha.html` carrega o manager; `menu/commerce/theme/diagnostics` não usam os globais — sem impacto fora da folha.
+- [x] Testes: novo `folha usa namespace FolhaDB e nao disputa os globais legados` (trava 15 arquivos); contrato `folha edit keeps identity` atualizado p/ `FolhaDB.saveData`; inventário `sisweb-data` segue verde (13 definidores ≥ 8).
+- [x] Impressão restante: fallback `company.html:1804` ganhou `@page{margin}` + tabela com wrap (só fallback; canônico já usa helper). Chunks PCT/estoque e colgroup por coluna: adiados (risco/regressão alto, tabelas pequenas — sem caso de 20s como finanças).
+- [x] `?v=` resync em `folha.html` (5 trocas, diff verificado); gates verdes (lint+typecheck OK, 766/0/1).
+- [ ] Validar em produção após publish: console da folha sem warns `[Sisweb][deprecated]` (Ctrl+F5).
+
+## 07/10 — onda 4 (equipe paralela A+B+C)
+- [x] Equipe A (publish readiness): `sw.js` precisava bump (mudanças visuais pós-30/09); hosting-files OK; `--check` 0; onda 1-3 separada do paralelo (landing/ajuda/assets não vão junto).
+- [x] Bump SW `2026-09-30-tl-dropdown-fora` → `2026-10-07-onda3-folhadb-print` (`sw.js`, `menu-component.js`, 9 asserts em 6 testes); `?v=` resync 26 arquivos (menu-component, diff ?v=-only verificado).
+- [x] Equipe B (strangler): `financas.js` é alvo falso (só bare functions por vazamento, 0 call sites internos, inventário nem detecta). Próximos alvos reais: `utils.js`/`data-functions.js` (pequenos, ~10-30 linhas).
+- [x] Equipe C (onda 4 print): PCT/estoque sem caso-20s (ADIAR chunks); `nf-danfe` blob-PDF nada a fazer; EXECUTADO: helper `bhOpenPrintWindow(html)` em `banco-horas-ui.js` (barra Voltar/Imprimir padrão, nunca sai no papel) + 4 one-liners migrados (extrato/espelho/vencimentos/contrato).
+- [x] Gates verdes (lint+typecheck OK, 766/0/1).
 
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas

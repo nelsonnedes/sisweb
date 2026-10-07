@@ -515,9 +515,9 @@ class FolhaFuncionarios {
                         }
                     }
                     funcionarios = acumulado;
-                } else if (window.getData) {
+                } else if (window.FolhaDB && window.FolhaDB.getData) {
                     try {
-                        funcionarios = await window.getData(collection);
+                        funcionarios = await window.FolhaDB.getData(collection);
                     } catch (e) {
                         console.warn('⚠️ Falha ao carregar via getData:', e);
                     }

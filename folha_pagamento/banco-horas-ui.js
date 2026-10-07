@@ -4,6 +4,27 @@
  */
 
 (function(){
+	// Abre janela de impressão BH com barra Voltar/Imprimir padrão.
+	// A barra nunca sai no papel (@media print) e o fallback fecha sem travar
+	// em about:blank (mesmo padrão finanças/vendas/company).
+	function bhOpenPrintWindow(html) {
+		const w = window.open('', '_blank');
+		if (!w) {
+			if (window.FolhaUtils && window.FolhaUtils.showToast) window.FolhaUtils.showToast('O bloqueador de pop-ups impediu a abertura do relatório.', 'warning');
+			return null;
+		}
+		w.document.write(html);
+		w.document.close();
+		try {
+			const st = w.document.createElement('style');
+			st.textContent = '.bh-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;}@media print{.bh-print-back{display:none !important;}}';
+			w.document.head.appendChild(st);
+			w.document.body.insertAdjacentHTML('afterbegin', '<div class="bh-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">\u2190 Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #1b4670;background:#1b4670;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>');
+		} catch (_) {}
+		w.focus();
+		setTimeout(() => { try { w.print(); } catch (_) {} }, 300);
+		return w;
+	}
 	const UI = {
 		init() {
 			this.ensureContainers();
@@ -1371,7 +1392,7 @@
 					}));
 					const html = `<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><title>Extrato de Banco de Horas</title><style>${headerCSS}\n@media print { .bh-print-container{display:table;width:100%;} .bh-print-header{display:table-header-group;} } .bh-func-blk{page-break-inside:avoid;margin-bottom:18px;} </style></head><body><div class=\"bh-print-container\"><div class=\"bh-print-header\">${headerHTML}<div class=\"title\">Extrato de Banco de Horas</div></div>${blocos.join('')}</div></body></html>`;
 					if (earlyLoader && earlyLoader.isCancelled && earlyLoader.isCancelled()) { return; }
-					const w = window.open('', '_blank'); w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(), 300);
+					bhOpenPrintWindow(html);
 					loaderExtr && loaderExtr.finish('Relatório pronto');
 				};
 
@@ -1415,7 +1436,7 @@
 					});
 					const html = `<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><title>Espelho Diário (Banco de Horas)</title><style>${headerCSS}\n@media print { .bh-print-container{display:table;width:100%;} .bh-print-header{display:table-header-group;} } .bh-func-blk{page-break-inside:avoid;margin-bottom:18px;} </style></head><body><div class=\"bh-print-container\"><div class=\"bh-print-header\">${headerHTML}<div class=\"title\">Espelho Diário (Banco de Horas)</div></div>${blocos.join('')}</div></body></html>`;
 					if (earlyLoader && earlyLoader.isCancelled && earlyLoader.isCancelled()) { return; }
-					const w = window.open('', '_blank'); w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(), 300);
+					bhOpenPrintWindow(html);
 					loader && loader.finish('Relatório pronto');
 				};
 
@@ -1476,7 +1497,7 @@
 						</table>`;
 					const html = `<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><title>Vencimentos do Banco de Horas</title><style>${headerCSS}\n@media print { .bh-print-container{display:table;width:100%;} .bh-print-header{display:table-header-group;} } </style></head><body><div class=\"bh-print-container\"><div class=\"bh-print-header\">${headerHTML}<div class=\"title\">Vencimentos do Banco de Horas</div><div style=\"font-size:12px; color:#555; margin-top:6px;\">Período: ${fmtDateBR(ini)} a ${fmtDateBR(fim)}</div></div>${tabela}</div></body></html>`;
 					if (earlyLoader && earlyLoader.isCancelled && earlyLoader.isCancelled()) { return; }
-					const w = window.open('', '_blank'); w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(), 300);
+					bhOpenPrintWindow(html);
 					loader && loader.finish('Relatório pronto');
 				};
 
@@ -1544,7 +1565,7 @@
 						}
 						if (loader && loader.isCancelled && loader.isCancelled()) { return; }
 						const html = `<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><title>Acordos de Banco de Horas</title><style>${headerCSS}\n@media print { .bh-func-blk{page-break-inside:avoid;} *{-webkit-print-color-adjust:exact; print-color-adjust:exact;} } </style></head><body>${secoes.join('')}</body></html>`;
-						const w = window.open('', '_blank'); if (w) { w.document.open(); w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(), 300); }
+						bhOpenPrintWindow(html);
 						loader && loader.finish('Relatório pronto');
 					} catch (err) {
                     console.error('// [BH] Erro ao gerar acordo', err);

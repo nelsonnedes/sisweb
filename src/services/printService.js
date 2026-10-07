@@ -602,8 +602,8 @@ class PrintService {
                     }
                 }
 
+                /* SEM size fixo: com size o Chrome oculta Retrato/Paisagem (padrao financeiro). */
                 @page {
-                    size: ${config.paperSize || 'A4'};
                     margin: 1cm;
                 }
             </style>

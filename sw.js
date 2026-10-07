@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-09-30-tl-dropdown-fora';
+const APP_VERSION = '2026-10-07-onda3-folhadb-print';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

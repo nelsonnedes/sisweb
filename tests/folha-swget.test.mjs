@@ -42,3 +42,30 @@ test('folha-main loadDataType roteia via swGet', () => {
     .map(({ ln, i }) => `${i + 1}: ${ln.trim().slice(0, 100)}`);
   assert.deepEqual(bad, [], `leituras fora do swGet: ${bad.join(' | ')}`);
 });
+
+// Migração FolhaDB: nenhum script da folha pode tocar os globais disputados
+// window.getData/window.saveData (armadilha legacy-deprecation.js). Leituras
+// passam por swGet (SiswebData-first, fallback FolhaDB); escritas por FolhaDB.
+test('folha usa namespace FolhaDB e nao disputa os globais legados', () => {
+  const files = ['folha-firebase-manager.js', 'folha-firebase-optimized.js',
+    'folha-main.js', 'folha-relatorios.js', 'folha-funcionarios.js',
+    'folha-lancamentos.js', 'folha-cargos.js', 'folha-utils.js',
+    'folha-filtros.js', 'folha-paginacao.js', 'banco-horas-config.js',
+    'banco-horas-service.js', 'banco-horas-firebase.js',
+    'banco-horas-relatorios.js', 'banco-horas-ui.js'];
+  const bad = [];
+  for (const f of files) {
+    const src = readFileSync(new URL(`../folha_pagamento/${f}`, import.meta.url), 'utf8');
+    src.split('\n').forEach((ln, i) => {
+      const code = ln.split('//')[0];
+      if (/window\.(getData|saveData|setupListener)\s*[=(]/.test(code)) {
+        bad.push(`${f}:${i + 1}: ${ln.trim().slice(0, 100)}`);
+      }
+    });
+  }
+  assert.deepEqual(bad, [], `toques no global legado: ${bad.join(' | ')}`);
+  const manager = readFileSync(new URL('../folha_pagamento/folha-firebase-manager.js', import.meta.url), 'utf8');
+  assert.match(manager, /window\.FolhaDB\s*=/);
+  assert.match(manager, /getData:\s*folhaGetData/);
+  assert.match(manager, /saveData:\s*folhaSaveData/);
+});

@@ -7,7 +7,8 @@
 /**
  * 🚀 CLASSE PRINCIPAL DO SISTEMA
  */
-// Strangler A4: leitura via SiswebData com fallback ao global legado.
+// Strangler A4: leitura via SiswebData com fallback ao namespace próprio FolhaDB.
+// (nunca toca window.getData/window.saveData — observados por legacy-deprecation.js)
 // (debounce/useCache eram hints do impl legado; dado retornado é o mesmo)
 async function swGet(key) {
     try {
@@ -17,8 +18,8 @@ async function swGet(key) {
         }
     } catch (_) {}
     try {
-        if (typeof window !== 'undefined' && typeof window.getData === 'function') {
-            return await window.getData(key);
+        if (typeof window !== 'undefined' && window.FolhaDB && typeof window.FolhaDB.getData === 'function') {
+            return await window.FolhaDB.getData(key);
         }
     } catch (_) {}
     return null;
@@ -452,9 +453,9 @@ class FolhaPagamentoSystem {
         console.log(`🔄 Carregando dados do tipo: ${dataType}`);
         
         try {
-            const hasLegacy = (typeof getData === 'function');
+            const hasFolhaDB = (typeof window !== 'undefined' && window.FolhaDB && typeof window.FolhaDB.getData === 'function');
             const hasCanonical = (typeof window !== 'undefined' && window.SiswebData && typeof window.SiswebData.get === 'function');
-            if (!hasLegacy && !hasCanonical) {
+            if (!hasFolhaDB && !hasCanonical) {
                 console.error('❌ Função getData não disponível');
                 return {};
             }

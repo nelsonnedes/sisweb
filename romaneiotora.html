@@ -48,7 +48,7 @@
     <link rel="stylesheet" href="layout-comum.css?v=2fe9524bdc1a">
     <link rel="stylesheet" href="romaneio-comum.css?v=419efeecff71">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
-    <link rel="stylesheet" href="print-styles.css?v=180d1fa915f4">
+    <link rel="stylesheet" href="print-styles.css?v=f79c9137e576">
     <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -979,9 +979,9 @@
             .container {
                 max-width: 100%;
             }
-            /* Adicionando botão de imprimir para a página */
+            /* SEM size fixo: com size o Chrome oculta Retrato/Paisagem (padrao financeiro). */
             @page {
-                size: landscape;
+                margin: 8mm;
             }
         }
 
@@ -1935,7 +1935,7 @@
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=4d71c9d9c389"></script>
+<script src="menu-component.js?v=49a944c95d25"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->

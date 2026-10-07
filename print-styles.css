@@ -1585,9 +1585,12 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
 }
 
 /* Padrao profissional Sisweb para impressoes/PDF desktop de Vendas e Compras */
+/* SEM size fixo: com size o Chrome oculta Retrato/Paisagem (padrao financeiro). */
 @page {
-    size: A4;
     margin: 10mm;
+}
+@media print and (orientation: landscape) {
+    .sisweb-print-page { max-width: 257mm; }
 }
 
 body.sisweb-commerce-print {

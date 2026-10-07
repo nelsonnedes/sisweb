@@ -1909,12 +1909,12 @@ class FolhaLancamentos {
             try { data.dataCriacao = new Date().toISOString(); } catch {}
 
             // ✅ USAR O MANAGER PARA SALVAR (Gerencia fila offline)
-            if (window.saveData) {
-                await window.saveData(`folhas/${newId}`, data);
+            if (window.FolhaDB && window.FolhaDB.saveData) {
+                await window.FolhaDB.saveData(`folhas/${newId}`, data);
                 console.log('✅ Lançamento enviado para manager:', newId);
             } else {
                 // Fallback crítico (nunca deve acontecer se carregar scripts)
-                console.error('❌ window.saveData não disponível');
+                console.error('❌ FolhaDB.saveData não disponível');
                 throw new Error('Sistema de salvamento não inicializado');
             }
 
@@ -2101,11 +2101,11 @@ class FolhaLancamentos {
             try { data.updatedAt = new Date().toISOString(); } catch {}
 
             // ✅ USAR O MANAGER PARA SALVAR (Gerencia fila offline)
-            if (window.saveData) {
-                await window.saveData(`folhas/${data.id}`, data);
+            if (window.FolhaDB && window.FolhaDB.saveData) {
+                await window.FolhaDB.saveData(`folhas/${data.id}`, data);
                 console.log('✅ Lançamento atualizado via manager:', data.id);
             } else {
-                console.error('❌ window.saveData não disponível');
+                console.error('❌ FolhaDB.saveData não disponível');
                 throw new Error('Sistema de salvamento não inicializado');
             }
 
@@ -2161,8 +2161,8 @@ class FolhaLancamentos {
             if (!confirma) return;
             
             // ✅ USAR O MANAGER PARA DELETAR (saveData com null)
-            if (window.saveData) {
-                await window.saveData(`folhas/${folhaId}`, null);
+            if (window.FolhaDB && window.FolhaDB.saveData) {
+                await window.FolhaDB.saveData(`folhas/${folhaId}`, null);
                 console.log('✅ Solicitação de exclusão enviada ao manager:', folhaId);
             } else {
                 throw new Error('Sistema de salvamento não inicializado');
@@ -3305,11 +3305,11 @@ function __getFinanceService() {
     if (svc && typeof svc.loadFromFirebase === 'function' && typeof svc.saveToFirebase === 'function') {
         return svc;
     }
-    if (typeof window.getData === 'function' && typeof window.saveData === 'function') {
+    if (window.FolhaDB && typeof window.FolhaDB.getData === 'function' && typeof window.FolhaDB.saveData === 'function') {
         return {
             loadFromFirebase: async (path) => {
                 try {
-                    const data = await window.getData(path, { useCache: false, forceRefresh: true, debounceMs: 0 });
+                    const data = await window.FolhaDB.getData(path, { useCache: false, forceRefresh: true, debounceMs: 0 });
                     return { success: true, data, source: 'manager' };
                 } catch (e) {
                     return { success: false, error: (e && e.message) || String(e), source: 'manager' };
@@ -3318,7 +3318,7 @@ function __getFinanceService() {
             saveToFirebase: async (path, key, data) => {
                 try {
                     const finalPath = key ? `${String(path).replace(/\/+$/,'')}/${String(key)}` : String(path);
-                    await window.saveData(finalPath, data, { requireAuth: true });
+                    await window.FolhaDB.saveData(finalPath, data, { requireAuth: true });
                     return { success: true, key: key ? String(key) : null, source: 'manager' };
                 } catch (e) {
                     return { success: false, error: (e && e.message) || String(e), source: 'manager' };
@@ -3512,8 +3512,8 @@ async function __findFinanceiroByOrigem(lancamento, kind, monthKey) {
 async function __persistLancamento(lancamento) {
     if (window.folhaLancamentos && typeof window.folhaLancamentos.updateLancamento === 'function') {
         await window.folhaLancamentos.updateLancamento(lancamento);
-    } else if (window.saveData) {
-        await window.saveData(`folhas/${lancamento.id}`, lancamento);
+    } else if (window.FolhaDB && window.FolhaDB.saveData) {
+        await window.FolhaDB.saveData(`folhas/${lancamento.id}`, lancamento);
     }
 }
 
@@ -3850,8 +3850,8 @@ window.deleteFolha = async function(folhaId) {
         if (!confirma) return;
         
         // ✅ USAR O MANAGER PARA DELETAR (saveData com null)
-        if (window.saveData) {
-            await window.saveData(`folhas/${folhaId}`, null);
+        if (window.FolhaDB && window.FolhaDB.saveData) {
+            await window.FolhaDB.saveData(`folhas/${folhaId}`, null);
             console.log('✅ Solicitação de exclusão (global) enviada ao manager:', folhaId);
         } else {
             throw new Error('Sistema de salvamento não inicializado');

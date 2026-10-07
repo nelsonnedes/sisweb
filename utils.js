@@ -3,52 +3,38 @@
  * Este arquivo contém funções comuns utilizadas em várias partes do sistema
  */
 
-// Aguardar que auth.js seja carregado antes de definir fallbacks
-document.addEventListener('DOMContentLoaded', function() {
-    // Aguardar um pouco para garantir que auth.js foi carregado
-    setTimeout(function() {
-        // Importar funções de auth.js para dados - fallbacks apenas se não estiverem disponíveis
-        if (typeof window.saveData !== 'function') {
-            console.log("📁 utils.js: Definindo fallback para saveData");
-            // Função para salvar dados no localStorage (versão simplificada)
-            window.saveData = function(key, data, checkSpace = true) {
-                try {
-                    const canonicalKey = String(key || '')
-                        .replace(/^data\/species(\/|$)/, 'especies$1')
-                        .replace(/^species(\/|$)/, 'especies$1')
-                        .replace(/^especiesPct(\/|$)/, 'especies$1');
-                    localStorage.setItem(canonicalKey, JSON.stringify(data));
-                    return true;
-                } catch (e) {
-                    console.error('Erro ao salvar dados:', e);
-                    return false;
-                }
-            };
-        } else {
-            console.log("📁 utils.js: saveData já disponível do auth.js");
+// Namespace próprio de fallback local (escopo fechado — NÃO disputa os globais
+// window.getData/window.saveData observados por legacy-deprecation.js).
+// Em romaneiopct.html o acesso canônico é o getData Firebase-first de
+// romaneiopct_funcoes.js; este fallback local existe para uso explícito.
+window.LocalStore = window.LocalStore || (function () {
+    function canonicalKeyOf(key) {
+        return String(key || '')
+            .replace(/^data\/species(\/|$)/, 'especies$1')
+            .replace(/^species(\/|$)/, 'especies$1')
+            .replace(/^especiesPct(\/|$)/, 'especies$1');
+    }
+    function getData(key) {
+        try {
+            const data = localStorage.getItem(canonicalKeyOf(key));
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            console.error('Erro ao recuperar dados:', e);
+            return null;
         }
-
-        if (typeof window.getData !== 'function') {
-            console.log("📁 utils.js: Definindo fallback para getData");
-            // Função para recuperar dados do localStorage (versão simplificada)
-            window.getData = function(key) {
-                try {
-                    const canonicalKey = String(key || '')
-                        .replace(/^data\/species(\/|$)/, 'especies$1')
-                        .replace(/^species(\/|$)/, 'especies$1')
-                        .replace(/^especiesPct(\/|$)/, 'especies$1');
-                    const data = localStorage.getItem(canonicalKey);
-                    return data ? JSON.parse(data) : null;
-                } catch (e) {
-                    console.error('Erro ao recuperar dados:', e);
-                    return null;
-                }
-            };
-        } else {
-            console.log("📁 utils.js: getData já disponível do auth.js");
+    }
+    function saveData(key, data) {
+        try {
+            localStorage.setItem(canonicalKeyOf(key), JSON.stringify(data));
+            return true;
+        } catch (e) {
+            console.error('Erro ao salvar dados:', e);
+            return false;
         }
-    }, 100);
-});
+    }
+    console.log("📁 utils.js: fallback local exposto em window.LocalStore");
+    return { getData, saveData };
+})();
 
 /**
  * Formata um valor numérico para o formato de moeda brasileiro
@@ -193,4 +179,4 @@ if (typeof window.formatCurrencyInput !== 'function') { window.formatCurrencyInp
 window.debounce = debounce;
 window.setupModalOutsideClick = setupModalOutsideClick;
 window.checkStorageSpace = checkStorageSpace;
-// getData e saveData são definidos condicionalmente no DOMContentLoaded
+// getData/saveData locais vivem em window.LocalStore (sem disputar os globais legados)

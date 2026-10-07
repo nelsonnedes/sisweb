@@ -8117,6 +8117,12 @@ function obterRelatorioStylesImpressao(orientacao = 'auto') {
         .table-wide-estoque, .table-wide-estoque-lg, .table-wide-estoque-compact, .table-report-estoque { min-width: 0 !important; }
         .table th, .table td { border: 1px solid #e5e7eb; padding: 5px 6px; font-size: 10.5px; }
         .table th { background: #f3f4f6; text-align: left; }
+        /* Padrao financeiro: texto quebra, numericos nunca quebram (classe .num). */
+        .table td { overflow-wrap: anywhere; }
+        .table td.num, .table th.num, .nowrap { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+        @media print and (orientation: landscape) {
+            .relatorio-profissional { max-width: 257mm; margin: 0 auto; }
+        }
         .table-container { max-height: none; overflow: visible; border: none; padding: 0; }
         .stock-summary-grid, .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 12px 0; }
         .stock-summary-card, .stat-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 4px; }

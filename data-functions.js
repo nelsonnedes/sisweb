@@ -1,4 +1,9 @@
-// Função para verificar espaço disponível no localStorage
+// Funções locais de armazenamento (escopo fechado — este módulo NÃO disputa
+// os globais window.getData/window.saveData observados por legacy-deprecation.js).
+// Em romaneiopct.html o acesso canônico é o getData Firebase-first de
+// romaneiopct_funcoes.js (carregado depois); aqui só limpeza de espaço usa I/O.
+(function () {
+'use strict';
 function checkLocalStorageSpace() {
     let total = 0;
     try {
@@ -115,8 +120,7 @@ function saveData(key, data, checkSpace = true) {
     }
 }
 
-// Expor funções para o escopo global
-window.getData = getData;
-window.saveData = saveData;
+// Expor apenas utilidades de espaço (não disputadas pela armadilha de legados).
 window.checkLocalStorageSpace = checkLocalStorageSpace;
 window.cleanOldData = cleanOldData;
+})();

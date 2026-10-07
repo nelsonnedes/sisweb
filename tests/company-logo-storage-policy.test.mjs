@@ -310,7 +310,7 @@ test('folha edit keeps lancamento identity and targets funcionario selection cor
   assert.match(folhaLancamentos, /_ensureEditLancamentoIdentity/);
   assert.match(folhaLancamentos, /_resolveEditLancamentoId/);
   assert.match(folhaLancamentos, /this\._editLancamentoId = lancamento\.id \|\| lancamento\.key/);
-  assert.match(folhaLancamentos, /this\._ensureEditLancamentoIdentity\(data\);[\s\S]*await window\.saveData\(`folhas\/\$\{data\.id\}`/);
+  assert.match(folhaLancamentos, /this\._ensureEditLancamentoIdentity\(data\);[\s\S]*await window\.FolhaDB\.saveData\(`folhas\/\$\{data\.id\}`/);
   assert.match(folhaLancamentos, /_syncFuncionarioAtivoFlag/);
 
   assert.match(folhaFuncionarios, /_prepareFuncionarioSelectionTarget/);

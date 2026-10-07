@@ -907,21 +907,30 @@ function getFirebaseManager() {
     return firebaseManager;
 }
 
-// ✅ FUNÇÕES DE CONVENIÊNCIA
-window.getData = async (path, options = {}) => {
+// ✅ FUNÇÕES DE CONVENIÊNCIA (namespace próprio FolhaDB — não disputa os
+// globais window.getData/window.saveData observados por legacy-deprecation.js).
+// Mesma semântica do manager; consumidores internos usam window.FolhaDB.*.
+async function folhaGetData(path, options = {}) {
     const manager = getFirebaseManager();
     return await manager.loadData(`${path}`, options);
-};
+}
 
-window.saveData = async (path, data, options = {}) => {
+async function folhaSaveData(path, data, options = {}) {
     const manager = getFirebaseManager();
     await manager.saveData(`${path}`, data, { ...options, showToast: true });
     return true;
-};
+}
 
-window.setupListener = async (path, callback, options = {}) => {
+async function folhaSetupListener(path, callback, options = {}) {
     const manager = getFirebaseManager();
     return await manager.setupRealtimeListener(`${path}`, callback, options);
+}
+
+window.FolhaDB = {
+    getData: folhaGetData,
+    saveData: folhaSaveData,
+    setupListener: folhaSetupListener,
+    getManager: getFirebaseManager
 };
 
 // ✅ EXPORTAR PARA USO GLOBAL

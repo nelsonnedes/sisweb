@@ -86,3 +86,17 @@ test('SiswebData.save usa saveData caminho completo quando saveToFirebase ausent
   await sandbox.SiswebData.save('clients', 'c9', { id: 'c9' });
   assert.deepEqual(calls, [['clients/c9', { id: 'c9' }]]);
 });
+
+// Strangler PCT: data-functions.js e utils.js não disputam os globais legados
+// (data-functions em IIFE só com espaço; utils expõe fallback em LocalStore).
+test('pct nao disputa os globais legados (data-functions/utils)', () => {
+  const df = read('data-functions.js');
+  assert.doesNotMatch(df, /window\.getData\s*=/);
+  assert.doesNotMatch(df, /window\.saveData\s*=/);
+  const utils = read('utils.js');
+  assert.doesNotMatch(utils, /window\.getData\s*=/);
+  assert.doesNotMatch(utils, /window\.saveData\s*=/);
+  assert.doesNotMatch(utils, /typeof window\.getData/);
+  assert.doesNotMatch(utils, /typeof window\.saveData/);
+  assert.match(utils, /window\.LocalStore/);
+});

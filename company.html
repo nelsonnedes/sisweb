@@ -42,7 +42,7 @@
         })();
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=4d71c9d9c389"></script>
+<script src="menu-component.js?v=49a944c95d25"></script>
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
@@ -1801,7 +1801,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             }
             try {
                 win.document.open();
-                win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relatório da Empresa</title><style>.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:"Segoe UI",Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}</style></head><body><div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background: var(--sw-surface);font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid var(--sw-text-1);background:var(--sw-text-1);color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>${html}</body></html>`);
+                win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relatório da Empresa</title><style>@page{margin:10mm;}.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:"Segoe UI",Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}.sisweb-print-table{width:100%;border-collapse:collapse;}.sisweb-print-table th,.sisweb-print-table td{border:1px solid #d6dde8;padding:6px 8px;overflow-wrap:anywhere;}</style></head><body><div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background: var(--sw-surface);font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid var(--sw-text-1);background:var(--sw-text-1);color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>${html}</body></html>`);
                 win.document.close();
             } catch (_) {
                 return;
