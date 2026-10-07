@@ -2533,7 +2533,7 @@ async function imprimirTabela(tipo) {
         }
 
         if (Array.isArray(items)) {
-            items.sort((a, b) => (getContaVencimentoTimestamp(a) ?? 0) - (getContaVencimentoTimestamp(b) ?? 0));
+            items.sort((a, b) => (tsVencConta(a) ?? 0) - (tsVencConta(b) ?? 0));
         }
 
         const totalsByStatus = {};
@@ -2653,7 +2653,7 @@ async function imprimirTabela(tipo) {
             targetWindow: win,
             printDelay: 300,
             extraCss: `
-                @page { size: A4; margin: 8mm; }
+                @page { margin: 8mm; }
                 .sisweb-print-page { max-width: 100%; }
                 .sisweb-print-section { break-inside: auto; page-break-inside: auto; }
                 .finance-print-meta { display:flex; flex-wrap:wrap; gap:8px 20px; margin-bottom:12px; }
@@ -3105,7 +3105,7 @@ function computeFilteredReceber(filtro = {}) {
         const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
         return (tsVenc !== null && tsVenc <= fimTs) || (tsEmi !== null && tsEmi <= fimTs);
     });
-    contasFiltradas.sort((a, b) => { const ta = getContaVencimentoTimestamp(a) ?? 0; const tb = getContaVencimentoTimestamp(b) ?? 0; return ta - tb; });
+    contasFiltradas.sort((a, b) => { const ta = tsVencConta(a) ?? 0; const tb = tsVencConta(b) ?? 0; return ta - tb; });
     return contasFiltradas;
 }
 
@@ -3197,7 +3197,7 @@ function computeFilteredPagar(filtro = {}) {
         const tsEmi = normalizeDateToTimestamp(c && c.dataEmissao);
         return (tsVenc !== null && tsVenc <= fimTs) || (tsEmi !== null && tsEmi <= fimTs);
     });
-    contasFiltradas.sort((a, b) => { const ta = getContaVencimentoTimestamp(a) ?? 0; const tb = getContaVencimentoTimestamp(b) ?? 0; return ta - tb; });
+    contasFiltradas.sort((a, b) => { const ta = tsVencConta(a) ?? 0; const tb = tsVencConta(b) ?? 0; return ta - tb; });
     return contasFiltradas;
 }
 
@@ -3503,11 +3503,11 @@ function verificarContasVencendo() {
         const inicioTsP = fp && fp.dataInicio ? normalizeDateToTimestamp(fp.dataInicio) : null;
         const fimTsP = fp && fp.dataFim ? normalizeDateToTimestamp(fp.dataFim) : null;
         const withinR = (c) => {
-            const ts = getContaVencimentoTimestamp(c);
+            const ts = tsVencConta(c);
             return ts !== null && (!inicioTsR || ts >= inicioTsR) && (!fimTsR || ts <= fimTsR);
         };
         const withinP = (c) => {
-            const ts = getContaVencimentoTimestamp(c);
+            const ts = tsVencConta(c);
             return ts !== null && (!inicioTsP || ts >= inicioTsP) && (!fimTsP || ts <= fimTsP);
         };
         const receberVencidas = contasReceber.filter(c => {
@@ -4548,6 +4548,21 @@ function agendarCarregarTabela(tipo, filtro) {
 
 // Assinatura barata dos inputs da normalização: pula re-normalizar o
 // registro quando nada relevante mudou (filtros repetidos ficam ~3x leves).
+// Timestamp de vencimento com cache por registro (filtros/sorts quentes).
+// A normalização carimba __finTs; aqui só reutiliza (fallback calcula).
+// Seguro: assinaturaNormConta cobre dataVencimento/vencimento, então carimbo
+// velho após edição é impossível (assinatura muda → renormaliza).
+function tsVencConta(c) {
+    try {
+        if (c && typeof c === 'object' && c.__finTsOk) return c.__finTs;
+        const v = getContaVencimentoTimestamp(c);
+        if (c && typeof c === 'object') {
+            try { c.__finTs = v; c.__finTsOk = true; } catch (_) {}
+        }
+        return v;
+    } catch (_) { return null; }
+}
+
 function assinaturaNormConta(conta) {
     try {
         return [
@@ -4687,22 +4702,22 @@ async function carregarTabelaReceber(filtro = {}) {
 
     if (inicioTs) {
         contasFiltradas = contasFiltradas.filter(c => {
-            const ts = getContaVencimentoTimestamp(c);
+            const ts = tsVencConta(c);
             return ts !== null && ts >= inicioTs;
         });
     }
     
     if (fimTs) {
         contasFiltradas = contasFiltradas.filter(c => {
-            const ts = getContaVencimentoTimestamp(c);
+            const ts = tsVencConta(c);
             return ts !== null && ts <= fimTs;
         });
     }
     
     // Ordenar por data de vencimento
     contasFiltradas.sort((a, b) => {
-        const ta = getContaVencimentoTimestamp(a) ?? 0;
-        const tb = getContaVencimentoTimestamp(b) ?? 0;
+        const ta = tsVencConta(a) ?? 0;
+        const tb = tsVencConta(b) ?? 0;
         return ta - tb;
     });
     
@@ -4990,22 +5005,22 @@ async function carregarTabelaPagar(filtro = {}) {
 
     if (inicioTs) {
         contasFiltradas = contasFiltradas.filter(c => {
-            const ts = getContaVencimentoTimestamp(c);
+            const ts = tsVencConta(c);
             return ts !== null && ts >= inicioTs;
         });
     }
     
     if (fimTs) {
         contasFiltradas = contasFiltradas.filter(c => {
-            const ts = getContaVencimentoTimestamp(c);
+            const ts = tsVencConta(c);
             return ts !== null && ts <= fimTs;
         });
     }
     
     // Ordenar por data de vencimento
     contasFiltradas.sort((a, b) => {
-        const ta = getContaVencimentoTimestamp(a) ?? 0;
-        const tb = getContaVencimentoTimestamp(b) ?? 0;
+        const ta = tsVencConta(a) ?? 0;
+        const tb = tsVencConta(b) ?? 0;
         return ta - tb;
     });
     
@@ -8040,7 +8055,7 @@ async function imprimirRelatorioAtual() {
             targetWindow: win,
             printDelay: 300,
             extraCss: `
-                @page { size: A4; margin: 8mm; }
+                @page { margin: 8mm; }
                 .sisweb-print-page { max-width: 100%; }
                 .sisweb-print-section { break-inside: auto; page-break-inside: auto; }
                 .finance-report-print-meta { display:flex; flex-wrap:wrap; gap:8px 20px; margin-bottom:12px; }
@@ -9736,7 +9751,7 @@ function atualizarSelectTipos() {
             const inicioTs = normalizeDateToTimestamp(inicioVal);
             const fimTs = normalizeDateToTimestamp(fimVal);
             const inRangeRec = (contasReceber || []).filter(c => {
-                const ts = getContaVencimentoTimestamp(c);
+                const ts = tsVencConta(c);
                 if (inicioTs && ts !== null && ts < inicioTs) return false;
                 if (fimTs && ts !== null && ts > fimTs) return false;
                 return true;
@@ -9757,7 +9772,7 @@ function atualizarSelectTipos() {
             const inicioTs = normalizeDateToTimestamp(inicioVal);
             const fimTs = normalizeDateToTimestamp(fimVal);
             const inRangePag = (contasPagar || []).filter(c => {
-                const ts = getContaVencimentoTimestamp(c);
+                const ts = tsVencConta(c);
                 if (inicioTs && ts !== null && ts < inicioTs) return false;
                 if (fimTs && ts !== null && ts > fimTs) return false;
                 return true;

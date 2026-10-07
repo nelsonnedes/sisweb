@@ -234,8 +234,9 @@ test('financeiro usa perfil central e cabecalho compartilhado em todas as saidas
 test('impressao financeira selecionada substitui o placeholder e usa A4 adaptavel', () => {
   assert.match(source, /win\.document\.write\([\s\S]*?win\.document\.close\(\);/);
   assert.match(sharedPrintSource, /target\.document\.open\(\);[\s\S]*target\.document\.write\(html\);[\s\S]*target\.document\.close\(\);/);
-  assert.match(source, /@page \{ size: A4; margin: 8mm; \}/);
-  assert.doesNotMatch(source, /@page \{ size: A4 landscape/);
+  // Sem size fixo: o Chrome volta a exibir Retrato/Paisagem (size fixo oculta).
+  assert.match(source, /@page \{ margin: 8mm; \}/);
+  assert.doesNotMatch(source, /@page \{ size:/);
   assert.match(source, /\.sisweb-print-page \{ max-width: 100%; \}/);
   assert.match(source, /\.sisweb-print-section \{ break-inside: auto; page-break-inside: auto; \}/);
   assert.match(source, /\.finance-print-table \{ width: 100%; table-layout: fixed; \}/);

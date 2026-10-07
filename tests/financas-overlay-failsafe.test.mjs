@@ -45,3 +45,11 @@ test('impressao: colunas texto quebram, valores fixos (sem sobrepor)', () => {
   assert.ok(/colWidthMap/.test(src3), 'larguras por coluna existem');
   assert.ok(!/columnClassMap\[k\] \|\| .finance-print-nowrap/.test(src3), 'sem nowrap como default');
 });
+
+test('relatorio e filtro: @page sem size (layout de volta) + ts com cache', () => {
+  const src4 = readFileSync(new URL('../financas.js', import.meta.url), 'utf8');
+  assert.ok(!/@page \{ size:/.test(src4), 'sem size fixo no @page');
+  assert.ok(/function tsVencConta/.test(src4), 'helper existe');
+  const uses = (src4.match(/tsVencConta\(/g) || []).length;
+  assert.ok(uses >= 10, 'hot paths usam cache');
+});
