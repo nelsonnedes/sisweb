@@ -29,3 +29,12 @@ test('permissoes: sem reads legados + tenant com fallbacks', () => {
   assert.ok(/__finPermWarnMap/.test(html), 'throttle de warnings por path');
   assert.ok(/financas\/receber/.test(js), 'tombstone no canonico');
 });
+
+test('edit save: guarda unica por fluxo + timeout no callable (anti-pisca)', () => {
+  const src = readFileSync(new URL('../financas.js', import.meta.url), 'utf8');
+  const dupes = (src.match(/ignorando clique duplo/g) || []).length;
+  assert.equal(dupes, 1);
+  assert.ok(/Promise\.race\(\[service\.callFunction/.test(src), 'callable com timeout');
+  assert.ok(/finance\/timeout/.test(src), 'erro de timeout identificavel');
+  assert.ok(/clearTimeout\(timer\)/.test(src), 'timer limpo');
+});

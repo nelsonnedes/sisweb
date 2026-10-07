@@ -72,13 +72,28 @@ async function callFinanceCallable(functionName, payload = {}) {
     if (!service || typeof service.callFunction !== 'function') {
         throw new Error('Serviço transacional financeiro indisponível. Atualize a página e tente novamente.');
     }
-    const result = await service.callFunction(functionName, payload);
+    // Timeout: callable sem resposta (offline oscilando) não pode pendurar
+    // overlay/trava para sempre; finally dos chamadores restaura tudo.
+    const ms = 25000;
+    let timer = null;
+    const limite = new Promise((_, rej) => {
+        timer = setTimeout(() => {
+            const e = new Error('Tempo esgotado aguardando o servidor. Verifique a conexão e tente novamente.');
+            e.code = 'finance/timeout';
+            rej(e);
+        }, ms);
+    });
+    try {
+        const result = await Promise.race([service.callFunction(functionName, payload), limite]);
     if (!result || result.success !== true) {
         const error = new Error((result && result.error) || 'Operação financeira não confirmada pelo servidor.');
         error.code = (result && result.code) || 'finance/callable-not-confirmed';
         throw error;
     }
     return result;
+    } finally {
+        try { if (timer) clearTimeout(timer); } catch (_) {}
+    }
 }
 
 async function createFinanceAccountsAuthoritative(tipo, accounts, operationId) {
@@ -3758,15 +3773,8 @@ async function salvarContaReceber(event) {
         } catch (_) {}
         try { if (typeof mostrarLoading === 'function') mostrarLoading(true, 'Salvando conta...'); } catch (_) {}
         if (window.contaEmEdicao && window.contaEmEdicao.tipo === 'receber') {
-            if (window.__financeSaving) {
-                console.warn('⚠️ Salvamento já em andamento, ignorando clique duplo.');
-                return;
-            }
-            window.__financeSaving = true;
-            window.__financeSaveInProgress = true;
-            const receberSubmitBtn = document.getElementById('receberForm')?.querySelector('button[type="submit"]');
-            setSubmitButtonLoading(receberSubmitBtn, true, 'Salvando...');
-            
+            // (Trava única acima em 3746-3759: sem segundo guard aqui — ele
+            // seria sempre verdadeiro e mataria toda edição.)
             const index = contasReceber.findIndex(c => c.id == window.contaEmEdicao.id);
             if (index === -1) throw new Error('Conta a receber não encontrada para edição.');
             
@@ -4066,6 +4074,7 @@ async function salvarContaPagar(event) {
             window.__financeSaveInProgress = true;
             const pagarSubmitBtn = document.getElementById('pagarForm')?.querySelector('button[type="submit"]');
             setSubmitButtonLoading(pagarSubmitBtn, true, 'Salvando...');
+            try { if (typeof mostrarLoading === 'function') mostrarLoading(true, 'Salvando conta...'); } catch (_) {}
             const editId = window.contaEmEdicao.id;
             const contaOriginal = window.contaEmEdicao.contaOriginal || {};
             const contaIndex = contasPagar.findIndex(c => c && String(c.id) === String(editId));
