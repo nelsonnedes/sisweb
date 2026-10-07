@@ -4003,6 +4003,13 @@ async function salvarContaReceber(event) {
             return;
         }
         mostrarNotificacao('Erro ao salvar conta a receber. Tente novamente.', 'error');
+    } finally {
+        // Garantia única: cobre todos os returns antecipados (edição com
+        // sucesso/erro retorna antes do fim). Sem isso overlay/trava grudam.
+        try { window.__financeSaveInProgress = false; } catch (_) {}
+        try { window.__financeSaving = false; } catch (_) {}
+        try { const rs = document.getElementById('receberForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(rs, false); } catch (_) {}
+        try { if (typeof mostrarLoading === 'function') mostrarLoading(false); } catch (_) {}
     }
 }
 
@@ -4272,6 +4279,12 @@ async function salvarContaPagar(event) {
             return;
         }
         mostrarNotificacao('Erro ao salvar conta a pagar. Tente novamente.', 'error');
+    } finally {
+        // Garantia única: cobre todos os returns antecipados.
+        try { window.__financeSaveInProgress = false; } catch (_) {}
+        try { window.__financeSaving = false; } catch (_) {}
+        try { const ps = document.getElementById('pagarForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(ps, false); } catch (_) {}
+        try { if (typeof mostrarLoading === 'function') mostrarLoading(false); } catch (_) {}
     }
 }
 function gerarParcelas(tipo) {
