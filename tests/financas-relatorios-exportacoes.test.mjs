@@ -241,7 +241,8 @@ test('impressao financeira selecionada substitui o placeholder e usa A4 adaptave
   assert.match(source, /\.finance-print-table \{ width: 100%; table-layout: fixed; \}/);
   assert.match(source, /\.finance-print-nowrap \{ white-space:nowrap; overflow-wrap:normal; word-break:normal; \}/);
   assert.match(source, /pedidoNumero:\s*'finance-print-nowrap finance-print-doc'/);
-  assert.match(source, /<td class="\$\{columnClassMap\[k\] \|\| 'finance-print-nowrap'\}">/);
+  assert.match(source, /cliente:'finance-print-wrap', fornecedor:'finance-print-wrap'/);
+  assert.match(source, /<td class="\$\{columnClassMap\[k\] \|\| ''\}">/);
 });
 
 test('perfil e logo de relatorio sao invalidados com a sessao financeira', () => {

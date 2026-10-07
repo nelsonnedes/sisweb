@@ -38,3 +38,10 @@ test('edit save: guarda unica por fluxo + timeout no callable (anti-pisca)', () 
   assert.ok(/finance\/timeout/.test(src), 'erro de timeout identificavel');
   assert.ok(/clearTimeout\(timer\)/.test(src), 'timer limpo');
 });
+
+test('impressao: colunas texto quebram, valores fixos (sem sobrepor)', () => {
+  const src3 = readFileSync(new URL('../financas.js', import.meta.url), 'utf8');
+  assert.ok(/cliente:.finance-print-wrap/.test(src3), 'cliente quebra linha');
+  assert.ok(/colWidthMap/.test(src3), 'larguras por coluna existem');
+  assert.ok(!/columnClassMap\[k\] \|\| .finance-print-nowrap/.test(src3), 'sem nowrap como default');
+});

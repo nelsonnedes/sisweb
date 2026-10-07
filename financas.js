@@ -2571,7 +2571,7 @@ async function imprimirTabela(tipo) {
         const labelMap = { pedidoNumero:'Doc', cliente:'Cliente', fornecedor:'Fornecedor', descricao:'Descrição', valorOriginal:'Original', valorPago:'Pago', valor:'Saldo', juros:'Juros', totalGeral:'Total', vencimento:'Venc.', dataEmissao:'Emissão', status:'Status', categoria:'Categoria', tipo:'Tipo' };
         const columnClassMap = {
             pedidoNumero: 'finance-print-nowrap finance-print-doc',
-            cliente:'', fornecedor:'', descricao:'finance-print-description',
+            cliente:'finance-print-wrap', fornecedor:'finance-print-wrap', descricao:'finance-print-description',
             valorOriginal: 'right finance-print-nowrap finance-print-money',
             valorPago: 'right finance-print-nowrap finance-print-money',
             valor: 'right finance-print-nowrap finance-print-money bold',
@@ -2580,7 +2580,15 @@ async function imprimirTabela(tipo) {
             vencimento: 'finance-print-nowrap finance-print-date',
             dataEmissao: 'finance-print-nowrap finance-print-date',
             status: 'finance-print-nowrap finance-print-status',
-            categoria: '', tipo: ''
+            categoria: 'finance-print-wrap', tipo: 'finance-print-wrap'
+        };
+        // Larguras: texto flexível divide a sobra; valores/datas fixos e compactos.
+        const colWidthMap = {
+            pedidoNumero: '82px', cliente: '', fornecedor: '', descricao: '',
+            valorOriginal: '68px', valorPago: '68px', valor: '72px',
+            juros: '62px', totalGeral: '76px',
+            vencimento: '64px', dataEmissao: '64px',
+            status: '64px', categoria: '84px', tipo: '76px'
         };
         const printPrefs = sanitizePrintPreferencesFor(tipo);
         const baseOrder = printPrefs && Array.isArray(printPrefs.order) ? printPrefs.order : defaultPrintColumns[tipo] || ['pedidoNumero','cliente','descricao','valor','vencimento','dataEmissao','juros','status'];
@@ -2608,7 +2616,7 @@ async function imprimirTabela(tipo) {
         };
         const thead = `<thead><tr>${order.map(k => `<th class="${columnClassMap[k] || ''}">${labelMap[k]}</th>`).join('')}</tr></thead>`;
         const tbody = itemsWithInfo.map(({ conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha }) => `
-            <tr>${order.map(k => `<td class="${columnClassMap[k] || 'finance-print-nowrap'}">${escapeFinanceHtml(_cellVal(conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha, k))}</td>`).join('')}</tr>
+            <tr>${order.map(k => `<td class="${columnClassMap[k] || ''}">${escapeFinanceHtml(_cellVal(conta, info, statusFinal, valDisplay, totalComJuros, jurosLinha, k))}</td>`).join('')}</tr>
         `).join('');
 
         const summaryItems = Object.entries(totalsByStatus).map(([st, sum]) => `<tr><td>Subtotal ${escapeFinanceHtml(st.toUpperCase())}</td><td class="right">${escapeFinanceHtml(formatCurrency(sum))}</td></tr>`).join('');
@@ -2621,7 +2629,7 @@ async function imprimirTabela(tipo) {
                 </div>
                 <table class="sisweb-print-table finance-print-table">
                     <colgroup>
-                        ${order.map(() => '<col>').join('\n                        ')}
+                        ${order.map(k => colWidthMap[k] ? `<col style="width:${colWidthMap[k]}">` : '<col>').join('\n                        ')}
                     </colgroup>
                     ${thead}<tbody>${tbody || `<tr><td colspan="${order.length || 1}">Nenhum dado</td></tr>`}</tbody>
                 </table>
@@ -2654,6 +2662,7 @@ async function imprimirTabela(tipo) {
                 .finance-print-table td { padding:4px; font-size:8px; line-height:1.25; }
                 .finance-print-nowrap { white-space:nowrap; overflow-wrap:normal; word-break:normal; }
                 .finance-print-description { overflow-wrap:anywhere; }
+                .finance-print-wrap { overflow-wrap:anywhere; word-break:break-word; }
                 .right { text-align:right; }
                 .finance-print-totals { width:min(100%, 420px); margin-left:auto; }
                 .finance-print-totals td { padding:7px 10px; }
