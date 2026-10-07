@@ -3740,6 +3740,23 @@ async function salvarContaReceber(event) {
 
         // ✅ NOVO: Verificar se estamos editando uma conta existente
         const novasContas = [];
+        // Trava anti-duplo-clique + overlay (create e edit). Auto-segura:
+        // setSubmitButtonLoading desabilita o botão; finally do catch + fim
+        // restauram tudo mesmo em falha.
+        if (window.__financeSaving) {
+            try {
+                if (typeof window.__toast === 'function') window.__toast('Salvamento já em andamento, aguarde...', 'info');
+                else mostrarNotificacao('Salvamento já em andamento, aguarde...', 'info');
+            } catch (_) {}
+            return;
+        }
+        window.__financeSaving = true;
+        window.__financeSaveInProgress = true;
+        try {
+            const rsBtn = document.getElementById('receberForm')?.querySelector('button[type="submit"]');
+            setSubmitButtonLoading(rsBtn, true, 'Salvando...');
+        } catch (_) {}
+        try { if (typeof mostrarLoading === 'function') mostrarLoading(true, 'Salvando conta...'); } catch (_) {}
         if (window.contaEmEdicao && window.contaEmEdicao.tipo === 'receber') {
             if (window.__financeSaving) {
                 console.warn('⚠️ Salvamento já em andamento, ignorando clique duplo.');
@@ -3964,12 +3981,20 @@ async function salvarContaReceber(event) {
         limparFormulario('receberForm');
         try { await atualizarSnapshotMensal(); } catch(_) {}
         try { atualizarSelectCategorias(); atualizarSelectTipos(); } catch(_) {}
+        try {
+            window.__financeSaveInProgress = false;
+            window.__financeSaving = false;
+            const rsOk = document.getElementById('receberForm')?.querySelector('button[type="submit"]');
+            setSubmitButtonLoading(rsOk, false);
+        } catch (_) {}
+        try { if (typeof mostrarLoading === 'function') mostrarLoading(false); } catch (_) {}
         
     } catch (error) {
         console.error('❌ Erro ao salvar conta a receber:', error);
         window.__financeSaveInProgress = false;
         window.__financeSaving = false;
         try { const rs = document.getElementById('receberForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(rs, false); } catch(_) {}
+        try { if (typeof mostrarLoading === 'function') mostrarLoading(false); } catch (_) {}
         const msg = String((error && error.message) || error || '').toLowerCase();
         if (msg.includes('permission_denied') || msg.includes('permission denied')) {
             try { mostrarNotificacao('Sessão expirada ou sem permissão. Faça login novamente.', 'error'); } catch(_) {}
@@ -4125,6 +4150,21 @@ async function salvarContaPagar(event) {
 
         const parcelConfigsPagar = getGeneratedParcelConfigs('pagar', parcelas, valorTotal, dataVencimento);
         const totalParcelasPagar = Math.max(1, parcelConfigsPagar.length || parcelas);
+        // Trava anti-duplo-clique + overlay (espelha receber).
+        if (window.__financeSaving) {
+            try {
+                if (typeof window.__toast === 'function') window.__toast('Salvamento já em andamento, aguarde...', 'info');
+                else mostrarNotificacao('Salvamento já em andamento, aguarde...', 'info');
+            } catch (_) {}
+            return;
+        }
+        window.__financeSaving = true;
+        window.__financeSaveInProgress = true;
+        try {
+            const psBtn = document.getElementById('pagarForm')?.querySelector('button[type="submit"]');
+            setSubmitButtonLoading(psBtn, true, 'Salvando...');
+        } catch (_) {}
+        try { if (typeof mostrarLoading === 'function') mostrarLoading(true, 'Salvando conta...'); } catch (_) {}
         const novasContas = [];
 
         const numeroInputP = document.getElementById('pagarNumero');
@@ -4210,12 +4250,20 @@ async function salvarContaPagar(event) {
         try { atualizarSelectCategorias(); atualizarSelectTipos(); } catch(_) {}
         
         mostrarNotificacao(`${novasContas.length} parcela(s) de conta a pagar salva(s) com sucesso!`, 'success');
+        try {
+            window.__financeSaveInProgress = false;
+            window.__financeSaving = false;
+            const psOk = document.getElementById('pagarForm')?.querySelector('button[type="submit"]');
+            setSubmitButtonLoading(psOk, false);
+        } catch (_) {}
+        try { if (typeof mostrarLoading === 'function') mostrarLoading(false); } catch (_) {}
         
     } catch (error) {
         console.error('❌ Erro ao salvar conta a pagar:', error);
         window.__financeSaveInProgress = false;
         window.__financeSaving = false;
         try { const ps = document.getElementById('pagarForm')?.querySelector('button[type="submit"]'); setSubmitButtonLoading(ps, false); } catch(_) {}
+        try { if (typeof mostrarLoading === 'function') mostrarLoading(false); } catch (_) {}
         const msg = String((error && error.message) || error || '').toLowerCase();
         if (msg.includes('permission_denied') || msg.includes('permission denied')) {
             try { mostrarNotificacao('Sessão expirada ou sem permissão. Faça login novamente.', 'error'); } catch(_) {}
