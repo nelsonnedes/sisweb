@@ -5,6 +5,8 @@ Em dia — 07/10 revisão @page sistema-wide (gates verdes: lint+typecheck OK, 7
 Em dia — 07/10 onda 2 impressão (wrap estoque + anywhere PES + guard BH + ?v= resync; gates verdes: lint+typecheck OK, 765 testes 765/0/1).
 Em dia — 07/10 onda 3 folha FolhaDB + company fallback (gates verdes: lint+typecheck OK, 766 testes 766/0/1).
 Em dia — 07/10 onda 4 equipe paralela: bump SW + barra BH (gates verdes: lint+typecheck OK, 766 testes 766/0/1).
+Em dia — 07/10 onda 5 strangler PCT + publish (gates verdes: lint+typecheck OK, 767 testes 767/0/1; commit c81a423 + deploy hosting verificado via fetch).
+Em dia — 07/10 onda 6 trap-silence + pendências 14/10 (gates verdes: lint+typecheck OK, 769 testes 769/0/1).
 Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
 Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 testes 727/0/1).
 Em dia — 06/10 continuação Antigravity ceecf69f (gates verdes: lint+typecheck OK, 756 testes 756/0/1).
@@ -189,6 +191,27 @@ Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/pr
 - [x] Equipe B (strangler): `financas.js` é alvo falso (só bare functions por vazamento, 0 call sites internos, inventário nem detecta). Próximos alvos reais: `utils.js`/`data-functions.js` (pequenos, ~10-30 linhas).
 - [x] Equipe C (onda 4 print): PCT/estoque sem caso-20s (ADIAR chunks); `nf-danfe` blob-PDF nada a fazer; EXECUTADO: helper `bhOpenPrintWindow(html)` em `banco-horas-ui.js` (barra Voltar/Imprimir padrão, nunca sai no papel) + 4 one-liners migrados (extrato/espelho/vencimentos/contrato).
 - [x] Gates verdes (lint+typecheck OK, 766/0/1).
+
+## 07/10 — onda 5 (strangler PCT data-functions/utils + commit + publish)
+- [x] Achado: em `romaneiopct.html` o `data-functions.js` (sync localStorage) carregava antes e sobrescrevia o getData Firebase-first de `romaneiopct_funcoes.js` — disputa real com semântica incompatível.
+- [x] `data-functions.js` em IIFE (`use strict`): só `check/cleanLocalStorageSpace` expostos; `cleanOldData` interno preservado. `utils.js`: fallbacks condicionais (com `typeof` que disparava a armadilha) viraram `window.LocalStore` incondicional.
+- [x] Trava nova em `sisweb-data.test.mjs` (`pct nao disputa os globais legados`); inventário segue verde (12 definidores ≥ 8).
+- [x] `?v=` resync em `romaneiopct.html` (2 trocas); gates verdes (lint+typecheck OK, 767/0/1).
+- [x] Commit `c81a423` (44 arquivos só das ondas, paralelo landing/ajuda/assets fora) + push + `deploy:hosting` OK (538 arquivos).
+- [x] Produção verificada via fetch: `sw.js` com `2026-10-07-onda3-folhadb-print`, `romaneiopct.html` com `?v=` novos, `folha.html` com `?v=` novos, manager servido com `window.FolhaDB` e sem `window.getData =`, `print-styles.css` com `@page` sem size.
+- [ ] Validar com Ctrl+F5 (requer login): console folha/PCT sem `[Sisweb][deprecated]`; diálogo de impressão com Retrato/Paisagem; barra Voltar nos 4 relatórios BH; toast `SISWEB_PWA_UPDATED`.
+
+## 07/10 — onda 6 (prova runtime trap-silence + pendências 14/10)
+- [x] Sem credenciais de teste no env (`SISWEB_TEST_EMAIL/PASSWORD` ausentes) — validação com login bloqueada; executado o máximo sem login.
+- [x] Simulação runtime (trap A4 + `data-functions`/`utils`/manager em sandbox VM): `warns=0, reads=0, overwrites=0`, `FolhaDB`/`LocalStore`/`cleanOldData` expostos, roundtrip `species→especies` OK.
+- [x] Promovido a `tests/trap-silence.test.mjs` (2 testes; ajuste cross-realm via `JSON.stringify`); gates verdes (lint+typecheck OK, 769/0/1).
+- [ ] Sem deploy (só `tests/` + story, fora do hosting).
+
+## PENDÊNCIAS P/ 14/10 (7 dias — invocar literalmente)
+> Verificar o gate de remoção dos legados (`docs/legacy-removal-gate.md`): `__siswebLegacy.stats()` zerado por 7 dias nas 8 páginas com trap; então decidir remoção dos globais + limpeza de espécies-lixo em Gerenciar Espécies + destino de `tmp/redesign-*.json` (~40MB, avaliar término do antigravity).
+- [ ] Soak A4: dia 0 em 07/10 (publish onda 5 no ar) → gate avaliável a partir de 14/10.
+- [ ] Espécies-lixo: aguardando usuário desde 04/10.
+- [ ] `tmp/redesign-*.json`: aguardando término do antigravity.
 
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
