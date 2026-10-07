@@ -10,3 +10,12 @@ test('tabelas receber/pagar: overlay sempre liberado (anti-travamento)', () => {
   assert.ok(n >= 2, 'receber e pagar usam no finally');
   assert.ok(/financeLoadingCount = Math\.max\(0,/.test(src), 'contador nunca negativo');
 });
+
+test('tabelas fluidas: coalesce + yield + cache de normalizacao', () => {
+  const src2 = readFileSync(new URL('../financas.js', import.meta.url), 'utf8');
+  assert.ok(/function agendarCarregarTabela/.test(src2), 'coalesce existe');
+  assert.ok(/agendarCarregarTabela\('receber'/.test(src2), 'listener receber coalescido');
+  assert.ok(/await new Promise\(r => setTimeout\(r, 0\)\)/.test(src2), 'cede paint apos spinner');
+  assert.ok(/function assinaturaNormConta/.test(src2), 'assinatura existe');
+  assert.ok(/__finNormSig/.test(src2), 'cache aplicado nos loops');
+});

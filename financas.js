@@ -4484,7 +4484,6 @@ async function ensureReceberDataForRange(filtro) {
 // Removido: utilitários de migração e listagem de meses locais
 
 // Migração e carregamento massivo removidos em produção
-
 // Libera o overlay de tabela SEMPRE (mesmo com exceção no meio do render).
 // Sem isso o contador vaza e a página congela com spinner ("trava").
 function finalizarOverlayFinanceTabela(overlay, shouldOverlay) {
@@ -4496,6 +4495,36 @@ function finalizarOverlayFinanceTabela(overlay, shouldOverlay) {
         window.financeTableOverlayOnce = false;
         window.financeFilterOverlayActive = false;
     } catch (_) {}
+}
+
+// Render coalescido: N snapshots iniciais dos listeners viram 1 render
+// (antes: 1 render por mês = congelamento proporcional aos meses).
+function agendarCarregarTabela(tipo, filtro) {
+    try {
+        const k = tipo === 'pagar' ? '__schedPagar' : '__schedReceber';
+        if (window[k]) return;
+        window[k] = true;
+        const paint = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame : ((fn) => setTimeout(fn, 0));
+        paint(() => {
+            window[k] = false;
+            try {
+                if (tipo === 'pagar') carregarTabelaPagar(filtro || window.lastFiltroPagar || {});
+                else carregarTabelaReceber(filtro || window.lastFiltroReceber || {});
+            } catch (_) {}
+        });
+    } catch (_) {}
+}
+
+// Assinatura barata dos inputs da normalização: pula re-normalizar o
+// registro quando nada relevante mudou (filtros repetidos ficam ~3x leves).
+function assinaturaNormConta(conta) {
+    try {
+        return [
+            conta.valorPago, conta.valorRestante, conta.valorOriginal, conta.valor,
+            conta.status, conta.jurosTaxa, conta.jurosTipo, conta.dataVencimento,
+            conta.vencimento, Array.isArray(conta.historicosPagamento) ? conta.historicosPagamento.length : 0
+        ].join('|');
+    } catch (_) { return ''; }
 }
 
 async function carregarTabelaReceber(filtro = {}) {
@@ -4514,6 +4543,8 @@ async function carregarTabelaReceber(filtro = {}) {
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--sw-text-2);"><i class="fas fa-spinner fa-spin"></i> Carregando contas a receber...</td></tr>';
     }
+    // Cede o paint antes do trabalho pesado (spinner visível, sem congelar).
+    try { await new Promise(r => setTimeout(r, 0)); } catch (_) {}
     
     // ✅ CORREÇÃO: Limpar dados inválidos antes de carregar
     limparDadosInvalidos();
@@ -4528,7 +4559,18 @@ async function carregarTabelaReceber(filtro = {}) {
 
     // ✅ Normalizar campos e status pago/parcial/vencido
     const hojeTs = getTodayStartTimestampLocal();
+    // Cache por assinatura: filtros repetidos pulam registros inalterados.
+    let diaNormCache = '';
+    try { diaNormCache = getTodayISODateLocal().slice(0, 10); } catch (_) { diaNormCache = ''; }
     contasFiltradas.forEach(conta => {
+        try {
+            if (typeof assinaturaNormConta === 'function') {
+                const sigN = assinaturaNormConta(conta);
+                if (sigN && conta.__finNormSig === sigN && conta.__finNormDia === diaNormCache) return;
+                conta.__finNormSig = sigN;
+                conta.__finNormDia = diaNormCache;
+            }
+        } catch (_) {}
         conta.jurosTipo = normalizeJurosTipoKey(conta.jurosTipo);
         conta.jurosTaxa = parseJurosTaxa(conta.jurosTaxa || 0);
         const valorOriginal = parseCurrencyValue(conta.valorOriginal ?? conta.valor);
@@ -4802,6 +4844,8 @@ async function carregarTabelaPagar(filtro = {}) {
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--sw-text-2);"><i class="fas fa-spinner fa-spin"></i> Carregando contas a pagar...</td></tr>';
     }
+    // Cede o paint antes do trabalho pesado (spinner visível, sem congelar).
+    try { await new Promise(r => setTimeout(r, 0)); } catch (_) {}
     
     // ✅ CORREÇÃO: Limpar dados inválidos antes de carregar
     limparDadosInvalidos();
@@ -4815,7 +4859,18 @@ async function carregarTabelaPagar(filtro = {}) {
 
     // ✅ Normalizar campos e status pago/parcial/vencido
     const hojeTs = getTodayStartTimestampLocal();
+    // Cache por assinatura: filtros repetidos pulam registros inalterados.
+    let diaNormCache = '';
+    try { diaNormCache = getTodayISODateLocal().slice(0, 10); } catch (_) { diaNormCache = ''; }
     contasFiltradas.forEach(conta => {
+        try {
+            if (typeof assinaturaNormConta === 'function') {
+                const sigN = assinaturaNormConta(conta);
+                if (sigN && conta.__finNormSig === sigN && conta.__finNormDia === diaNormCache) return;
+                conta.__finNormSig = sigN;
+                conta.__finNormDia = diaNormCache;
+            }
+        } catch (_) {}
         conta.jurosTipo = normalizeJurosTipoKey(conta.jurosTipo);
         conta.jurosTaxa = parseJurosTaxa(conta.jurosTaxa || 0);
         const valorOriginal = parseCurrencyValue(conta.valorOriginal ?? conta.valor);
@@ -5295,7 +5350,7 @@ function subscribeReceberMonths(months) {
                             financeDevLog('listener.receber.applied', { month: mk, records: Array.isArray(arr) ? arr.length : 0 });
                             window.financeOffline = false; updateOfflineBadge();
                             if (!window.__financeSaveInProgress) {
-                                carregarTabelaReceber(lastFiltroReceber || {});
+                                agendarCarregarTabela('receber', window.lastFiltroReceber || {});
                             }
                         } catch(e) { console.warn('recv onValue merge falhou:', e); }
                     };
@@ -5341,7 +5396,7 @@ function subscribePagarMonths(months) {
                             financeDevLog('listener.pagar.applied', { month: mk, records: Array.isArray(arr) ? arr.length : 0 });
                             window.financeOffline = false; updateOfflineBadge();
                             if (!window.__financeSaveInProgress) {
-                                carregarTabelaPagar(lastFiltroPagar || {});
+                                agendarCarregarTabela('pagar', window.lastFiltroPagar || {});
                             }
                         } catch(e) { console.warn('pagar onValue merge falhou:', e); }
                     };
