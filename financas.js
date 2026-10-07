@@ -4485,6 +4485,19 @@ async function ensureReceberDataForRange(filtro) {
 
 // Migração e carregamento massivo removidos em produção
 
+// Libera o overlay de tabela SEMPRE (mesmo com exceção no meio do render).
+// Sem isso o contador vaza e a página congela com spinner ("trava").
+function finalizarOverlayFinanceTabela(overlay, shouldOverlay) {
+    try {
+        if (overlay && shouldOverlay) {
+            window.financeLoadingCount = Math.max(0, (window.financeLoadingCount || 0) - 1);
+            if (window.financeLoadingCount === 0) overlay.style.display = 'none';
+        }
+        window.financeTableOverlayOnce = false;
+        window.financeFilterOverlayActive = false;
+    } catch (_) {}
+}
+
 async function carregarTabelaReceber(filtro = {}) {
     const uiFiltro = getFiltroReceberFromUI();
     const hasIncoming = !!(filtro && Object.keys(filtro).length > 0);
@@ -4496,6 +4509,7 @@ async function carregarTabelaReceber(filtro = {}) {
     const overlay = document.getElementById('financeLoadingOverlay');
     const shouldOverlay = !!(window.financeInitialLoading || window.financeTableOverlayOnce);
     if (overlay && shouldOverlay) { overlay.style.display = 'flex'; window.financeLoadingCount = (window.financeLoadingCount||0) + 1; }
+    try {
     const tbody = document.getElementById('receberTable');
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--sw-text-2);"><i class="fas fa-spinner fa-spin"></i> Carregando contas a receber...</td></tr>';
@@ -4638,11 +4652,6 @@ async function carregarTabelaReceber(filtro = {}) {
         const colsCount = order.filter(k=>visible[k]).length + 2;
         tbody.innerHTML = `<tr><td colspan="${colsCount}" style="text-align: center;">Nenhuma conta a receber encontrada</td></tr>`;
         renderPaginacaoReceber(0);
-        if (overlay && shouldOverlay) {
-            window.financeLoadingCount = Math.max(0, (window.financeLoadingCount||0) - 1);
-            if (window.financeLoadingCount === 0) overlay.style.display = 'none';
-            window.financeTableOverlayOnce = false; window.financeFilterOverlayActive = false;
-        }
         if (contasFiltradas.length === 0) return;
     }
 
@@ -4771,12 +4780,10 @@ async function carregarTabelaReceber(filtro = {}) {
     if (rowsHtml.length > 300) { renderRowsChunked(tbody, rowsHtml, 300); } else { tbody.innerHTML = rowsHtml.join(''); }
     renderPaginacaoReceber(totalItems);
     try { updateReceberSelectionCount(); } catch(_) {}
-    if (overlay && shouldOverlay) {
-        window.financeLoadingCount = Math.max(0, (window.financeLoadingCount||0) - 1);
-        if (window.financeLoadingCount === 0) overlay.style.display = 'none';
-    }
-    window.financeTableOverlayOnce = false; window.financeFilterOverlayActive = false;
     try { atualizarSelectTipos(); } catch(_) {}
+    } finally {
+        finalizarOverlayFinanceTabela(overlay, shouldOverlay);
+    }
 }
 
 async function carregarTabelaPagar(filtro = {}) {
@@ -4790,6 +4797,7 @@ async function carregarTabelaPagar(filtro = {}) {
     const overlay = document.getElementById('financeLoadingOverlay');
     const shouldOverlay = !!(window.financeInitialLoading || window.financeTableOverlayOnce);
     if (overlay && shouldOverlay) { overlay.style.display = 'flex'; window.financeLoadingCount = (window.financeLoadingCount||0) + 1; }
+    try {
     const tbody = document.getElementById('pagarTable');
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--sw-text-2);"><i class="fas fa-spinner fa-spin"></i> Carregando contas a pagar...</td></tr>';
@@ -4934,11 +4942,6 @@ async function carregarTabelaPagar(filtro = {}) {
         const colsCount = order.filter(k=>visible[k]).length + 2;
         tbody.innerHTML = `<tr><td colspan="${colsCount}" style="text-align: center;">Nenhuma conta a pagar encontrada</td></tr>`;
         renderPaginacaoPagar(0);
-        if (overlay && shouldOverlay) {
-            window.financeLoadingCount = Math.max(0, (window.financeLoadingCount||0) - 1);
-            if (window.financeLoadingCount === 0) overlay.style.display = 'none';
-            window.financeTableOverlayOnce = false; window.financeFilterOverlayActive = false;
-        }
         if (contasFiltradas.length === 0) return;
     }
     
@@ -5034,12 +5037,10 @@ async function carregarTabelaPagar(filtro = {}) {
     if (rowsHtml2.length > 300) { renderRowsChunked(tbody, rowsHtml2, 300); } else { tbody.innerHTML = rowsHtml2.join(''); }
     renderPaginacaoPagar(totalItems);
     try { updatePagarSelectionCount(); } catch(_) {}
-    if (overlay && shouldOverlay) {
-        window.financeLoadingCount = Math.max(0, (window.financeLoadingCount||0) - 1);
-        if (window.financeLoadingCount === 0) overlay.style.display = 'none';
-    }
-    window.financeTableOverlayOnce = false; window.financeFilterOverlayActive = false;
     try { atualizarSelectTipos(); } catch(_) {}
+    } finally {
+        finalizarOverlayFinanceTabela(overlay, shouldOverlay);
+    }
 }
 
 async function ensureReceberMonths(months) {
