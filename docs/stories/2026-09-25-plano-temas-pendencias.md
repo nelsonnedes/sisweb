@@ -251,6 +251,23 @@ Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/pr
 - [x] Fixes só-tela (`@media screen and (max-width:680px)`, papel intacto): helper compartilhado (header empilha 56px+1fr, meta em linha própria, table-layout auto, larguras inline liberadas); TL/Tora (header empilha + `.relatorio-container{overflow-x:auto}` + tabela `max-content`); PCT (header empilha + `.table-container,.resumo-container{overflow-x:auto}` + tabelas `max-content`).
 - [x] Validado ao vivo nos 4 previews: 0 células estourando, body ≤427px, screenshots; trava nova `Mobile 393px: previews com header empilhado + scroll contido`; gates verdes (lint+typecheck OK, 770/0/1).
 
+## 07/10 — onda 12 (Voltar com guarda history.length + teto 257mm finanças)
+- Contexto: subagentes Task indisponíveis na sessão (acesso restrito) — orquestração
+  via Orion com execução direta em fases, sem conflito de arquivos.
+- [x] Voltar unificado (6 sites): `history.length>1 ? history.back() : window.close()`
+  + retry com guarda (canônico `commerce-pdf-share.js:764` + injetor `ensurePrintAux:812`,
+  `vendas.js` 2x, `compras.js`, `romaneio-manager.js`, `banco-horas-ui.js`). Padrão cego
+  erradicado (0 ocorrências). Inline mantido de propósito (janelas são documentos
+  próprios; `window.opener` seria frágil).
+- [x] Teto 257mm: `financas.js:2669,8084` (`max-width:100%` incondicional) viraram cap
+  landscape-scoped igual ao canônico (retrato intacto, preview WYSIWYG na paisagem).
+- [x] Travas: 2 testes novos em `romaneio-print-mobile-blank` + contrato
+  `financas-relatorios-exportacoes` atualizado p/ o cap (mudança intencional).
+- [x] `?v=` resync (11 arquivos, só JSs da onda); `logs.md` revertido (ruído de teste).
+- [x] SW bump `2026-10-07-onda3-folhadb-print` → `2026-10-08-onda12-voltar-teto`
+  (`sw.js`, `menu-component.js`, 9 asserts em 6 testes) — JSs da onda no cache PWA.
+- [x] Gates verdes (lint+typecheck OK, 774 testes 773/0/1).
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,

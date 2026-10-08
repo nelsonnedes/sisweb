@@ -761,7 +761,7 @@
 <body class="sisweb-commerce-print">
     <main class="sisweb-print-page ${options.compact ? 'compact' : ''}">
         ${options.showBackBar === false ? '' : `<div class="sisweb-print-back">
-            <button type="button" class="sisweb-print-back-btn" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}setTimeout(function(){if(!window.closed){try{history.back()}catch(e3){}}},300)">&#8592; Voltar</button>
+            <button type="button" class="sisweb-print-back-btn" onclick="try{if(window.history&&window.history.length>1){history.back()}else{window.close()}}catch(e){try{window.close()}catch(e2){}}setTimeout(function(){try{if(!window.closed&&window.history&&window.history.length>1){history.back()}}catch(e3){}},300)">&#8592; Voltar</button>
             <button type="button" class="sisweb-print-back-btn primary" onclick="window.focus();window.print()">Imprimir</button>
         </div>`}
         ${buildPrintHeader(options)}
@@ -809,7 +809,7 @@
             if (body && !body.querySelector('.sisweb-print-back')) {
                 const bar = doc.createElement('div');
                 bar.className = 'sisweb-print-back';
-                bar.innerHTML = '<button type="button" class="sisweb-print-back-btn" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}">&#8592; Voltar</button><button type="button" class="sisweb-print-back-btn primary" onclick="window.focus();window.print()">Imprimir</button>';
+                bar.innerHTML = '<button type="button" class="sisweb-print-back-btn" onclick="try{if(window.history&&window.history.length>1){history.back()}else{window.close()}}catch(e){try{window.close()}catch(e2){}}">&#8592; Voltar</button><button type="button" class="sisweb-print-back-btn primary" onclick="window.focus();window.print()">Imprimir</button>';
                 body.insertBefore(bar, body.firstChild);
             }
         } catch (_) {}

@@ -237,7 +237,7 @@ test('impressao financeira selecionada substitui o placeholder e usa A4 adaptave
   // Sem size fixo: o Chrome volta a exibir Retrato/Paisagem (size fixo oculta).
   assert.match(source, /@page \{ margin: 8mm; \}/);
   assert.doesNotMatch(source, /@page \{ size:/);
-  assert.match(source, /\.sisweb-print-page \{ max-width: 100%; \}/);
+  assert.match(source, /@media print and \(orientation: landscape\)[\s\S]*?\.sisweb-print-page \{ max-width: 257mm; \}/);
   assert.match(source, /\.sisweb-print-section \{ break-inside: auto; page-break-inside: auto; \}/);
   assert.match(source, /\.finance-print-table \{ width: 100%; table-layout: fixed; \}/);
   assert.match(source, /\.finance-print-nowrap \{ white-space:nowrap; overflow-wrap:normal; word-break:normal; \}/);

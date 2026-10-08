@@ -2666,7 +2666,9 @@ async function imprimirTabela(tipo) {
             printDelay: 300,
             extraCss: `
                 @page { margin: 8mm; }
-                .sisweb-print-page { max-width: 100%; }
+                @media print and (orientation: landscape) {
+                    .sisweb-print-page { max-width: 257mm; }
+                }
                 .sisweb-print-section { break-inside: auto; page-break-inside: auto; }
                 .finance-print-meta { display:flex; flex-wrap:wrap; gap:8px 20px; margin-bottom:12px; }
                 .finance-print-table { width: 100%; table-layout: fixed; }
@@ -8081,7 +8083,9 @@ async function imprimirRelatorioAtual() {
             printDelay: 300,
             extraCss: `
                 @page { margin: 8mm; }
-                .sisweb-print-page { max-width: 100%; }
+                @media print and (orientation: landscape) {
+                    .sisweb-print-page { max-width: 257mm; }
+                }
                 .sisweb-print-section { break-inside: auto; page-break-inside: auto; }
                 .finance-report-print-meta { display:flex; flex-wrap:wrap; gap:8px 20px; margin-bottom:12px; }
                 .finance-report-print-summary { width:min(100%, 420px); margin:0 0 14px auto; border-collapse:collapse; }

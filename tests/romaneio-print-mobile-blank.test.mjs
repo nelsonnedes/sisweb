@@ -194,3 +194,19 @@ test('Logo-cache sistema-wide: romaneios, estoque, folha e DANFE usam resolvedor
     }
     assert.match(read('folha_pagamento/folha.html'), /\.\.\/commerce-pdf-share\.js\?v=[0-9a-f]+/, 'folha.html carrega o motor compartilhado');
 });
+
+test('Onda 12: Voltar com guarda history.length (sem janela presa)', () => {
+    const guard = /history\.length>1/;
+    const blind = /try\{window\.close\(\)\}catch\(e\)\{\}if\(!window\.closed\)\{try\{history\.back/;
+    for (const f of ['commerce-pdf-share.js', 'vendas.js', 'compras.js', 'romaneio-manager.js', 'folha_pagamento/banco-horas-ui.js']) {
+        const src = read(f);
+        assert.match(src, guard, `${f} usa guarda history.length no Voltar`);
+        assert.doesNotMatch(src, blind, `${f} sem padrão cego close-then-back`);
+    }
+});
+
+test('Onda 12: teto 257mm landscape em financas (sem override 100%)', () => {
+    const src = read('financas.js');
+    assert.match(src, /@media print and \(orientation: landscape\)[\s\S]*?\.sisweb-print-page \{ max-width: 257mm; \}/);
+    assert.doesNotMatch(src, /\.sisweb-print-page \{ max-width: 100%; \}/);
+});
