@@ -370,6 +370,15 @@ B. **Checkbox "Carregar apenas o Resumo" não desmarcava (compras/TORA).**
 - [x] Gates verdes (lint+typecheck OK, 790 testes 789/0/1).
 - [x] `?v=` resync + SW `2026-10-08-onda16`.
 
+## Onda 17 — loader E0+E1 (08/10, `loader-e0e1`)
+- E0: helper único `js/sisweb-loading.js` (overlay sob demanda + reentrância).
+- E1: `vendas.html` ganha `#loadingOverlay`/`#loadingText` + script do helper;
+  as 33 calls `LoadingManager` de `vendas.js` (mortas por falta da div) vivas.
+- [x] Travas: `tests/loader-rollout-e0e1.test.mjs` (3 testes).
+- [x] Gates verdes (lint+typecheck OK, 793 testes 792/0/1).
+- [x] `?v=` resync + SW `2026-10-08-loader-e0e1`.
+- Plano completo em `docs/stories/2026-10-08-loader-rollout-plan.md` (E2+ pendentes).
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,
