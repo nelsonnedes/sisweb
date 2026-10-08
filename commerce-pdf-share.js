@@ -383,6 +383,20 @@
             @media print and (orientation: landscape) {
                 .sisweb-print-page { max-width: 257mm; }
             }
+            /* Mobile (só tela, nunca print: papel tem 190/257mm): empilha o
+               cabeçalho (grid 92px/1fr/190px esmagava a empresa a 4px) e usa
+               table-layout auto p/ larguras inline desktop não zerarem colunas. */
+            @media screen and (max-width: 680px) {
+                .sisweb-print-header { grid-template-columns: 56px minmax(0, 1fr); gap: 10px; padding: 10px; }
+                .sisweb-print-logo { width: 52px; height: 48px; }
+                .sisweb-print-logo img { max-width: 48px; max-height: 44px; }
+                .sisweb-print-logo-mark { width: 38px; height: 38px; font-size: 14px; }
+                .sisweb-print-meta { grid-column: 1 / -1; text-align: left; align-items: flex-start; }
+                .sisweb-print-company-name { font-size: 14px; }
+                .sisweb-print-table, table { table-layout: auto; }
+                .sisweb-print-table th[style], .sisweb-print-table td[style],
+                table th[style], table td[style] { width: auto !important; }
+            }
 
             * {
                 box-sizing: border-box;

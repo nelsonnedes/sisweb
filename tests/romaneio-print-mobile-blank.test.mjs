@@ -131,6 +131,25 @@ test('Folha impressao: barra unica + Layout nativo no portrait', () => {
     assert.match(js, /\.duas-colunas \{ flex-direction: column; \}/);
 });
 
+test('Mobile 390px: previews com header empilhado + scroll contido (só tela)', () => {
+    // Helper compartilhado (vendas/compras/company): grid do header empilha,
+    // meta vai p/ linha própria, table-layout auto + larguras inline liberadas.
+    const helper = read('commerce-pdf-share.js');
+    assert.match(helper, /@media screen and \(max-width: 680px\)/);
+    assert.match(helper, /\.sisweb-print-header \{ grid-template-columns: 56px minmax\(0, 1fr\)/);
+    assert.match(helper, /\.sisweb-print-meta \{ grid-column: 1 \/ -1/);
+    assert.match(helper, /\.sisweb-print-table, table \{ table-layout: auto; \}/);
+    assert.match(helper, /table th\[style\], table td\[style\] \{ width: auto !important; \}/);
+    // Romaneios TL/Tora: header empilha + tabela larga com rolagem contida.
+    const tl = read('modules/reports/imprimir-romaneio.js');
+    assert.match(tl, /\.relatorio-container \{ overflow-x: auto; \}/);
+    assert.match(tl, /\.tora-main-table \{ width: max-content; min-width: 100%; \}/);
+    // PCT: header empilha + table-container/resumo-container com scroll.
+    const pct = read('modules/romaneiopct/imprimir-romaneio-pct.js');
+    assert.match(pct, /\.table-container, .resumo-container \{ overflow-x: auto; \}/);
+    assert.match(pct, /\.items-table, .resumo-dimensoes-table \{ width: max-content; min-width: 100%; \}/);
+});
+
 test('Pedidos: logo em cache + espera de imagem + lote 1x + warm-up', () => {
     const helper = read('commerce-pdf-share.js');
     assert.match(helper, /logoDataUrlCache/);

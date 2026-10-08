@@ -853,6 +853,16 @@ window.ImprimirRomaneio = (function() {
             .total-row td { font-weight: bold; background: #f9fbfc; }
             .preco-coluna { display: ${tipo === 'sem_preco' ? 'none' : 'table-cell'}; }
             .valor-coluna { display: ${tipo === 'sem_preco' ? 'none' : 'table-cell'}; }
+            /* Mobile (só tela, nunca print): empilha cabeçalho e reduz o grid
+               de info p/ não esmagar em 360-430px. */
+            @media screen and (max-width: 680px) {
+                .header { flex-direction: column; align-items: flex-start; }
+                .logo { width: 72px; height: 72px; margin: 0 0 8px; }
+                .info-row { grid-template-columns: 110px minmax(0, 1fr); }
+                /* Tabela larga (paisagem no papel): rolagem contida. */
+                .relatorio-container { overflow-x: auto; }
+                .tora-main-table { width: max-content; min-width: 100%; }
+            }
             @media print {
                 @page { margin: 8mm; }
                 .relatorio-container { width: 100%; }
@@ -2367,6 +2377,16 @@ window.ImprimirRomaneio = (function() {
             
             .info-value {
                 flex: 1;
+            }
+            /* Mobile (só tela, nunca print): empilha cabeçalho e quebra
+               linhas de info p/ não esmagar em 360-430px. */
+            @media screen and (max-width: 680px) {
+                .header { flex-direction: column; align-items: flex-start; }
+                .logo { width: 90px; margin: 0 0 8px; }
+                .company-info { padding-left: 0; }
+                .info-row { flex-wrap: wrap; }
+                /* Tabela larga (paisagem no papel): rolagem contida no container. */
+                .relatorio-container { overflow-x: auto; }
             }
 
             .tl-legend {

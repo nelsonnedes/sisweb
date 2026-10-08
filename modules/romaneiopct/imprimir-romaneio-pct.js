@@ -1049,6 +1049,18 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                     color: #0066cc;
                     font-weight: bold;
                 }
+                /* Mobile (só tela, nunca print: papel é paisagem): cabeçalho
+                   empilhado + tabela em largura natural com rolagem contida
+                   (min-widths px sobrepunham colunas em 360-430px). */
+                @media screen and (max-width: 680px) {
+                    .header { grid-template-columns: 84px minmax(0, 1fr); gap: 10px; }
+                    .logo { width: 80px; }
+                    .company-name { font-size: 16px; }
+                    .info-row,
+                    .customer-info .info-row:last-child { grid-template-columns: 88px minmax(0, 1fr); }
+                    .table-container, .resumo-container { overflow-x: auto; }
+                    .items-table, .resumo-dimensoes-table { width: max-content; min-width: 100%; }
+                }
                 
                 .signature {
                     margin-top: 40px;
