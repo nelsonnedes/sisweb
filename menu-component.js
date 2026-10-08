@@ -6,7 +6,7 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-10-08-fixes-log2';
+    const PWA_VERSION = '2026-10-08-tora-print';
     const state = {
         deferredPrompt: null,
         floatingButton: null,

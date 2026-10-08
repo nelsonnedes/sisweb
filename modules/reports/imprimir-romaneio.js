@@ -514,7 +514,9 @@ window.ImprimirRomaneio = (function() {
             if (it.preco) { acc.precos.push(toFloatSafe(it.preco)); }
             return acc;
         }, { qtd: 0, vb: 0, vd: 0, vl: 0, vg: 0, valor: 0, precos: [] });
-        const precoMedio = totals.precos.length ? (totals.precos.reduce((a,b)=>a+b,0) / totals.precos.length) : 0;
+        // Preço médio PONDERADO pelo volume (Σvalor/Σvl): média aritmética de
+        // preços unitários não faz sentido numa linha de totais.
+        const precoMedio = totals.vl > 0 ? (totals.valor / totals.vl) : 0;
 
         const cabecalhoTabela = `
             <tr>
@@ -528,7 +530,7 @@ window.ImprimirRomaneio = (function() {
                 <th class="col-oco2-tora">Oco 2</th>
                 <th class="col-vb-tora">M³ Bruto</th>
                 <th class="col-vd-tora">M³ Desc.</th>
-                <th class="col-vl-tora">M³ Líq.</th>
+                <th class="col-vl-tora">V. Francon</th>
                 <th class="col-compgeo-tora">Comp. Geo.</th>
                 <th class="col-x1-tora">X1</th>
                 <th class="col-x2-tora">X2</th>
@@ -575,7 +577,7 @@ window.ImprimirRomaneio = (function() {
                 <td colspan="5" class="tora-geo-spacer"></td>
                 <td class="text-right col-vgeo-tora">${totals.vg > 0 ? formatarVolume(totals.vg) : '-'}</td>
                 <td class="text-right col-difperc-tora">${formatarDiferencaPercentualTora(totals.vb, totals.vg)}</td>
-                ${mostrarPrecoUnitario ? `<td class="text-right col-unit-tora">${formatarMoeda(precoMedio)}</td>` : ''}
+                ${mostrarPrecoUnitario ? `<td class="text-right col-unit-tora">${totals.vl > 0 ? formatarMoeda(precoMedio) : '-'}</td>` : ''}
                 ${mostrarPreco ? `<td class="text-right col-total-tora">${formatarMoeda(totals.valor)}</td>` : ''}
             </tr>
         `;
@@ -739,7 +741,7 @@ window.ImprimirRomaneio = (function() {
                     <tr>
                         <th class="text-left">Espécie</th>
                         <th class="text-center">Quantidade</th>
-                        <th class="text-right">M³ Líq.</th>
+                        <th class="text-right">V. Francon</th>
                         <th class="text-right">V. Geo.</th>
                         <th class="text-right">Dif. %</th>
                     </tr>

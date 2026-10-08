@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-10-08-fixes-log2';
+const APP_VERSION = '2026-10-08-tora-print';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

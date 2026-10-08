@@ -314,6 +314,23 @@ Apuração com sessão logada (somente leitura + 1 ciclo criar→remover com
 - [x] Travas estendidas (7 testes) + gates verdes (780 testes 779/0/1).
 - [x] `?v=` resync + SW `2026-10-08-fixes-log2`.
 
+## Onda 14 — totais do ROMANEIO DE TORAS (08/10, `tora-print`)
+Auditoria com render real dos 3 modos (Playwright, popup de impressão):
+- Causa-raiz: `applyToraLayout` (`romaneio-print-config.js`) calculava
+  `baseVisible = 3 + [rodo,comprimento,oco1,oco2]` — esquecia a Espécie
+  (sempre visível). O label "Total:" caía para colspan 7 (era 8) e TODOS os
+  totais deslocavam 1 coluna à esquerda, esvaziando a última (Valor).
+  Fix: base 4 + configuráveis. Evidência: 14.664 sob "Oco 2", R$ 650 sob
+  "Dif. %", "Valor" vazio.
+- Título: 'M³ Líq.' → 'V. Francon' (relatório + resumo + config de colunas).
+  Não existe coluna 'V. Franc.' em nenhum gerador (confirmado por busca +
+  histórico); usuário optou por renomear M³ Líq.
+- Total da coluna Preço: média aritmética → média ponderada por volume
+  (Σvalor/Σvl, '-' se vl=0).
+- [x] Travas: `tests/romaneio-tora-print-totals.test.mjs` (4 testes).
+- [x] Gates verdes (lint+typecheck OK, 784 testes 783/0/1).
+- [x] `?v=` resync + SW `2026-10-08-tora-print`.
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,

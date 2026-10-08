@@ -62,7 +62,7 @@
                 { id: 'oco2', label: 'Oco 2', selectors: ['.tora-main-table .col-oco2-tora'] },
                 { id: 'm3Bruto', label: 'M³ Bruto', selectors: ['.tora-main-table .col-vb-tora'] },
                 { id: 'm3Desc', label: 'M³ Desc.', selectors: ['.tora-main-table .col-vd-tora'] },
-                { id: 'm3Liquido', label: 'M³ Líq.', selectors: ['.tora-main-table .col-vl-tora'] },
+                { id: 'm3Liquido', label: 'V. Francon', selectors: ['.tora-main-table .col-vl-tora'] },
                 { id: 'compGeo', label: 'Comp. Geo.', selectors: ['.tora-main-table .col-compgeo-tora'] },
                 { id: 'x1', label: 'X1', selectors: ['.tora-main-table .col-x1-tora'] },
                 { id: 'x2', label: 'X2', selectors: ['.tora-main-table .col-x2-tora'] },
@@ -625,7 +625,10 @@
     }
 
     function applyToraLayout(doc, selectedSet) {
-        const baseVisible = 3 + ['rodo', 'comprimento', 'oco1', 'oco2'].filter((id) => selectedSet.has(id)).length;
+        // Base fixa: Plaqueta + Custódia + AUTEF + Espécie (4) + configuráveis
+        // (rodo/comprimento/oco1/oco2). Era 3 (faltava a Espécie) e deslocava
+        // todos os totais uma coluna à esquerda, esvaziando a última.
+        const baseVisible = 4 + ['rodo', 'comprimento', 'oco1', 'oco2'].filter((id) => selectedSet.has(id)).length;
         const geoVisible = ['compGeo', 'x1', 'x2', 'x3', 'x4'].filter((id) => selectedSet.has(id)).length;
         doc.querySelectorAll('.tora-total-label').forEach((node) => setColSpanOrHide(node, baseVisible));
         doc.querySelectorAll('.tora-geo-spacer').forEach((node) => setColSpanOrHide(node, geoVisible));
