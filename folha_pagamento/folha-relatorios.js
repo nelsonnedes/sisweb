@@ -4048,6 +4048,11 @@ class FolhaRelatorios {
         @media (max-width: 680px) {
             .info-row { grid-template-columns: minmax(100px, max-content) minmax(0, 1fr); }
         }
+        /* Mobile (só tela, nunca print): empilha Proventos x Descontos p/ não
+           espremer as tabelas lado a lado em 360-430px (VALOR estourava). */
+        @media screen and (max-width: 680px) {
+            .duas-colunas { flex-direction: column; }
+        }
         @media print and (orientation: landscape) {
             :root { --a4-width-px: 1122; --a4-height-px: 793; --print-margin-px: 40; }
         }
@@ -4735,6 +4740,10 @@ class FolhaRelatorios {
             .info-row {
                 grid-template-columns: minmax(100px, max-content) minmax(0, 1fr);
             }
+        }
+        /* Mobile (só tela, nunca print): empilha Proventos x Descontos. */
+        @media screen and (max-width: 680px) {
+            .duas-colunas { flex-direction: column; }
         }
         @media print and (orientation: landscape) {
             :root {

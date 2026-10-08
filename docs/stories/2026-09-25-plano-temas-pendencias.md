@@ -10,6 +10,7 @@ Em dia — 07/10 onda 6 trap-silence + pendências 14/10 (gates verdes: lint+typ
 Em dia — 07/10 onda 7 orientação folha: barra única + Layout nativo no portrait (gates verdes: lint+typecheck OK, 770 testes 770/0/1; publish verificado via fetch).
 Em dia — 07/10 onda 8 seletores de orientação removidos (auto por tipo; gates verdes: lint+typecheck OK, 770 testes 770/0/1).
 Em dia — 07/10 onda 9 varredura mobile ponta a ponta (gates verdes: lint+typecheck OK, 770 testes 770/0/1; publish verificado via fetch).
+Em dia — 07/10 onda 10 preview 393px real: recibo empilhado (gates verdes: lint+typecheck OK, 770 testes 770/0/1).
 Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
 Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 testes 727/0/1).
 Em dia — 06/10 continuação Antigravity ceecf69f (gates verdes: lint+typecheck OK, 756 testes 756/0/1).
@@ -236,6 +237,12 @@ Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/pr
 - [x] Equipe D (folha/BH): genérico/recibo ok; `exportarPDF` forçava size (anulava omitSize) + sem guarda; BH sem viewport/@page/fonts-wait.
 - [x] Fixes (3 frentes paralelas, sem sobreposição): fallbacks vendas/compras no padrão company/finanças; PDF respeita omitSize + guarda; BH com viewport/@page/fonts-ready; estoque viewport+fonts+`.num`; Tora revert print; PCT viewport no template. Finanças teto 257mm e Voltar `history.length` ficam p/ próxima (decisão UX).
 - [x] Commit inclui ainda os 6 testes do bump SW que haviam ficado fora do commit anterior; gates verdes (lint+typecheck OK, 770/0/1).
+
+## 07/10 — onda 10 (preview real 393px com login: recibo Proventos x Descontos)
+- [x] Login com credenciais de teste (só sessão, nada gravado) + viewport iPhone 393px; modal Gerar Relatórios sem campo de orientação (remoção confirmada no ar).
+- [x] Achado medido: tabelas lado a lado 161px, VALOR 42px, `R$ 2000,00` estourando (scrollWidth 193 > 161), th quebrando no meio da palavra.
+- [x] Fix só-tela (`@media screen and (max-width:680px)` nos 2 blocos CSS do recibo): `.duas-colunas{flex-direction:column}` — papel intacto (A4 tem 794px+, query não casa no print).
+- [x] Validado ao vivo no preview: 338px, 0 células estourando + screenshot; trava nova no teste fase-3; gates verdes (lint+typecheck OK, 770/0/1).
 
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas

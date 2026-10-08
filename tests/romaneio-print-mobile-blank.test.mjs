@@ -126,6 +126,9 @@ test('Folha impressao: barra unica + Layout nativo no portrait', () => {
     assert.match(js, /getRelatorioDefaultOrientation/);
     assert.match(js, /window\.trocarOrientacao = function/);
     assert.match(js, /print-control-bar/);
+    // Mobile 390px (só tela, nunca print): Proventos x Descontos empilhados
+    assert.match(js, /@media screen and \(max-width: 680px\)/);
+    assert.match(js, /\.duas-colunas \{ flex-direction: column; \}/);
 });
 
 test('Pedidos: logo em cache + espera de imagem + lote 1x + warm-up', () => {
