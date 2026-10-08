@@ -210,8 +210,15 @@ if (!window.SiswebSpecies) {
             return out;
         },
         normalizeList: (rawData) => {
-            const list = Array.isArray(rawData)
-                ? rawData.map((item, index) => {
+            // Nós de metadado da coleção não são espécies (renderizariam
+            // como "Nome não informado" e seriam indeletáveis).
+            const semMetadados = (rawData && typeof rawData === 'object' && !Array.isArray(rawData))
+                ? Object.fromEntries(
+                    Object.entries(rawData).filter(([k]) => k !== '_metadata' && k !== 'metadata')
+                )
+                : rawData;
+            const list = Array.isArray(semMetadados)
+                ? semMetadados.map((item, index) => {
                     const value = item && typeof item === 'object' ? item : {};
                     const key = String(index);
                     return {
@@ -222,8 +229,8 @@ if (!window.SiswebSpecies) {
                         originalId: value.id || value.key || key
                     };
                 })
-                : Object.keys(rawData || {}).map((key) => {
-                    const value = rawData[key] && typeof rawData[key] === 'object' ? rawData[key] : {};
+                : Object.keys(semMetadados || {}).map((key) => {
+                    const value = semMetadados[key] && typeof semMetadados[key] === 'object' ? semMetadados[key] : {};
                     return {
                         ...value,
                         id: key,

@@ -37,7 +37,7 @@
     <link rel="stylesheet" href="romaneio-comum.css?v=419efeecff71">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=849ec5ee3993"></script>
+<script src="menu-component.js?v=14a69af05a1e"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <link rel="stylesheet" href="print-styles.css?v=f79c9137e576">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4392,7 +4392,8 @@
         }
         window.clonarRomaneio = clonarRomaneio;
         
-        // Função para excluir romaneio
+        // Função para excluir romaneio (padrão PCT: purga multi-chave + fail-closed,
+        // sem reload cego — antes filtrava só por id e ressuscitava via localStorage)
         async function deleteRomaneio(index) {
             if (confirm("Tem certeza que deseja excluir este romaneio?")) {
                 const romaneios = await loadRomaneiosPesCompany();
@@ -4405,14 +4406,86 @@
                     alert('Operação bloqueada: romaneio não pertence à empresa ativa.');
                     return;
                 }
+                // A chave real no Firebase pode divergir do id normalizado
+                // (firebaseKey/key/numero de registros legados).
+                const chaves = [];
+                [alvo.firebaseKey, alvo.key, alvo.id, alvo.numero].forEach(v => {
+                    const s = String(v || '').trim();
+                    if (s && !chaves.includes(s)) chaves.push(s);
+                });
                 // Remover do Firebase por registro, quando disponível
+                let ok = false;
+                let ultimoErro = '';
                 try {
-                    if (alvo && window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-                        await window.firebaseService.saveToFirebase('romaneios/pes', String(alvo.id), null);
+                    const svc = window.firebaseService;
+                    if (svc) {
+                        for (const k of chaves) {
+                            try {
+                                let res = null;
+                                if (typeof svc.removeFromFirebase === 'function') {
+                                    res = await svc.removeFromFirebase(`romaneios/pes/${k}`);
+                                } else if (typeof svc.deleteFromFirebase === 'function') {
+                                    // deleteFromFirebase(path): 1 arg — caminho completo
+                                    // (2 args apagariam a coleção!)
+                                    res = await svc.deleteFromFirebase(`romaneios/pes/${k}`);
+                                } else if (typeof svc.saveToFirebase === 'function') {
+                                    res = await svc.saveToFirebase('romaneios/pes', String(k), null);
+                                }
+                                if (res && res.success) ok = true;
+                            } catch (e) { ultimoErro = String((e && e.message) || e); }
+                        }
+                    } else {
+                        ultimoErro = 'FirebaseService indisponível';
                     }
                 } catch (e) {
+                    ultimoErro = String((e && e.message) || e);
                     console.warn('⚠️ Erro ao remover romaneio no Firebase:', e);
                 }
+                if (!ok) {
+                    alert('Falha ao excluir romaneio no servidor.' + (ultimoErro ? ` (${ultimoErro.slice(0, 120)})` : ''));
+                    return;
+                }
+                // Purgar espelhos locais (senão o fallback de localStorage
+                // ressuscita o registro excluído na próxima listagem).
+                try {
+                    const isAlvo = (r) => {
+                        if (!r || typeof r !== 'object') return false;
+                        return [r.firebaseKey, r.key, r.id, r.numero]
+                            .some(v => chaves.includes(String(v || '').trim()));
+                    };
+                    const chavesLocais = [...getLocalStorageKeys('romaneios/pes'), 'romaneios/pes', 'romaneios_pes'];
+                    [...new Set(chavesLocais)].forEach(k => {
+                        try {
+                            const raw = localStorage.getItem(k);
+                            if (!raw) return;
+                            const parsed = JSON.parse(raw);
+                            if (Array.isArray(parsed)) {
+                                const filtrada = parsed.filter(r => !isAlvo(r));
+                                if (filtrada.length !== parsed.length) {
+                                    localStorage.setItem(k, JSON.stringify(filtrada));
+                                }
+                            } else if (parsed && typeof parsed === 'object') {
+                                let mudou = false;
+                                Object.keys(parsed).forEach(ck => {
+                                    if (chaves.includes(String(ck)) || isAlvo(parsed[ck])) {
+                                        delete parsed[ck];
+                                        mudou = true;
+                                    }
+                                });
+                                if (mudou) localStorage.setItem(k, JSON.stringify(parsed));
+                            }
+                        } catch (_) {}
+                    });
+                } catch (_) {}
+                try {
+                    if (Array.isArray(romaneiosPesModalList)) {
+                        romaneiosPesModalList = romaneiosPesModalList.filter(r => {
+                            if (!r || typeof r !== 'object') return true;
+                            return ![r.firebaseKey, r.key, r.id, r.numero]
+                                .some(v => chaves.includes(String(v || '').trim()));
+                        });
+                    }
+                } catch (_) {}
                 showRomaneiosList(); // Atualizar a lista
             }
         }

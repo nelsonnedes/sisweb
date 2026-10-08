@@ -47,7 +47,7 @@
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=849ec5ee3993"></script>
+<script src="menu-component.js?v=14a69af05a1e"></script>
     <style>
         * {
             margin: 0;
@@ -528,8 +528,9 @@
     color: var(--sw-text-1);
 }
 
-        /* Modal de Lista de Pedidos — padronizado com Vendas */
-        #listaPedidosModal .modal-content {
+        /* Modal de Lista de Pedidos / Produtos — padronizado com Vendas */
+        #listaPedidosModal .modal-content,
+        #listaProdutosModal .modal-content {
             max-width: 1000px;
             padding: 0;
             margin: 2% auto;
@@ -539,10 +540,35 @@
             width: 95%;
         }
 
-        #listaPedidosModal .modal-body {
+        #listaPedidosModal .modal-body,
+        #listaProdutosModal .modal-body {
             padding: 20px;
             overflow-y: auto;
             flex: 1 1 auto;
+        }
+
+        #listaProdutosModal .btn-print-selected {
+            white-space: nowrap;
+        }
+        #listaProdutosModal .produtos-selectall-mobile {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #listaProdutosModal #compraProdutosSelectAll,
+        #listaProdutosModal #compraProdutosSelectAllMobile,
+        #listaProdutosModal .produto-select-item {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            #listaProdutosModal .produtos-selectall-mobile {
+                display: inline-flex;
+            }
         }
 
         #modalFornecedor .modal-content {
@@ -1549,27 +1575,6 @@
                     <i class="fas fa-list"></i> Listar Produtos
                 </button>
             </div>
-
-            <div id="produtosList" style="display: none;">
-                <div class="search-box commerce-filters-row">
-                    <input type="text" id="searchProdutos" placeholder="Pesquisar produtos..." onkeyup="filtrarProdutos()">
-                </div>
-                <div class="table-responsive mobile-cards commerce-orders-table-wrap">
-                    <table class="table commerce-orders-table">
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Nome</th>
-                                <th>Preço</th>
-                                <th>Estoque</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="produtosTable"></tbody>
-                    </table>
-                </div>
-                <div id="comprasProdutosPagination" class="pagination-controls" style="margin-top: 12px;"></div>
-            </div>
         </div>
 
         <!-- Tab Relatórios -->
@@ -1770,6 +1775,55 @@
                     </table>
                 </div>
                 <div id="pedidosPagination" class="pagination-controls" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Lista de Produtos — padronizado com Vendas (checkbox + imprimir/excluir) -->
+    <div id="listaProdutosModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Lista de Produtos</h2>
+                <span class="close-modal" onclick="fecharModal('listaProdutosModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+            <div id="produtosList">
+                <div class="search-box commerce-filters-row">
+                    <input type="text" id="searchProdutos" placeholder="Pesquisar produtos..." onkeyup="filtrarProdutos()">
+                </div>
+                <div class="form-row date-filter-row">
+                    <button type="button" class="btn-primary btn-print-selected" onclick="imprimirProdutosSelecionadosCompra()">
+                        <i class="fas fa-print"></i> Imprimir <span id="compraProdutosPrintSelectedCount">(0)</span>
+                    </button>
+                    <button type="button" class="btn-danger btn-print-selected" onclick="excluirProdutosSelecionadosCompra()">
+                        <i class="fas fa-trash"></i> Excluir <span id="compraProdutosDeleteSelectedCount">(0)</span>
+                    </button>
+                </div>
+                <label class="produtos-selectall-mobile" for="compraProdutosSelectAllMobile">
+                    <input type="checkbox" id="compraProdutosSelectAllMobile"
+                        onchange="toggleSelecionarTodosProdutosCompra(this.checked)" aria-label="Selecionar todos">
+                    <span>Selecionar todos</span>
+                </label>
+                <div class="table-responsive mobile-cards commerce-orders-table-wrap">
+                    <table class="table commerce-orders-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="compraProdutosSelectAll"
+                                        onchange="toggleSelecionarTodosProdutosCompra(this.checked)" aria-label="Selecionar todos">
+                                </th>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="produtosTable"></tbody>
+                    </table>
+                </div>
+                <div id="comprasProdutosPagination" class="pagination-controls" style="margin-top: 12px;"></div>
+            </div>
             </div>
         </div>
     </div>
@@ -2137,7 +2191,7 @@
         })();
     </script>
     <!-- Carregar gerenciador unificado de espécies para popular o select -->
-    <script src="species-manager.js?v=f980a09105b4"></script>
+    <script src="species-manager.js?v=937b2c144983"></script>
     <!-- Carregar gerenciador de cidades -->
     <script src="cities.js?v=741c80084e54"></script>
     <script src="ui-config.js?v=2f06b9dee53f"></script>
@@ -2145,7 +2199,7 @@
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
     <script src="romaneio-table-enhancements.js?v=290d67a3557c"></script>
     <!-- Carregar módulo de Compras -->
-    <script src="compras.js?v=43242bb73c90"></script>
+    <script src="compras.js?v=7e4580076134"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });

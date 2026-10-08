@@ -209,9 +209,17 @@ async function loadSpecies(options = {}) {
         }
         const result = await window.firebaseService.loadFromFirebase('especies', { forceRefresh });
         if (result.success && result.data) {
+            // Nós de metadado da coleção (_metadata/metadata) não são espécies:
+            // sem isso, renderizam como "Nome não informado" e são indeletáveis.
+            let rawData = result.data;
+            if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
+                rawData = Object.fromEntries(
+                    Object.entries(rawData).filter(([k]) => k !== '_metadata' && k !== 'metadata')
+                );
+            }
             // Convert object to array
             currentSpecies = (speciesTools.normalizeList
-                ? speciesTools.normalizeList(result.data)
+                ? speciesTools.normalizeList(rawData)
                 : Object.keys(result.data).map((key, index) => {
                     const item = result.data[key] || {};
                     return normalizeSpecies({

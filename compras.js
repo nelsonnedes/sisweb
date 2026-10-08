@@ -759,6 +759,9 @@ let comprasFornecedoresPage = 1;
 const comprasFornecedoresPerPage = 10;
 let comprasProdutosPage = 1;
 const comprasProdutosPerPage = 10;
+// Seleção em massa da Lista de Produtos (paridade vendas)
+let comprasProdutosListFiltered = [];
+let comprasProdutosSelecionados = new Set();
 let comprasRelatorioPage = 1;
 const comprasRelatorioPerPage = 10;
 let pedidosListPage = 1;
@@ -800,8 +803,8 @@ function showTab(tabId) {
     if (content) content.classList.add('active');
     if (tabBtn) tabBtn.classList.add('active');
     
-    // Callbacks específicos
-    if (tabId === 'pedidos') listarPedidos();
+    // Callbacks específicos (sem abrir modais automaticamente — paridade vendas:
+    // a lista só abre pelo botão "Listar Pedidos")
     if (tabId === 'clientes') carregarFornecedoresAbaCompra(false);
     if (tabId === 'relatorios') prepararRelatoriosCompras();
 }
@@ -999,12 +1002,15 @@ function renderProdutosCadastroTable() {
         return nome.includes(termo) || codigo.includes(termo);
     });
     if (lista.length === 0) {
-        table.innerHTML = '<tr><td colspan="5" data-label="Mensagem" class="text-center commerce-full-row">Nenhum produto cadastrado.</td></tr>';
+        comprasProdutosListFiltered = [];
+        table.innerHTML = '<tr><td colspan="6" data-label="Mensagem" class="text-center commerce-full-row">Nenhum produto cadastrado.</td></tr>';
         refreshCommerceResponsiveTables();
         renderComprasProdutosPagination(0);
+        atualizarContadoresProdutosCompra();
         return;
     }
     const ordered = lista.slice().sort((a, b) => getProdutoNomeCadastro(a).localeCompare(getProdutoNomeCadastro(b)));
+    comprasProdutosListFiltered = ordered;
     const totalProdutosPages = Math.max(1, Math.ceil(ordered.length / comprasProdutosPerPage));
     if (comprasProdutosPage > totalProdutosPages) comprasProdutosPage = totalProdutosPages;
     if (comprasProdutosPage < 1) comprasProdutosPage = 1;
@@ -1012,6 +1018,7 @@ function renderProdutosCadastroTable() {
     const produtosPaginados = ordered.slice(produtosStart, produtosStart + comprasProdutosPerPage);
     table.innerHTML = produtosPaginados.map(produto => `
         <tr>
+            <td data-label="Selecionar" style="text-align:center;"><input type="checkbox" class="produto-select-item" ${comprasProdutosSelecionados.has(String(produto.id)) ? 'checked' : ''} onchange="toggleSelecionarProdutoCompra('${String(produto.id || '').replace(/'/g, "\\'")}', this.checked)" aria-label="Selecionar produto"></td>
             <td data-label="Código"><span class="commerce-card-value commerce-card-number">${escapeHtml(String(produto.codigo || '-'))}</span></td>
             <td data-label="Nome"><span class="commerce-card-value commerce-card-title">${escapeHtml(getProdutoNomeCadastro(produto) || '-')}</span></td>
             <td data-label="Preço"><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(getProdutoPrecoCadastro(produto)))}</span></td>
@@ -1026,6 +1033,7 @@ function renderProdutosCadastroTable() {
     `).join('');
     refreshCommerceResponsiveTables();
     renderComprasProdutosPagination(ordered.length);
+    atualizarContadoresProdutosCompra();
 }
 
 function renderComprasProdutosPagination(totalItems) {
@@ -1099,11 +1107,144 @@ window.novoProduto = function() {
 };
 
 window.listarProdutos = function() {
-    const list = document.getElementById('produtosList');
-    if (list) list.style.display = 'block';
+    const modal = document.getElementById('listaProdutosModal');
+    if (modal) modal.style.display = 'block';
     comprasProdutosPage = 1;
     renderProdutosCadastroTable();
 };
+
+function toggleSelecionarTodosProdutosCompra(checked) {
+    if (checked) {
+        comprasProdutosListFiltered.forEach(p => comprasProdutosSelecionados.add(String(p?.id)));
+    } else {
+        comprasProdutosListFiltered.forEach(p => comprasProdutosSelecionados.delete(String(p?.id)));
+    }
+    renderProdutosCadastroTable();
+}
+
+function toggleSelecionarProdutoCompra(produtoId, checked) {
+    if (checked) comprasProdutosSelecionados.add(String(produtoId));
+    else comprasProdutosSelecionados.delete(String(produtoId));
+    atualizarContadoresProdutosCompra();
+}
+
+function atualizarContadoresProdutosCompra() {
+    try {
+        const print = document.getElementById('compraProdutosPrintSelectedCount');
+        if (print) print.textContent = `(${comprasProdutosSelecionados.size})`;
+        const del = document.getElementById('compraProdutosDeleteSelectedCount');
+        if (del) del.textContent = `(${comprasProdutosSelecionados.size})`;
+        const all = document.getElementById('compraProdutosSelectAll');
+        if (all) {
+            const visiveis = comprasProdutosListFiltered.map(p => String(p?.id));
+            all.checked = visiveis.length > 0 && visiveis.every(id => comprasProdutosSelecionados.has(id));
+        }
+        try {
+            const mob = document.getElementById('compraProdutosSelectAllMobile');
+            if (mob) {
+                const head = document.getElementById('compraProdutosSelectAll');
+                mob.checked = head ? !!head.checked : false;
+            }
+        } catch (_) {}
+    } catch (_) {}
+}
+
+function imprimirProdutosSelecionadosCompra() {
+    const lista = comprasProdutosListFiltered.filter(p => comprasProdutosSelecionados.has(String(p?.id)));
+    if (lista.length === 0) {
+        ToastManager.warning('Selecione ao menos um produto para imprimir.', 'Atenção');
+        return;
+    }
+    imprimirRelatorioProdutosCompra(lista);
+}
+
+async function imprimirRelatorioProdutosCompra(lista) {
+    const itens = (Array.isArray(lista) ? lista : []).filter(Boolean);
+    if (itens.length === 0) {
+        ToastManager.warning('Selecione ao menos um produto para imprimir.', 'Atenção');
+        return;
+    }
+    LoadingManager.show('Preparando impressão...');
+    try {
+        const helper = window.SiswebCommercePdf || {};
+        const htmlEscape = typeof helper.escapeHtml === 'function' ? helper.escapeHtml : escapeHtml;
+        let dadosEmpresa = {};
+        try { dadosEmpresa = await obterDadosEmpresa(); } catch (_) {}
+        const linhas = itens.map(p => {
+            const estoque = `${formatNumber(getProdutoEstoqueCadastro(p), 3)} ${p?.unidade || 'UN'}`;
+            return `<tr><td>${htmlEscape(String(p?.codigo || '-'))}</td><td>${htmlEscape(getProdutoNomeCadastro(p) || '-')}</td><td class="text-right">${htmlEscape(formatCurrency(getProdutoPrecoCadastro(p)))}</td><td class="text-center">${htmlEscape(estoque)}</td></tr>`;
+        }).join('');
+        const bodyHtml = `<h2 style="margin:0 0 12px;">Lista de Produtos</h2>
+            <table class="sisweb-print-table"><thead><tr><th>Código</th><th>Nome</th><th>Preço</th><th>Estoque</th></tr></thead><tbody>${linhas}</tbody></table>`;
+        let html = '';
+        if (typeof helper.buildPrintDocument === 'function') {
+            const printOptions = {
+                title: 'Lista de Produtos',
+                company: dadosEmpresa,
+                badgeText: 'Compras',
+                subtitle: `Emitido em ${new Date().toLocaleDateString('pt-BR')}`,
+                bodyHtml
+            };
+            const prepared = typeof helper.preparePrintOptions === 'function'
+                ? await helper.preparePrintOptions(printOptions)
+                : printOptions;
+            html = helper.buildPrintDocument(prepared);
+        } else {
+            html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Lista de Produtos</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111827}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d6dde8;padding:8px}.text-right{text-align:right}.text-center{text-align:center}</style></head><body>${bodyHtml}</body></html>`;
+        }
+        if (typeof helper.printHtmlDocument === 'function') {
+            helper.printHtmlDocument({ html, windowFeatures: 'width=900,height=700' });
+            return;
+        }
+        let janela = null;
+        try { janela = window.open('', '_blank', 'width=900,height=700'); } catch (_) { janela = null; }
+        if (!janela || janela.closed) {
+            ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção');
+            return;
+        }
+        try {
+            janela.document.write(html);
+            janela.document.close();
+        } catch (_) {
+            try { if (!janela.closed) janela.close(); } catch (_) {}
+            ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+            return;
+        }
+        try { janela.focus(); } catch (_) {}
+        setTimeout(() => { try { janela.print(); } catch (_) {} }, 400);
+    } finally {
+        LoadingManager.hide();
+    }
+}
+
+async function excluirProdutosSelecionadosCompra() {
+    const ids = Array.from(comprasProdutosSelecionados);
+    if (ids.length === 0) {
+        ToastManager.warning('Selecione ao menos um produto para excluir.', 'Atenção');
+        return;
+    }
+    if (!confirm(`Excluir ${ids.length} produto(s) selecionado(s)? Esta ação não pode ser desfeita.`)) return;
+    try {
+        LoadingManager.show('Excluindo produtos...');
+        const idSet = new Set(ids.map(String));
+        const novaLista = (window.produtos || []).filter(p => !idSet.has(String(p?.id || '')));
+        const okCatalogo = await persistProdutosCatalog(novaLista);
+        if (!okCatalogo) {
+            ToastManager.error('Não foi possível excluir o produto no servidor. Verifique sua conexão e permissões e tente novamente.');
+            try { renderProdutosCadastroTable(); } catch (_) {}
+            return;
+        }
+        window.produtos = novaLista;
+        comprasProdutosSelecionados.clear();
+        renderProdutosCadastroTable();
+        ToastManager.success(`${ids.length} produto(s) excluído(s).`);
+    } catch (e) {
+        console.error(e);
+        ToastManager.error('Erro ao excluir: ' + (e && e.message));
+    } finally {
+        LoadingManager.hide();
+    }
+}
 
 window.filtrarProdutos = function() {
     comprasProdutosPage = 1;

@@ -267,6 +267,38 @@ Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/pr
 - [x] SW bump `2026-10-07-onda3-folhadb-print` → `2026-10-08-onda12-voltar-teto`
   (`sw.js`, `menu-component.js`, 9 asserts em 6 testes) — JSs da onda no cache PWA.
 - [x] Gates verdes (lint+typecheck OK, 774 testes 773/0/1).
+- [x] Commit `6f46bee` (35 arquivos só da onda; landing/ajuda/assets paralelos fora)
+  + push `aa2af3d..6f46bee` + `deploy:hosting` OK.
+- [x] Produção verificada via fetch: SW `2026-10-08-onda12-voltar-teto`,
+  `commerce-pdf-share.js` com guarda 3x e padrão cego 0x; login + vendas +
+  finanças sem pageerrors (somente leitura, nada alterado).
+
+## Onda 13 — fixes do log do usuário (08/10, `fixes-log1`)
+Causa-raiz confirmada por sessão Playwright logada (somente leitura):
+1. **PES não excluía (romaneiopes.html `deleteRomaneio`)**: apagava só pela
+   chave `id` e recarregava cego — registros com chave real divergente
+   (legados) sobreviviam e o fallback de localStorage ressuscitava o resto
+   (Firebase `romaneios/pes` já estava vazio e a lista vinha do espelho local).
+   Fix no padrão PCT: purga multi-chave (firebaseKey/key/id/numero) via
+   `removeFromFirebase` (fallback `saveToFirebase-null`), fail-closed com
+   alerta, purga dos espelhos `localStorage` + filtro da lista do modal.
+2. **species "Nome não informado" indeletável**: era o nó de metadado da
+   coleção `especies/_metadata` (`{lastUpdated, source}`) — o `normalize`
+   o carimbava com o placeholder e o auto-clean nunca o alcançava. Fix:
+   filtro de chaves `_metadata`/`metadata` em `js/species.js loadSpecies` +
+   `species-manager.js normalizeList` (nada deletado do banco; só oculto).
+3. **Compras/Produtos em modal + checkbox + Imprimir/Excluir** (paridade
+   vendas "Madeira Serrada em Estoque"): `#produtosList` movida para o modal
+   `#listaProdutosModal`, coluna checkbox + select-all (header/mobile),
+   contadores, `imprimirRelatorioProdutosCompra` (builder `SiswebCommercePdf`
+   + fallback) e `excluirProdutosSelecionadosCompra` (fail-closed via
+   `persistProdutosCatalog`).
+4. **Aba Pedido de Compras não abre mais o modal sozinha**: removido o
+   `listarPedidos()` do `showTab('pedidos')` (paridade vendas: "sem abrir
+   modais automaticamente"); pós-save/delete e retry de boot mantidos.
+- [x] Travas: `tests/compras-listas-especies-pes-fixes.test.mjs` (5 testes).
+- [x] Gates verdes (lint+typecheck OK, 779 testes 778/0/1).
+- [x] `?v=` resync + SW `2026-10-08-fixes-log1`.
 
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
