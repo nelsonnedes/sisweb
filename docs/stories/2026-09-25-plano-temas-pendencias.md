@@ -300,6 +300,20 @@ Causa-raiz confirmada por sessão Playwright logada (somente leitura):
 - [x] Gates verdes (lint+typecheck OK, 779 testes 778/0/1).
 - [x] `?v=` resync + SW `2026-10-08-fixes-log1`.
 
+## Onda 13b — retorno do usuário species (08/10, `fixes-log2`)
+Apuração com sessão logada (somente leitura + 1 ciclo criar→remover com
+`SpeciesCRUD.remove`, restam 0, sem pageerrors):
+- O delete de `especies/12` do log do usuário FUNCIONOU no Firebase (chave
+  sumiu, 112 chaves restantes, zero linhas-fantasma com o JS novo). O "ainda
+  continua" era a cascata lenta pós-delete (vários round-trips + resort de
+  112 linhas com a linha ainda visível e só overlay de loading).
+- Melhorias aplicadas em `js/species.js`: remoção otimista da linha logo após
+  o confirm (+ recarga restauradora no catch, fail-closed mantido);
+  auto-clean revivido (placeholder 'Nome não informado' conta como vazio) e
+  fallback sem `normalizeList` usando os dados já filtrados.
+- [x] Travas estendidas (7 testes) + gates verdes (780 testes 779/0/1).
+- [x] `?v=` resync + SW `2026-10-08-fixes-log2`.
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,

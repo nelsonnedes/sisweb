@@ -220,8 +220,8 @@ async function loadSpecies(options = {}) {
             // Convert object to array
             currentSpecies = (speciesTools.normalizeList
                 ? speciesTools.normalizeList(rawData)
-                : Object.keys(result.data).map((key, index) => {
-                    const item = result.data[key] || {};
+                : Object.keys(rawData).map((key, index) => {
+                    const item = rawData[key] || {};
                     return normalizeSpecies({
                         ...item,
                         id: key,
@@ -230,8 +230,14 @@ async function loadSpecies(options = {}) {
                         originalId: item.id || item.key || key
                     }, index);
                 }));
+            // Registros realmente vazios (sem nome/científico — o placeholder
+            // 'Nome não informado' do normalize conta como vazio aqui).
+            const nomeVazio = (s) => {
+                const nome = String(getSpeciesName(s) || '').trim();
+                return !nome || nome === 'Nome não informado';
+            };
             const emptyIds = currentSpecies
-                .filter(s => !getSpeciesName(s) && !getSpeciesScientific(s))
+                .filter(s => nomeVazio(s) && !getSpeciesScientific(s))
                 .map(s => s.id)
                 .filter(Boolean);
             if (emptyIds.length) {
@@ -385,7 +391,18 @@ window.deleteSpecies = async (id) => {
     if (!confirm('Tem certeza que deseja excluir esta espécie?')) return;
 
     showLoading(true);
+    // Remoção otimista: a linha some na hora (a cascata remota de
+    // verificação leva segundos); se falhar, o catch recarrega e restaura.
+    const aliasMatch = (s) => [s && s.id, s && s.key, s && s.firebaseKey, s && s.originalId]
+        .map(v => String(v || '').trim())
+        .filter(Boolean)
+        .includes(cleanId);
     try {
+        currentSpecies = (currentSpecies || []).filter(s => !aliasMatch(s));
+        try {
+            const activeFilter = elements.searchInput ? elements.searchInput.value : '';
+            renderTable(filterList(currentSpecies, activeFilter));
+        } catch (_) {}
         await ensureAuthAndTenant();
         // ✅ Exclusão canônica com verificação de leitura: se o registro ainda
         // existir no Firebase após excluir, reporta falha em vez de "sucesso".
@@ -456,6 +473,9 @@ window.deleteSpecies = async (id) => {
     } catch (error) {
         console.error('Erro ao excluir:', error);
         showToast('Erro ao excluir: ' + error.message, 'error');
+        // Falha: recarrega do servidor para restaurar a linha removida
+        // de forma otimista.
+        try { await loadSpecies({ forceRefresh: true }); } catch (_) {}
     } finally {
         showLoading(false);
     }

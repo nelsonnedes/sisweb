@@ -23,6 +23,15 @@ test('PES deleteRomaneio purga espelhos locais (anti-ressurreição)', () => {
 test('lista de espécies ignora nós de metadado da coleção', () => {
   assert.match(speciesJs, /k !== '_metadata' && k !== 'metadata'/);
   assert.match(speciesManager, /k !== '_metadata' && k !== 'metadata'/);
+  // fallback sem normalizeList também usa os dados filtrados
+  assert.match(speciesJs, /Object\.keys\(rawData\)\.map/);
+  // auto-clean enxerga o placeholder como vazio
+  assert.match(speciesJs, /nome === 'Nome não informado'/);
+});
+
+test('exclusão de espécie é otimista com restauração em falha', () => {
+  assert.match(speciesJs, /Remoção otimista/);
+  assert.match(speciesJs, /currentSpecies = \(currentSpecies \|\| \[\]\)\.filter\(s => !aliasMatch\(s\)\)/);
 });
 
 test('aba Pedido de Compras não abre o modal sozinha (paridade vendas)', () => {
