@@ -119,8 +119,11 @@ test('Folha impressao: barra unica + Layout nativo no portrait', () => {
     // trocarOrientacao: size só no landscape; preview em tela intacto
     assert.match(js, /var pageRule = orient === 'landscape'/);
     assert.match(js, /@media screen \{ \.relatorio-container/);
-    // Seletor e botões seguem como orientação inicial + preview (não removidos)
-    assert.match(js, /relatorioOrientacaoImpressao/);
+    // Seletores removidos do modal (orientação automática por tipo); override
+    // manual vive nos botões Retrato/Paisagem do preview + diálogo nativo
+    assert.doesNotMatch(js, /id="relatorioOrientacaoImpressao"/);
+    assert.doesNotMatch(js, /id="resumoOrientacaoImpressao"/);
+    assert.match(js, /getRelatorioDefaultOrientation/);
     assert.match(js, /window\.trocarOrientacao = function/);
     assert.match(js, /print-control-bar/);
 });

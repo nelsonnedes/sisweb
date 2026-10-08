@@ -253,7 +253,9 @@ test('folha BH reports use batch reads and avoid heavy tenant localStorage cache
 test('folha generic reports allow print orientation and keep totals readable', () => {
   const folhaRelatorios = read('folha_pagamento/folha-relatorios.js');
 
-  assert.match(folhaRelatorios, /id="relatorioOrientacaoImpressao"/);
+  assert.doesNotMatch(folhaRelatorios, /id="relatorioOrientacaoImpressao"/);
+  assert.doesNotMatch(folhaRelatorios, /id="resumoOrientacaoImpressao"/);
+  assert.match(folhaRelatorios, /getRelatorioDefaultOrientation/);
   assert.match(folhaRelatorios, /getRelatorioPrintOptions/);
   assert.match(folhaRelatorios, /getRelatorioOrientationOverrideCSS/);
   assert.match(folhaRelatorios, /getRelatorioAdaptivePrintScript/);

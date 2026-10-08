@@ -406,17 +406,6 @@ class FolhaRelatorios {
                                 </select>
                             </div>
 
-                            <div class="form-group">
-                                <label for="relatorioOrientacaoImpressao">
-                                    <i class="fas fa-print"></i> Orientação de Impressão/PDF:
-                                </label>
-                                <select id="relatorioOrientacaoImpressao">
-                                    <option value="auto">Automática (Recomendado)</option>
-                                    <option value="portrait">Retrato</option>
-                                    <option value="landscape">Paisagem</option>
-                                </select>
-                            </div>
-
                             <div class="campos-grid" id="pfMesesFilterGroup" style="display:none; grid-template-columns: 1fr 1fr; gap: 12px;">
                                 <div class="form-group">
                                     <label for="pfMesesMin">
@@ -1934,6 +1923,8 @@ class FolhaRelatorios {
     }
 
     getRelatorioPrintOptions(tipoRelatorio = '') {
+        // Sem seletor no modal (removido): orientação sempre automática por tipo.
+        // Override manual vive nos botões Retrato/Paisagem do preview + diálogo nativo.
         const select = document.getElementById('relatorioOrientacaoImpressao');
         const raw = String((select && select.value) || 'auto').toLowerCase();
         const orientation = raw === 'portrait' || raw === 'landscape'
@@ -6557,14 +6548,6 @@ class FolhaRelatorios {
                                         </span>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="resumoOrientacaoImpressao"><i class="fas fa-print"></i> Orientação de Impressão:</label>
-                                <select id="resumoOrientacaoImpressao">
-                                    <option value="auto">Automático (Recomendado)</option>
-                                    <option value="portrait">Retrato</option>
-                                    <option value="landscape">Paisagem</option>
-                                </select>
                             </div>
                             <div class="form-group resumo-filter-option">
                                 <label for="resumoSomenteAbertos"><i class="fas fa-filter"></i> Status:</label>

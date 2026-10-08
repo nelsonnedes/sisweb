@@ -8,6 +8,7 @@ Em dia — 07/10 onda 4 equipe paralela: bump SW + barra BH (gates verdes: lint+
 Em dia — 07/10 onda 5 strangler PCT + publish (gates verdes: lint+typecheck OK, 767 testes 767/0/1; commit c81a423 + deploy hosting verificado via fetch).
 Em dia — 07/10 onda 6 trap-silence + pendências 14/10 (gates verdes: lint+typecheck OK, 769 testes 769/0/1).
 Em dia — 07/10 onda 7 orientação folha: barra única + Layout nativo no portrait (gates verdes: lint+typecheck OK, 770 testes 770/0/1; publish verificado via fetch).
+Em dia — 07/10 onda 8 seletores de orientação removidos (auto por tipo; gates verdes: lint+typecheck OK, 770 testes 770/0/1).
 Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
 Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 testes 727/0/1).
 Em dia — 06/10 continuação Antigravity ceecf69f (gates verdes: lint+typecheck OK, 756 testes 756/0/1).
@@ -221,6 +222,11 @@ Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/pr
 - [x] Preservado: `exportarPDF` com size forçado (auto-print sem diálogo), provisão (`5572/5576`) e resumo compacto (`6901`, teste `company-logo-storage-policy:280` intacto), seletor + botões + preview.
 - [x] Trava nova (`romaneio-print-mobile-blank`, `Folha impressao: barra unica + Layout nativo no portrait`); `?v=` resync em `folha.html`; gates verdes (lint+typecheck OK, 770/0/1).
 - [ ] Validar com Ctrl+F5 (requer login): genérico com 1 barra; portrait com Layout editável no diálogo; landscape largo segue forçado; provisão de férias igual à captura mas sem DUP.
+
+## 07/10 — onda 8 (seletores `Orientação de Impressão` removidos do modal)
+- [x] Confirmado seguro: ambos os leitores são null-safe (`|| 'auto'` → default por tipo / heurística de colunas). Sem o campo, orientação é 100% automática.
+- [x] Removidos `relatorioOrientacaoImpressao` (Gerar Relatórios) e `resumoOrientacaoImpressao` (Resumo Compacto). Override manual: botões Retrato/Paisagem do preview + Layout nativo do diálogo.
+- [x] Travas atualizadas (ausência dos `id=` + `getRelatorioDefaultOrientation` presente); gates verdes (lint+typecheck OK, 770/0/1).
 
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
