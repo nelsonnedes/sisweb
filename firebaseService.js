@@ -1547,10 +1547,18 @@ function readFlightKey(path) {
 function invalidateReadCacheForPath(path) {
     const prefix = `${getTenantId() || 'no-tenant'}::`;
     const p = String(path || '');
+    // Comparar também sem o namespace companies/{tenant}: escritas passam o
+    // caminho completo (ex.: companies/{t}/clients) enquanto as leituras
+    // cacheiam a forma curta (clients). Sem isso, o TTL (clients = 3 min)
+    // sobrevive ao save/delete e a UI só converge minutos depois.
+    const strip = (s) => String(s || '').replace(/^companies\/[^/]+\//, '');
+    const ps = strip(p);
     for (const key of readCacheStore.keys()) {
         if (!key.startsWith(prefix)) continue;
         const cachedPath = key.slice(prefix.length);
-        if (cachedPath === p || cachedPath.startsWith(p + '/') || p.startsWith(cachedPath + '/')) {
+        const cs = strip(cachedPath);
+        if (cachedPath === p || cachedPath.startsWith(p + '/') || p.startsWith(cachedPath + '/')
+            || cs === ps || cs.startsWith(ps + '/') || ps.startsWith(cs + '/')) {
             readCacheStore.delete(key);
         }
     }

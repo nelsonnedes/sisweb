@@ -6264,6 +6264,16 @@ window.alternarModoAgrupamentoCompra = function (modo) {
             cbDims.checked = false;
             cbEsp.checked = false;
         }
+        // TORA: o resumo é opcional — desmarcar volta ao detalhado. Sem isso,
+        // o invariante abaixo re-marcava o checkbox e era impossível desmarcar.
+        // (Serrado mantém o invariante: fieldset sempre visível com 1 modo.)
+        if (modo === 'resumo' && !cbResumo.checked) {
+            const outrosVisiveis = [cbDims, cbEsp, cbLarg].filter(cb => cb.offsetParent !== null && !cb.disabled);
+            if (outrosVisiveis.length === 0) {
+                try { if (romaneioAtualCompra) renderizarPreviewRomaneioCompra(); } catch (_) {}
+                return;
+            }
+        }
         // Invariante: ao menos um modo visível sempre selecionado.
         const visiveis = [cbResumo, cbDims, cbEsp, cbLarg].filter(cb => cb.offsetParent !== null && !cb.disabled);
         if (visiveis.length > 0 && !visiveis.some(cb => cb.checked)) {
@@ -6380,8 +6390,9 @@ window.adicionarItensRomaneio = async function() {
         return;
     }
 
-    // Modo de agrupamento obrigatório: sempre há um checkbox selecionado.
-    if (lerModoAgrupamentoCompra() === 'nenhum') {
+    // Modo de agrupamento: obrigatório no serrado (fieldset sempre tem 1 modo);
+    // TORA sem resumo = carga detalhada (tora a tora).
+    if (lerModoAgrupamentoCompra() === 'nenhum' && !ehTipoToraCompra(tipo)) {
         ToastManager.warning('Selecione um modo no quadro "Agrupar:" para carregar os itens.');
         return;
     }
@@ -6550,8 +6561,8 @@ window.adicionarItensRomaneio = async function() {
                 });
             });
 
-        } else {
-            // Resumo por Espécie (TORA): único modo restante após o guarda obrigatório.
+        } else if (modoAgrupa === 'resumo') {
+            // Resumo por Espécie (TORA).
             const agrupados = {};
             
             itensParaCarregar.forEach(item => {
@@ -6608,6 +6619,28 @@ window.adicionarItensRomaneio = async function() {
                     precoUnitario: parseFloat(precoMedio.toFixed(2)),
                     total: parseFloat(grp.total.toFixed(2)),
                     itensOriginais: grp.originais
+                });
+            });
+        } else {
+            // Detalhado (TORA sem resumo): tora a tora, com plaqueta para
+            // rastreabilidade. Nomes distintos evitam reagrupamento no carrinho.
+            itensParaCarregar.forEach(item => {
+                const especie = String(item.especie || item.produto || item.descricao || 'Item Romaneio').trim();
+                const plaqueta = String(item.plaqueta || item.numero || '').trim();
+                const qtd = parseFloat(item.volumeLiquido || item.volume || item.quantidade || 0);
+                const preco = parseFloat(item.preco || item.precoUnitario || 0);
+                novosItens.push({
+                    id: Date.now() + Math.random(),
+                    tipo: 'romaneio',
+                    origemId: origemRomaneioId,
+                    romaneioId: idEstavel,
+                    romaneioNumero: numeroExibicao,
+                    romaneioTipo: tipo,
+                    produtoNome: plaqueta ? `${especie} (${plaqueta})` : especie,
+                    quantidade: parseFloat((qtd || 0).toFixed(3)),
+                    unidade: item.unidade || 'm³',
+                    precoUnitario: preco,
+                    total: parseFloat(((qtd || 0) * preco).toFixed(2))
                 });
             });
         }

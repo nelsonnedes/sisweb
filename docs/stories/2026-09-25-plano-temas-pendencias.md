@@ -346,6 +346,30 @@ várias tentativas". Reproduzido com cliente de teste (net-zero).
 - [x] Gates verdes (lint+typecheck OK, 786 testes 785/0/1).
 - [x] `?v=` resync + SW `2026-10-08-pct-clientes`.
 
+## Onda 16 — save cliente lento + resumo TORA irreversível (08/10, `onda16`)
+A. **Save de cliente levava dezenas de segundos para aparecer.**
+   - Pista falsa inicial: `client-service.saveClientInner` reescrevia a lista
+     inteira (corrigido para single-write — vale nas páginas sem o fix file).
+   - Causa real (prova por medição: 60s de reads frescos sem o registro):
+     o save vivo (`romaneios-client-save-fix`) já é single-write, mas o
+     `invalidateReadCacheForPath` não cruzava namespace — escrita em
+     `companies/{t}/clients` não matava o cache da leitura `clients`
+     (TTL 3 min). Fix: comparação com formas sem namespace dentro da
+     própria invalidação (vale p/ save e delete de qualquer coleção).
+   - Validado: visível em ≤5s após o save (era 60s+ invisível).
+B. **Checkbox "Carregar apenas o Resumo" não desmarcava (compras/TORA).**
+   - Causa: o invariante "sempre 1 modo" re-marcava o checkbox (só há ele
+     visível no TORA). Fix: resumo TORA é opcional — desmarcar volta ao
+     detalhado; serrado mantém o invariante (sem regressão).
+   - Carga detalhada: 9 toras → 9 itens `tipo romaneio` ("Espécie (PLQ)"),
+     sem reagrupamento no carrinho; preview por item já suportava.
+   - Suspeito relatado (não alterado, fora do escopo): vendas tem a mesma
+     armadilha no `agruparResumoVendas` (invariante idêntico) — se quiser,
+     aplico a mesma lógica lá.
+- [x] Travas: `tests/onda16-clientes-agrupamento.test.mjs` (4 testes).
+- [x] Gates verdes (lint+typecheck OK, 790 testes 789/0/1).
+- [x] `?v=` resync + SW `2026-10-08-onda16`.
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,

@@ -402,13 +402,21 @@ async function saveClientInner(client) {
             cacheTimestamp = Date.now();
         } catch (_) {}
 
-        // 🔥 Salvar no Firebase de forma assíncrona (não bloquear UI)
-        try {
-            saveClients(clients).catch((e) => console.warn('⚠️ Falha ao salvar no Firebase (assíncrono):', e?.message || e));
-        } catch (_) {}
-        
+        // 🔥 Persistir SÓ o registro alterado (1 write + invalidação de cache
+        // pelo próprio saveToFirebase). Antes reescrevia a lista inteira item
+        // a item em background — O(N) round-trips (probes + set por registro)
+        // → dezenas de segundos até o novo cliente aparecer na lista.
+        // Mesma semântica (upsert por id); sem o custo do rewrite integral.
         const savedClient = normalizeClient(client);
-        console.log("✅ Cliente salvo (local e sync em background):", savedClient.name || savedClient.nome);
+        try {
+            const svc = window.firebaseService;
+            if (svc && typeof svc.saveToFirebase === 'function' && savedClient.id) {
+                const res = await svc.saveToFirebase('clients', String(savedClient.id), savedClient);
+                if (!res || !res.success) throw new Error((res && res.error) || 'falha ao persistir cliente');
+            }
+        } catch (e) { console.warn('⚠️ Falha ao persistir cliente no Firebase:', e?.message || e); }
+
+        console.log("✅ Cliente salvo (local e Firebase):", savedClient.name || savedClient.nome);
         try { window.dispatchEvent(new CustomEvent('clients:updated', { detail: { client: savedClient } })); } catch (_) {}
         return savedClient;
         
