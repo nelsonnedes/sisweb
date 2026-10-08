@@ -16,13 +16,32 @@
 		w.document.write(html);
 		w.document.close();
 		try {
+			if (!w.document.querySelector('meta[name="viewport"]')) {
+				const vp = w.document.createElement('meta');
+				vp.setAttribute('name', 'viewport');
+				vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
+				w.document.head.appendChild(vp);
+			}
+		} catch (_) {}
+		try {
+			const stPage = w.document.createElement('style');
+			stPage.textContent = '@page{margin:10mm;}';
+			w.document.head.appendChild(stPage);
+		} catch (_) {}
+		try {
 			const st = w.document.createElement('style');
 			st.textContent = '.bh-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;}@media print{.bh-print-back{display:none !important;}}';
 			w.document.head.appendChild(st);
 			w.document.body.insertAdjacentHTML('afterbegin', '<div class="bh-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">\u2190 Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #1b4670;background:#1b4670;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>');
 		} catch (_) {}
 		w.focus();
-		setTimeout(() => { try { w.print(); } catch (_) {} }, 300);
+		let bhPrinted = false;
+		const bhDoPrint = () => { if (bhPrinted) return; bhPrinted = true; try { w.print(); } catch (_) {} };
+		try {
+			const fontsReady = (w.document.fonts && w.document.fonts.ready) ? w.document.fonts.ready : Promise.resolve();
+			Promise.resolve(fontsReady).then(bhDoPrint, bhDoPrint);
+		} catch (_) { bhDoPrint(); }
+		setTimeout(bhDoPrint, 300);
 		return w;
 	}
 	const UI = {

@@ -1156,6 +1156,12 @@ async function imprimirDoIframe() {
             }
             styleTag.textContent = `@page { size: ${orientacao} !important; margin: 10mm; }`;
         }
+        try {
+            const doc = iframe.contentDocument;
+            if (doc && doc.fonts && doc.fonts.ready && typeof doc.fonts.ready.then === 'function') {
+                await Promise.race([doc.fonts.ready, new Promise(r => setTimeout(r, 300))]);
+            }
+        } catch (_) {}
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
     }
@@ -8236,6 +8242,7 @@ async function imprimirRelatorioEstoque() {
         <html>
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>${titulo}</title>
             <style>${obterRelatorioStylesImpressao(orientacao)}</style>
         </head>
@@ -8343,7 +8350,13 @@ async function exportarRelatorioEstoqueExcel() {
 
 function montarTabelaHtml(colunas, linhas) {
     const head = colunas.map(c => `<th>${c}</th>`).join('');
-    const body = linhas.map(l => `<tr>${l.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
+    const isNumCell = (c) => {
+        const txt = String(c ?? '').replace(/<[^>]*>/g, '').trim();
+        if (!/[0-9]/.test(txt)) return false;
+        if (/[A-Za-zÀ-ÿ]{2,}/.test(txt)) return false; /* texto (espécie etc.) quebra; numéricos (critério align right) não */
+        return /^[-+\d\s.,%\/m³²R$l]+$/i.test(txt);
+    };
+    const body = linhas.map(l => `<tr>${l.map(c => `<td${isNumCell(c) ? ' class="num"' : ''}>${c}</td>`).join('')}</tr>`).join('');
     return `<table class="table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
@@ -8419,6 +8432,7 @@ async function imprimirConsultaEstoque() {
         <html>
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>${titulo}</title>
             <style>${obterRelatorioStylesImpressao(orientacao)}</style>
         </head>

@@ -3078,16 +3078,47 @@ async function imprimirPedidosCompraSelecionadosDesktop(pedidosParaImprimir) {
                 windowFeatures: 'width=900,height=700'
             });
         } else {
-            const janela = window.open('', '_blank', 'width=900,height=700');
-            if (janela) {
+            let janela = null;
+            try {
+                janela = window.open('', '_blank', 'width=900,height=700');
+            } catch (_) {
+                janela = null;
+            }
+            if (!janela || janela.closed) {
+                ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção');
+                return;
+            }
+            try {
+                if (!janela.document) throw new Error('alvo parcial');
+            } catch (_) {
+                try { if (!janela.closed) janela.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
+            }
+            try {
                 janela.document.write(html);
                 janela.document.close();
-                janela.onload = function() {
-                    setTimeout(() => janela.print(), 250);
-                };
-            } else {
-                window.print();
+            } catch (_) {
+                try { if (!janela.closed) janela.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
             }
+            let loteDisparado = false;
+            const dispararLote = () => {
+                if (loteDisparado) return;
+                loteDisparado = true;
+                try { janela.focus(); } catch (_) {}
+                try { janela.print(); } catch (_) {}
+            };
+            try { janela.onload = dispararLote; } catch (_) {}
+            try {
+                if (janela.document && janela.document.fonts && typeof janela.document.fonts.ready.then === 'function') {
+                    janela.document.fonts.ready.then(() => setTimeout(dispararLote, 60)).catch(() => {});
+                }
+            } catch (_) {}
+            try { janela.focus(); } catch (_) {}
+            setTimeout(dispararLote, 400);
+            setTimeout(dispararLote, 1200);
         }
     } finally {
         LoadingManager.hide();
@@ -3113,11 +3144,14 @@ function montarHTMLImpressaoLotePedidos(documentos, title = 'Pedidos') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
-    <style>${styles}
+    <style>@page{margin:10mm;}${styles}
+        .sisweb-print-table th,.sisweb-print-table td{overflow-wrap:anywhere;}
+        .sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:"Segoe UI",Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}
         .sisweb-print-batch-page { break-after: page; page-break-after: always; margin-bottom: 18px; }
     </style>
 </head>
 <body class="sisweb-commerce-print">
+    <div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #1f2937;background:#1f2937;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>
     ${mains}
 </body>
 </html>`;
@@ -3770,15 +3804,47 @@ function exportarRelatorioComprasPDF() {
             return;
         }
 
-        const printWindow = window.open('', '_blank', 'width=1100,height=800');
-        if (!printWindow) {
-            window.print();
+        let printWindow = null;
+        try {
+            printWindow = window.open('', '_blank', 'width=1100,height=800');
+        } catch (_) {
+            printWindow = null;
+        }
+        if (!printWindow || printWindow.closed) {
+            ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção');
             return;
         }
-        printWindow.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório de Compras</title><style>body{font-family:Arial,sans-serif;color:#1f2937;padding:24px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}th{background:#2c3e50;color:#fff}.summary-box{margin:12px 0;border:1px solid #d1d5db;padding:10px}.summary-row{display:flex;justify-content:space-between;margin:4px 0}</style></head><body><h1>Relatório de Compras</h1>${bodyHtml}</body></html>`);
+        try {
+            if (!printWindow.document) throw new Error('alvo parcial');
+        } catch (_) {
+            try { if (!printWindow.closed) printWindow.close(); } catch (_) {}
+            ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+            return;
+        }
+        try {
+        printWindow.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relatório de Compras</title><style>@page{margin:10mm;}body{font-family:Arial,sans-serif;color:#1f2937;padding:24px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px;overflow-wrap:anywhere}th{background:#2c3e50;color:#fff}.summary-box{margin:12px 0;border:1px solid #d1d5db;padding:10px}.summary-row{display:flex;justify-content:space-between;margin:4px 0}.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}</style></head><body><div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #1f2937;background:#1f2937;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div><h1>Relatório de Compras</h1>${bodyHtml}</body></html>`);
         printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+        } catch (_) {
+            try { if (!printWindow.closed) printWindow.close(); } catch (_) {}
+            ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+            return;
+        }
+        let compRelDisparado = false;
+        const dispararCompRel = () => {
+            if (compRelDisparado) return;
+            compRelDisparado = true;
+            try { printWindow.focus(); } catch (_) {}
+            try { printWindow.print(); } catch (_) {}
+        };
+        try { printWindow.onload = dispararCompRel; } catch (_) {}
+        try {
+            if (printWindow.document && printWindow.document.fonts && typeof printWindow.document.fonts.ready.then === 'function') {
+                printWindow.document.fonts.ready.then(() => setTimeout(dispararCompRel, 60)).catch(() => {});
+            }
+        } catch (_) {}
+        try { printWindow.focus(); } catch (_) {}
+        setTimeout(dispararCompRel, 400);
+        setTimeout(dispararCompRel, 1200);
     } catch (error) {
         console.error('Erro ao exportar PDF de compras:', error);
         ToastManager.error('Erro ao exportar PDF.');
@@ -4277,17 +4343,48 @@ async function imprimirPedido(pedidoId) {
                 : printOptions;
             helper.printHtmlDocument(preparedOptions);
         } else {
-            const janelaImpressao = window.open('', '_blank', 'width=800,height=600');
-            const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Pedido de Compra ${htmlEscape(pedido.numero || '')}</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111827}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d6dde8;padding:8px}th{background:#2c3e50;color:#fff}.text-right{text-align:right}.text-center{text-align:center}</style></head><body>${bodyHtml}</body></html>`;
-            if (janelaImpressao) {
+            let janelaImpressao = null;
+            try {
+                janelaImpressao = window.open('', '_blank', 'width=800,height=600');
+            } catch (_) {
+                janelaImpressao = null;
+            }
+            if (!janelaImpressao || janelaImpressao.closed) {
+                ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção');
+                return;
+            }
+            try {
+                if (!janelaImpressao.document) throw new Error('alvo parcial');
+            } catch (_) {
+                try { if (!janelaImpressao.closed) janelaImpressao.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
+            }
+            const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pedido de Compra ${htmlEscape(pedido.numero || '')}</title><style>@page{margin:10mm;}body{font-family:Arial,sans-serif;padding:20px;color:#111827}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d6dde8;padding:8px;overflow-wrap:anywhere}th{background:#2c3e50;color:#fff}.text-right{text-align:right}.text-center{text-align:center}.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}</style></head><body><div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #1f2937;background:#1f2937;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>${bodyHtml}</body></html>`;
+            try {
                 janelaImpressao.document.write(html);
                 janelaImpressao.document.close();
-                janelaImpressao.onload = function() {
-                    janelaImpressao.print();
-                };
-            } else {
-                window.print();
+            } catch (_) {
+                try { if (!janelaImpressao.closed) janelaImpressao.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
             }
+            let compPedDisparado = false;
+            const dispararCompPed = () => {
+                if (compPedDisparado) return;
+                compPedDisparado = true;
+                try { janelaImpressao.focus(); } catch (_) {}
+                try { janelaImpressao.print(); } catch (_) {}
+            };
+            try { janelaImpressao.onload = dispararCompPed; } catch (_) {}
+            try {
+                if (janelaImpressao.document && janelaImpressao.document.fonts && typeof janelaImpressao.document.fonts.ready.then === 'function') {
+                    janelaImpressao.document.fonts.ready.then(() => setTimeout(dispararCompPed, 60)).catch(() => {});
+                }
+            } catch (_) {}
+            try { janelaImpressao.focus(); } catch (_) {}
+            setTimeout(dispararCompPed, 400);
+            setTimeout(dispararCompPed, 1200);
         }
     } catch (e) {
         console.error(e);

@@ -87,5 +87,5 @@ test('salvarContaPagar usa contrato novo de tipo e cachebuster atualizado', () =
   assert.doesNotMatch(js, /salvarContaFinanceiraPersistida/);
   assert.doesNotMatch(js, /conta\.categoria = getBaseCategoriaKeys\(\)\.includes\(categoriaKey\) \? categoriaKey : 'outros';/);
   assert.match(html, /financas\.js\?v=[^"'\s]+/);
-  assert.match(sw, /const APP_VERSION = '2026-09-30-tl-dropdown-fora'/);
+  assert.match(sw, /const APP_VERSION = '2026-10-07-onda3-folhadb-print'/);
 });

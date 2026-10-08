@@ -3665,16 +3665,47 @@ async function imprimirPedidosVendaSelecionadosDesktop(pedidosParaImprimir) {
                 windowFeatures: 'width=900,height=700'
             });
         } else {
-            const janela = window.open('', '_blank', 'width=900,height=700');
-            if (janela) {
+            let janela = null;
+            try {
+                janela = window.open('', '_blank', 'width=900,height=700');
+            } catch (_) {
+                janela = null;
+            }
+            if (!janela || janela.closed) {
+                ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção');
+                return;
+            }
+            try {
+                if (!janela.document) throw new Error('alvo parcial');
+            } catch (_) {
+                try { if (!janela.closed) janela.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
+            }
+            try {
                 janela.document.write(html);
                 janela.document.close();
-                janela.onload = function() {
-                    setTimeout(() => janela.print(), 250);
-                };
-            } else {
-                window.print();
+            } catch (_) {
+                try { if (!janela.closed) janela.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
             }
+            let loteDisparado = false;
+            const dispararLote = () => {
+                if (loteDisparado) return;
+                loteDisparado = true;
+                try { janela.focus(); } catch (_) {}
+                try { janela.print(); } catch (_) {}
+            };
+            try { janela.onload = dispararLote; } catch (_) {}
+            try {
+                if (janela.document && janela.document.fonts && typeof janela.document.fonts.ready.then === 'function') {
+                    janela.document.fonts.ready.then(() => setTimeout(dispararLote, 60)).catch(() => {});
+                }
+            } catch (_) {}
+            try { janela.focus(); } catch (_) {}
+            setTimeout(dispararLote, 400);
+            setTimeout(dispararLote, 1200);
         }
     } finally {
         LoadingManager.hide();
@@ -3700,11 +3731,14 @@ function montarHTMLImpressaoLotePedidos(documentos, title = 'Pedidos') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
-    <style>${styles}
+    <style>@page{margin:10mm;}${styles}
+        .sisweb-print-table th,.sisweb-print-table td{overflow-wrap:anywhere;}
+        .sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:"Segoe UI",Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}
         .sisweb-print-batch-page { break-after: page; page-break-after: always; margin-bottom: 18px; }
     </style>
 </head>
 <body class="sisweb-commerce-print">
+    <div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #1f2937;background:#1f2937;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div>
     ${mains}
 </body>
 </html>`;
@@ -5881,10 +5915,23 @@ async function imprimirRelatorioProdutos(lista) {
         + `<tr><td colspan="3"><strong>Total</strong></td><td><strong>${Math.round(totPecas)}</strong></td><td><strong>${totMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml</strong></td><td><strong>${totVol.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</strong></td></tr>`;
     const dataHoje = new Date().toLocaleDateString('pt-BR');
     try {
-        const w = window.open('', '_blank');
-        if (!w) { ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção'); return; }
-        w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Lista de Madeira Serrada em Estoque</title>`
-            + `<style>body{font-family:Arial,sans-serif;padding:24px;color:#111;}h1{font-size:18px;text-align:center;margin:4px 0 12px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px 8px;text-align:left;}th{background:#eee;}`
+        let w = null;
+        try {
+            w = window.open('', '_blank');
+        } catch (_) {
+            w = null;
+        }
+        if (!w || w.closed) { ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção'); return; }
+        try {
+            if (!w.document) throw new Error('alvo parcial');
+        } catch (_) {
+            try { if (!w.closed) w.close(); } catch (_) {}
+            ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+            return;
+        }
+        try {
+        w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Lista de Madeira Serrada em Estoque</title>`
+            + `<style>@page{margin:10mm;}body{font-family:Arial,sans-serif;padding:24px;color:#111;}h1{font-size:18px;text-align:center;margin:4px 0 12px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px 8px;text-align:left;overflow-wrap:anywhere;}th{background:#eee;}`
             + `.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;}`
             + `@media print{.sisweb-print-back{display:none !important;}}`
             + `.header{display:flex;gap:16px;align-items:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:12px;}.logo img{max-height:80px;}.company-name{font-size:17px;font-weight:bold;}.company-details{font-size:11px;color:#333;}`
@@ -5896,8 +5943,31 @@ async function imprimirRelatorioProdutos(lista) {
             + `<h1>LISTA DE MADEIRA SERRADA EM ESTOQUE — ${esc(dataHoje)}</h1>`
             + `<table><thead><tr><th>Código</th><th>Nome</th><th>Preço</th><th>Estoque</th><th>M. Linear</th><th>Volume (m³)</th></tr></thead><tbody>${linhas}</tbody></table>`
             + (arrG.length > 0 ? `<div class="resumo"><h1>RESUMO — ESPÉCIE x ESPESSURA x LARGURA</h1><table><thead><tr><th>Espécie</th><th>Espessura</th><th>Largura</th><th>Peças</th><th>M. Linear</th><th>Volume (m³)</th></tr></thead><tbody>${linhasResumo}</tbody></table></div>` : '')
-            + `<script>window.onload=function(){window.print();};<\/script></body></html>`);
+            + `</body></html>`);
         w.document.close();
+        } catch (_) {
+            try { if (w && !w.closed) w.close(); } catch (_) {}
+            ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+            return;
+        }
+        try {
+            let prodDisparado = false;
+            const dispararProd = () => {
+                if (prodDisparado) return;
+                prodDisparado = true;
+                try { w.focus(); } catch (_) {}
+                try { w.print(); } catch (_) {}
+            };
+            try { w.onload = dispararProd; } catch (_) {}
+            try {
+                if (w.document && w.document.fonts && typeof w.document.fonts.ready.then === 'function') {
+                    w.document.fonts.ready.then(() => setTimeout(dispararProd, 60)).catch(() => {});
+                }
+            } catch (_) {}
+            try { w.focus(); } catch (_) {}
+            setTimeout(dispararProd, 400);
+            setTimeout(dispararProd, 1200);
+        } catch (_) {}
     } catch (e) {
         ToastManager.error('Erro ao imprimir: ' + (e && e.message), 'Erro');
     }
@@ -6844,15 +6914,48 @@ async function imprimirRelatorio() {
                 : printOptions;
             helper.printHtmlDocument(preparedOptions);
         } else {
-            const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>${titulo}</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111827}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d6dde8;padding:8px}th{background:#2c3e50;color:#fff}[data-col="acoes"],.sel-carrego,.sel-carrego-all{display:none!important}</style></head><body><h1>${titulo}</h1>${bodyHtml}</body></html>`;
-            const win = window.open('', '_blank', 'width=800,height=600');
-            if (win) {
+            const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${titulo}</title><style>@page{margin:10mm;}body{font-family:Arial,sans-serif;padding:20px;color:#111827}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d6dde8;padding:8px;overflow-wrap:anywhere}th{background:#2c3e50;color:#fff}[data-col="acoes"],.sel-carrego,.sel-carrego-all{display:none!important}.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #d6dde8;border-radius:6px;background:#f8fafc;font-family:Arial,sans-serif;}@media print{.sisweb-print-back{display:none !important;}}</style></head><body><div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;border:1px solid #1f2937;background:#1f2937;color:#fff;font-weight:700;cursor:pointer;">Imprimir</button></div><h1>${titulo}</h1>${bodyHtml}</body></html>`;
+            let win = null;
+            try {
+                win = window.open('', '_blank', 'width=800,height=600');
+            } catch (_) {
+                win = null;
+            }
+            if (!win || win.closed) {
+                ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção');
+                return;
+            }
+            try {
+                if (!win.document) throw new Error('alvo parcial');
+            } catch (_) {
+                try { if (!win.closed) win.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
+            }
+            try {
                 win.document.write(html);
                 win.document.close();
-                win.onload = function() { setTimeout(() => win.print(), 250); };
-            } else {
-                window.print();
+            } catch (_) {
+                try { if (!win.closed) win.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
             }
+            let relDisparado = false;
+            const dispararRel = () => {
+                if (relDisparado) return;
+                relDisparado = true;
+                try { win.focus(); } catch (_) {}
+                try { win.print(); } catch (_) {}
+            };
+            try { win.onload = dispararRel; } catch (_) {}
+            try {
+                if (win.document && win.document.fonts && typeof win.document.fonts.ready.then === 'function') {
+                    win.document.fonts.ready.then(() => setTimeout(dispararRel, 60)).catch(() => {});
+                }
+            } catch (_) {}
+            try { win.focus(); } catch (_) {}
+            setTimeout(dispararRel, 400);
+            setTimeout(dispararRel, 1200);
         }
     } catch (e) {
         ToastManager.error('Erro ao imprimir relatório', 'Erro');
@@ -10280,18 +10383,47 @@ async function imprimirPedido(pedidoId) {
             });
         } else {
             // Abrir janela de impressão
-            const janelaImpressao = window.open('', '_blank', 'width=800,height=600');
-            if (janelaImpressao) {
+            let janelaImpressao = null;
+            try {
+                janelaImpressao = window.open('', '_blank', 'width=800,height=600');
+            } catch (_) {
+                janelaImpressao = null;
+            }
+            if (!janelaImpressao || janelaImpressao.closed) {
+                ToastManager.warning('Permita pop-ups para imprimir.', 'Atenção');
+                return;
+            }
+            try {
+                if (!janelaImpressao.document) throw new Error('alvo parcial');
+            } catch (_) {
+                try { if (!janelaImpressao.closed) janelaImpressao.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
+            }
+            try {
                 janelaImpressao.document.write(conteudoImpressao);
                 janelaImpressao.document.close();
-                janelaImpressao.onload = function() {
-                    setTimeout(() => {
-                        janelaImpressao.print();
-                    }, 250);
-                };
-            } else {
-                window.print();
+            } catch (_) {
+                try { if (!janelaImpressao.closed) janelaImpressao.close(); } catch (_) {}
+                ToastManager.error('Não foi possível abrir a janela de impressão.', 'Erro');
+                return;
             }
+            let pedDisparado = false;
+            const dispararPed = () => {
+                if (pedDisparado) return;
+                pedDisparado = true;
+                try { janelaImpressao.focus(); } catch (_) {}
+                try { janelaImpressao.print(); } catch (_) {}
+            };
+            try { janelaImpressao.onload = dispararPed; } catch (_) {}
+            try {
+                if (janelaImpressao.document && janelaImpressao.document.fonts && typeof janelaImpressao.document.fonts.ready.then === 'function') {
+                    janelaImpressao.document.fonts.ready.then(() => setTimeout(dispararPed, 60)).catch(() => {});
+                }
+            } catch (_) {}
+            try { janelaImpressao.focus(); } catch (_) {}
+            setTimeout(dispararPed, 400);
+            setTimeout(dispararPed, 1200);
         }
         
         console.log('✅ Janela de impressão aberta para pedido:', pedido.numero);

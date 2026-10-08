@@ -9,6 +9,7 @@ Em dia — 07/10 onda 5 strangler PCT + publish (gates verdes: lint+typecheck OK
 Em dia — 07/10 onda 6 trap-silence + pendências 14/10 (gates verdes: lint+typecheck OK, 769 testes 769/0/1).
 Em dia — 07/10 onda 7 orientação folha: barra única + Layout nativo no portrait (gates verdes: lint+typecheck OK, 770 testes 770/0/1; publish verificado via fetch).
 Em dia — 07/10 onda 8 seletores de orientação removidos (auto por tipo; gates verdes: lint+typecheck OK, 770 testes 770/0/1).
+Em dia — 07/10 onda 9 varredura mobile ponta a ponta (gates verdes: lint+typecheck OK, 770 testes 770/0/1; publish verificado via fetch).
 Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
 Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 testes 727/0/1).
 Em dia — 06/10 continuação Antigravity ceecf69f (gates verdes: lint+typecheck OK, 756 testes 756/0/1).
@@ -227,6 +228,14 @@ Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/pr
 - [x] Confirmado seguro: ambos os leitores são null-safe (`|| 'auto'` → default por tipo / heurística de colunas). Sem o campo, orientação é 100% automática.
 - [x] Removidos `relatorioOrientacaoImpressao` (Gerar Relatórios) e `resumoOrientacaoImpressao` (Resumo Compacto). Override manual: botões Retrato/Paisagem do preview + Layout nativo do diálogo.
 - [x] Travas atualizadas (ausência dos `id=` + `getRelatorioDefaultOrientation` presente); gates verdes (lint+typecheck OK, 770/0/1).
+
+## 07/10 — onda 9 (varredura mobile ponta a ponta, 4 equipes)
+- [x] Equipe A (romaneios): PES 7/7 (referência); TL ok; PCT viewport tardio + print sem espera de imagens; Tora `display:none` <900px vazava p/ print estreito.
+- [x] Equipe B (vendas/compras/company/MDF/NF): fallbacks imprimiam a TELA (`else window.print()`), sem viewport/guardas/fonts/wrap — padrão sistêmico corrigido nos 7 fallbacks.
+- [x] Equipe C (finanças/estoque): finanças ok (núcleo); estoque sem viewport no srcdoc, iframe sem fonts.ready, `.num` definido mas nunca aplicado.
+- [x] Equipe D (folha/BH): genérico/recibo ok; `exportarPDF` forçava size (anulava omitSize) + sem guarda; BH sem viewport/@page/fonts-wait.
+- [x] Fixes (3 frentes paralelas, sem sobreposição): fallbacks vendas/compras no padrão company/finanças; PDF respeita omitSize + guarda; BH com viewport/@page/fonts-ready; estoque viewport+fonts+`.num`; Tora revert print; PCT viewport no template. Finanças teto 257mm e Voltar `history.length` ficam p/ próxima (decisão UX).
+- [x] Commit inclui ainda os 6 testes do bump SW que haviam ficado fora do commit anterior; gates verdes (lint+typecheck OK, 770/0/1).
 
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas

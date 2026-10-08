@@ -2369,8 +2369,15 @@ class FolhaRelatorios {
             
             // ✅ MÉTODO: Usar window.print() com CSS que incorpora estilos do relatório
             const printWindow = window.open('', '_blank');
+            if (!printWindow || !printWindow.document) {
+                console.error('❌ Erro ao abrir janela de impressão');
+                this.showNotification('Erro ao abrir janela de impressão. Verifique se popups estão bloqueados.', 'error');
+                return;
+            }
             const resolvedPrintOptions = printOptions ? this.normalizeRelatorioPrintOptions(printOptions) : this.normalizeRelatorioPrintOptions({ orientation: this.getRelatorioDefaultOrientation(tipoRelatorio) });
-            const orientationCss = this.getRelatorioOrientationOverrideCSS(resolvedPrintOptions);
+            const isLikelyReciboDoc = tipoRelatorio === 'recibo' || /id=["']recibo-content["']/i.test(String(relatorioHTML || '')) || /\brecibo-page\b/i.test(String(relatorioHTML || ''));
+            const omitSize = isLikelyReciboDoc || (resolvedPrintOptions && resolvedPrintOptions.orientation !== 'landscape');
+            const orientationCss = this.getRelatorioOrientationOverrideCSS({ ...resolvedPrintOptions, omitPageSize: omitSize });
 
             // Detectar se o HTML contém um documento completo
             const isFullDoc = /<html[\s>]/i.test(relatorioHTML) || /<!DOCTYPE/i.test(relatorioHTML);
@@ -2389,7 +2396,7 @@ class FolhaRelatorios {
             // ✅ Estilos de impressão acrescentando regras para cores em PDF
             const cssEstilos = `
                 <style>
-                    ${this.getRelatorioCSS(resolvedPrintOptions)}
+                    ${this.getRelatorioCSS({ ...resolvedPrintOptions, omitPageSize: omitSize })}
                     /* Estilos embutidos do recibo (preservar layout e cores) */
                     ${embeddedStyleBlocks}
                     ${orientationCss}
@@ -2399,7 +2406,7 @@ class FolhaRelatorios {
                         /* Garantir cores exatas em cabeçalhos e linhas finais */
                         .detalhes-table th, .data-table th, .relatorio-table th { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
                         .total-final { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
-                        @page { size: A4 ${resolvedPrintOptions.orientation} !important; margin: ${resolvedPrintOptions.margin} !important; }
+                        ${omitSize ? `@page { margin: ${resolvedPrintOptions.margin} !important; }` : `@page { size: A4 ${resolvedPrintOptions.orientation} !important; margin: ${resolvedPrintOptions.margin} !important; }`}
                     }
                 </style>
             `;
