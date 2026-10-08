@@ -11,6 +11,7 @@ Em dia — 07/10 onda 7 orientação folha: barra única + Layout nativo no port
 Em dia — 07/10 onda 8 seletores de orientação removidos (auto por tipo; gates verdes: lint+typecheck OK, 770 testes 770/0/1).
 Em dia — 07/10 onda 9 varredura mobile ponta a ponta (gates verdes: lint+typecheck OK, 770 testes 770/0/1; publish verificado via fetch).
 Em dia — 07/10 onda 10 preview 393px real: recibo empilhado (gates verdes: lint+typecheck OK, 770 testes 770/0/1).
+Em dia — 07/10 onda 11 previews 393px produção: header empilhado + scroll contido (gates verdes: lint+typecheck OK, 770 testes 770/0/1; publish verificado via fetch).
 Em dia — 28/09 Fase 25.5 (gates verdes: lint+typecheck OK, 676 testes 676/0/1).
 Em dia — 04/10 thead marca no estoque (gates verdes: lint+typecheck OK, 727 testes 727/0/1).
 Em dia — 06/10 continuação Antigravity ceecf69f (gates verdes: lint+typecheck OK, 756 testes 756/0/1).
@@ -243,6 +244,12 @@ Escopo da revisão: `@page size` remanescente (print-styles.css, src/services/pr
 - [x] Achado medido: tabelas lado a lado 161px, VALOR 42px, `R$ 2000,00` estourando (scrollWidth 193 > 161), th quebrando no meio da palavra.
 - [x] Fix só-tela (`@media screen and (max-width:680px)` nos 2 blocos CSS do recibo): `.duas-colunas{flex-direction:column}` — papel intacto (A4 tem 794px+, query não casa no print).
 - [x] Validado ao vivo no preview: 338px, 0 células estourando + screenshot; trava nova no teste fase-3; gates verdes (lint+typecheck OK, 770/0/1).
+
+## 07/10 — onda 11 (previews 393px com dados reais de produção)
+- [x] Login produção (somente leitura; nada alterado) + viewport 393px; varredura: Vendas (pedido 000145), TL (Marcelão), PCT, Tora.
+- [x] Achados medidos: pedido — header grid 92/1fr/190 esmagava empresa (4px) + 7 células estourando (Produto 0px); TL — 252 células estourando + body 627px; PCT — colunas sobrepostas (124+271); Tora — 11.168 células estourando.
+- [x] Fixes só-tela (`@media screen and (max-width:680px)`, papel intacto): helper compartilhado (header empilha 56px+1fr, meta em linha própria, table-layout auto, larguras inline liberadas); TL/Tora (header empilha + `.relatorio-container{overflow-x:auto}` + tabela `max-content`); PCT (header empilha + `.table-container,.resumo-container{overflow-x:auto}` + tabelas `max-content`).
+- [x] Validado ao vivo nos 4 previews: 0 células estourando, body ≤427px, screenshots; trava nova `Mobile 393px: previews com header empilhado + scroll contido`; gates verdes (lint+typecheck OK, 770/0/1).
 
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
