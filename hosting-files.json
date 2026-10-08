@@ -337,6 +337,7 @@
   "js/fornecedor.js",
   "js/pix-brcode.js",
   "js/sisweb-theme.js",
+  "js/sisweb-loading.js",
   "js/species.js",
   "landing-vendas.css",
   "landing-vendas.html",
