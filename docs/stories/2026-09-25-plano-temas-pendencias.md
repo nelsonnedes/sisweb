@@ -331,6 +331,21 @@ Auditoria com render real dos 3 modos (Playwright, popup de impressão):
 - [x] Gates verdes (lint+typecheck OK, 784 testes 783/0/1).
 - [x] `?v=` resync + SW `2026-10-08-tora-print`.
 
+## Onda 15 — ressurreição da Lista de Clientes PCT (08/10, `pct-clientes`)
+Sintoma: delete com toast de sucesso, cliente reaparecia; sumia "só após
+várias tentativas". Reproduzido com cliente de teste (net-zero).
+- Causa-raiz: `deleteFromFirebase` invalidava só o caminho do registro;
+  a leitura `clients` tem TTL de 3 min e o refresh pós-delete relia o cache
+  velho. Fix em `firebaseService.js`: invalidar também a coleção-pai (com e
+  sem namespace) no delete.
+- Blindagem no modal (`modal-clientes-pct.js deleteClient`, padrão
+  species/PCT-romaneio): resolve multi-chave (id + chaves reais de
+  duplicatas por nome), purga espelhos locais, verificação de leitura
+  fail-closed (sem "sucesso" fantasma) + refresh restaurador no catch.
+- [x] Travas: `tests/pct-client-delete-resurrection.test.mjs` (2 testes).
+- [x] Gates verdes (lint+typecheck OK, 786 testes 785/0/1).
+- [x] `?v=` resync + SW `2026-10-08-pct-clientes`.
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,

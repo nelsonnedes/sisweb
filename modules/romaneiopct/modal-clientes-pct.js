@@ -949,59 +949,129 @@ window.ModalClientesPCT = (function() {
      */
     async function deleteClient(clientId, clientName) {
         console.log(`🗑️ PCT: Excluindo cliente: ${clientId}`);
-        
+
         if (!confirm(`Tem certeza que deseja excluir o cliente "${clientName}"?\n\nEsta ação não pode ser desfeita.`)) {
             return;
         }
 
+        const normName = String(clientName || '').toLowerCase().trim();
         try {
-            let deleteSuccess = false;
-            
-            if (window.clientService && typeof window.clientService.deleteClient === 'function') {
-                deleteSuccess = await window.clientService.deleteClient(clientId);
-                if (deleteSuccess) {
-                    console.log(`✅ PCT: Cliente "${clientName}" excluído via clientService`);
-                }
-            } else if (window.firebaseService && typeof window.firebaseService.removeFromFirebase === 'function') {
-                try {
-                    const result = await window.firebaseService.removeFromFirebase(`clients/${clientId}`);
-                    if (result && result.success) {
-                        deleteSuccess = true;
-                        console.log(`✅ PCT: Cliente "${clientName}" excluído do Firebase`);
+            // 1. Resolver chaves reais: id clicado + chaves Firebase de
+            // duplicatas (mesmo id ou mesmo nome). Remove em caminho
+            // inexistente "sucede" sem apagar nada — por isso o toast de
+            // sucesso vinha com o cliente ainda na lista.
+            const chaves = [];
+            const pushChave = (v) => {
+                const s = String(v || '').trim();
+                if (s && !chaves.includes(s)) chaves.push(s);
+            };
+            pushChave(clientId);
+            try {
+                const svc = window.firebaseService;
+                if (svc && typeof svc.loadFromFirebase === 'function') {
+                    const res = await svc.loadFromFirebase('clients');
+                    const data = res && res.success ? res.data : null;
+                    const recs = Array.isArray(data)
+                        ? data.map((v, i) => [(v && v.id) || i, v])
+                        : Object.entries(data || {});
+                    for (const [k, v] of recs) {
+                        if (!v || typeof v !== 'object') continue;
+                        const vid = String(v.id || '').trim();
+                        const vn = String(v.nome || v.name || '').toLowerCase().trim();
+                        if ((vid && vid === String(clientId).trim()) || (normName && vn && vn === normName)) {
+                            pushChave(k);
+                            pushChave(vid);
+                        }
                     }
-                } catch (firebaseError) {
-                    console.warn('⚠️ PCT: Erro ao excluir do Firebase:', firebaseError);
                 }
-            }
-            
-            // Se Firebase não funcionou, tentar localStorage
-            if (!deleteSuccess) {
+            } catch (_) {}
+
+            // 2. Excluir todas as chaves (serviço + direto), fail-closed.
+            let deleteSuccess = false;
+            let ultimoErro = '';
+            const svc = window.firebaseService;
+            for (const k of chaves) {
                 try {
-                    const clientesLocal = JSON.parse(readLocalStorageValue('clientes') || '[]');
-                    const clientesFiltrados = clientesLocal.filter(c => c.id != clientId);
-                    writeLocalStorageValue('clientes', JSON.stringify(clientesFiltrados));
-                    deleteSuccess = true;
-                    console.log(`✅ PCT: Cliente removido do localStorage`);
-                } catch (localError) {
-                    console.error('❌ PCT: Erro ao remover do localStorage:', localError);
-                }
+                    if (window.clientService && typeof window.clientService.deleteClient === 'function') {
+                        const r = await window.clientService.deleteClient(k);
+                        if (r) deleteSuccess = true;
+                    }
+                } catch (e) { ultimoErro = String((e && e.message) || e); }
+                try {
+                    if (svc && typeof svc.removeFromFirebase === 'function') {
+                        const res = await svc.removeFromFirebase(`clients/${k}`);
+                        if (res && res.success) deleteSuccess = true;
+                    }
+                } catch (e) { ultimoErro = String((e && e.message) || e); }
             }
-            
-            if (deleteSuccess) {
-                // Recarregar lista para refletir a exclusão
-                console.log('🔄 PCT: Recarregando lista após exclusão...');
-                await refresh();
-                
-                showSuccess(`Cliente "${clientName}" excluído com sucesso.`);
-                console.log(`🎉 PCT: Exclusão de cliente concluída com sucesso`);
-            } else {
-                throw new Error('Falha ao excluir cliente de todas as fontes');
+            try { purgeLocalClientMirrors(chaves, normName); } catch (_) {}
+
+            if (!deleteSuccess) {
+                throw new Error(ultimoErro || 'Falha ao excluir cliente de todas as fontes');
             }
-            
+
+            // 3. Verificação de leitura: nunca "sucesso" fantasma.
+            if (await checkClientStillExists(chaves, normName)) {
+                throw new Error('Exclusão não confirmada no servidor — o cliente ainda existe. Tente novamente.');
+            }
+
+            // Recarregar lista para refletir a exclusão
+            console.log('🔄 PCT: Recarregando lista após exclusão...');
+            await refresh();
+
+            showSuccess(`Cliente "${clientName}" excluído com sucesso.`);
+            console.log(`🎉 PCT: Exclusão de cliente concluída com sucesso`);
+
         } catch (error) {
             console.error('❌ PCT: Erro ao excluir cliente:', error);
             showError(`Erro ao excluir cliente: ${error.message}`);
+            try { await refresh(); } catch (_) {}
         }
+    }
+
+    function purgeLocalClientMirrors(chaves, normName) {
+        const idSet = new Set((chaves || []).map(String));
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (!k || !/client/i.test(k)) continue;
+            try {
+                const raw = localStorage.getItem(k);
+                if (!raw) continue;
+                const parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed)) continue;
+                const filtrada = parsed.filter(c => {
+                    if (!c || typeof c !== 'object') return true;
+                    if (idSet.has(String(c.id || '').trim())) return false;
+                    const n = String(c.nome || c.name || '').toLowerCase().trim();
+                    if (normName && n && n === normName) return false;
+                    return true;
+                });
+                if (filtrada.length !== parsed.length) {
+                    localStorage.setItem(k, JSON.stringify(filtrada));
+                }
+            } catch (_) {}
+        }
+    }
+
+    async function checkClientStillExists(chaves, normName) {
+        try {
+            const svc = window.firebaseService;
+            if (!svc || typeof svc.loadFromFirebase !== 'function') return true;
+            const res = await svc.loadFromFirebase('clients');
+            const data = res && res.success ? res.data : null;
+            if (!data) return false;
+            const wantIds = new Set((chaves || []).map(String));
+            const recs = Array.isArray(data)
+                ? data
+                : Object.entries(data).map(([k, v]) => ({ ...((v && typeof v === 'object') ? v : {}), __k: k }));
+            return recs.some(r => {
+                if (!r || typeof r !== 'object') return false;
+                if (wantIds.has(String(r.id || '').trim())) return true;
+                if (r.__k && wantIds.has(String(r.__k))) return true;
+                const n = String(r.nome || r.name || '').toLowerCase().trim();
+                return !!(normName && n && n === normName);
+            });
+        } catch (_) { return true; }
     }
 
     /**

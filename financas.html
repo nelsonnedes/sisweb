@@ -97,7 +97,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=054f314014f0"></script>
+<script src="menu-component.js?v=de5cb8cb8a6d"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
@@ -2614,7 +2614,7 @@
                 ...financeFirebaseLocalService
             };
             window.__siswebFirebaseServiceReady = (async function () {
-                const firebaseSvc = await import('./firebaseService.js?v=7e1ef38adf49');
+                const firebaseSvc = await import('./firebaseService.js?v=f3838bc1b3f8');
                 const existingFirebaseService = window.firebaseService || {};
                 window.firebaseService = {
                     ...existingFirebaseService,

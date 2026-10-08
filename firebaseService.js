@@ -4309,6 +4309,18 @@ async function deleteFromFirebase(path) {
         
         invalidateReadCacheForPath(path);
         if (finalDeletePath && finalDeletePath !== path) invalidateReadCacheForPath(finalDeletePath);
+        // ✅ Anti-ressurreição: invalidar também a coleção-pai (com e sem
+        // namespace). Sem isso, leituras com TTL (ex.: clients = 3 min)
+        // continuam servindo o registro excluído e a UI o reexibe após
+        // o delete — some "só após várias tentativas".
+        try {
+            const noNs = String(path || '').replace(/^companies\/[^/]+\//, '');
+            const segs = noNs.split('/').filter(Boolean);
+            while (segs.length > 1) {
+                segs.pop();
+                invalidateReadCacheForPath(segs.join('/'));
+            }
+        } catch (_) {}
 
         console.log('✅ Dados removidos do Firebase');
         
