@@ -2127,7 +2127,7 @@
     </script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=b67af1823fc3"></script>
+<script src="menu-component.js?v=0dcef8a57d9a"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
     <script src="client-service.js?v=26fd5bf2abb6"></script>
     <script src="openNewClientModal.js?v=f19ef075d2a7"></script>
@@ -2150,6 +2150,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
     <script src="nf-danfe.js?v=8c6ab6850a5c"></script>
+    <script src="js/sisweb-loading.js?v=b693454010f9"></script>
     <script>
     // ─── Inicialização NFService ──────────────────────────────────────────────
     function isFirebaseOfflineModeNF() {
@@ -3701,6 +3702,7 @@
       const btn = document.getElementById('btnConfirmarEmissao');
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Emitindo...'; }
       mostrarAlertaEmissao('⏳ Gerando XML e enviando à SEFAZ...', 'warn');
+      try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Emitindo NF-e...'); } catch (_) {}
 
       try {
         const result = await window.NFService.emitirNFe(_notaEmCurso, senha);
@@ -3724,6 +3726,7 @@
       } catch(e) {
         mostrarAlertaEmissao('❌ ' + e.message, 'erro');
       } finally {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirmar e Emitir'; }
       }
     }
@@ -3736,11 +3739,14 @@
       if (!dest) return mostrarAlertaEmissao('⚠️ Cliente inválido');
       const formData = coletarFormDataNF(dest, { rascunho: true });
       const nfeData = window.NFService?.buildNFeFromForm?.(formData, _itensNF) || { det: _itensNF, dest, status: 'rascunho' };
+      try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Salvando rascunho...'); } catch (_) {}
       try {
         const saved = await window.NFService.salvarRascunho(nfeData);
         mostrarAlertaEmissao(`✅ Rascunho salvo! ID: ${saved.id}`, 'ok');
       } catch(e) {
         mostrarAlertaEmissao('❌ ' + e.message, 'erro');
+      } finally {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
       }
     }
 

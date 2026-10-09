@@ -8,6 +8,7 @@
 > - [x] E3 (textos init padrão + loader nos 2 deletes PCT + tag helper,
 >   commit `loader-e3`). W1 verificado: sem espelhos órfãos — sem mudança.
 > - [x] E4 (loader deletes TL/PES/TORA + tags, commit `loader-e4`).
+> - [x] E5 (estoque stub→real + NF-e/MDF-e ops longas, commit `loader-e5`).
 
 ## 1. Auditoria "mesmo problema do Save de cliente lento" — resultado
 

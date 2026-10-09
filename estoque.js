@@ -9098,12 +9098,35 @@ function gerarRelatorioPorLocalizacao(onlySelected = false) {
 
 // Funções auxiliares
 function showLoading(message) {
+    try {
+        if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') {
+            window.SiswebLoading.show(message || 'Processando...');
+            return;
+        }
+    } catch (_) {}
+    try {
+        // Fallback: modal próprio da página.
+        const modal = document.getElementById('loadingModal');
+        const msg = document.getElementById('loadingMessage');
+        if (modal) {
+            if (msg) msg.textContent = message || 'Processando...';
+            modal.style.display = 'flex';
+        }
+    } catch (_) {}
     console.log(`[LOADING] ${message || 'Processando...'}`);
-    // Preload overlays visuais removidos para melhorar performance
 }
 
 function hideLoading() {
-    // Preload overlays visuais removidos
+    try {
+        if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') {
+            window.SiswebLoading.hide();
+            return;
+        }
+    } catch (_) {}
+    try {
+        const modal = document.getElementById('loadingModal');
+        if (modal) modal.style.display = 'none';
+    } catch (_) {}
 }
 
 // Função duplicada removida

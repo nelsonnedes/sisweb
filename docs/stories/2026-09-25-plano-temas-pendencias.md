@@ -424,6 +424,18 @@ B. **Checkbox "Carregar apenas o Resumo" não desmarcava (compras/TORA).**
 - [x] Gates verdes (lint+typecheck OK, 806 testes 805/0/1).
 - [x] `?v=` resync + SW `2026-10-08-loader-e4`.
 
+## Onda 22 — loader E5 estoque + NF-e/MDF-e (08/10, `loader-e5`)
+- Achado: `show/hideLoading` do estoque eram STUBS (modal `#loadingModal`
+  existia mas ninguém o acendia). Viraram reais (helper + fallback modal).
+  Pareamento já era correto (hide no success e no catch).
+- MDF-e `emitirMdfe` (2 callables em sequência, sem feedback!) +
+  `salvarRascunhoMdfe`: loader em finally. NF-e `confirmarEmissao` (mantido
+  spinner de botão) + `salvarRascunhoNF`: idem. Relatório MDF-e fora
+  (operação local rápida).
+- [x] Travas: `tests/loader-rollout-e5.test.mjs` (3 testes).
+- [x] Gates verdes (lint+typecheck OK, 809 testes 808/0/1).
+- [x] `?v=` resync + SW `2026-10-08-loader-e5`.
+
 ## Onda 20 — item "2 renderizadores do #listaModal PCT" (08/10, SEM MUDANÇA)
 Suspeita (levantada em validação E3): state com 2 registros mas modal sem um
 deles. Apuração com sessão logada + instrumentação do render:

@@ -316,6 +316,7 @@ async function salvarRascunhoMdfe() {
         : { ...dadosMdfe, id: gerarId(), numero: numeroAtualMdfe.toString().padStart(9, '0') };
 
     try {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Salvando rascunho...'); } catch (_) {}
         await salvarDados(payload);
         if (index !== -1) mdfes[index] = payload;
         else mdfes.push(payload);
@@ -324,6 +325,8 @@ async function salvarRascunhoMdfe() {
         console.error('❌ Erro ao salvar rascunho MDF-e:', error);
         alert(`Não foi possível salvar o rascunho: ${error.message}`);
         return;
+    } finally {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
     }
     
     console.log('💾 Rascunho salvo:', dadosMdfe);
@@ -345,6 +348,7 @@ async function emitirMdfe() {
         : { ...dadosMdfe, id: gerarId(), numero: numeroAtualMdfe.toString().padStart(9, '0') };
 
     try {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Emitindo MDF-e...'); } catch (_) {}
         const svc = window.firebaseService;
         if (!tenantIdMdfe || typeof svc?.callFunction !== 'function') throw new Error('Cloud Functions fiscais indisponíveis.');
         if (!window.MdfeXmlBuilder?.buildMdfe) throw new Error('Gerador XML MDF-e indisponível.');
@@ -397,6 +401,8 @@ async function emitirMdfe() {
         console.error('❌ Erro ao salvar MDF-e:', error);
         alert(`Não foi possível salvar o MDF-e: ${error.message}`);
         return;
+    } finally {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
     }
     
     limparFormularioMdfe();
