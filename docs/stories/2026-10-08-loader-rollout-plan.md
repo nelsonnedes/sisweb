@@ -9,6 +9,8 @@
 >   commit `loader-e3`). W1 verificado: sem espelhos órfãos — sem mudança.
 > - [x] E4 (loader deletes TL/PES/TORA + tags, commit `loader-e4`).
 > - [x] E5 (estoque stub→real + NF-e/MDF-e ops longas, commit `loader-e5`).
+> - [x] E6 (auditoria pareamento folha/species/client/fornecedor: tudo pareado,
+>   só trava, sem mudança).
 
 ## 1. Auditoria "mesmo problema do Save de cliente lento" — resultado
 
