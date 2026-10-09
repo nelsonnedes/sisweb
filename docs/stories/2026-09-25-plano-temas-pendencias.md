@@ -389,6 +389,17 @@ B. **Checkbox "Carregar apenas o Resumo" não desmarcava (compras/TORA).**
 - [x] Gates verdes (lint+typecheck OK, 797 testes 796/0/1).
 - [x] `?v=` resync + SW `2026-10-08-loader-e2`.
 
+## Onda 18b — overlay acompanha o tema (08/10, `loader-e2b`)
+- Causa: `layout-comum.css` tinha véu sempre branco + helper injetava CSS claro
+  fixo; vendas tinha bloco local escuro (por isso só vendas obedecia o tema).
+- Fix central (1 lugar, todas as páginas): véu escuro sob
+  `html[data-theme="dark"]` + borda do card em `var(--sw-border)` no
+  `layout-comum.css`; helper espelha com vars + fallbacks. Claro/sem
+  data-theme inalterados; bloco local de vendas intacto.
+- [x] Trava estendida em `tests/loader-rollout-e2.test.mjs` (5 testes).
+- [x] Gates verdes (lint+typecheck OK, 798 testes 797/0/1).
+- [x] `?v=` resync + SW `2026-10-08-loader-e2b`.
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,

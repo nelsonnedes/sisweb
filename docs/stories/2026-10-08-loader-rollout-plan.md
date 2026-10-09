@@ -4,6 +4,7 @@
 > - [x] E0 (helper + trava, commit `loader-e0e1`).
 > - [x] E1 (div vendas, mesmo commit).
 > - [x] E2 (compras stub→helper + `listarPedidos` em finally, commit `loader-e2`).
+> - [x] E2b (overlay acompanha o tema, commit `loader-e2b`).
 
 ## 1. Auditoria "mesmo problema do Save de cliente lento" — resultado
 

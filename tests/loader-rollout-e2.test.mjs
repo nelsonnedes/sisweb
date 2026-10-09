@@ -32,3 +32,14 @@ test('E2: shows e hides balanceados em compras', () => {
   const hides = (comprasJs.match(/LoadingManager\.hide\(\)/g) || []).length;
   assert.ok(shows > 0 && hides >= shows, `shows=${shows} hides=${hides}`);
 });
+
+test('E2b: overlay acompanha o tema (sem tudo-branco no dark)', () => {
+  const comum = readFileSync('layout-comum.css', 'utf8');
+  assert.match(comum, /html\[data-theme="dark"\] \.loading-overlay/);
+  assert.match(comum, /background: rgba\(0, 0, 0, 0\.7\)/);
+  const helper = readFileSync('js/sisweb-loading.js', 'utf8');
+  assert.match(helper, /html\[data-theme=/);
+  assert.match(helper, /rgba\(0,0,0,0\.7\)/);
+  assert.match(helper, /var\(--sw-surface/);
+  assert.match(helper, /var\(--sw-text-1/);
+});
