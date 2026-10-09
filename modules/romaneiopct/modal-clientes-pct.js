@@ -954,6 +954,7 @@ window.ModalClientesPCT = (function() {
             return;
         }
 
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo cliente...'); } catch (_) {}
         const normName = String(clientName || '').toLowerCase().trim();
         try {
             // 1. Resolver chaves reais: id clicado + chaves Firebase de
@@ -1026,6 +1027,8 @@ window.ModalClientesPCT = (function() {
             console.error('❌ PCT: Erro ao excluir cliente:', error);
             showError(`Erro ao excluir cliente: ${error.message}`);
             try { await refresh(); } catch (_) {}
+        } finally {
+            try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
         }
     }
 

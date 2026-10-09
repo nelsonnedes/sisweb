@@ -1015,6 +1015,7 @@ window.ModalListaRomaneiosPCT = (function() {
     async function deleteRomaneio(romaneioId) {
         if (!confirm(MSG_CONFIRM_DELETE)) return;
         console.log(` PCT: Excluindo romaneio ${romaneioId}`);
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
         // Chave real pode divergir do id normalizado (firebaseKey/key/numero).
         let rec = null;
         try {
@@ -1053,6 +1054,8 @@ window.ModalListaRomaneiosPCT = (function() {
         } catch (error) {
             console.error(" PCT: Erro ao excluir romaneio:", error);
             showError(MSG_ERROR_DELETE_FAILED);
+        } finally {
+            try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
         }
     }
 

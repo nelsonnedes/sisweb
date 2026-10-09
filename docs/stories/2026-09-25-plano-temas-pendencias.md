@@ -400,6 +400,19 @@ B. **Checkbox "Carregar apenas o Resumo" não desmarcava (compras/TORA).**
 - [x] Gates verdes (lint+typecheck OK, 798 testes 797/0/1).
 - [x] `?v=` resync + SW `2026-10-08-loader-e2b`.
 
+## Onda 19 — textos init + loader E3 PCT (08/10, `loader-e3`)
+- Padrão "Inicializando Sistema de {Módulo}...": vendas era 'Iniciando
+  sistema...', compras tinha S minúsculo. Ambos padronizados.
+- E3: tag do helper em `romaneiopct.html` + loader `show/finally-hide` nos
+  deletes de romaneio (`Excluindo romaneio...`) e cliente (`Excluindo
+  cliente...`). Prints com popup fora do escopo (placeholder próprio; loader
+  antes do `window.open` quebraria o gesto).
+- W1 verificado empiricamente (1 única chave `companies/{t}/clients`, com
+  purga coberta): sem mudança.
+- [x] Travas: `tests/loader-rollout-e3.test.mjs` (4 testes).
+- [x] Gates verdes (lint+typecheck OK, 802 testes 801/0/1).
+- [x] `?v=` resync + SW `2026-10-08-loader-e3`.
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,

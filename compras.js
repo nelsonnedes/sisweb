@@ -5653,7 +5653,7 @@ function schedulePrintLogoWarmUpCompras() {
     } catch (_) {}
 }
 async function inicializarSistemaCompras() {
-    LoadingManager.show('Inicializando sistema de compras...');
+    LoadingManager.show('Inicializando Sistema de Compras...');
     configurarAbaFornecedoresCompras();
     
     try {

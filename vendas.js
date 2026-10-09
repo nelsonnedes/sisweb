@@ -818,7 +818,7 @@ function schedulePrintLogoWarmUpVendas() {
 }
 async function inicializarSistema() {
     try {
-        if (typeof LoadingManager !== 'undefined') LoadingManager.show('Iniciando sistema...');
+        if (typeof LoadingManager !== 'undefined') LoadingManager.show('Inicializando Sistema de Vendas...');
         console.log("Inicializando sistema de vendas...");
         
         // Configurar data atual

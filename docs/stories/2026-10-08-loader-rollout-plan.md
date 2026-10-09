@@ -5,6 +5,8 @@
 > - [x] E1 (div vendas, mesmo commit).
 > - [x] E2 (compras stub→helper + `listarPedidos` em finally, commit `loader-e2`).
 > - [x] E2b (overlay acompanha o tema, commit `loader-e2b`).
+> - [x] E3 (textos init padrão + loader nos 2 deletes PCT + tag helper,
+>   commit `loader-e3`). W1 verificado: sem espelhos órfãos — sem mudança.
 
 ## 1. Auditoria "mesmo problema do Save de cliente lento" — resultado
 
