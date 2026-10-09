@@ -368,6 +368,8 @@ Referências positivas (não mexer, copiar): `confirmarEmissao` (NF-e),
   24/24 linhas, cabeçalhos, qtd, período e payload — zero pageerrors.
 - Publish: SW `2026-10-08-onda24` → `2026-10-09-ux-movdet` (`sw.js` + `PWA_VERSION` +
   9 asserts em 6 arquivos de teste); `?v=` ressincronizado.
+- Deploy 09/10: `npm run deploy:hosting` OK (539 arquivos, 42 novos); produção serve
+  SW `2026-10-09-ux-movdet`, modal Detalhes, coletor novo e sem a função antiga.
 
 - [ ] **Login** — OK (spinner+disable+aria-busy). Nada a fazer.
 - [ ] **Vendas/Compras** — OK nos fluxos (overlay). Adicionar trava nos 3 exports
