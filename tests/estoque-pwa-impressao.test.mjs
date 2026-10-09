@@ -222,3 +222,23 @@ test('helper compartilhado exporta PDF tabular para relatorios do estoque', asyn
   assert.ok(calls.some((call) => call.type === 'text' && JSON.stringify(call.args).includes('T-002')));
   assert.ok(!calls.some((call) => call.type === 'text' && JSON.stringify(call.args).includes('<strong>')));
 });
+
+test('remessa: 11 colunas agregadas, sem listas empilhadas nem zeros falsos', () => {
+  const js = read('estoque.js');
+  const defs = js.slice(js.indexOf("if (tipo === 'movimentacao_remessa') {"));
+  const bloco = defs.slice(0, defs.indexOf('];') + 2);
+  for (const k of ['data', 'remessaId', 'quantidade', 'romaneioId', 'especie',
+    'volumeTora', 'volumeProduzido', 'rendimento', 'valor', 'clienteNome', 'status']) {
+    assert.ok(bloco.includes(`key: '${k}'`), `coluna ausente: ${k}`);
+  }
+  for (const k of ['plaqueta', 'custodia', 'autef', 'rodo', 'comprimento', 'oco1', 'oco2', 'preco']) {
+    assert.ok(!bloco.includes(`key: '${k}'`), `coluna empilhada ainda presente: ${k}`);
+  }
+  assert.match(js, /quantidade: itens\.length/);
+  assert.match(js, /typeof r === 'string'/);
+  assert.match(js, /valor: \(item\.valor \? formatCurrency\(item\.valor\) : '-'\)/);
+  // Numericos/datas/ids/status nunca quebram no meio no impresso.
+  assert.match(js, /\.table td\.text-right, \.table th\.text-right/);
+  assert.match(js, /\.table td\[data-col="remessaId"\]/);
+  assert.match(js, /white-space: nowrap;/);
+});

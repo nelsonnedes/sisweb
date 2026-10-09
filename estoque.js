@@ -7064,22 +7064,18 @@ function getEstoqueReportColumnsDefs(tipoRelatorio) {
         ];
     }
     if (tipo === 'movimentacao_remessa') {
+        // 11 colunas agregadas por remessa (antes: 18, com listas empilhadas de
+        // plaquetas/custodias/autefs que quebravam a impressao). Detalhe por tora
+        // vive no Historico de Movimentacoes / Detalhes.
         return [
             { key: 'data', label: 'Data' },
             { key: 'remessaId', label: 'Remessa' },
+            { key: 'quantidade', label: 'Qtd', align: 'text-center' },
             { key: 'romaneioId', label: 'Romaneio' },
-            { key: 'plaqueta', label: 'Plaqueta' },
-            { key: 'custodia', label: 'Custódia' },
-            { key: 'autef', label: 'AUTEF' },
             { key: 'especie', label: 'Espécie' },
-            { key: 'rodo', label: 'Rodo', align: 'text-center' },
-            { key: 'comprimento', label: 'Comprimento', align: 'text-center' },
-            { key: 'oco1', label: 'Oco 1', align: 'text-center' },
-            { key: 'oco2', label: 'Oco 2', align: 'text-center' },
             { key: 'volumeTora', label: 'Vol. Tora', align: 'text-right' },
             { key: 'volumeProduzido', label: 'Vol. Produzido', align: 'text-right' },
             { key: 'rendimento', label: 'Rendimento', align: 'text-right' },
-            { key: 'preco', label: 'Preço', align: 'text-right' },
             { key: 'valor', label: 'Valor', align: 'text-right' },
             { key: 'clienteNome', label: 'Cliente/Fornecedor' },
             { key: 'status', label: 'Status' }
@@ -7413,20 +7409,13 @@ function obterValorCelulaRelatorioEstoque(tipo, key, item) {
         const map = {
             data: formatDate(item.data),
             remessaId: escapeHtml(item.remessaId || '-'),
+            quantidade: String(item.quantidade ?? '-'),
             romaneioId: escapeHtml(item.romaneioId || '-'),
-            plaqueta: escapeHtml(item.plaqueta || '-'),
-            custodia: escapeHtml(item.custodia || '-'),
-            autef: escapeHtml(item.autef || '-'),
             especie: escapeHtml(item.especie || '-'),
-            rodo: item.rodo ? `${formatNumber(item.rodo, 1)} cm` : '-',
-            comprimento: item.comprimento ? `${formatNumber(item.comprimento, 1)} cm` : '-',
-            oco1: item.oco1 ? `${formatNumber(item.oco1, 1)} cm` : '-',
-            oco2: item.oco2 ? `${formatNumber(item.oco2, 1)} cm` : '-',
             volumeTora: `${formatNumber(item.volumeTora || 0, 3)} m³`,
             volumeProduzido: `${formatNumber(item.volumeProduzido || 0, 3)} m³`,
             rendimento: `${formatNumber(item.rendimento || 0, 2)}%`,
-            preco: formatCurrency(item.preco || 0),
-            valor: formatCurrency(item.valor || 0),
+            valor: (item.valor ? formatCurrency(item.valor) : '-'),
             clienteNome: escapeHtml(item.clienteNome || '-'),
             status: escapeHtml(item.status || '-')
         };
@@ -8184,6 +8173,10 @@ function obterRelatorioStylesImpressao(orientacao = 'auto') {
         /* Padrao financeiro: texto quebra, numericos nunca quebram (classe .num). */
         .table td { overflow-wrap: anywhere; }
         .table td.num, .table th.num, .nowrap { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+        /* Remessa/impressos: numericos, datas, ids e status nunca quebram no meio. */
+        .table td.text-right, .table th.text-right, .table td.text-center, .table th.text-center,
+        .table td[data-col="data"], .table td[data-col="remessaId"], .table td[data-col="status"],
+        .table td[data-col="quantidade"] { white-space: nowrap; }
         @media print and (orientation: landscape) {
             .relatorio-profissional { max-width: 257mm; margin: 0 auto; }
         }
@@ -8924,10 +8917,16 @@ function gerarRelatorioMovimentacaoPorRemessa(dataInicio, dataFim, onlySelected 
         const grupo = remessasMap.get(remessaId);
         grupo.itens.push(mov);
         
-        // Coletar IDs dos romaneios
-        if (mov.romaneioId) grupo.romaneiosIds.add(mov.romaneioId);
-        if (mov.romaneiosRelacionados) {
-            mov.romaneiosRelacionados.forEach(r => grupo.romaneiosIds.add(r.id || r.numero || r));
+        // Coletar IDs dos romaneios (só strings válidas: objetos sem id/numero
+        // viravam "[object Object]" ou chaves soltas no impresso).
+        if (mov.romaneioId) grupo.romaneiosIds.add(String(mov.romaneioId));
+        if (Array.isArray(mov.romaneiosRelacionados)) {
+            mov.romaneiosRelacionados.forEach(r => {
+                const chave = (typeof r === 'string') ? r : (r && (r.id || r.numero));
+                if (chave !== undefined && chave !== null && String(chave).trim() !== '') {
+                    grupo.romaneiosIds.add(String(chave).trim());
+                }
+            });
         }
         
         // Cliente/Fornecedor
@@ -8948,56 +8947,26 @@ function gerarRelatorioMovimentacaoPorRemessa(dataInicio, dataFim, onlySelected 
     let resultado = Array.from(remessasMap.values());
     resultado.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
 
-    // Calcular rendimento e formatar romaneios
+    // Calcular rendimento e formatar romaneios (uma linha por remessa: sem
+    // listas empilhadas; detalhe por tora vive no Historico/Detalhes).
     const itensFormatados = resultado.map(grupo => {
         const romaneiosArray = Array.from(grupo.romaneiosIds).sort();
-        
-        // Agregar campos dos itens individuais da remessa
         const itens = grupo.itens || [];
-        const plaquetas = [...new Set(itens.map(m => m.plaqueta || m.placa || '').filter(Boolean))].join(', ');
-        const custodias = [...new Set(itens.map(m => {
-            const geo = normalizarCamposGeoEstoque(m);
-            return geo.custodia || m.custodia || '';
-        }).filter(Boolean))].join(', ');
-        const autefs = [...new Set(itens.map(m => {
-            const geo = normalizarCamposGeoEstoque(m);
-            return geo.autef || m.autef || '';
-        }).filter(Boolean))].join(', ');
         const especies = [...new Set(itens.map(m => m.especie || '').filter(Boolean))].join(', ');
-        
-        // Para campos numéricos: mostrar min/max ou primeiro valor
-        const rodos = itens.map(m => parseNumeroEstoque(m.rodo || m.diametro || 0)).filter(v => v > 0);
-        const comprimentos = itens.map(m => parseNumeroEstoque(m.comprimento || 0)).filter(v => v > 0);
-        const oco1s = itens.map(m => parseNumeroEstoque(m.oco1 || 0)).filter(v => v > 0);
-        const oco2s = itens.map(m => parseNumeroEstoque(m.oco2 || 0)).filter(v => v > 0);
-        const precos = itens.map(m => parseNumeroEstoque(m.preco || m.precoCusto || 0)).filter(v => v > 0);
-        
-        const rodoStr = rodos.length ? (rodos.length === 1 ? `${rodos[0]} cm` : `${Math.min(...rodos)}–${Math.max(...rodos)} cm`) : '-';
-        const compStr = comprimentos.length ? (comprimentos.length === 1 ? `${comprimentos[0]} cm` : `${Math.min(...comprimentos)}–${Math.max(...comprimentos)} cm`) : '-';
-        const oco1Str = oco1s.length ? (oco1s.length === 1 ? `${oco1s[0]} cm` : `${Math.min(...oco1s)}–${Math.max(...oco1s)} cm`) : '-';
-        const oco2Str = oco2s.length ? (oco2s.length === 1 ? `${oco2s[0]} cm` : `${Math.min(...oco2s)}–${Math.max(...oco2s)} cm`) : '-';
-        const precoStr = precos.length ? (precos.length === 1 ? formatCurrency(precos[0]) : `${formatCurrency(Math.min(...precos))}–${formatCurrency(Math.max(...precos))}`) : '-';
         const rendimento = grupo.volumeTotal > 0 ? (grupo.volumeProduzido / grupo.volumeTotal) * 100 : 0;
-        
+
         return {
             data: grupo.data,
             remessaId: grupo.remessaId,
-            romaneioId: romaneiosArray.join(', '),
-            plaqueta: plaquetas || '-',
-            custodia: custodias || '-',
-            autef: autefs || '-',
+            quantidade: itens.length,
+            romaneioId: romaneiosArray.join(', ') || '-',
             especie: especies || '-',
-            rodo: rodoStr,
-            comprimento: compStr,
-            oco1: oco1Str,
-            oco2: oco2Str,
             volumeTora: grupo.volumeTotal,
             volumeProduzido: grupo.volumeProduzido,
             rendimento: rendimento,
-            preco: precoStr,
             valor: grupo.valorTotal,
             clienteNome: grupo.clienteNome,
-            status: 'concluida'
+            status: 'concluída'
         };
     });
 

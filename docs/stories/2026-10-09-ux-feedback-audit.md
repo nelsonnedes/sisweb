@@ -371,6 +371,23 @@ Referências positivas (não mexer, copiar): `confirmarEmissao` (NF-e),
 - Deploy 09/10: `npm run deploy:hosting` OK (539 arquivos, 42 novos); produção serve
   SW `2026-10-09-ux-movdet`, modal Detalhes, coletor novo e sem a função antiga.
 
+## Execução 09/10 — Remessa: relatório quebrado/desordenado (concluída)
+- Sintoma (print do usuário): "Movimentação por Remessa" com 18 colunas, células
+  empilhadas (dezenas de plaquetas/custódias/autefs por linha), romaneio com chaves
+  soltas, `R$ 0,00` em linhas sem preço, data/status quebrados no meio.
+- Causa raiz: `gerarRelatorioMovimentacaoPorRemessa` agregava N toras numa linha com
+  `join(', ')` em 7 colunas + min–max em 5 — granularidade errada p/ impressão; mais
+  `romaneiosRelacionados` sem filtrar objetos (chaves soltas), `formatCurrency(0)` e
+  falta de `nowrap` no CSS de impressão.
+- Fix (só `estoque.js`, regra de dados preservada): 18→11 colunas agregadas
+  (Data/Remessa/Qtd/Romaneio/Espécie/Vol.Tora/Vol.Produzido/Rendimento/Valor/
+  Cliente-Fornecedor/Status); detalhe por tora fica no Histórico/Detalhes; romaneios
+  só com strings válidas; valor zerado vira `-`; `nowrap` p/ numéricos/datas/ids/status
+  no impresso. Totais/cards, seleção, ordenação e filtros intactos.
+- Trava: `tests/estoque-pwa-impressao.test.mjs` (+1 teste: colunas, quantidade,
+  string-guard, valor `-`, nowrap). Gates: lint/typecheck OK, 856 testes 855/0/1.
+- Publish: SW `2026-10-09-ux-movdet` → `2026-10-09-remessa-fix` + `?v=` ressincronizado.
+
 - [ ] **Login** — OK (spinner+disable+aria-busy). Nada a fazer.
 - [ ] **Vendas/Compras** — OK nos fluxos (overlay). Adicionar trava nos 3 exports
   (CSV/PDF/impressão lista) + skeleton em `carregarTabelaProdutos`.
