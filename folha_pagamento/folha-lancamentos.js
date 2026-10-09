@@ -3643,6 +3643,15 @@ window.darBaixaQuinzena = async function(id) {
         if (!lancamento || tipoNorm !== 'quinzena' || !['rascunho', 'calculada', 'aprovada'].includes(statusNorm)) {
             throw new Error('Quinzena inválida para baixa');
         }
+        // Confirmacao explicita: a baixa grava pagamento + financeiro (decisao produto Onda 4).
+        try {
+            const nomeFunc = (lancamento.funcionario && (lancamento.funcionario.nome || lancamento.funcionario.name)) || '';
+            const mesRef = lancamento.mesAno || lancamento.mes || '';
+            if (!confirm(`Confirma dar baixa na quinzena${nomeFunc ? ' de ' + nomeFunc : ''}${mesRef ? ' (' + mesRef + ')' : ''}? O pagamento será registrado no financeiro.`)) {
+                __folhaLancamentoEnd(__flKey);
+                return;
+            }
+        } catch (_) {}
         
         // Atualizar status e salvar
         lancamento.status = 'quinzena_paga';

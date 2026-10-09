@@ -3268,6 +3268,8 @@ async function excluirRomaneio(romaneioId) {
             return;
         }
         window.deletingRomaneio = true;
+        // Overlay durante o delete permanente (R-24): a trava ja existe.
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
         
         // Confirmar exclusÃ£o
         if (!confirm("Tem certeza que deseja excluir este romaneio? Esta aÃ§Ã£o nÃ£o pode ser desfeita.")) {
@@ -3487,6 +3489,7 @@ async function excluirRomaneio(romaneioId) {
     } finally {
         // âœ… SEMPRE DESBLOQUEAR A OPERAÃ‡ÃƒO
         window.deletingRomaneio = false;
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
     }
 }
 
@@ -5008,6 +5011,10 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
             document.head.appendChild(script);
             return;
         }
+        // Trava + overlay do export (R-26): fetch + build podem levar segundos.
+        if (window.__toraExportInFlight) return;
+        window.__toraExportInFlight = true;
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Gerando Excel...'); } catch (_) {}
         
         // âœ… CARREGAR DADOS DO FIREBASE
         let romaneiosData = await getData('romaneios/tora') || {};
@@ -5187,9 +5194,14 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Romaneio');
         XLSX.writeFile(workbook, `romaneio_${romaneioId || 'tora'}.xlsx`);
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
+        window.__toraExportInFlight = false;
+        __toraNotify('Excel gerado com sucesso.', 'success');
     } catch (error) {
         console.error('Erro ao exportar romaneio para Excel:', error);
-        alert('Erro ao exportar romaneio para Excel: ' + (error && error.message ? error.message : error));
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
+        window.__toraExportInFlight = false;
+        __toraNotify('Erro ao exportar romaneio para Excel: ' + (error && error.message ? error.message : error), 'error');
     }
 }
 

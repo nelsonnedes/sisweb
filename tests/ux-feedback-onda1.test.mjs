@@ -22,6 +22,8 @@ const vendasHtml = readFileSync('vendas.html', 'utf8');
 const estoqueHtml = readFileSync('estoque.html', 'utf8');
 const compras = readFileSync('compras.js', 'utf8');
 const nfJs = readFileSync('notas-fiscais.js', 'utf8');
+const nfNat = readFileSync('nf-naturezas.js', 'utf8');
+const folhaRel = readFileSync('folha_pagamento/folha-relatorios.js', 'utf8');
 
 function fnBody(src, sig) {
   const s = src.indexOf(sig);
@@ -282,4 +284,59 @@ test('F-15 morto removido; F-16 submit com trava', () => {
   assert.match(b, /querySelector\('#nfForm button\[type="submit"\]'\)/);
   assert.match(b, /Emitindo\.\.\./);
   assert.equal((b.match(/__nfEmitindo = false/g) || []).length, 2);
+});
+
+test('H-35 recibo: overlay com hide antes da impressão', () => {
+  const b = fnBody(folhaRel, 'async gerarReciboIndividualDetalhado(folhaId)');
+  assert.match(b, /if \(this\._gerandoReciboLock\)/);
+  assert.match(b, /FolhaUtils\.showLoading\(\)/);
+  assert.match(b, /FolhaUtils\.hideLoading\(\)/);
+  assert.ok(b.indexOf('hideLoading()') < b.indexOf('this.imprimirRelatorio(reciboHTML'), 'hide antes de imprimir');
+});
+
+test('H-35 imprimirRelatorio global: trava + overlay + finally', () => {
+  const b = fnBody(folhaRel, 'window.imprimirRelatorio = async function');
+  assert.match(b, /__folhaLancamentoEmAndamento\.has\(__relKey\)/);
+  assert.match(b, /FolhaUtils\.showLoading\(\)/);
+  assert.match(b, /\} finally \{/);
+  assert.match(b, /FolhaUtils\.hideLoading\(\)/);
+});
+
+test('H-31b baixa de quinzena exige confirmação explícita', () => {
+  assert.match(folhaLanc, /Confirma dar baixa na quinzena/);
+  assert.match(folhaLanc, /O pagamento será registrado no financeiro/);
+});
+
+test('F-13 naturezas: modal com trava + botão; delete com trava por id', () => {
+  const b = fnBody(nfNat, 'async function _salvarDoModal()');
+  assert.match(b, /if \(window\.__nfNatSaving\) return;/);
+  assert.match(b, /getElementById\('natOpSalvar'\)/);
+  assert.match(b, /window\.__nfNatSaving = true;/);
+  assert.equal((b.match(/window\.__nfNatSaving = false/g) || []).length, 2);
+  assert.match(nfHtml, /__nfNatDeleting\.has\(__nfRemKey\)/);
+  assert.match(nfHtml, /__nfNatDeleting\.delete\(__nfRemKey\)/);
+});
+
+test('F-14 token manual com trava sem leak; manifesto é sync-local', () => {
+  const b = fnBody(nfHtml, 'function salvarTokenManual()');
+  assert.match(b, /if \(window\.__nfTokenSaving\) return;/);
+  assert.ok((b.match(/window\.__nfTokenSaving = false/g) || []).length >= 3, 'reset em todos os fins');
+});
+
+test('R-24 delete tora: overlay com hide no finally', () => {
+  const b = fnBody(tora, 'async function excluirRomaneio(');
+  assert.match(b, /window\.deletingRomaneio = true;/);
+  assert.match(b, /SiswebLoading\.show\('Excluindo romaneio\.\.\.'\)/);
+  assert.match(b, /\} finally \{/);
+  assert.match(b, /SiswebLoading\.hide\(\)/);
+});
+
+test('R-26 export excel tora: trava + overlay + toast (sem alert)', () => {
+  const b = fnBody(tora, 'function exportarRomaneioExcelFirebase(');
+  assert.match(b, /if \(window\.__toraExportInFlight\) return;/);
+  assert.match(b, /SiswebLoading\.show\('Gerando Excel\.\.\.'\)/);
+  assert.match(b, /__toraNotify\('Excel gerado com sucesso\.', 'success'\)/);
+  assert.match(b, /__toraNotify\('Erro ao exportar romaneio para Excel/);
+  assert.doesNotMatch(b, /alert\('Erro ao exportar romaneio para Excel/);
+  assert.equal((b.match(/window\.__toraExportInFlight = false/g) || []).length, 2);
 });

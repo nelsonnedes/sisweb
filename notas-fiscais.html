@@ -2486,19 +2486,23 @@
     window.configurarTokenManual = configurarTokenManual;
 
     async function salvarTokenManual() {
+      // Trava anti-duplo-clique (F-14): operacao rapida, sem overlay.
+      if (window.__nfTokenSaving) return;
+      window.__nfTokenSaving = true;
       const bridgeUrl = document.getElementById('certTokenBridgeUrl')?.value?.trim() || 'http://127.0.0.1:37773';
       const middleware = document.getElementById('certTokenMiddleware')?.value?.trim() || '';
       const tid = obterTenantIdNF();
-      if (!tid) return alert('Tenant não identificado');
+      if (!tid) { window.__nfTokenSaving = false; return alert('Tenant não identificado'); }
       try {
         const uid = await obterUidAutenticadoNF();
-        if (!uid) return alert('Sessão autenticada não encontrada. Faça login novamente.');
+        if (!uid) { window.__nfTokenSaving = false; return alert('Sessão autenticada não encontrada. Faça login novamente.'); }
         localStorage.setItem(`nf_a3_bridge_${tid}`, JSON.stringify({ bridgeUrl, middleware, updatedAt: new Date().toISOString() }));
         await window.NFCertService.salvarReferenciaA3Token(tid, uid, { bridgeUrl, middleware });
         const statusEl = document.getElementById('certTokenStatus');
         if (statusEl) statusEl.innerHTML = '<div style="background:#fff3cd;color:#856404;padding:8px;border-radius:4px;border:1px solid #ffc107;">⚠️ Tipo A3 físico salvo. A emissão ficará bloqueada até existir ponte local homologada para assinatura XML.</div>';
         verificarStatusCert();
-      } catch(e) { alert('Erro ao salvar: ' + e.message); }
+        window.__nfTokenSaving = false;
+      } catch(e) { alert('Erro ao salvar: ' + e.message); window.__nfTokenSaving = false; }
     }
     window.salvarTokenManual = salvarTokenManual;
 
@@ -4501,12 +4505,18 @@
       if (!confirm(`Remover a natureza "${desc}"?`)) return;
       const tid = obterTenantIdNF();
       if (!tid) return alert('Tenant não identificado');
+      // Trava anti-duplo-clique por registro (F-13).
+      var __nfRemKey = 'nat-del:' + String(id || '');
+      if (!window.__nfNatDeleting) window.__nfNatDeleting = new Set();
+      if (window.__nfNatDeleting.has(__nfRemKey)) return;
+      window.__nfNatDeleting.add(__nfRemKey);
       try {
         await window.NFNaturezas.remover(tid, id);
         nfRenderizarTabelaNaturezas();
         window.NFNaturezas?.popularSelect?.('nfNatOpSelect');
         alert('✅ Natureza removida.');
-      } catch(e) { alert('Erro: ' + e.message); }
+        try { window.__nfNatDeleting.delete(__nfRemKey); } catch (_) {}
+      } catch(e) { alert('Erro: ' + e.message); try { window.__nfNatDeleting.delete(__nfRemKey); } catch (_) {} }
     }
     window.nfEditarNatureza  = nfEditarNatureza;
     window.nfRemoverNatureza = nfRemoverNatureza;

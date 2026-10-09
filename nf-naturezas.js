@@ -242,6 +242,7 @@ const NFNaturezas = (() => {
 
   // ─── Salvar a partir dos campos do modal ──────────────────────────────────
   async function _salvarDoModal() {
+    if (window.__nfNatSaving) return;
     const descricao = (document.getElementById('natOpDescricao')?.value || '').trim();
     if (!descricao) {
       alert('Informe a descrição da Natureza da Operação');
@@ -250,6 +251,17 @@ const NFNaturezas = (() => {
     const tenantId = _tenantId || window.NFService?.getConfig?.()?.tenantId
       || (() => { try { return JSON.parse(localStorage.getItem('company_info') || '{}').companyId || ''; } catch(_) { return ''; } })();
     if (!tenantId) { alert('Tenant não identificado. Faça login novamente.'); return; }
+    // Trava anti-duplo-clique (F-13).
+    window.__nfNatSaving = true;
+    var __natSaveBtn = document.getElementById('natOpSalvar');
+    var __natOrigLabel = '';
+    try {
+      if (__natSaveBtn) {
+        __natOrigLabel = __natSaveBtn.innerHTML;
+        __natSaveBtn.disabled = true;
+        __natSaveBtn.innerHTML = 'Salvando...';
+      }
+    } catch (_) {}
 
     const id = document.getElementById('natOpId')?.value || '';
     const nat = {
@@ -272,8 +284,17 @@ const NFNaturezas = (() => {
       if (typeof window.nfRenderizarTabelaNaturezas === 'function') {
         window.nfRenderizarTabelaNaturezas();
       }
+      try {
+        if (__natSaveBtn) { __natSaveBtn.disabled = false; __natSaveBtn.innerHTML = __natOrigLabel; }
+      } catch (_) {}
+      window.__nfNatSaving = false;
     } catch (e) {
       alert('Erro ao salvar Natureza da Operação: ' + e.message);
+      try {
+        var __natSaveBtnErr = document.getElementById('natOpSalvar');
+        if (__natSaveBtnErr) { __natSaveBtnErr.disabled = false; }
+      } catch (_) {}
+      window.__nfNatSaving = false;
     }
   }
 

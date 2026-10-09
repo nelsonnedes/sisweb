@@ -305,6 +305,33 @@ Referências positivas (não mexer, copiar): `confirmarEmissao` (NF-e),
 - Trava: `tests/ux-feedback-onda1.test.mjs` foi a 23 testes (8 novos: admin, reply,
   P-41, skeleton temático, F-15/F-16).
 
+## Execução 09/10 — Onda 4 (concluída, gates 847 testes 846/0/1, SEM commit)
+- **H-35** (`folha_pagamento/folha-relatorios.js`): `gerarReciboIndividualDetalhado`
+  (já tinha lock) ganhou overlay com hide ANTES de `imprimirRelatorio(html)` + hide
+  de segurança no `finally`; `window.imprimirRelatorio(tipo)` ganhou trava por
+  `relatorio:<tipo>` + overlay em `try/finally`.
+- **H-31b**: `darBaixaQuinzena` agora pede `confirm` explícito (nome + mês + aviso de
+  registro no financeiro) — decisão de produto aprovada na onda.
+- **F-13** (`nf-naturezas.js` + inline): `_salvarDoModal` com `window.__nfNatSaving` +
+  `#natOpSalvar` (spinner+restore nos 2 fins); `nfRemoverNatureza` com trava por id
+  (`__nfNatDeleting`). `salvar`/`remover`/`saveConfig*` são camada-serviço (sem DOM):
+  correto sem UI — trava aplicada nas entradas UI.
+- **F-14**: `salvarTokenManual` com `__nfTokenSaving` e reset nos 4 fins (sem leak);
+  `excluirManifesto` verificado sync-local (confirm + filtro em memória, sem await):
+  sem mudança, documentado OK. `gerarRelatorioMdfe`: build rápido + abertura de
+  janela (feedback próprio): sem mudança, documentado OK.
+- **R-24** (`romaneiotora_modais.js:excluirRomaneio`): overlay `Excluindo romaneio...`
+  com hide no `finally` (lock + toasts já existiam).
+- **R-26** (`exportarRomaneioExcelFirebase`): `__toraExportInFlight` (após o check de
+  XLSX, p/ retry limpo) + overlay + toast sucesso/erro (erro era `alert`).
+- Correções de ferramenta: `async async function` inserido por match parcial do edit
+  em `nf-naturezas.js`/`notas-fiscais.html` (detectado via `node --check`, revertido);
+  varredura `async\s{2,}` limpa nos 13 arquivos tocados. `carregarPreRomaneio` ganhou
+  `try/finally` anti-leak.
+- Correção à auditoria (2ª): `emitirNotaFiscal`/`excluirManifesto`/`gerarRelatorioMdfe`
+  reclassificados após leitura integral — só o 1º precisava de trava.
+- Trava: `tests/ux-feedback-onda1.test.mjs` foi a 30 testes (7 novos da onda 4).
+
 - [ ] **Login** — OK (spinner+disable+aria-busy). Nada a fazer.
 - [ ] **Vendas/Compras** — OK nos fluxos (overlay). Adicionar trava nos 3 exports
   (CSV/PDF/impressão lista) + skeleton em `carregarTabelaProdutos`.

@@ -1161,6 +1161,7 @@ async function carregarPreRomaneio(id, dadosPreCarregados = null) {
     const sid = String(id || '').trim();
     const __preLoadKey = 'pre-load:' + sid;
     if (!__preModalBegin(__preLoadKey)) return;
+    try {
     let item = dadosPreCarregados || null;
     
     if (!item && Array.isArray(cachedRomaneios)) {
@@ -1189,6 +1190,9 @@ async function carregarPreRomaneio(id, dadosPreCarregados = null) {
     } else {
         __preModalEnd(typeof __preLoadKey !== 'undefined' ? __preLoadKey : null);
         alert('Pré-Romaneio não encontrado para edição.');
+    }
+    } finally {
+        __preModalEnd(typeof __preLoadKey !== 'undefined' ? __preLoadKey : null);
     }
 }
 

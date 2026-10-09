@@ -3303,6 +3303,8 @@ class FolhaRelatorios {
             return;
         }
         this._gerandoReciboLock = true;
+        // Overlay durante a montagem (H-35); some antes do dialogo de impressao.
+        try { if (window.FolhaUtils && typeof window.FolhaUtils.showLoading === 'function') window.FolhaUtils.showLoading(); } catch (_) {}
         try {
             console.log('🧾 Gerando recibo para folhaId:', folhaId);
 
@@ -3464,8 +3466,10 @@ class FolhaRelatorios {
         
         // CORREÇÃO: Usar nome do funcionário no título
         const tituloPersonalizado = `Recibo de Pagamento - ${funcionario.nome}`;
+        try { if (window.FolhaUtils && typeof window.FolhaUtils.hideLoading === 'function') window.FolhaUtils.hideLoading(); } catch (_) {}
         this.imprimirRelatorio(reciboHTML, tituloPersonalizado, 'recibo');
         } finally {
+            try { if (window.FolhaUtils && typeof window.FolhaUtils.hideLoading === 'function') window.FolhaUtils.hideLoading(); } catch (_) {}
             setTimeout(() => {
                 this._gerandoReciboLock = false;
             }, 800);
@@ -7226,6 +7230,13 @@ window.printFolha = function(folhaId) {
 // 🖨️ Atalhos diretos para os três relatórios solicitados
 window.imprimirRelatorio = async function(tipo) {
     if (!window.folhaRelatorios) return;
+    // Trava + overlay da geracao (H-35). try/finally garante o hide.
+    const __relKey = 'relatorio:' + String(tipo || '');
+    if (!window.__folhaLancamentoEmAndamento) window.__folhaLancamentoEmAndamento = new Set();
+    if (window.__folhaLancamentoEmAndamento.has(__relKey)) return;
+    window.__folhaLancamentoEmAndamento.add(__relKey);
+    try { if (window.FolhaUtils && typeof window.FolhaUtils.showLoading === 'function') window.FolhaUtils.showLoading(); } catch (_) {}
+    try {
     // Usar dados mais recentes dos lançamentos
     const dadosBrutos = (window.folhaLancamentos && window.folhaLancamentos.lancamentos) || window.folhaRelatorios.lancamentos || [];
     const mesEl = document.getElementById('mesAno');
@@ -7253,6 +7264,10 @@ window.imprimirRelatorio = async function(tipo) {
             return;
     }
     window.folhaRelatorios.imprimirRelatorio(html);
+    } finally {
+        try { window.__folhaLancamentoEmAndamento.delete(__relKey); } catch (_) {}
+        try { if (window.FolhaUtils && typeof window.FolhaUtils.hideLoading === 'function') window.FolhaUtils.hideLoading(); } catch (_) {}
+    }
 };
 
 // ✅ INICIALIZAÇÃO AUTOMÁTICA
