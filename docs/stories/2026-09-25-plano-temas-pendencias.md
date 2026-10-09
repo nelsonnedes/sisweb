@@ -379,6 +379,16 @@ B. **Checkbox "Carregar apenas o Resumo" não desmarcava (compras/TORA).**
 - [x] `?v=` resync + SW `2026-10-08-loader-e0e1`.
 - Plano completo em `docs/stories/2026-10-08-loader-rollout-plan.md` (E2+ pendentes).
 
+## Onda 18 — loader E2 compras (08/10, `loader-e2`)
+- Auditoria dos 26 calls: 13 shows/13 hides; só `listarPedidos` sem finally
+  (getData fora de try) → envolvido em try/finally. Demais sites com
+  guard-return antes do show ou hide em finally.
+- Stub `LoadingManager` → delega a `SiswebLoading` (com fallback p/ div própria
+  se helper indisponível) + tag do helper em `compras.html`.
+- [x] Travas: `tests/loader-rollout-e2.test.mjs` (4 testes).
+- [x] Gates verdes (lint+typecheck OK, 797 testes 796/0/1).
+- [x] `?v=` resync + SW `2026-10-08-loader-e2`.
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,

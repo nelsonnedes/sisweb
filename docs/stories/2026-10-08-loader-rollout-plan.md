@@ -1,8 +1,9 @@
 # Plano — Rollout do loader padrão + auditoria "save lento" (08/10/2026)
 
-> Status: EM EXECUÇÃO (E0+E1 entregues em `loader-e0e1`; restante pendente de OK).
+> Status: EM EXECUÇÃO (E0+E1+E2 entregues em `loader-e2`; restante pendente de OK).
 > - [x] E0 (helper + trava, commit `loader-e0e1`).
 > - [x] E1 (div vendas, mesmo commit).
+> - [x] E2 (compras stub→helper + `listarPedidos` em finally, commit `loader-e2`).
 
 ## 1. Auditoria "mesmo problema do Save de cliente lento" — resultado
 

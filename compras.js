@@ -9,11 +9,37 @@
 
 const LoadingManager = {
     show: (message = 'Carregando...') => {
+        try {
+            if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') {
+                window.SiswebLoading.show(message);
+                return;
+            }
+        } catch (_) {}
+        try {
+            const overlay = document.getElementById('loadingOverlay');
+            const textElement = document.getElementById('loadingText');
+            if (overlay) {
+                if (textElement) textElement.textContent = message;
+                overlay.classList.add('active');
+                overlay.style.display = 'flex';
+            }
+        } catch (_) {}
         console.log(`[LOADING] ${message}`);
-        // Removido loadingOverlay do DOM para melhor fluidez PWA
     },
     hide: () => {
-        // Removido loadingOverlay do DOM para melhor fluidez PWA
+        try {
+            if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') {
+                window.SiswebLoading.hide();
+                return;
+            }
+        } catch (_) {}
+        try {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+                overlay.style.display = 'none';
+            }
+        } catch (_) {}
     }
 };
 
@@ -2845,6 +2871,7 @@ async function listarPedidos() {
         document.getElementById('listaPedidosModal').style.display = 'block';
     } else {
         LoadingManager.show('Carregando pedidos...');
+        try {
         let pedidosRemotos = [];
         try {
             const dados = await getData('pedidosCompra');
@@ -2870,7 +2897,9 @@ async function listarPedidos() {
         prepararFiltrosPedidosCompras();
         renderListaPedidosCompras();
         document.getElementById('listaPedidosModal').style.display = 'block';
-        LoadingManager.hide();
+        } finally {
+            LoadingManager.hide();
+        }
     }
 }
 
