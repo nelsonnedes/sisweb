@@ -1030,3 +1030,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
   - Git: Conventional Commits `tipo(escopo): descrição`.
   - Docker (quando aplicável): imagens leves, compose, healthchecks, boas práticas de segurança.
   - Documentar arquitetura, tradeoffs e uso em código significativo.
+- **Padrões de UI permanentes (memorizado 2026-10-09, pedido do usuário):**
+  - Barras Voltar/Imprimir: **Voltar alinhado à esquerda, Imprimir alinhado à
+    direita** (nunca lado a lado). Vale p/ relatórios, previews e Detalhes.
+  - Botões Lista/Novo de Cliente/Fornecedor/Espécie: **fora do campo, ao lado,
+    com cores** (padrão `estoque.html` "Entrada de Toras": ícone Lista + Novo).
+  - Selects Cliente/Fornecedor: acompanhados do campo **"Buscar Cliente/Fornecedor"**
+    na mesma linha (padrão `notas-fiscais.html` "Dados do Destinatário"), com o
+    select ajustado p/ não desordenar o formulário.

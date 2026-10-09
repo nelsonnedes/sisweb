@@ -47,7 +47,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=7ef111f3c71a"></script>
+<script src="menu-component.js?v=24013cd46bac"></script>
 <script src="modules/core/sisweb-data.js?v=b5af248d57f1"></script>
     <style>
         * {
@@ -2441,9 +2441,12 @@
                     </div>
                     <div class="form-group">
                         <label for="fornecedorSelect">Fornecedor:</label>
-                        <select id="fornecedorSelect">
-                            <option value="">Selecione um fornecedor</option>
-                        </select>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="fornecedorBusca" placeholder="Buscar fornecedor..." style="flex: 1; min-width: 0;" oninput="filtrarFornecedorSelectEstoque()">
+                            <select id="fornecedorSelect" style="flex: 2; min-width: 0;">
+                                <option value="">Selecione um fornecedor</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group form-group-large entrada-romaneio-field">
                         <div>
@@ -3824,7 +3827,7 @@
 <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
         <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
         <script src="estoque_produtos.js?v=8425b33a6382"></script>
-        <script src="estoque.js?v=92bd1f6d6681"></script>
+        <script src="estoque.js?v=708fc2c0b80a"></script>
         <script src="js/sisweb-loading.js?v=b693454010f9"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

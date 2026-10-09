@@ -34,10 +34,10 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="romaneio-comum.css?v=419efeecff71">
+    <link rel="stylesheet" href="romaneio-comum.css?v=4fea9c9e9451">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=7ef111f3c71a"></script>
+<script src="menu-component.js?v=24013cd46bac"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <link rel="stylesheet" href="print-styles.css?v=f79c9137e576">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1079,14 +1079,14 @@
                 <div class="form-group romaneio-client-field">
                     <label for="clienteInput">Cliente:</label>
                     <div class="autocomplete-container">
+                        <div class="species-combobox-inline">
                         <input type="text" id="clienteInput" class="autocomplete-input" placeholder="clique para selecionar um cliente" autocomplete="off">
-                        <div class="autocomplete-icons-container">
-                            <span class="autocomplete-icon" data-action="open-client-list" title="Listar Clientes">
+                            <button type="button" class="btn btn-secondary species-icon-btn" data-action="open-client-list" title="Listar Clientes">
                                 <i class="fas fa-list"></i>
-                            </span>
-                            <span class="autocomplete-icon" data-action="open-new-client" title="Novo Cliente">
+                            </button>
+                            <button type="button" class="btn btn-success species-icon-btn" data-action="open-new-client" title="Novo Cliente">
                                 <i class="fas fa-user-plus"></i>
-                            </span>
+                            </button>
                         </div>
                         <div class="autocomplete-suggestions" id="clienteSuggestions"></div>
                     </div>
@@ -1097,14 +1097,14 @@
                 <div class="form-group species-default-field">
                     <label for="especieInput">Espécie Padrão:</label>
                     <div class="autocomplete-container">
+                        <div class="species-combobox-inline">
                         <input type="text" id="especieInput" class="autocomplete-input" placeholder="Selecionar uma espécie" autocomplete="off" data-species-list-on-type="true" data-species-list-min-chars="3">
-                        <div class="autocomplete-icons-container">
-                            <span class="autocomplete-icon" data-action="open-species-list" role="button" tabindex="0" aria-label="Listar espécies" title="Listar Espécies">
+                            <button type="button" class="btn btn-secondary species-icon-btn" data-action="open-species-list" role="button" tabindex="0" aria-label="Listar espécies" title="Listar Espécies">
                                 <i class="fas fa-list"></i>
-                            </span>
-                            <span class="autocomplete-icon" data-action="open-new-species" role="button" tabindex="0" aria-label="Nova espécie" title="Nova Espécie">
+                            </button>
+                            <button type="button" class="btn btn-success species-icon-btn" data-action="open-new-species" role="button" tabindex="0" aria-label="Nova espécie" title="Nova Espécie">
                                 <i class="fas fa-plus"></i>
-                            </span>
+                            </button>
                         </div>
                         <div class="autocomplete-suggestions" id="especieSuggestions"></div>
                     </div>

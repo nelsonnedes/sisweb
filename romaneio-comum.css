@@ -3806,3 +3806,48 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         box-sizing: border-box !important;
     }
 }
+
+/* Padrão Estoque (UX 09/10): botões Lista/Novo de Cliente/Fornecedor/Espécie
+   FORA do campo, lado a lado e coloridos. Substitui os ícones sobrepostos
+   (.autocomplete-icons-container absoluto). 100% tokens --sw-* (claro/escuro
+   automático, sem hardcode). O .autocomplete-container é mantido como âncora
+   das sugestões; o padding-right de ícone é neutralizado no novo layout. */
+.species-combobox-inline {
+    display: flex;
+    gap: 5px;
+    align-items: stretch;
+    position: relative;
+    width: 100%;
+}
+.species-combobox-inline input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.species-combobox-inline .autocomplete-input,
+.species-combobox-inline .input-with-icon {
+    padding-right: 10px !important;
+}
+.species-combobox-inline .species-icon-btn {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.species-combobox-inline .btn-secondary {
+    background-color: var(--sw-text-3) !important;
+    color: var(--sw-on-brand) !important;
+    border: none;
+}
+.species-combobox-inline .btn-success {
+    background-color: var(--sw-success) !important;
+    color: var(--sw-on-brand) !important;
+    border: none;
+}
+@media (max-width: 768px) {
+    .species-combobox-inline {
+        min-width: 0 !important;
+    }
+}

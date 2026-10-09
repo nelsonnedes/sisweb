@@ -39,8 +39,13 @@ test('Padronização de Rodapés e Botões de Modais em todas as páginas de Rom
 
   await t.test('4. Botão Novo Fornecedor em Tora usa btn-adicionar (não btn-save)', () => {
     const toraContent = fs.readFileSync('romaneiotora.html', 'utf8');
-    const match = toraContent.match(/<button[^>]*onclick="openNewFornecedorModal\(\)"[^>]*>/);
-    assert.ok(match, 'Botão openNewFornecedorModal deve existir em Tora');
+    // Escopo: rodapé do modal de lista (o botão do cabeçalho segue o padrão
+    // Estoque btn-success — trava em tests/padrao-campos-cadastros.test.mjs).
+    const footerIdx = toraContent.indexOf('id="fornecedorListModal"');
+    assert.ok(footerIdx >= 0, 'Modal fornecedorListModal deve existir em Tora');
+    const footerChunk = toraContent.slice(footerIdx, footerIdx + 12000);
+    const match = footerChunk.match(/<button[^>]*onclick="openNewFornecedorModal\(\)"[^>]*>/);
+    assert.ok(match, 'Botão openNewFornecedorModal deve existir no rodapé da lista em Tora');
     assert.ok(match[0].includes('btn-adicionar'), 'Botão de novo fornecedor deve ter classe btn-adicionar');
     assert.ok(!match[0].includes('btn-save'), 'Botão de novo fornecedor não deve ter classe btn-save');
   });

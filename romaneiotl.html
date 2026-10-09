@@ -40,14 +40,14 @@
         })();
     </script>
     <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
-    <link rel="stylesheet" href="romaneio-comum.css?v=419efeecff71">
+    <link rel="stylesheet" href="romaneio-comum.css?v=4fea9c9e9451">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
     <link rel="stylesheet" href="print-styles.css?v=f79c9137e576">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Loading / status styles reutilizáveis -->
     <link rel="stylesheet" href="folha_pagamento/folha-loading-styles.css?v=77577ee80c04">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=7ef111f3c71a"></script>
+<script src="menu-component.js?v=24013cd46bac"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     
     <!--
@@ -1596,14 +1596,14 @@
                     <div class="form-group romaneio-client-field">
                         <label for="clienteInput">Cliente:</label>
                         <div class="autocomplete-container">
+                            <div class="species-combobox-inline">
                             <input type="text" id="clienteInput" class="autocomplete-input" placeholder="clique para selecionar um cliente" oninput="showClientSuggestions(this)">
-                            <div class="autocomplete-icons-container">
-                                <span class="autocomplete-icon" title="Listar Clientes" onclick="openClientListModal()">
+                                <button type="button" class="btn btn-secondary species-icon-btn" title="Listar Clientes" onclick="openClientListModal()">
                                     <i class="fas fa-list"></i>
-                                </span>
-                                <span class="autocomplete-icon" title="Novo Cliente" onclick="openNewClientModal()">
+                                </button>
+                                <button type="button" class="btn btn-success species-icon-btn" title="Novo Cliente" onclick="openNewClientModal()">
                                     <i class="fas fa-user-plus"></i>
-                                </span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1613,14 +1613,14 @@
                     <div class="form-group">
                         <label for="especieInput">Espécie Padrão:</label>
                         <div class="autocomplete-container">
+                            <div class="species-combobox-inline">
                             <input type="text" id="especieInput" class="autocomplete-input" placeholder="Clique para selecionar uma espécie" autocomplete="off" data-species-list-on-type="true" data-species-list-min-chars="3" oninput="showSpeciesSuggestions(this)">
-                            <div class="autocomplete-icons-container">
-                                <span class="autocomplete-icon" title="Listar Espécies" onclick="openSpeciesListModal()">
+                                <button type="button" class="btn btn-secondary species-icon-btn" title="Listar Espécies" onclick="openSpeciesListModal()">
                                     <i class="fas fa-list"></i>
-                                </span>
-                                <span class="autocomplete-icon" title="Nova Espécie" onclick="openNewSpeciesModal()">
+                                </button>
+                                <button type="button" class="btn btn-success species-icon-btn" title="Nova Espécie" onclick="openNewSpeciesModal()">
                                     <i class="fas fa-plus"></i>
-                                </span>
+                                </button>
                             </div>
                         </div>
                     </div>

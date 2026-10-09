@@ -1579,6 +1579,19 @@ function atualizarSelectFornecedores() {
     });
 }
 
+function filtrarFornecedorSelectEstoque() {
+    try {
+        const select = document.getElementById('fornecedorSelect');
+        const buscaInput = document.getElementById('fornecedorBusca');
+        if (!select || !buscaInput) return;
+        const busca = (buscaInput.value || '').toLowerCase();
+        Array.from(select.options).forEach(opt => {
+            if (!opt.value) { opt.hidden = false; return; }
+            opt.hidden = !((opt.textContent || '').toLowerCase().includes(busca));
+        });
+    } catch (_) {}
+}
+
 function configurarEventos() {
     // Evento de submit da entrada
     const entradaForm = document.getElementById('entradaForm');

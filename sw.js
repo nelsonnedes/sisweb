@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-10-09-remessa-fix';
+const APP_VERSION = '2026-10-09-campos-padrao';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',
