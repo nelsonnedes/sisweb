@@ -8654,7 +8654,10 @@ async function imprimirEstoqueProdutos() {
     });
 }
 
-async function imprimirMovimentacoesEstoque() {
+// Pipeline de dados das movimentacoes para impressao/detalhes (extraido do
+// antigo imprimirMovimentacoesEstoque, SEM mudanca de regra: mesmos filtros,
+// selecao, ordenacao, colunas visiveis e resumo).
+async function coletarDadosMovimentacoesParaImpressao() {
     await ensureMovimentacoesColumnsConfigLoaded();
     const aplicarFiltroMovimentacoes = (base, filtro) => {
         let out = [...base];
@@ -8725,6 +8728,17 @@ async function imprimirMovimentacoesEstoque() {
     const resumo = await calcularResumoMovimentacoes(lista);
     const { totalVol, totalEntradas, totalSaidas, volumeRomaneios, rendimento } = resumo;
     const totalGeo = lista.reduce((acc, m) => acc + (normalizarCamposGeoEstoque(m).volumeGeo || 0), 0);
+    const empresa = await obterDadosEmpresaRelatorio();
+    const filtro = filtroMovimentacoesAtual || {};
+    const periodo = (filtro.dataInicio || filtro.dataFim)
+        ? `${filtro.dataInicio ? formatDate(filtro.dataInicio) : 'início'} a ${filtro.dataFim ? formatDate(filtro.dataFim) : 'fim'}`
+        : 'Todo o período';
+    return { lista, movDefs, colunas, linhas, totalVol, totalEntradas, totalSaidas, volumeRomaneios, rendimento, totalGeo, empresa, periodo };
+}
+
+// Documento de impressao das movimentacoes (mesmo conteudo do antigo preview).
+function montarHtmlMovimentacoesParaImpressao(dados) {
+    const { lista, colunas, linhas, movDefs, totalVol, totalEntradas, totalSaidas, volumeRomaneios, rendimento, totalGeo } = dados;
     const rodape = `
         <div class="relatorio-rodape summary-box">
             <div class="summary-row"><span>Total de Movimentações:</span><span>${lista.length}</span></div>
@@ -8736,8 +8750,7 @@ async function imprimirMovimentacoesEstoque() {
             <div class="summary-row"><span>Rendimento:</span><span>${formatNumber(rendimento, 2)}%</span></div>
         </div>
     `;
-    const empresa = await obterDadosEmpresaRelatorio();
-    const html = montarRelatorioHtml(empresa, 'Histórico de Movimentações', '', montarTabelaHtml(colunas, linhas), rodape);
+    const html = montarRelatorioHtml(dados.empresa, 'Histórico de Movimentações', '', montarTabelaHtml(colunas, linhas), rodape);
     const htmlCompleto = `
         <html>
         <head>
@@ -8748,27 +8761,62 @@ async function imprimirMovimentacoesEstoque() {
         <body>${html}</body>
         </html>
     `;
-    await entregarRelatorioEstoque({
-        title: 'Histórico de Movimentações',
-        company: empresa,
-        htmlCompleto,
-        preview: true,
-        pdfOptions: {
-            title: 'Histórico de Movimentações',
-            company: empresa,
-            columns: movDefs,
-            rows: linhas,
-            summaryRows: [
-                ['Total de Movimentações', lista.length],
-                ['Entradas', totalEntradas],
-                ['Saídas', totalSaidas],
-                ['Volume Total', `${formatNumber(totalVol, 3)} m³`],
-                ['Volume Geométrico', `${formatNumber(totalGeo, 3)} m³`],
-                ['Volume serrado (romaneios)', `${formatNumber(volumeRomaneios, 3)} m³`],
-                ['Rendimento', `${formatNumber(rendimento, 2)}%`]
-            ]
-        }
-    });
+    const summaryRows = [
+        ['Total de Movimentações', lista.length],
+        ['Entradas', totalEntradas],
+        ['Saídas', totalSaidas],
+        ['Volume Total', `${formatNumber(totalVol, 3)} m³`],
+        ['Volume Geométrico', `${formatNumber(totalGeo, 3)} m³`],
+        ['Volume serrado (romaneios)', `${formatNumber(volumeRomaneios, 3)} m³`],
+        ['Rendimento', `${formatNumber(rendimento, 2)}%`]
+    ];
+    return { htmlCompleto, summaryRows, movDefs, linhas };
+}
+
+// Trava + overlay da abertura de detalhes (padrao UX-feedback).
+let __movDetInFlight = false;
+async function visualizarMovimentacoesDetalhes() {
+    if (__movDetInFlight) return;
+    __movDetInFlight = true;
+    if (typeof showLoading === 'function') showLoading('Carregando detalhes...');
+    try {
+        const dados = await coletarDadosMovimentacoesParaImpressao();
+        // Cabecalho via textContent (auto-escape, sem XSS).
+        document.getElementById('movDetEmissao').textContent = new Date().toLocaleString('pt-BR');
+        document.getElementById('movDetPeriodo').textContent = dados.periodo;
+        document.getElementById('movDetEmpresa').textContent = (dados.empresa && (dados.empresa.name || dados.empresa.nome)) || '-';
+        document.getElementById('movDetQtd').textContent = String(dados.lista.length);
+        // Itens (mesmas celulas do impresso, escapadas).
+        document.getElementById('movDetItensHead').innerHTML = '<tr>' + dados.colunas.map(c => `<th>${escapeHtml(c)}</th>`).join('') + '</tr>';
+        const colspan = Math.max(1, dados.colunas.length);
+        document.getElementById('movDetItensTable').innerHTML = dados.linhas.length
+            ? dados.linhas.map(l => '<tr>' + l.map(v => `<td>${escapeHtml(String(v ?? ''))}</td>`).join('') + '</tr>').join('')
+            : `<tr><td colspan="${colspan}" style="text-align: center;">Nenhuma movimentação encontrada</td></tr>`;
+        // Resumo.
+        const doc = montarHtmlMovimentacoesParaImpressao(dados);
+        document.getElementById('movDetResumo').innerHTML = doc.summaryRows
+            .map(([label, value]) => `<div class="summary-row"><span>${escapeHtml(String(label))}:</span><span>${escapeHtml(String(value))}</span></div>`)
+            .join('');
+        // Payload para o botao Imprimir do modal.
+        window.__movimentacoesDetalhesPrint = doc;
+        if (typeof hideLoading === 'function') hideLoading();
+        document.getElementById('detalhesMovimentacoesModal').style.display = 'block';
+    } catch (error) {
+        console.error('Erro ao carregar detalhes das movimentações:', error);
+        if (typeof hideLoading === 'function') hideLoading();
+        alert('Erro ao carregar detalhes: ' + (error && error.message ? error.message : error));
+    } finally {
+        __movDetInFlight = false;
+    }
+}
+
+function imprimirDetalhesMovimentacoes() {
+    const doc = window.__movimentacoesDetalhesPrint;
+    if (!doc || !doc.htmlCompleto) {
+        alert('Abra os detalhes antes de imprimir.');
+        return;
+    }
+    imprimirHtmlEstoque(doc.htmlCompleto, 'width=1100,height=800');
 }
 
 async function gerarRodapeRelatorio(tipoRelatorio, dataInicio, dataFim, options = {}, onlySelected = false) {
@@ -9476,7 +9524,8 @@ window.gerarRelatorio = gerarRelatorio;
 window.imprimirRelatorioEstoque = imprimirRelatorioEstoque;
 window.imprimirConsultaEstoque = imprimirConsultaEstoque;
 window.imprimirEstoqueProdutos = imprimirEstoqueProdutos;
-window.imprimirMovimentacoesEstoque = imprimirMovimentacoesEstoque;
+window.visualizarMovimentacoesDetalhes = visualizarMovimentacoesDetalhes;
+window.imprimirDetalhesMovimentacoes = imprimirDetalhesMovimentacoes;
 window.abrirRastreabilidadeSaida = abrirRastreabilidadeSaida;
 window.abrirRastreabilidadeMovimentacoes = abrirRastreabilidadeMovimentacoes;
 window.aplicarFiltrosRastreabilidade = aplicarFiltrosRastreabilidade;

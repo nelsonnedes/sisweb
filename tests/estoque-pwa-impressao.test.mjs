@@ -52,7 +52,10 @@ test('botoes de impressao do estoque separam PWA PDF de desktop HTML', () => {
 
   assert.match(js, /async function imprimirConsultaEstoque\(\)[\s\S]*await entregarRelatorioEstoque\(\{[\s\S]*title: 'Consulta de Estoque'/);
   assert.match(js, /async function imprimirEstoqueProdutos\(\)[\s\S]*await entregarRelatorioEstoque\(\{[\s\S]*title: 'Estoque de Almoxarifado'/);
-  assert.match(js, /async function imprimirMovimentacoesEstoque\(\)[\s\S]*await entregarRelatorioEstoque\(\{[\s\S]*title: 'Histórico de Movimentações'/);
+  assert.match(js, /async function visualizarMovimentacoesDetalhes\(\)[\s\S]*coletarDadosMovimentacoesParaImpressao\(\)[\s\S]*detalhesMovimentacoesModal/);
+  assert.match(js, /function montarHtmlMovimentacoesParaImpressao\(dados\)[\s\S]*montarTabelaHtml\(colunas, linhas\)/);
+  assert.match(js, /function imprimirDetalhesMovimentacoes\(\)[\s\S]*imprimirHtmlEstoque\(doc\.htmlCompleto/);
+  assert.doesNotMatch(js, /async function imprimirMovimentacoesEstoque\(\)/);
   assert.match(js, /async function imprimirRelatorioEstoque\(\)[\s\S]*disablePagination: true[\s\S]*const pdfData = extrairTabelasRelatorioEstoquePdf/);
   assert.match(js, /async function obterConteudoRelatorio\(tipoRelatorio, dataInicio, dataFim, options = \{\}, onlySelected = false\)[\s\S]*case 'posicao':[\s\S]*return gerarRelatorioPosicao\(onlySelected, options\);/);
   assert.match(js, /function gerarRelatorioPosicao\(onlySelected = false, options = \{\}\)[\s\S]*return montarTabelaRelatorioEstoque\('posicao', torasDisponiveis, 'posicao', t => t\.id \|\| t\.plaqueta \|\| '', onlySelected, 'Nenhuma tora disponível', options\);/);

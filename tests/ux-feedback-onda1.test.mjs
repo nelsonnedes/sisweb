@@ -377,3 +377,44 @@ test('Ticket create: botão com spinner + restore no finally (rede de proteção
   assert.match(menu, /Enviando ticket de suporte\.\.\./);
   assert.match(menu, /\} finally \{/);
 });
+
+test('Movimentações: pipeline compartilhado sem duplicação de regra', () => {
+  const b = fnBody(est, 'async function coletarDadosMovimentacoesParaImpressao()');
+  assert.match(b, /ensureMovimentacoesColumnsConfigLoaded/);
+  assert.match(b, /movimentacoesSelecionadas\.size > 0/);
+  assert.match(b, /getVisibleMovimentacoesColumns/);
+  assert.match(b, /calcularResumoMovimentacoes/);
+  assert.match(b, /obterDadosEmpresaRelatorio/);
+  const doc = fnBody(est, 'function montarHtmlMovimentacoesParaImpressao(');
+  assert.match(doc, /montarRelatorioHtml/);
+  assert.match(doc, /summaryRows/);
+});
+
+test('Movimentações: detalhes com trava + modal preenchido + payload', () => {
+  const b = fnBody(est, 'async function visualizarMovimentacoesDetalhes()');
+  assert.match(b, /if \(__movDetInFlight\) return;/);
+  assert.match(b, /showLoading\('Carregando detalhes\.\.\.'\)/);
+  assert.match(b, /coletarDadosMovimentacoesParaImpressao\(\)/);
+  assert.match(b, /getElementById\('movDetItensTable'\)/);
+  assert.match(b, /window\.__movimentacoesDetalhesPrint = doc;/);
+  assert.match(b, /getElementById\('detalhesMovimentacoesModal'\)/);
+  assert.match(b, /\} finally \{/);
+  const p = fnBody(est, 'function imprimirDetalhesMovimentacoes()');
+  assert.match(p, /window\.__movimentacoesDetalhesPrint/);
+  assert.match(p, /imprimirHtmlEstoque\(doc\.htmlCompleto/);
+  assert.match(estoqueHtml, /onclick="visualizarMovimentacoesDetalhes\(\)"/);
+  assert.doesNotMatch(estoqueHtml, /onclick="imprimirMovimentacoesEstoque\(\)"/);
+});
+
+test('Movimentações: modal detalhes tematizado (só var(--sw-*))', () => {
+  const i = estoqueHtml.indexOf('id="detalhesMovimentacoesModal"');
+  assert.ok(i >= 0, 'modal existe');
+  const fim = estoqueHtml.indexOf('Modal Preview de Relat', i);
+  const seg = estoqueHtml.slice(i, fim > 0 ? fim : i + 6000);
+  assert.match(seg, /Detalhes das Movimentações/);
+  assert.match(seg, /id="movDetItensTable"/);
+  assert.match(seg, /onclick="imprimirDetalhesMovimentacoes\(\)"/);
+  assert.match(seg, /var\(--sw-surface-2\)/);
+  assert.match(seg, /var\(--sw-border\)/);
+  assert.doesNotMatch(seg, /#[0-9a-fA-F]{3,6}\b/);
+});

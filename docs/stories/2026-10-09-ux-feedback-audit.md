@@ -348,6 +348,27 @@ Referências positivas (não mexer, copiar): `confirmarEmissao` (NF-e),
   + janela própria), impressões vendas/empresa.
 - Trava: `tests/ux-feedback-onda1.test.mjs` foi a 35 testes (5 novos da onda 5).
 
+## Execução 09/10 — Movimentações: Imprimir abre Detalhes (concluída)
+- Pedido: na aba Movimentações (`estoque.html`), o botão Imprimir abria o modal
+  genérico "Pré-visualização de Relatório"; agora abre "Detalhes das Movimentações"
+  no padrão "Detalhes do Pedido" (`vendas.html#visualizarPedidoModal`).
+- Refator (local correto, sem resíduo): `imprimirMovimentacoesEstoque` foi dividido em
+  `coletarDadosMovimentacoesParaImpressao()` (filtros/seleção/ordenação/colunas/resumo —
+  regra 100% preservada) + `montarHtmlMovimentacoesParaImpressao()` (documento) +
+  `visualizarMovimentacoesDetalhes()` (trava `__movDetInFlight` + overlay + modal) +
+  `imprimirDetalhesMovimentacoes()` (imprime o payload guardado). Função antiga
+  REMOVIDA, botão reapontado, export global trocado (pegou `ReferenceError` que
+  quebraria o load — corrigido antes do commit).
+- Modal `#detalhesMovimentacoesModal` ao lado do preview (modais de impressão juntos):
+  cabeçalho (documento/emissão/período/empresa/qtd via `textContent`), itens (mesmas
+  células do impresso, com `escapeHtml`), resumo e rodapé Imprimir/Fechar. Só
+  `var(--sw-*)` no markup (claro/escuro automático, trava de teste anti-hex).
+- Preview (`abrirPreviewRelatorio`) intacto p/ os outros 4 chamadores (rastreio,
+  relatório, consulta, almoxarifado). Smoke autenticado em localhost: modal abre com
+  24/24 linhas, cabeçalhos, qtd, período e payload — zero pageerrors.
+- Publish: SW `2026-10-08-onda24` → `2026-10-09-ux-movdet` (`sw.js` + `PWA_VERSION` +
+  9 asserts em 6 arquivos de teste); `?v=` ressincronizado.
+
 - [ ] **Login** — OK (spinner+disable+aria-busy). Nada a fazer.
 - [ ] **Vendas/Compras** — OK nos fluxos (overlay). Adicionar trava nos 3 exports
   (CSV/PDF/impressão lista) + skeleton em `carregarTabelaProdutos`.

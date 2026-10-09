@@ -47,7 +47,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=12d7cfdd2bae"></script>
+<script src="menu-component.js?v=7b77e35328c1"></script>
 <script src="modules/core/sisweb-data.js?v=b5af248d57f1"></script>
     <style>
         * {
@@ -2966,7 +2966,7 @@
                     <button type="button" onclick="abrirConfiguracaoColunasMovimentacoes()" class="btn btn-secondary" title="Configurar colunas das movimentações">
                         <i class="fas fa-list"></i> Configurar Colunas
                     </button>
-                    <button type="button" onclick="imprimirMovimentacoesEstoque()" class="btn btn-primary" title="Imprimir histórico">
+                    <button type="button" onclick="visualizarMovimentacoesDetalhes()" class="btn btn-primary" title="Imprimir histórico">
                         <i class="fas fa-print"></i>
                     </button>
                     <button type="button" onclick="abrirRastreabilidadeMovimentacoes()" class="btn btn-secondary" title="Ver rastreabilidade de toras e romaneios">
@@ -3652,6 +3652,62 @@
         </div>
     </div>
 
+    <!-- Modal Detalhes das Movimentações (espelha Detalhes do Pedido: cabecalho + itens + resumo + acoes) -->
+    <div id="detalhesMovimentacoesModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-alt"></i> Detalhes das Movimentações</h2>
+                <span class="close-modal" onclick="fecharModal('detalhesMovimentacoesModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="movdet-header" style="background: var(--sw-surface-2); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; min-width: 0;">
+                        <div style="min-width: 0;">
+                            <label style="font-weight: bold; color: var(--sw-label);">Documento:</label>
+                            <div id="movDetDoc" style="font-size: 1.2em; color: var(--sw-text-1); overflow-wrap: anywhere;">Histórico de Movimentações</div>
+                        </div>
+                        <div style="min-width: 0;">
+                            <label style="font-weight: bold; color: var(--sw-label);">Emissão:</label>
+                            <div id="movDetEmissao" style="color: var(--sw-text-1);"></div>
+                        </div>
+                        <div style="min-width: 0;">
+                            <label style="font-weight: bold; color: var(--sw-label);">Período:</label>
+                            <div id="movDetPeriodo" style="color: var(--sw-text-1);"></div>
+                        </div>
+                        <div style="min-width: 0;">
+                            <label style="font-weight: bold; color: var(--sw-label);">Empresa:</label>
+                            <div id="movDetEmpresa" style="color: var(--sw-text-1); overflow-wrap: anywhere;"></div>
+                        </div>
+                        <div style="min-width: 0;">
+                            <label style="font-weight: bold; color: var(--sw-label);">Movimentações:</label>
+                            <div id="movDetQtd" style="color: var(--sw-text-1);"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="movdet-itens" style="margin-bottom: 20px;">
+                    <h3 style="color: var(--sw-text-1); margin-bottom: 15px;">
+                        <i class="fas fa-exchange-alt"></i> Movimentações
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead id="movDetItensHead"></thead>
+                            <tbody id="movDetItensTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="movDetResumo" style="background: var(--sw-surface-2); padding: 15px; border-radius: 8px; margin-bottom: 20px;"></div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end; padding: 15px; border-top: 1px solid var(--sw-border);">
+                <button type="button" onclick="imprimirDetalhesMovimentacoes()" class="btn-primary">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <button type="button" onclick="fecharModal('detalhesMovimentacoesModal')" class="btn-danger">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Preview de Relatório -->
     <div id="relatorioPreviewModal" class="modal" style="z-index: 1050;">
         <div class="modal-content" style="max-width: 960px; width: 95%; height: 90vh; display: flex; flex-direction: column; padding: 0;">
@@ -3767,8 +3823,8 @@
     </script>
 <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
         <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-        <script src="estoque_produtos.js?v=8fea935bec02"></script>
-        <script src="estoque.js?v=71f38c22771f"></script>
+        <script src="estoque_produtos.js?v=8425b33a6382"></script>
+        <script src="estoque.js?v=b263f0e75685"></script>
         <script src="js/sisweb-loading.js?v=b693454010f9"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
