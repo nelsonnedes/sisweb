@@ -657,6 +657,7 @@ window.ModalListaRomaneios = (function() {
     async function deleteRomaneio(romaneioId) {
         try {
             if (!confirm(MSG_CONFIRM_DELETE)) return;
+            try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
 
             const sid = String(romaneioId);
             const alvo = (state.romaneios || []).find(r => String(r && (r.firebaseKey || r.id)) === sid) || null;
@@ -715,6 +716,8 @@ window.ModalListaRomaneios = (function() {
         } catch (error) {
             console.error('❌ Erro ao excluir romaneio:', error);
             showError(MSG_ERROR_DELETE_FAILED);
+        } finally {
+            try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
         }
     }
 

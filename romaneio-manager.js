@@ -927,10 +927,12 @@ window.abrirListaRomaneios = window.abrirListaRomaneiosTora;
 window.editarRomaneioGeneric = (type, id) => { if (type === 'tora') window.editarRomaneioTora(id); else console.log('Edit', type, id); };
 window.excluirRomaneioGeneric = (type, id) => {
     if (!confirm('Excluir?')) return;
+    try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
+    const __hideLoader = () => { try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {} };
     try {
         const p = window.getRomaneioManager(type).deleteData(id);
-        if (p && typeof p.catch === 'function') {
-            p.catch((e) => {
+        if (p && typeof p.then === 'function') {
+            p.then(__hideLoader, (e) => {
                 try {
                     const msg = 'Não foi possível excluir no servidor. Verifique sua conexão.';
                     if (typeof window.__toast === 'function') window.__toast(msg, 'error');
@@ -938,10 +940,14 @@ window.excluirRomaneioGeneric = (type, id) => {
                     else alert(msg);
                 } catch (_) {}
                 console.error('Falha ao excluir romaneio:', (e && e.message) || e);
+                __hideLoader();
             });
+        } else {
+            __hideLoader();
         }
     } catch (e) {
         console.error('Falha ao excluir romaneio:', (e && e.message) || e);
+        __hideLoader();
     }
 };
 window.imprimirRomaneioGeneric = (type, id) => { if (type === 'tora') window.imprimirRomaneioTora(id); };
@@ -1213,18 +1219,24 @@ window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
 
 window.excluirRomaneioTora = function(id) {
     if (confirm('Excluir romaneio Tora?')) {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
+        const __hideLoader = () => { try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {} };
         try {
             const r = window.romaneioToraManager.deleteData(id);
-            if (r && typeof r.catch === 'function') {
-                r.catch((e) => {
+            if (r && typeof r.then === 'function') {
+                r.then(__hideLoader, (e) => {
                     console.warn('Falha ao excluir romaneio no servidor:', e);
                     if (window.Utils && typeof window.Utils.showToast === 'function') {
                         window.Utils.showToast('Não foi possível excluir o romaneio no servidor.', 'error');
                     }
+                    __hideLoader();
                 });
+            } else {
+                __hideLoader();
             }
         } catch (e) {
             console.warn('Falha ao excluir romaneio:', e);
+            __hideLoader();
         }
     }
 };

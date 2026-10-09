@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-10-08-loader-e3';
+const APP_VERSION = '2026-10-08-loader-e4';
 const CACHE_NAME = `sisweb-runtime-${APP_VERSION}`;
 const PRECACHE_URLS = [
   '/manifest.json',

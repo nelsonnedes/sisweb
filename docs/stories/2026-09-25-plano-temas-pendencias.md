@@ -413,6 +413,32 @@ B. **Checkbox "Carregar apenas o Resumo" não desmarcava (compras/TORA).**
 - [x] Gates verdes (lint+typecheck OK, 802 testes 801/0/1).
 - [x] `?v=` resync + SW `2026-10-08-loader-e3`.
 
+## Onda 21 — loader E4 TL/PES/TORA (08/10, `loader-e4`)
+- Tags do helper nas 3 páginas + loader `show/finally-hide` nos deletes de
+  romaneio (TL modal, PES inline, TORA wrappers `excluirRomaneioTora` e
+  `excluirRomaneioGeneric`) e no delete de cliente PES.
+- Achado: `romaneiotora_modais.js` NÃO carrega na página (monolito aposentado);
+  caminho vivo é `romaneio-manager.js` — monólito intocado.
+- Prints com popup fora (regra do gesto); toasts existentes preservados.
+- [x] Travas: `tests/loader-rollout-e4.test.mjs` (4 testes).
+- [x] Gates verdes (lint+typecheck OK, 806 testes 805/0/1).
+- [x] `?v=` resync + SW `2026-10-08-loader-e4`.
+
+## Onda 20 — item "2 renderizadores do #listaModal PCT" (08/10, SEM MUDANÇA)
+Suspeita (levantada em validação E3): state com 2 registros mas modal sem um
+deles. Apuração com sessão logada + instrumentação do render:
+- Há UM renderizador (`ModalListaRomaneiosPCT.renderRomaneiosList` →
+  `#listaModal tbody#listaRomaneios`); página delega via `abrirListaRomaneios`;
+  `romaneio-list-columns` é só CSS; `criarDadosTeste` nunca auto-executa.
+- O "segundo escritor" é o listener realtime (`setupRealtimeRomaneiosPct`),
+  que SUBSTITUI o state pelo snapshot + re-renderiza — comportamento correto,
+  não briga: a divergência observada foi corrida da minha própria sonda
+  (leitura do DOM antes do attach assíncrono do listener + dado de teste
+  criado entre sessões). Estado atual 100% consistente (1 real, 0 resíduos).
+- Decisão: NENHUMA mudança (certeza exigida pelo plano não atingida para
+  intervir; intervir aqui seria delírio). Helpers de debug expostos
+  (`criarDadosTestePCT`) mantidos — inofensivos, só sob chamada manual.
+
 ## 04/10 (cont.2) — `?v=` de JS por hash (sem regressão)
 - [x] Inventário: 296 pares `js?v=`; escopo real = 5 refs estáticas
       (`folha.html` document.write auth-diagnostics + commerce-pdf-share,
