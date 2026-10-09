@@ -1080,6 +1080,9 @@
             }
             
             // ✅ ENVIAR PARA FIREBASE STORAGE
+            // Trava o input durante o envio (Onda 5): sem ela, reclicar no avatar
+            // no meio do upload dispara lotes paralelos.
+            try { input.disabled = true; } catch (_) {}
             (async () => {
                 try {
                     const uid = window.firebaseService && typeof window.firebaseService.getCurrentUid === 'function' 
@@ -1105,6 +1108,7 @@
                             loadUserPhoto();
                             updatePhotoPreview(downloadURL);
                             showGlobalMessage('success', '📸 Foto salva no Storage com sucesso!');
+                            try { input.disabled = false; } catch (_) {}
                             return;
                         }
                     }
@@ -1120,6 +1124,7 @@
                     loadUserPhoto();
                     updatePhotoPreview(imageData);
                     showGlobalMessage('success', '📸 Foto atualizada (modo local).');
+                    try { input.disabled = false; } catch (_) {}
                 };
                 reader.readAsDataURL(file);
             })();

@@ -3542,6 +3542,8 @@ function ordenarEntrada(coluna) {
 }
 
 // --- Registrar Entrada (Final) ---
+// Flag E-01b: ver bloco da trava apos as validacoes de plaqueta.
+let registrarEntradaEmAndamento = false;
 async function registrarEntrada(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
     if (toraEmEdicao) {
@@ -3603,6 +3605,18 @@ async function registrarEntrada(event) {
         alert(`Existem plaquetas duplicadas no estoque ou nesta entrada: ${lista}. Corrija antes de salvar.`);
         return;
     }
+    // Trava anti-duplo-submit (E-01b): o loading existe, mas sem flag o 2o
+    // clique passa nas validacoes e grava o lote de novo.
+    if (registrarEntradaEmAndamento) return;
+    registrarEntradaEmAndamento = true;
+    const __entradaSubmitBtn = document.querySelector('#entradaForm button[type="submit"]');
+    const __entradaOrigLabel = __entradaSubmitBtn ? __entradaSubmitBtn.innerHTML : '';
+    try {
+        if (__entradaSubmitBtn) {
+            __entradaSubmitBtn.disabled = true;
+            __entradaSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        }
+    } catch (_) {}
 
     // Mostrar loading
     showLoading('Preparando dados para gravação...');
@@ -3720,11 +3734,23 @@ async function registrarEntrada(event) {
         // Atualizar telas
         atualizarEstatisticas();
         carregarTabelaEstoque();
+        try {
+            if (typeof __entradaSubmitBtn !== 'undefined' && __entradaSubmitBtn) {
+                __entradaSubmitBtn.disabled = false;
+                __entradaSubmitBtn.innerHTML = __entradaOrigLabel;
+            }
+        } catch (_) {}
+        registrarEntradaEmAndamento = false;
 
     } catch (error) {
         hideLoading();
         console.error('Erro ao registrar entrada:', error);
         alert('Erro ao processar entrada: ' + error.message);
+        try {
+            const __entradaSubmitBtnErr = document.querySelector('#entradaForm button[type="submit"]');
+            if (__entradaSubmitBtnErr) { __entradaSubmitBtnErr.disabled = false; }
+        } catch (_) {}
+        registrarEntradaEmAndamento = false;
     }
 }
 
@@ -5432,6 +5458,8 @@ async function excluirTorasDoEstoqueEmLote(ids, options = {}) {
 
     exclusaoTorasEmLoteEmAndamento = true;
     atualizarAcoesExclusaoToras();
+    // Overlay no lote (E-02): delete grande sem feedback parecia travado.
+    if (typeof showLoading === 'function') showLoading('Excluindo toras...');
 
     try {
         const agora = new Date();
@@ -5508,6 +5536,7 @@ async function excluirTorasDoEstoqueEmLote(ids, options = {}) {
     } finally {
         exclusaoTorasEmLoteEmAndamento = false;
         atualizarAcoesExclusaoToras();
+        if (typeof hideLoading === 'function') hideLoading();
     }
 }
 

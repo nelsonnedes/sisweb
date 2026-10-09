@@ -24,6 +24,7 @@ const compras = readFileSync('compras.js', 'utf8');
 const nfJs = readFileSync('notas-fiscais.js', 'utf8');
 const nfNat = readFileSync('nf-naturezas.js', 'utf8');
 const folhaRel = readFileSync('folha_pagamento/folha-relatorios.js', 'utf8');
+const userProfile = readFileSync('user-profile.html', 'utf8');
 
 function fnBody(src, sig) {
   const s = src.indexOf(sig);
@@ -339,4 +340,40 @@ test('R-26 export excel tora: trava + overlay + toast (sem alert)', () => {
   assert.match(b, /__toraNotify\('Erro ao exportar romaneio para Excel/);
   assert.doesNotMatch(b, /alert\('Erro ao exportar romaneio para Excel/);
   assert.equal((b.match(/window\.__toraExportInFlight = false/g) || []).length, 2);
+});
+
+test('E-01b registrarEntrada: flag + submit desabilitado + restore', () => {
+  assert.match(est, /let registrarEntradaEmAndamento = false;/);
+  const b = fnBody(est, 'async function registrarEntrada(event)');
+  assert.match(b, /if \(registrarEntradaEmAndamento\) return;/);
+  assert.match(b, /registrarEntradaEmAndamento = true;/);
+  assert.match(b, /querySelector\('#entradaForm button\[type="submit"\]'\)/);
+  assert.match(b, /Salvando\.\.\./);
+  assert.equal((b.match(/registrarEntradaEmAndamento = false/g) || []).length, 2);
+});
+
+test('E-02 lote: overlay durante o delete com hide no finally', () => {
+  const b = fnBody(est, 'async function excluirTorasDoEstoqueEmLote(');
+  assert.match(b, /showLoading\('Excluindo toras\.\.\.'\)/);
+  assert.match(b, /\} finally \{/);
+  assert.match(b, /hideLoading\(\)/);
+});
+
+test('Almoxarifado: skeleton tematizado no carregamento', () => {
+  const b = fnBody(alm, 'async function carregarEstoqueProdutos()');
+  assert.match(b, /class="skeleton-row"/);
+  assert.match(b, /class="skeleton-box"/);
+  assert.doesNotMatch(b, /Carregando estoque\.\.\./);
+});
+
+test('Foto de perfil: input travado durante o upload', () => {
+  const b = fnBody(userProfile, 'function handlePhotoUpload(');
+  assert.match(b, /input\.disabled = true;/);
+  assert.ok((b.match(/input\.disabled = false/g) || []).length >= 2, 'restore nos fins');
+});
+
+test('Ticket create: botão com spinner + restore no finally (rede de proteção)', () => {
+  assert.match(menu, /button\.disabled = true;/);
+  assert.match(menu, /Enviando ticket de suporte\.\.\./);
+  assert.match(menu, /\} finally \{/);
 });

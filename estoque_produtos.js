@@ -99,7 +99,7 @@ async function carregarEstoqueProdutos() {
     const tbody = document.getElementById('produtosTable');
     if (!tbody) return;
     
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center"><i class="fas fa-spinner fa-spin"></i> Carregando estoque...</td></tr>';
+    tbody.innerHTML = '<tr class="skeleton-row" aria-hidden="true"><td colspan="10"><span class="skeleton-box"></span></td></tr><tr class="skeleton-row" aria-hidden="true"><td colspan="10"><span class="skeleton-box"></span></td></tr><tr class="skeleton-row" aria-hidden="true"><td colspan="10"><span class="skeleton-box"></span></td></tr><tr class="skeleton-row" aria-hidden="true"><td colspan="10"><span class="skeleton-box"></span></td></tr>';
 
     try {
         // Carregar dados do Firebase/Local

@@ -332,6 +332,22 @@ Referências positivas (não mexer, copiar): `confirmarEmissao` (NF-e),
   reclassificados após leitura integral — só o 1º precisava de trava.
 - Trava: `tests/ux-feedback-onda1.test.mjs` foi a 30 testes (7 novos da onda 4).
 
+## Execução 09/10 — Onda 5 (concluída, gates 852 testes 851/0/1, SEM commit)
+- **E-01b** (`estoque.js:registrarEntrada`): flag `registrarEntradaEmAndamento` +
+  submit `#entradaForm` desabilitado com spinner; restore nos 2 fins (o loading com
+  progresso já existia, faltava a trava — duplo submit passava nas validações).
+- **E-02** (`excluirTorasDoEstoqueEmLote`): `showLoading('Excluindo toras...')` com
+  hide no `finally` existente (lock + desabilitar botões já existiam).
+- **Almoxarifado**: linha "Carregando estoque..." (spinner) trocada pelas rows
+  `skeleton-row/box` tematizadas (consistência com a Onda 3).
+- **Foto de perfil** (`user-profile.html:handlePhotoUpload`): `input.disabled`
+  durante o envio + restore nos 2 fins (Storage ok e fallback local); corrigida
+  duplicação de linhas introduzida na edição.
+- **Verificados OK sem mudança**: ticket CREATE (disable+spinner+feedback+finally),
+  `bhOpenPrintWindow` (toast de popup bloqueado), `gerarRelatorioMdfe` (build rápido
+  + janela própria), impressões vendas/empresa.
+- Trava: `tests/ux-feedback-onda1.test.mjs` foi a 35 testes (5 novos da onda 5).
+
 - [ ] **Login** — OK (spinner+disable+aria-busy). Nada a fazer.
 - [ ] **Vendas/Compras** — OK nos fluxos (overlay). Adicionar trava nos 3 exports
   (CSV/PDF/impressão lista) + skeleton em `carregarTabelaProdutos`.
