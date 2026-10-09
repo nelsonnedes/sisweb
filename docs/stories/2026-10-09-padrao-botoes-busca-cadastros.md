@@ -45,6 +45,11 @@
 - [x] Gates: lint + typecheck + suite
 - [x] `?v=` ressincronizado + SW bump + deploy + verificação prod
 - [x] Smoke autenticado (5 romaneios + estoque)
+- [x] Deploy 09/10: SW `2026-10-09-campos-padrao`; produção serve botões novos,
+  Buscar no estoque e CSS do padrão (`romaneio-comum.css?v=4fea9c9e9451`).
+- Correção no caminho: teste `modal-footers-standardization` mirava o primeiro
+  `openNewFornecedorModal` do documento (virou o botão do cabeçalho); escopo
+  ajustado p/ o rodapé do modal (footer segue `btn-adicionar`, intacto).
 
 ## File list
 - `romaneio-comum.css`, `romaneiopct.html`, `romaneiotl.html`, `romaneiopes.html`,
