@@ -4314,8 +4314,14 @@ function montarResumoRomaneioObservacao(lista) {
     }).filter(Boolean).join(' | ');
 }
 
+// Trava anti-duplo-clique da baixa de toras (E-01): sem ela, dois cliques
+// geram movimentacoes duplicadas e divergencia fisico x sistema.
+let registrarSaidaEmAndamento = false;
 async function registrarSaida(event) {
     event.preventDefault();
+    if (registrarSaidaEmAndamento) return;
+    let __saidaSubmitBtn = null;
+    let __saidaOrigLabel = '';
 
     try {
         if (torasSelecionadasBaixa.length === 0) {
@@ -4335,6 +4341,16 @@ async function registrarSaida(event) {
             alert('Selecione o tipo de saída');
             return;
         }
+        registrarSaidaEmAndamento = true;
+        __saidaSubmitBtn = document.querySelector('#saidaForm button[type="submit"]');
+        __saidaOrigLabel = __saidaSubmitBtn ? __saidaSubmitBtn.innerHTML : '';
+        try {
+            if (__saidaSubmitBtn) {
+                __saidaSubmitBtn.disabled = true;
+                __saidaSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+            }
+            if (typeof showLoading === 'function') showLoading('Registrando baixa...');
+        } catch (_) {}
 
         const novasMovimentacoes = [];
         // Processar cada tora selecionada
@@ -4436,8 +4452,13 @@ async function registrarSaida(event) {
 
         const qtdManuais = torasSelecionadasBaixa.filter(t => t && t.manualForaEstoque).length;
         const qtdEstoque = torasSelecionadasBaixa.length - qtdManuais;
+        try {
+            if (typeof hideLoading === 'function') hideLoading();
+            if (__saidaSubmitBtn) { __saidaSubmitBtn.disabled = false; __saidaSubmitBtn.innerHTML = __saidaOrigLabel; }
+        } catch (_) {}
+        registrarSaidaEmAndamento = false;
         if (qtdManuais > 0) {
-            alert(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) baixada(s) do estoque e ${qtdManuais} tora(s) manual(is) registrada(s) no histórico.`);
+            alert(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) baixada(s) do estoque e ${qtdManuais} tora(s) manual(is) registrada(s) no histórico.}`);
         } else {
             alert(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) removida(s) do estoque.`);
         }
@@ -4451,6 +4472,14 @@ async function registrarSaida(event) {
 
     } catch (error) {
         console.error('Erro ao registrar saída:', error);
+        try {
+            if (typeof hideLoading === 'function') hideLoading();
+            if (__saidaSubmitBtn) {
+                __saidaSubmitBtn.disabled = false;
+                __saidaSubmitBtn.innerHTML = __saidaOrigLabel;
+            }
+        } catch (_) {}
+        registrarSaidaEmAndamento = false;
         alert('Erro ao registrar saída: ' + error.message);
     }
 }
@@ -8221,6 +8250,10 @@ async function imprimirRelatorioEstoque() {
     }
     const content = document.getElementById('relatorioContent');
     if (!content) return;
+    // Overlay durante a reconstrucao full (P-41). try/finally garante o hide;
+    // corpo mantido na indentacao original para diff minimo.
+    if (typeof showLoading === 'function') showLoading('Gerando relatório...');
+    try {
     const dataInicio = data.dataInicio || document.getElementById('relDataInicio')?.value || '';
     const dataFim = data.dataFim || document.getElementById('relDataFim')?.value || '';
     const options = {
@@ -8250,6 +8283,8 @@ async function imprimirRelatorioEstoque() {
         </html>
     `;
     const pdfData = extrairTabelasRelatorioEstoquePdf(`${conteudo}${rodape || ''}`);
+    // Esconder o overlay ANTES do dialogo de impressao/PDF.
+    if (typeof hideLoading === 'function') hideLoading();
     await entregarRelatorioEstoque({
         title: titulo,
         company: empresa,
@@ -8266,6 +8301,9 @@ async function imprimirRelatorioEstoque() {
             tables: pdfData.tables
         }
     });
+    } finally {
+        if (typeof hideLoading === 'function') hideLoading();
+    }
 }
 
 async function exportarRelatorioEstoqueExcel() {
@@ -8277,6 +8315,10 @@ async function exportarRelatorioEstoqueExcel() {
     }
     const content = document.getElementById('relatorioContent');
     if (!content) return;
+    // Overlay durante a reconstrucao full (P-41). try/finally garante o hide;
+    // corpo mantido na indentacao original para diff minimo.
+    if (typeof showLoading === 'function') showLoading('Gerando Excel...');
+    try {
     const dataInicio = data.dataInicio || document.getElementById('relDataInicio')?.value || '';
     const dataFim = data.dataFim || document.getElementById('relDataFim')?.value || '';
     const options = {
@@ -8345,6 +8387,9 @@ async function exportarRelatorioEstoqueExcel() {
     
     if (window.Utils && window.Utils.showToast) {
         window.Utils.showToast('Relatório exportado para Excel com sucesso!', 'success');
+    }
+    } finally {
+        if (typeof hideLoading === 'function') hideLoading();
     }
 }
 

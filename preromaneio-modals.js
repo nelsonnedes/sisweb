@@ -21,6 +21,29 @@ let currentPageRomaneios = 1;
 // Estado do cliente em edição (padrão romaneiopct/romaneiopes)
 let editingClientId = null;
 
+// Trava anti-duplo-clique dos modais de pre-romaneio (R-25). ASCII-only.
+// O delete ja e idempotente por chaves; a trava evita loops repetidos e telas
+// sem resposta durante o await.
+if (!window.__preModalEmAndamento) window.__preModalEmAndamento = new Set();
+function __preModalNotify(msg, type) {
+    try {
+        if (typeof window.__preNotify === 'function') { window.__preNotify(msg, type); return; }
+        if (typeof window.__toast === 'function') { window.__toast(msg, type); return; }
+        if (window.Utils && window.Utils.showToast) { window.Utils.showToast(msg, type); return; }
+    } catch (_) {}
+    try { alert(msg); } catch (_) {}
+}
+function __preModalBegin(key) {
+    try {
+        if (!key || window.__preModalEmAndamento.has(key)) return false;
+        window.__preModalEmAndamento.add(key);
+        return true;
+    } catch (_) { return true; }
+}
+function __preModalEnd(key) {
+    try { window.__preModalEmAndamento.delete(key); } catch (_) {}
+}
+
 function parseRomaneioDateCandidate(value) {
     if (!value) return 0;
     if (typeof value === 'number' && isFinite(value)) return value;
@@ -372,6 +395,8 @@ async function deletePreRomaneioClient(id) {
     if (!confirm(`Tem certeza que deseja excluir o cliente "${clientName}"?\n\nEsta ação não pode ser desfeita.`)) {
         return;
     }
+    const __preDelCliKey = 'pre-del-cli:' + String(id || '');
+    if (!__preModalBegin(__preDelCliKey)) return;
     try {
         const ok = await (window.deleteClient
             ? window.deleteClient(id)
@@ -381,10 +406,13 @@ async function deletePreRomaneioClient(id) {
         if (ok) {
             cachedClients = cachedClients.filter(c => String(c.id) !== String(id));
             renderClientList();
+            __preModalNotify('Cliente excluído com sucesso.', 'success');
         }
+        __preModalEnd(__preDelCliKey);
     } catch (error) {
         console.error('Erro ao excluir cliente:', error);
-        alert('Erro ao excluir cliente: ' + (error.message || error));
+        __preModalNotify('Erro ao excluir cliente: ' + (error.message || error), 'error');
+        __preModalEnd(typeof __preDelCliKey !== 'undefined' ? __preDelCliKey : null);
     }
 }
 
@@ -1131,6 +1159,8 @@ function renderRomaneiosList(list = null) {
 
 async function carregarPreRomaneio(id, dadosPreCarregados = null) {
     const sid = String(id || '').trim();
+    const __preLoadKey = 'pre-load:' + sid;
+    if (!__preModalBegin(__preLoadKey)) return;
     let item = dadosPreCarregados || null;
     
     if (!item && Array.isArray(cachedRomaneios)) {
@@ -1155,7 +1185,9 @@ async function carregarPreRomaneio(id, dadosPreCarregados = null) {
         } else {
             console.error('Função loadPreRomaneioData não encontrada em preromaneio.js');
         }
+        __preModalEnd(__preLoadKey);
     } else {
+        __preModalEnd(typeof __preLoadKey !== 'undefined' ? __preLoadKey : null);
         alert('Pré-Romaneio não encontrado para edição.');
     }
 }
@@ -1164,6 +1196,8 @@ async function excluirPreRomaneio(id) {
     if (!confirm('Tem certeza que deseja excluir este Pré-Romaneio?')) return;
     const idStr = String(id || '').trim();
     if (!idStr) return;
+    const __preDelKey = 'pre-del:' + idStr;
+    if (!__preModalBegin(__preDelKey)) return;
 
     // Chaves candidatas: a chave real no Firebase pode divergir do id
     // normalizado (id/key/firebaseKey/numero). Delete é idempotente.
@@ -1223,16 +1257,20 @@ async function excluirPreRomaneio(id) {
 
         // Fail-closed: sem confirmação do servidor, mantém na lista.
         if (!ok) {
-            alert('Não foi possível excluir no servidor. Verifique sua conexão e permissões.' + (ultimoErro ? ' (' + ultimoErro.slice(0, 120) + ')' : ''));
+            __preModalNotify('Não foi possível excluir no servidor. Verifique sua conexão e permissões.' + (ultimoErro ? ' (' + ultimoErro.slice(0, 120) + ')' : ''), 'error');
+            __preModalEnd(__preDelKey);
             return;
         }
 
         // Remove da UI (comparação por string: id pode vir numérico)
         cachedRomaneios = cachedRomaneios.filter(r => !chaves.includes(String(r.id)));
         renderRomaneiosList(cachedRomaneios);
+        __preModalNotify('Pré-Romaneio excluído com sucesso.', 'success');
+        __preModalEnd(__preDelKey);
     } catch (error) {
         console.error('Erro ao excluir:', error);
-        alert('Erro ao excluir registro: ' + error.message);
+        __preModalNotify('Erro ao excluir registro: ' + error.message, 'error');
+        __preModalEnd(typeof __preDelKey !== 'undefined' ? __preDelKey : null);
     }
 }
 

@@ -30,7 +30,8 @@ test('estoque_produtos roteia via swGet/swSave', () => {
   assert.ok(gets >= 14, `esperado >= 14 swGet, obtido ${gets}`);
   assert.ok(/swSave\s*\(/.test(src), 'esperado swSave na escrita de prefs');
   // window.getData/saveData só dentro dos helpers (linhas do helper)
-  const helperRange = (n) => n >= 15 && n <= 45;
+  // (range atualizado na Onda 1 UX-feedback: bloco __alm* inserido antes).
+  const helperRange = (n) => n >= 64 && n <= 96;
   assertNoBareGlobals(src, 'estoque_produtos.js', helperRange);
 });
 

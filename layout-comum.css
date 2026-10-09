@@ -224,3 +224,14 @@ body { max-width: 100%; overflow-x: clip; overscroll-behavior: contain; touch-ac
 
 /* MOBILE FIX data v3 - 2026-09-17 - input date estouro */
 @media(max-width:768px){#dataRomaneio,#romaneioData,#dataRomaneioTora,input[type="date"]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;display:block!important}.form-group:has(#dataRomaneio),.form-group:has(#romaneioData),.romaneio-date-field{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important;display:block!important}}
+
+/* Skeleton de grade — UX-feedback Onda 3.
+   REGRA DE TEMA: 100% tokens --sw-* (viram sozinhos no claro/escuro).
+   Nenhuma cor hardcoded, nenhum override por [data-theme] necessario.
+   Usado por getSkeletonRows() (estoque) e pelas linhas estaticas nos tbodys. */
+.skeleton-row td{padding:6px 8px;border-bottom:1px solid var(--sw-border)}
+.skeleton-box{display:block;height:12px;border-radius:6px;
+  background:linear-gradient(100deg,var(--sw-surface-2) 40%,var(--sw-hover) 50%,var(--sw-surface-2) 60%);
+  background-size:200% 100%;animation:sisweb-skeleton 1.4s ease infinite}
+@keyframes sisweb-skeleton{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton-box{animation:none}}

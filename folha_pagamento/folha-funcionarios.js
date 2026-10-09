@@ -1223,6 +1223,11 @@ class FolhaFuncionarios {
         
         const confirmDelete = confirm(`Tem certeza que deseja excluir o funcionário ${funcionario.nome}?`);
         if (!confirmDelete) return;
+        // Trava anti-duplo-clique (H-32): o confirm bloqueia, mas o await nao.
+        if (!window.__folhaDelEmAndamento) window.__folhaDelEmAndamento = new Set();
+        const __delFuncKey = 'func:' + String(funcionarioId || '');
+        if (window.__folhaDelEmAndamento.has(__delFuncKey)) return;
+        window.__folhaDelEmAndamento.add(__delFuncKey);
         
         try {
             window.FolhaUtils.showLoading();
@@ -1267,6 +1272,7 @@ class FolhaFuncionarios {
             window.FolhaUtils.showToast('Erro ao excluir funcionário', 'error');
         } finally {
             window.FolhaUtils.hideLoading();
+            try { window.__folhaDelEmAndamento && window.__folhaDelEmAndamento.delete(__delFuncKey); } catch (_) {}
         }
     }
     

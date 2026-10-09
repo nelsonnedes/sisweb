@@ -1554,9 +1554,36 @@ function closeSpeciesModal() {
     }
 }
 
-// âœ… FUNÃ‡ÃƒO PARA SALVAR ESPÃ‰CIE (NOVA OU EDIÃ‡ÃƒO)
+// Trava anti-duplo-clique + feedback dos saves dos modais Tora (R-21/R-22).
+// Padrao: flag in-flight por operacao + botao desabilitado com spinner + toast.
+// ASCII-only de proposito (arquivo legado com mojibake historico).
+let __toraSaveSpeciesInFlight = false;
+let __toraSaveClientInFlight = false;
+function __toraNotify(msg, type) {
+    try {
+        if (typeof window.__toast === 'function') { window.__toast(msg, type); return; }
+        if (window.Utils && window.Utils.showToast) { window.Utils.showToast(msg, type); return; }
+    } catch (_) {}
+}
+function __toraSetSaveBtn(btn, busy, busyText) {
+    try {
+        if (!btn) return '';
+        if (busy) {
+            if (!btn.dataset.toraOrigLabel) btn.dataset.toraOrigLabel = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + busyText;
+            return btn.dataset.toraOrigLabel || '';
+        }
+        btn.disabled = false;
+        if (btn.dataset.toraOrigLabel) btn.innerHTML = btn.dataset.toraOrigLabel;
+        return '';
+    } catch (_) { return ''; }
+}
+
+// FUNCAO PARA SALVAR ESPECIE (NOVA OU EDICAO)
 async function saveSpecies() {
-    
+    if (__toraSaveSpeciesInFlight) return false;
+
     try {
         const form = document.getElementById('speciesForm');
         if (!form) {
@@ -1586,6 +1613,10 @@ async function saveSpecies() {
         
         const isEdit = Boolean(id);
         const idToSave = id || `species_${Date.now()}`;
+        // Trava apos validacoes: daqui em diante qualquer saida restaura botao/flag.
+        __toraSaveSpeciesInFlight = true;
+        const __speciesBtn = document.getElementById('saveSpeciesBtn');
+        __toraSetSaveBtn(__speciesBtn, true, 'Salvando...');
         console.log(`ðŸ" ${isEdit ? 'Editando' : 'Criando nova'} espÃ©cie:`, nome);
         
         // Preparar dados
@@ -1675,8 +1706,10 @@ async function saveSpecies() {
                 const mensagem = isEdit ? 
                     `Espécie "${nome}" atualizada com sucesso!` : 
                     `Espécie "${nome}" cadastrada com sucesso!`;
-                alert(mensagem);
-                
+                __toraNotify(mensagem, 'success');
+                __toraSetSaveBtn(__speciesBtn, false);
+                __toraSaveSpeciesInFlight = false;
+
                 return true;
             } else {
                 throw new Error(saveResult?.error || "Erro desconhecido ao salvar");
@@ -1687,7 +1720,9 @@ async function saveSpecies() {
         
     } catch (error) {
         console.error("âŒ Erro ao salvar espÃ©cie:", error);
-        alert(`Erro ao salvar espÃ©cie: ${error.message}`);
+        __toraNotify(`Erro ao salvar espécie: ${error.message}`, 'error');
+        __toraSetSaveBtn(document.getElementById('saveSpeciesBtn'), false);
+        __toraSaveSpeciesInFlight = false;
         return false;
     }
 }
@@ -1842,7 +1877,7 @@ function openNewClientModal() {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="back-button close-modal-btn">Cancelar</button>
-                    <button type="button" class="btn-save" onclick="saveClient()">Salvar</button>
+                    <button type="button" class="btn-save" id="saveClientBtn" onclick="saveClient()">Salvar</button>
                 </div>
             </div>
         `;
@@ -1953,7 +1988,8 @@ async function openEditClientModal() {
 
 // âœ… FUNÃ‡ÃƒO PARA SALVAR FORNECEDOR (NOVA OU EDIÃ‡ÃƒO)
 async function saveClient() {
-    
+    if (__toraSaveClientInFlight) return false;
+
     try {
         const form = document.getElementById('clientForm');
         if (!form) {
@@ -1989,8 +2025,13 @@ async function saveClient() {
             document.getElementById('clientName').focus();
             return false;
         }
-        
+
         const isEdit = Boolean(id);
+        // Trava apos validacoes: daqui em diante qualquer saida restaura botao/flag.
+        __toraSaveClientInFlight = true;
+        const __clientBtn = document.getElementById('saveClientBtn');
+        __toraSetSaveBtn(__clientBtn, true, 'Salvando...');
+
         console.log(`ðŸ" ${isEdit ? 'Editando' : 'Criando novo'} fornecedor:`, nome);
         
         // Preparar dados
@@ -2124,8 +2165,10 @@ try { if (typeof fornecedores !== 'undefined') window.fornecedores = fornecedore
                 const mensagem = isEdit ? 
                     `Fornecedor "${nome}" atualizado com sucesso!` : 
                     `Fornecedor "${nome}" cadastrado com sucesso!`;
-            alert(mensagem);
-            
+            __toraNotify(mensagem, 'success');
+            __toraSetSaveBtn(__clientBtn, false);
+            __toraSaveClientInFlight = false;
+
             return true;
         } else {
                 throw new Error(saveResult?.error || "Erro desconhecido ao salvar");
@@ -2136,7 +2179,9 @@ try { if (typeof fornecedores !== 'undefined') window.fornecedores = fornecedore
         
     } catch (error) {
         console.error("âŒ Erro ao salvar fornecedor:", error);
-        alert(`Erro ao salvar fornecedor: ${error.message}`);
+        __toraNotify(`Erro ao salvar fornecedor: ${error.message}`, 'error');
+        __toraSetSaveBtn(document.getElementById('saveClientBtn'), false);
+        __toraSaveClientInFlight = false;
         return false;
     }
 }

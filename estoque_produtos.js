@@ -9,6 +9,58 @@ let produtosFiltrados = [];
 let produtosUltimaListaRenderizada = null;
 let movimentacoesProdutosCache = [];
 
+// Trava anti-duplo-clique + feedback do Almoxarifado (A-01..A-07). ASCII-only.
+// Padrao: lock por operacao + botao desabilitado com spinner + overlay + toast,
+// com fallback para alert quando o toast global nao esta carregado nesta pagina.
+const __almInFlight = {};
+function __almNotify(msg, type) {
+    try {
+        if (typeof window.__toast === 'function') { window.__toast(msg, type); return; }
+        if (window.Utils && window.Utils.showToast) { window.Utils.showToast(msg, type); return; }
+    } catch (_) {}
+    try { alert(msg); } catch (_) {}
+}
+function __almLoading(show, msg) {
+    try {
+        if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') {
+            if (show) window.SiswebLoading.show(msg || 'Processando...');
+            else window.SiswebLoading.hide();
+        }
+    } catch (_) {}
+}
+function __almSetBtn(btn, busy, busyText) {
+    try {
+        if (!btn) return;
+        if (busy) {
+            if (!btn.dataset.almOrigLabel) btn.dataset.almOrigLabel = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (busyText || 'Salvando...');
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.almOrigLabel) btn.innerHTML = btn.dataset.almOrigLabel;
+        }
+    } catch (_) {}
+}
+function __almSubmitBtn(formId) {
+    try {
+        const form = formId ? document.getElementById(formId) : null;
+        const scope = form || document;
+        return scope.querySelector('button[type="submit"]');
+    } catch (_) { return null; }
+}
+function __almBegin(key, btn, label) {
+    if (__almInFlight[key]) return null;
+    __almInFlight[key] = true;
+    __almSetBtn(btn, true, label || 'Salvando...');
+    __almLoading(true, label || 'Salvando...');
+    return { btn: btn || null };
+}
+function __almEnd(key, op) {
+    __almInFlight[key] = false;
+    __almSetBtn(op && op.btn ? op.btn : null, false);
+    __almLoading(false);
+}
+
 // Strangler A4: leitura/escrita via SiswebData com fallback ao global legado.
 // swGet: sucesso retorna dado cru; falha cai no window.getData; sem ambos, null.
 // swSave(path, id, data): SiswebData.save; fallback window.saveData(path, data) 2-arg.
@@ -647,6 +699,8 @@ async function salvarProdutoAlmoxarifadoPeloFormulario(e) {
         atualizarModoFormularioProduto(false);
         return false;
     }
+    const __opSaveProd = __almBegin('save-prod', __almSubmitBtn('entradaProdutoForm'), 'Salvando...');
+    if (!__opSaveProd) return false;
 
     const dataIso = data ? new Date(`${data}T12:00:00`).toISOString() : new Date().toISOString();
     const atual = estoqueProdutos[idx] || {};
@@ -706,7 +760,8 @@ async function salvarProdutoAlmoxarifadoPeloFormulario(e) {
             await saveDataProdutos('movimentacoesProdutos', movsAtualizadas);
             movimentacoesProdutosCache = movsAtualizadas.slice();
         }
-        alert(quantidadeAlterada ? 'Produto atualizado e ajuste registrado com sucesso.' : 'Produto atualizado com sucesso.');
+        __almNotify(quantidadeAlterada ? 'Produto atualizado e ajuste registrado com sucesso.' : 'Produto atualizado com sucesso.', 'success');
+        __almEnd('save-prod', __opSaveProd);
         limparEntradaProdutoForm();
         try { atualizarEstatisticasProdutos(); } catch (_) {}
         try { prepararEntradaProdutos(); } catch (_) {}
@@ -716,7 +771,8 @@ async function salvarProdutoAlmoxarifadoPeloFormulario(e) {
         return true;
     } catch (err) {
         console.error('Erro ao atualizar produto:', err);
-        alert('Erro ao atualizar produto: ' + (err.message || err));
+        __almNotify('Erro ao atualizar produto: ' + (err.message || err), 'error');
+        __almEnd('save-prod', typeof __opSaveProd !== 'undefined' ? __opSaveProd : null);
         return false;
     }
 }
@@ -773,6 +829,8 @@ async function registrarEntradaProduto(e) {
         alert('Informe o produto.');
         return;
     }
+    const __opEntradaProd = __almBegin('entrada-prod', __almSubmitBtn('entradaProdutoForm'), 'Registrando...');
+    if (!__opEntradaProd) return;
 
     const nowIso = new Date().toISOString();
     if (!produto) {
@@ -836,12 +894,14 @@ async function registrarEntradaProduto(e) {
         await saveDataProdutos('estoqueProdutos', estoqueProdutos);
         await saveDataProdutos('movimentacoesProdutos', movsAtualizadas);
         movimentacoesProdutosCache = movsAtualizadas.slice();
-        alert(`${obterLabelTipoMovimentacaoProduto(tipoMovimentacao, direcaoEstoque)} registrada com sucesso!`);
+        __almNotify(`${obterLabelTipoMovimentacaoProduto(tipoMovimentacao, direcaoEstoque)} registrada com sucesso!`, 'success');
+        __almEnd('entrada-prod', __opEntradaProd);
         limparEntradaProdutoForm();
         carregarEstoqueProdutos();
     } catch (err) {
         console.error("Erro na entrada:", err);
-        alert('Erro ao registrar entrada: ' + err.message);
+        __almNotify('Erro ao registrar entrada: ' + err.message, 'error');
+        __almEnd('entrada-prod', typeof __opEntradaProd !== 'undefined' ? __opEntradaProd : null);
     }
 }
 
@@ -1395,6 +1455,8 @@ async function salvarEdicaoModalProdutoAlmoxarifado(e) {
         alert('Produto não encontrado.');
         return false;
     }
+    const __opEditProd = __almBegin('edit-prod', __almSubmitBtn('formEditarProdutoAlmoxarifado'), 'Salvando...');
+    if (!__opEditProd) return false;
 
     const dataIso = data ? new Date(`${data}T12:00:00`).toISOString() : new Date().toISOString();
     const atual = estoqueProdutos[idx] || {};
@@ -1468,12 +1530,14 @@ async function salvarEdicaoModalProdutoAlmoxarifado(e) {
             if (m) m.style.display = 'none';
         }
 
-        alert('Produto atualizado com sucesso!');
+        __almNotify('Produto atualizado com sucesso!', 'success');
+        __almEnd('edit-prod', __opEditProd);
         try { filtrarProdutos(); } catch (_) { renderizarTabelaProdutos(estoqueProdutos); }
         return true;
     } catch (err) {
         console.error('Erro ao atualizar produto:', err);
-        alert('Erro ao atualizar produto: ' + (err.message || err));
+        __almNotify('Erro ao atualizar produto: ' + (err.message || err), 'error');
+        __almEnd('edit-prod', typeof __opEditProd !== 'undefined' ? __opEditProd : null);
         return false;
     }
 }
@@ -1718,24 +1782,29 @@ function atualizarInfoProdutoBaixa() {
 
 async function confirmarBaixaProduto(e) {
     e.preventDefault();
-    
+    const __opBaixaModal = __almBegin('baixa-prod-modal', __almSubmitBtn('formBaixaProduto'), 'Registrando...');
+    if (!__opBaixaModal) return;
+
     const prodId = document.getElementById('baixaProdutoSelect').value;
     const qtd = parseFloat(document.getElementById('baixaProdutoQtd').value);
     const motivo = document.getElementById('baixaProdutoMotivo').value;
     const data = document.getElementById('baixaProdutoData').value;
     const responsavel = obterResponsavelSelecionadoProduto('baixaProdutoResponsavel');
     const tipoMovimentacao = document.getElementById('baixaProdutoTipoMov')?.value || 'saida';
-    
-    const registrado = await registrarSaidaProduto({ prodId, qtd, motivo, data, responsavel, tipoMovimentacao });
-    if (!registrado) return;
 
-    alert(`${obterLabelTipoMovimentacaoProduto(tipoMovimentacao, 'saida')} registrada com sucesso!`);
+    const registrado = await registrarSaidaProduto({ prodId, qtd, motivo, data, responsavel, tipoMovimentacao });
+    if (!registrado) { __almEnd('baixa-prod-modal', __opBaixaModal); return; }
+
+    __almNotify(`${obterLabelTipoMovimentacaoProduto(tipoMovimentacao, 'saida')} registrada com sucesso!`, 'success');
+    __almEnd('baixa-prod-modal', __opBaixaModal);
     fecharModal('modalBaixaProduto');
     await carregarEstoqueProdutos();
 }
 
 async function registrarBaixaProdutoInline(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    const __opBaixaInline = __almBegin('baixa-prod-inline', __almSubmitBtn('baixaProdutoInlineForm'), 'Registrando...');
+    if (!__opBaixaInline) return;
 
     const prodId = document.getElementById('baixaProdutoSelectInline')?.value || '';
     const qtd = parseFloat(document.getElementById('baixaProdutoQtdInline')?.value || 0);
@@ -1745,9 +1814,10 @@ async function registrarBaixaProdutoInline(e) {
     const tipoMovimentacao = document.getElementById('baixaProdutoTipoMovInline')?.value || 'saida';
 
     const registrado = await registrarSaidaProduto({ prodId, qtd, motivo, data, responsavel, tipoMovimentacao });
-    if (!registrado) return;
+    if (!registrado) { __almEnd('baixa-prod-inline', __opBaixaInline); return; }
 
-    alert(`${obterLabelTipoMovimentacaoProduto(tipoMovimentacao, 'saida')} registrada com sucesso!`);
+    __almNotify(`${obterLabelTipoMovimentacaoProduto(tipoMovimentacao, 'saida')} registrada com sucesso!`, 'success');
+    __almEnd('baixa-prod-inline', __opBaixaInline);
     limparBaixaProdutoInlineForm();
     await carregarEstoqueProdutos();
 }
@@ -1778,6 +1848,8 @@ async function registrarSaidaProduto({ prodId, qtd, motivo, data, responsavel, t
 
     const tipoLabel = obterLabelTipoMovimentacaoProduto(tipoSaida, direcaoEstoque);
     if (!confirm(`Confirma ${tipoLabel.toLowerCase()} de ${formatNumber(qtd, 2)} ${prod.unidade || 'un'} de ${prod.nome}?`)) return false;
+    const __opSaidaProd = __almBegin('saida-prod', null, 'Registrando baixa...');
+    if (!__opSaidaProd) return false;
 
     try {
         // Atualizar saldo localmente
@@ -1823,11 +1895,13 @@ async function registrarSaidaProduto({ prodId, qtd, motivo, data, responsavel, t
         await saveDataProdutos('movimentacoesProdutos', movsAtualizadas);
         movimentacoesProdutosCache = movsAtualizadas.slice();
         adicionarResponsavelAutocompleteProduto(responsavelFinal);
+        __almEnd('saida-prod', __opSaidaProd);
         return true;
         
     } catch (err) {
         console.error("Erro na baixa:", err);
-        alert('Erro ao salvar baixa: ' + err.message);
+        __almNotify('Erro ao salvar baixa: ' + err.message, 'error');
+        __almEnd('saida-prod', typeof __opSaidaProd !== 'undefined' ? __opSaidaProd : null);
         return false;
     }
 }
@@ -2521,6 +2595,8 @@ async function salvarEdicaoMovimentacaoProduto() {
         const movs = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
         const idx = movs.findIndex(m => String(m.id) === id);
         if (idx < 0) { alert('Movimentação não encontrada.'); return; }
+        const __opEditMov = __almBegin('edit-mov-prod', __almSubmitBtn('modalEditarMovProduto'), 'Salvando...');
+        if (!__opEditMov) return;
         const current = movs[idx] || {};
         movs[idx] = {
             ...current,
@@ -2536,10 +2612,12 @@ async function salvarEdicaoMovimentacaoProduto() {
         if (tabRel && tabRel.classList.contains('active') && typeof window.gerarRelatorio === 'function') {
             window.gerarRelatorio();
         }
-        alert('Movimentação atualizada.');
+        __almNotify('Movimentação atualizada.', 'success');
+        __almEnd('edit-mov-prod', __opEditMov);
     } catch (e) {
         console.error(e);
-        alert('Erro ao salvar: ' + (e.message || e));
+        __almNotify('Erro ao salvar: ' + (e.message || e), 'error');
+        __almEnd('edit-mov-prod', typeof __opEditMov !== 'undefined' ? __opEditMov : null);
     }
 }
 
@@ -2561,6 +2639,8 @@ async function estornarMovimentacaoProduto(movId) {
         const prodId = String(mov.produtoId || '').trim();
         if (!prodId) { alert('Produto inválido.'); return; }
         if (!confirm('Confirma estornar esta movimentação? Isso irá gerar uma movimentação inversa e ajustar o estoque.')) return;
+        const __opEstornoProd = __almBegin('estorno-prod', null, 'Estornando...');
+        if (!__opEstornoProd) return;
 
         const produtos = await swGet('estoqueProdutos') || [];
         const produtosArr = Array.isArray(produtos) ? produtos.slice() : Object.values(produtos || {});
@@ -2616,10 +2696,12 @@ async function estornarMovimentacaoProduto(movId) {
         if (tabRel && tabRel.classList.contains('active') && typeof window.gerarRelatorio === 'function') {
             window.gerarRelatorio();
         }
-        alert('Movimentação estornada com sucesso.');
+        __almNotify('Movimentação estornada com sucesso.', 'success');
+        __almEnd('estorno-prod', typeof __opEstornoProd !== 'undefined' ? __opEstornoProd : null);
     } catch (e) {
         console.error(e);
-        alert('Erro ao estornar: ' + (e.message || e));
+        __almNotify('Erro ao estornar: ' + (e.message || e), 'error');
+        __almEnd('estorno-prod', typeof __opEstornoProd !== 'undefined' ? __opEstornoProd : null);
     }
 }
 

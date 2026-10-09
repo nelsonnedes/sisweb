@@ -1164,6 +1164,30 @@ function parseNumBR(val) {
     return Number.isFinite(n) ? n : 0;
 }
 
+// Trava anti-duplo-clique + feedback do pre-romaneio (R-23). ASCII-only.
+// Padrao: flag in-flight + botao desabilitado com spinner + toast (sem alert pos-write).
+let __preRomaneioSaving = false;
+function __preNotify(msg, type) {
+    try {
+        if (typeof window.__toast === 'function') { window.__toast(msg, type); return; }
+        if (window.Utils && window.Utils.showToast) { window.Utils.showToast(msg, type); return; }
+    } catch (_) {}
+    try { alert(msg); } catch (_) {}
+}
+function __preSetBtn(busy) {
+    try {
+        const btn = document.getElementById('btnSalvarPreRomaneio');
+        if (!btn) return;
+        if (busy) {
+            if (!btn.dataset.preOrigLabel) btn.dataset.preOrigLabel = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.preOrigLabel) btn.innerHTML = btn.dataset.preOrigLabel;
+        }
+    } catch (_) {}
+}
 async function salvarPreRomaneio() {
     if (romaneioItens.length === 0) {
         alert('Adicione itens antes de salvar.');
@@ -1210,6 +1234,9 @@ async function salvarPreRomaneio() {
         alert('Empresa não identificada. Reabra a página e selecione a empresa ativa antes de salvar.');
         return;
     }
+    if (__preRomaneioSaving) return;
+    __preRomaneioSaving = true;
+    __preSetBtn(true);
     try {
         const svc = window.firebaseServiceTL || window.firebaseService || window.FirebaseService;
         if (svc && typeof svc.setTenantId === 'function') {
@@ -1271,7 +1298,9 @@ async function salvarPreRomaneio() {
             
             if (result && result.success) {
                 saveLocalPreRomaneio(dataToSave);
-                alert('Pré-Romaneio salvo com sucesso!');
+                __preNotify('Pré-Romaneio salvo com sucesso!', 'success');
+                __preSetBtn(false);
+                __preRomaneioSaving = false;
                 // Limpar tudo após salvar
                 romaneioItens = [];
                 renderizarTabela();
@@ -1287,9 +1316,13 @@ async function salvarPreRomaneio() {
             }
         } catch (e) {
             console.error(e);
-            alert('Erro ao salvar no Firebase: ' + e.message);
+            __preNotify('Erro ao salvar no Firebase: ' + e.message, 'error');
+            __preSetBtn(false);
+            __preRomaneioSaving = false;
         }
     } else {
+        __preSetBtn(false);
+        __preRomaneioSaving = false;
         alert('Serviço Firebase indisponível. Verifique a conexão.');
     }
 }

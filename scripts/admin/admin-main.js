@@ -2238,6 +2238,7 @@
                 if (confirmBtn) confirmBtn.addEventListener("click", function() { submitPartnerDeleteModal(); });
             }
             async function submitPartnerDeleteModal() {
+                if (window.__partnerDeleteInFlight) return;
                 try {
                     var hidden = document.getElementById("partnerDeleteId");
                     var codeInput = document.getElementById("partnerDeleteCode");
@@ -2248,6 +2249,16 @@
                         notifyAdmin("Digite o código do parceiro para confirmar.", "error");
                         return;
                     }
+                    // Trava anti-duplo-clique (S-51): delete destrutivo sem repeticao.
+                    window.__partnerDeleteInFlight = true;
+                    var delBtn = document.getElementById("partnerDeleteConfirmBtn");
+                    try {
+                        if (delBtn) {
+                            if (!delBtn.dataset.origLabel) delBtn.dataset.origLabel = delBtn.innerHTML;
+                            delBtn.disabled = true;
+                            delBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+                        }
+                    } catch (_) {}
                     var svc = await resolveAdminFirebaseService("deletePartnerAdmin");
                     var result = await svc.deletePartnerAdmin({ partnerId: partnerId, confirmCode: confirmCode });
                     var data = result && result.data ? result.data : result;
@@ -2258,12 +2269,32 @@
                     var detail = document.getElementById("partnerDetail");
                     if (detail) detail.style.display = "none";
                     notifyAdmin("Parceiro excluído definitivamente.", "success");
+                    try {
+                        var delBtnOk = document.getElementById("partnerDeleteConfirmBtn");
+                        if (delBtnOk) { delBtnOk.disabled = false; if (delBtnOk.dataset.origLabel) delBtnOk.innerHTML = delBtnOk.dataset.origLabel; }
+                    } catch (_) {}
+                    window.__partnerDeleteInFlight = false;
                     await loadPartnersPanel();
                 } catch (err) {
                     notifyAdmin((err && err.message) || "Erro ao excluir parceiro.", "error");
+                    try {
+                        var delBtnErr = document.getElementById("partnerDeleteConfirmBtn");
+                        if (delBtnErr) { delBtnErr.disabled = false; if (delBtnErr.dataset.origLabel) delBtnErr.innerHTML = delBtnErr.dataset.origLabel; }
+                    } catch (_) {}
+                    window.__partnerDeleteInFlight = false;
                 }
             }
             async function savePartnerConfig() {
+                if (window.__partnerConfigSaving) return;
+                window.__partnerConfigSaving = true;
+                var cfgBtn = document.getElementById("partnerCommissionSave");
+                try {
+                    if (cfgBtn) {
+                        if (!cfgBtn.dataset.origLabel) cfgBtn.dataset.origLabel = cfgBtn.innerHTML;
+                        cfgBtn.disabled = true;
+                        cfgBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+                    }
+                } catch (_) {}
                 try {
                     var svc = await resolveAdminFirebaseService("setPartnerConfig");
                     var raw = String((document.getElementById("partnerCommissionPercent") || {}).value || "").trim();
@@ -2276,8 +2307,17 @@
                     }
                     notifyAdmin("Percentual do parceiro atualizado.", "success");
                     await loadPartnersPanel();
+                    try {
+                        if (cfgBtn) { cfgBtn.disabled = false; if (cfgBtn.dataset.origLabel) cfgBtn.innerHTML = cfgBtn.dataset.origLabel; }
+                    } catch (_) {}
+                    window.__partnerConfigSaving = false;
                 } catch (err) {
                     notifyAdmin((err && err.message) || "Erro ao salvar %.", "error");
+                    try {
+                        var cfgBtnErr = document.getElementById("partnerCommissionSave");
+                        if (cfgBtnErr) { cfgBtnErr.disabled = false; if (cfgBtnErr.dataset.origLabel) cfgBtnErr.innerHTML = cfgBtnErr.dataset.origLabel; }
+                    } catch (_) {}
+                    window.__partnerConfigSaving = false;
                 }
             }
             async function togglePartnerBlock() {
@@ -2458,6 +2498,10 @@
                 var storageService = await resolveAdminStorageService(service);
                 var authUser = await getAdminAuthUser(service);
                 var attachments = [];
+                // Trava o input durante o upload (S-51): sem ela, reselecionar
+                // arquivos no meio do envio gera lotes duplicados.
+                if (input) { try { input.disabled = true; } catch (_) {} }
+                try {
                 for (var i = 0; i < files.length; i += 1) {
                     notifyAdmin("Tratando e enviando anexo " + (i + 1) + "/" + files.length + "...", "info");
                     var meta = await storageService.uploadSupportAttachment(files[i], {
@@ -2478,6 +2522,9 @@
                         compressed: meta.compressed === true,
                         uploadedAt: meta.uploadedAt || new Date().toISOString()
                     });
+                }
+                } finally {
+                    if (input) { try { input.disabled = false; } catch (_) {} }
                 }
                 return attachments;
             }

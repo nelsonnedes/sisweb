@@ -3634,6 +3634,8 @@ async function __estornarFinanceiro(lancamento, kind) {
 
 window.darBaixaQuinzena = async function(id) {
     console.log(`💸 Dando baixa na quinzena: ${id}`);
+    const __flKey = 'baixa:' + String(id || '');
+    if (!__folhaLancamentoBegin(__flKey)) return;
     try {
         const lancamento = await __findLancamentoById(id);
         const tipoNorm = __resolveTipoPagamento(lancamento);
@@ -3653,11 +3655,29 @@ window.darBaixaQuinzena = async function(id) {
         // Reaplicar filtros
         try { window.folhaSystem && window.folhaSystem.aplicarFiltrosComDadosFrescos && window.folhaSystem.aplicarFiltrosComDadosFrescos(); } catch {}
         window.folhaLancamentos.showNotification('Quinzena baixada com sucesso!', 'success');
+        __folhaLancamentoEnd(__flKey);
     } catch (error) {
         console.error('❌ Erro ao dar baixa:', error);
         window.folhaLancamentos.showNotification('Erro ao dar baixa: ' + error.message, 'error');
+        __folhaLancamentoEnd(typeof __flKey !== 'undefined' ? __flKey : null);
     }
 };
+
+// Trava anti-duplo-clique + feedback das acoes de lancamento (H-31..H-34).
+// Chave por operacao+id: reentrancia bloqueada, overlay visivel, restore garantido.
+if (!window.__folhaLancamentoEmAndamento) window.__folhaLancamentoEmAndamento = new Set();
+function __folhaLancamentoBegin(key) {
+    try {
+        if (!key || window.__folhaLancamentoEmAndamento.has(key)) return false;
+        window.__folhaLancamentoEmAndamento.add(key);
+        if (window.FolhaUtils && typeof window.FolhaUtils.showLoading === 'function') window.FolhaUtils.showLoading();
+        return true;
+    } catch (_) { return true; }
+}
+function __folhaLancamentoEnd(key) {
+    try { window.__folhaLancamentoEmAndamento.delete(key); } catch (_) {}
+    try { if (window.FolhaUtils && typeof window.FolhaUtils.hideLoading === 'function') window.FolhaUtils.hideLoading(); } catch (_) {}
+}
 
 window.fecharMes = async function(id) {
     console.log(`📅 Fechando mês: ${id}`);
@@ -3669,6 +3689,7 @@ window.fecharMes = async function(id) {
             return;
         }
         window.__fechandoMesIds.add(id);
+        try { if (window.FolhaUtils && typeof window.FolhaUtils.showLoading === 'function') window.FolhaUtils.showLoading(); } catch (_) {}
 
         const lancamento = await __findLancamentoById(id);
         if (!lancamento) throw new Error('Lançamento não encontrado');
@@ -3677,6 +3698,7 @@ window.fecharMes = async function(id) {
         if (status === 'mes_fechado') {
             window.folhaLancamentos.showNotification('Este mês já está fechado.', 'info');
             window.__fechandoMesIds.delete(id);
+            try { if (window.FolhaUtils && typeof window.FolhaUtils.hideLoading === 'function') window.FolhaUtils.hideLoading(); } catch (_) {}
             return;
         }
         
@@ -3692,10 +3714,12 @@ window.fecharMes = async function(id) {
         try { window.folhaSystem && window.folhaSystem.aplicarFiltrosComDadosFrescos && window.folhaSystem.aplicarFiltrosComDadosFrescos(); } catch {}
         window.folhaLancamentos.showNotification('Mês fechado com sucesso!', 'success');
         window.__fechandoMesIds.delete(id);
+        try { if (window.FolhaUtils && typeof window.FolhaUtils.hideLoading === 'function') window.FolhaUtils.hideLoading(); } catch (_) {}
     } catch (error) {
         console.error('❌ Erro ao fechar mês:', error);
         window.folhaLancamentos.showNotification('Erro ao fechar mês: ' + error.message, 'error');
-        try { window.__fechandoMesIds && window.__fechandoMesIds.delete(id); } catch {}
+        try { window.__fechandoMesIds && window.__fechandoMesIds.delete(id); } catch (_) {}
+        try { if (window.FolhaUtils && typeof window.FolhaUtils.hideLoading === 'function') window.FolhaUtils.hideLoading(); } catch (_) {}
     }
 };
 
@@ -3736,6 +3760,8 @@ function __limparCamposVariaveisCloneFolha(clone) {
 
 window.clonarFolha = async function(id) {
     console.log(`📋 Clonando folha: ${id}`);
+    const __flKey = 'clone:' + String(id || '');
+    if (!__folhaLancamentoBegin(__flKey)) return;
     try {
         const original = await __findLancamentoById(id);
         if (!original || original.status === 'cancelada') {
@@ -3771,9 +3797,11 @@ window.clonarFolha = async function(id) {
         // Notificar
         try { window.dispatchEvent(new CustomEvent('folhas:updated', { detail: { source: 'clonarFolha' } })); } catch {}
         window.folhaLancamentos.showNotification('Folha clonada com sucesso para ' + novoMesAno, 'success');
+        __folhaLancamentoEnd(__flKey);
     } catch (error) {
         console.error('❌ Erro ao clonar:', error);
         window.folhaLancamentos.showNotification('Erro ao clonar folha: ' + error.message, 'error');
+        __folhaLancamentoEnd(typeof __flKey !== 'undefined' ? __flKey : null);
     }
 };
 
@@ -3843,11 +3871,12 @@ window.editFolha = function(folhaId) {
 
 // 🗑️ Excluir Folha por ID
 window.deleteFolha = async function(folhaId) {
+    if (!folhaId) { window.folhaLancamentos.showNotification('ID inválido para exclusão', 'error'); return; }
+    const __flKey = 'delete:' + String(folhaId || '');
+    if (!__folhaLancamentoBegin(__flKey)) return;
     try {
-        if (!folhaId) { window.folhaLancamentos.showNotification('ID inválido para exclusão', 'error'); return; }
-        
         const confirma = confirm('Confirma excluir esta folha? Esta ação não pode ser desfeita.');
-        if (!confirma) return;
+        if (!confirma) { __folhaLancamentoEnd(__flKey); return; }
         
         // ✅ USAR O MANAGER PARA DELETAR (saveData com null)
         if (window.FolhaDB && window.FolhaDB.saveData) {
@@ -3863,9 +3892,11 @@ window.deleteFolha = async function(folhaId) {
         }
         try { window.dispatchEvent(new CustomEvent('folhas:updated', { detail: { source: 'deleteFolhaGlobal' } })); } catch {}
         window.folhaLancamentos.showNotification('Folha excluída com sucesso', 'success');
+        __folhaLancamentoEnd(__flKey);
     } catch (e) {
         console.error('❌ Erro ao excluir folha:', e);
         window.folhaLancamentos.showNotification('Erro ao excluir folha: ' + (e && e.message ? e.message : e), 'error');
+        __folhaLancamentoEnd(typeof __flKey !== 'undefined' ? __flKey : null);
     }
 };
 
@@ -3874,6 +3905,8 @@ window.deleteFolha = async function(folhaId) {
 // ↩️ Estornar fechamento (reabrir)
 window.estornarFechamento = async function(id) {
     console.log(`↩️ Estornando fechamento: ${id}`);
+    const __flKey = 'estorno:' + String(id || '');
+    if (!__folhaLancamentoBegin(__flKey)) return;
     try {
         const lanc = await __findLancamentoById(id);
         if (!lanc) throw new Error('Lançamento não encontrado');
@@ -3890,8 +3923,10 @@ window.estornarFechamento = async function(id) {
         await __estornarFinanceiro(lanc, kind);
         try { window.dispatchEvent(new CustomEvent('folhas:updated', { detail: { source: 'estornarFechamento' } })); } catch {}
         window.folhaLancamentos.showNotification('Fechamento estornado com sucesso!', 'success');
+        __folhaLancamentoEnd(__flKey);
     } catch (e) {
         console.error('❌ Erro ao estornar fechamento:', e);
         window.folhaLancamentos.showNotification('Erro ao estornar: ' + (e && e.message ? e.message : e), 'error');
+        __folhaLancamentoEnd(typeof __flKey !== 'undefined' ? __flKey : null);
     }
 };

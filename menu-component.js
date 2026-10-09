@@ -2942,7 +2942,7 @@ const __siswebSupportModalTemplate = `
                     <div id="siswebSupportReplyAttachmentsList" class="support-attachment-list">Opcional: ate 3 prints ou PDF.</div>
                 </div>
                 <div class="support-actions">
-                    <button type="button" class="support-action support-ticket" onclick="window.sendSiswebSupportTicketReply && window.sendSiswebSupportTicketReply()"><i class="fas fa-reply"></i> Enviar resposta</button>
+                    <button type="button" id="siswebSupportReplySendBtn" class="support-action support-ticket" onclick="window.sendSiswebSupportTicketReply && window.sendSiswebSupportTicketReply()"><i class="fas fa-reply"></i> Enviar resposta</button>
                     <button type="button" class="support-action support-secondary" onclick="window.closeSiswebSupportTicket && window.closeSiswebSupportTicket()"><i class="fas fa-check"></i> Marcar resolvido</button>
                 </div>
             </div>
@@ -3649,6 +3649,17 @@ async function __siswebSendSupportTicketReply() {
         __siswebSetSupportFeedback('Entre novamente no Sisweb para responder com segurança.', 'error');
         return;
     }
+    // Trava anti-duplo-envio (S-52): o feedback textual ja existe; falta o lock.
+    if (window.__supportReplyInFlight) return;
+    window.__supportReplyInFlight = true;
+    const replyBtn = document.getElementById('siswebSupportReplySendBtn');
+    try {
+        if (replyBtn) {
+            if (!replyBtn.dataset.origLabel) replyBtn.dataset.origLabel = replyBtn.innerHTML;
+            replyBtn.disabled = true;
+            replyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+        }
+    } catch (_) {}
     try {
         const ctx = __siswebGetSupportContext();
         const attachments = await __siswebUploadSupportAttachments('reply', ctx, ticketId, 'customer', service, authUser);
@@ -3661,10 +3672,19 @@ async function __siswebSendSupportTicketReply() {
         if (reply) reply.value = '';
         __siswebClearSupportAttachments('reply');
         __siswebSetSupportFeedback('Resposta enviada para o Admin.', 'success');
+        try {
+            if (replyBtn) { replyBtn.disabled = false; if (replyBtn.dataset.origLabel) replyBtn.innerHTML = replyBtn.dataset.origLabel; }
+        } catch (_) {}
+        window.__supportReplyInFlight = false;
         await __siswebLoadMySupportTickets({ silent: true });
         await __siswebOpenSupportTicket(ticketId);
     } catch (error) {
         __siswebSetSupportFeedback((error && error.message) || 'Erro ao responder ticket.', 'error');
+        try {
+            const replyBtnErr = document.getElementById('siswebSupportReplySendBtn');
+            if (replyBtnErr) { replyBtnErr.disabled = false; if (replyBtnErr.dataset.origLabel) replyBtnErr.innerHTML = replyBtnErr.dataset.origLabel; }
+        } catch (_) {}
+        window.__supportReplyInFlight = false;
     }
 }
 

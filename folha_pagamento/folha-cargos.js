@@ -950,7 +950,13 @@ class FolhaCargos {
         if (!confirm('Tem certeza que deseja excluir este cargo?')) {
             return;
         }
-        
+        // Trava anti-duplo-clique + overlay (H-32).
+        if (!window.__folhaDelEmAndamento) window.__folhaDelEmAndamento = new Set();
+        const __delCargoKey = 'cargo:' + String(cargoId || '');
+        if (window.__folhaDelEmAndamento.has(__delCargoKey)) return;
+        window.__folhaDelEmAndamento.add(__delCargoKey);
+        try { if (window.FolhaUtils && typeof window.FolhaUtils.showLoading === 'function') window.FolhaUtils.showLoading(); } catch (_) {}
+
         try {
             if (!window.database) {
                 throw new Error('Firebase não inicializado');
@@ -968,6 +974,8 @@ class FolhaCargos {
             });
             
             this.showNotification('Cargo excluído com sucesso!', 'success');
+            try { window.__folhaDelEmAndamento && window.__folhaDelEmAndamento.delete(__delCargoKey); } catch (_) {}
+            try { if (window.FolhaUtils && typeof window.FolhaUtils.hideLoading === 'function') window.FolhaUtils.hideLoading(); } catch (_) {}
             
             // Atualizar lista se modal estiver aberto
             const modal = document.getElementById('cargosListModal');
@@ -978,6 +986,8 @@ class FolhaCargos {
         } catch (error) {
             console.error('❌ Erro ao excluir cargo:', error);
             this.showNotification('Erro ao excluir cargo: ' + error.message, 'error');
+            try { window.__folhaDelEmAndamento && window.__folhaDelEmAndamento.delete(typeof __delCargoKey !== 'undefined' ? __delCargoKey : null); } catch (_) {}
+            try { if (window.FolhaUtils && typeof window.FolhaUtils.hideLoading === 'function') window.FolhaUtils.hideLoading(); } catch (_) {}
         }
     }
     

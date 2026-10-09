@@ -42,7 +42,7 @@
         })();
     </script>
     <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
-    <link rel="stylesheet" href="layout-comum.css?v=1dccc1e2633c">
+    <link rel="stylesheet" href="layout-comum.css?v=1b361ca57beb">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="romaneio-comum.css?v=419efeecff71">
     <link rel="stylesheet" href="status-styles.css?v=e70a1566a169">
@@ -2127,7 +2127,7 @@
     </script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=4fa77b3ad985"></script>
+<script src="menu-component.js?v=12d7cfdd2bae"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
     <script src="client-service.js?v=26fd5bf2abb6"></script>
     <script src="openNewClientModal.js?v=f19ef075d2a7"></script>
@@ -4008,13 +4008,47 @@
       document.getElementById('nfCceTexto')?.focus();
     }
 
+    // Trava anti-duplo-envio de eventos fiscais (F-11/F-12). Espelha confirmarEmissao:
+    // botao desabilitado com spinner + overlay + flag (SEFAZ nao tolera repeticao).
+    let __nfEventoInFlight = false;
+    function __nfEventoBtn(fnName, busy, busyText, btnLabel) {
+      try {
+        const btn = document.querySelector('button[onclick="' + fnName + '()"]');
+        if (!btn) return null;
+        if (busy) {
+          if (!btn.dataset.nfOrigLabel) btn.dataset.nfOrigLabel = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (busyText || 'Enviando...');
+        } else {
+          btn.disabled = false;
+          if (btn.dataset.nfOrigLabel) btn.innerHTML = btn.dataset.nfOrigLabel;
+          else if (btnLabel) btn.innerHTML = btnLabel;
+        }
+        return btn;
+      } catch (_) { return null; }
+    }
+    function __nfEventoFim(btn) {
+      __nfEventoInFlight = false;
+      try {
+        if (btn) {
+          btn.disabled = false;
+          if (btn.dataset.nfOrigLabel) btn.innerHTML = btn.dataset.nfOrigLabel;
+        }
+        if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide();
+      } catch (_) {}
+    }
+
     async function enviarCartaCorrecaoNF() {
+      if (__nfEventoInFlight) return;
       const nfId = document.getElementById('nfCceId')?.value || '';
       const chave = document.getElementById('nfCceChave')?.value || '';
       const correcao = (document.getElementById('nfCceTexto')?.value || '').trim();
       const senhaA1 = document.getElementById('nfCceSenha')?.value || '';
       if (correcao.length < 15) return setEventoFiscalMsg('A correção deve ter pelo menos 15 caracteres.', 'warn');
       if (!senhaA1) return setEventoFiscalMsg('Informe a senha do certificado A1.', 'warn');
+      __nfEventoInFlight = true;
+      const __cceBtn = __nfEventoBtn('enviarCartaCorrecaoNF', true, 'Enviando...');
+      try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Enviando CC-e à SEFAZ...'); } catch (_) {}
       try {
         if (typeof window.firebaseService?.callFunction !== 'function') throw new Error('Firebase Functions indisponível.');
         const cfg = window.NFService?.getConfig?.() || {};
@@ -4030,8 +4064,10 @@
         });
         setEventoFiscalMsg(data?.autorizada ? 'CC-e autorizada pela SEFAZ.' : (data?.xMotivo || 'Evento enviado, confira o retorno.'), data?.autorizada ? 'ok' : 'warn');
         consultarNotas();
+        __nfEventoFim(__cceBtn);
       } catch (e) {
         setEventoFiscalMsg(`CC-e não enviada: ${e.message || e}. Verifique se a Cloud Function nf_cartaCorrecaoNFe já foi implantada.`, 'erro');
+        __nfEventoFim(typeof __cceBtn !== 'undefined' ? __cceBtn : null);
       }
     }
 
@@ -4064,6 +4100,7 @@
     }
 
     async function enviarInutilizacaoNF() {
+      if (__nfEventoInFlight) return;
       const serie = parseInt(document.getElementById('nfInutSerie')?.value, 10);
       const numeroInicial = parseInt(document.getElementById('nfInutInicio')?.value, 10);
       const numeroFinal = parseInt(document.getElementById('nfInutFim')?.value, 10);
@@ -4072,6 +4109,9 @@
       if (!(serie > 0 && numeroInicial > 0 && numeroFinal >= numeroInicial)) return setEventoFiscalMsg('Informe uma série e faixa de numeração válidas.', 'warn');
       if (justificativa.length < 15) return setEventoFiscalMsg('A justificativa deve ter pelo menos 15 caracteres.', 'warn');
       if (!senhaA1) return setEventoFiscalMsg('Informe a senha do certificado A1.', 'warn');
+      __nfEventoInFlight = true;
+      const __inutBtn = __nfEventoBtn('enviarInutilizacaoNF', true, 'Enviando...');
+      try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Enviando inutilização à SEFAZ...'); } catch (_) {}
       try {
         if (typeof window.firebaseService?.callFunction !== 'function') throw new Error('Firebase Functions indisponível.');
         const cfg = window.NFService?.getConfig?.() || {};
@@ -4089,8 +4129,10 @@
         });
         setEventoFiscalMsg(data?.autorizada ? 'Inutilização autorizada pela SEFAZ.' : (data?.xMotivo || 'Evento enviado, confira o retorno.'), data?.autorizada ? 'ok' : 'warn');
         consultarNotas();
+        __nfEventoFim(__inutBtn);
       } catch (e) {
         setEventoFiscalMsg(`Inutilização não enviada: ${e.message || e}. Verifique se a Cloud Function nf_inutilizarNumeracao já foi implantada.`, 'erro');
+        __nfEventoFim(typeof __inutBtn !== 'undefined' ? __inutBtn : null);
       }
     }
 

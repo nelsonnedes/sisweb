@@ -271,34 +271,25 @@ function atualizarProximoNumero() {
     document.getElementById('nfNumero').value = String(configuracoes.proximoNumero).padStart(6, '0');
 }
 
-async function salvarRascunho() {
-    try {
-        const nota = criarObjetoNota('rascunho');
-        if (!nota) return;
-        
-        // Verificar se já existe (edição)
-        const index = notasFiscais.findIndex(nf => nf.id === nota.id);
-        if (index !== -1) {
-            notasFiscais[index] = nota;
-        } else {
-            notasFiscais.push(nota);
-        }
-        
-        await saveData('notas-fiscais', notasFiscais);
-        
-        alert('Rascunho salvo com sucesso!');
-        limparFormulario();
-        
-    } catch (error) {
-        console.error('Erro ao salvar rascunho:', error);
-        alert('Erro ao salvar rascunho: ' + error.message);
-    }
-}
+// F-15: salvarRascunho() legado removido em 2026-10-09 (codigo morto: zero
+// chamadores; o fluxo vivo e salvarRascunhoNF em notas-fiscais.html).
 
+// Trava anti-duplo-submit do form (F-16): o submit grava nota + config + estoque.
+let __nfEmitindo = false;
 async function emitirNotaFiscal() {
+    if (__nfEmitindo) return;
     try {
         const nota = criarObjetoNota('emitida');
         if (!nota) return;
+        __nfEmitindo = true;
+        const __nfSubmitBtn = document.querySelector('#nfForm button[type="submit"]');
+        const __nfOrigLabel = __nfSubmitBtn ? __nfSubmitBtn.innerHTML : '';
+        try {
+            if (__nfSubmitBtn) {
+                __nfSubmitBtn.disabled = true;
+                __nfSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Emitindo...';
+            }
+        } catch (_) {}
         
         // Simular emissão (aqui seria integração com API da Receita)
         nota.chave = gerarChaveNFe();
@@ -319,10 +310,22 @@ async function emitirNotaFiscal() {
         alert(`Nota Fiscal emitida com sucesso!\nNúmero: ${nota.numero}\nChave: ${nota.chave}`);
         limparFormulario();
         atualizarProximoNumero();
+        try {
+            if (typeof __nfSubmitBtn !== 'undefined' && __nfSubmitBtn) {
+                __nfSubmitBtn.disabled = false;
+                __nfSubmitBtn.innerHTML = __nfOrigLabel;
+            }
+        } catch (_) {}
+        __nfEmitindo = false;
         
     } catch (error) {
         console.error('Erro ao emitir nota fiscal:', error);
         alert('Erro ao emitir nota fiscal: ' + error.message);
+        try {
+            const __nfSubmitBtnErr = document.querySelector('#nfForm button[type="submit"]');
+            if (__nfSubmitBtnErr) { __nfSubmitBtnErr.disabled = false; }
+        } catch (_) {}
+        __nfEmitindo = false;
     }
 }
 

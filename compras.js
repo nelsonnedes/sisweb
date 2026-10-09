@@ -3880,6 +3880,7 @@ function exportarRelatorioComprasCSV() {
             ToastManager.warning('Gere o relatório antes de exportar.');
             return;
         }
+        ToastManager.info('Gerando CSV...');
         let headers;
         let rows;
         if (comprasRelatorioModoAtual === 'agrupado') {
@@ -3904,6 +3905,7 @@ function exportarRelatorioComprasCSV() {
         }
         const csv = [headers.map(csvCell).join(';'), ...rows.map(row => row.map(csvCell).join(';'))].join('\n');
         baixarArquivoTexto(`relatorio_compras_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+        ToastManager.success('CSV exportado com sucesso.');
     } catch (error) {
         console.error('Erro ao exportar relatório de compras:', error);
         ToastManager.error('Erro ao exportar CSV.');
