@@ -387,6 +387,9 @@ Referências positivas (não mexer, copiar): `confirmarEmissao` (NF-e),
 - Trava: `tests/estoque-pwa-impressao.test.mjs` (+1 teste: colunas, quantidade,
   string-guard, valor `-`, nowrap). Gates: lint/typecheck OK, 856 testes 855/0/1.
 - Publish: SW `2026-10-09-ux-movdet` → `2026-10-09-remessa-fix` + `?v=` ressincronizado.
+- Deploy 09/10 (remessa-fix): `npm run deploy:hosting` OK; produção serve SW
+  `2026-10-09-remessa-fix`, `estoque.js?v=92bd1f6d6681` com coluna Qtd, sem
+  agregações empilhadas e com nowrap de remessa.
 
 - [ ] **Login** — OK (spinner+disable+aria-busy). Nada a fazer.
 - [ ] **Vendas/Compras** — OK nos fluxos (overlay). Adicionar trava nos 3 exports
