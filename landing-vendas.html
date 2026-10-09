@@ -118,7 +118,7 @@
     }
   })();
 </script>
-<link rel="stylesheet" href="landing-vendas.css?v=ef7e6f3b6ea1">
+<link rel="stylesheet" href="landing-vendas.css?v=d86f2a09e047">
 <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
 <script src="sentry-init.js?v=7530fe3e6fec"></script>
 </head>
@@ -128,6 +128,8 @@
 <header class="lv-topbar">
   <div class="lv-container lv-topbar-inner">
     <div class="lv-logo"><img src="assets/brand/icone.ico" onerror="this.onerror=null;this.src='assets/icons/icon-192x192.png';" alt="" aria-hidden="true" width="30" height="30" style="width:30px;height:30px;object-fit:contain;flex-shrink:0;display:block;" /> <img src="assets/brand/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb — Gestão para Madeireiras" width="88" height="26" loading="eager" decoding="async" style="height:24px;width:auto;object-fit:contain;display:block;" /></div>
+    <div class="lv-topbar-menu" id="lv-topbar-menu">
+    <div class="lv-drawer-brand"><img src="assets/brand/icone.ico" onerror="this.onerror=null;this.src='assets/icons/icon-192x192.png';" alt="" aria-hidden="true" width="26" height="26" style="width:26px;height:26px;object-fit:contain;display:block;" /><img src="assets/brand/nome.ico" onerror="this.onerror=null;this.style.display='none';" alt="Sisweb — Gestão para Madeireiras" width="76" height="22" loading="lazy" decoding="async" style="height:20px;width:auto;object-fit:contain;display:block;" /><button type="button" class="lv-drawer-close" id="lv-drawer-close" aria-label="Fechar menu"><i class="fas fa-times" aria-hidden="true"></i></button></div>
     <nav class="lv-nav" aria-label="Navegação principal">
       <a href="#beneficios">Ecossistema</a>
       <a href="#simulador">Simulador</a>
@@ -139,7 +141,6 @@
     <div class="lv-topbar-ctas">
       <a href="https://sisweb-7ce82.web.app/portal-parceiro.html" class="lv-btn lv-btn-ghost"><i class="fas fa-sign-in-alt"></i> Meu painel do Parceiro</a>
       <a href="https://sisweb-7ce82.web.app/login.html" class="lv-btn lv-btn-ghost">Entrar</a>
-      <a href="https://sisweb-7ce82.web.app/login.html?mode=register&plan=starter&cupom=LANDING30" class="lv-btn lv-btn-primary">Começar agora</a>
       <div class="lv-theme-switch" role="group" aria-label="Tema da página">
         <button type="button" class="lv-theme-btn" data-theme-option="light" role="menuitemradio" aria-checked="false" title="Tema claro"><i class="fas fa-sun" aria-hidden="true"></i><span>Claro</span></button>
         <button type="button" class="lv-theme-btn" data-theme-option="dark" role="menuitemradio" aria-checked="false" title="Tema escuro"><i class="fas fa-moon" aria-hidden="true"></i><span>Escuro</span></button>
@@ -165,6 +166,10 @@
         </div>
       </div>
     </div>
+    </div>
+    <a href="https://sisweb-7ce82.web.app/login.html?mode=register&plan=starter&cupom=LANDING30" class="lv-btn lv-btn-primary lv-topbar-cta-primary">Começar agora</a>
+    <button type="button" class="lv-hamburger" id="lv-hamburger" aria-label="Abrir menu" aria-expanded="false" aria-controls="lv-topbar-menu"><span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span></button>
+    <div class="lv-topbar-backdrop" id="lv-topbar-backdrop" hidden></div>
   </div>
 </header>
 
@@ -209,15 +214,15 @@
                 <div class="lv-carousel" id="lv-hero-carousel" role="region" aria-roledescription="carrossel" aria-label="Painel real do Sisweb: Dashboard, Estoque, Vendas" tabindex="0" data-autoplay="6000">
                   <div class="lv-viewport lv-desk-viewport">
                     <div class="lv-slide is-active" role="group" aria-roledescription="slide" aria-label="1 de 3: Dashboard">
-                      <img src="assets/help-manual/index-overview.png" alt="Dashboard real do Sisweb — visão completa do pátio" loading="eager">
+                      <img src="assets/help-manual/mockups/hero/desktop-dashboard.png" alt="Dashboard do Sisweb em monitor premium — visão completa do pátio" loading="eager" fetchpriority="high" width="1600" height="1220" decoding="async">
                       <span class="lv-slide-cap">Dashboard — o pátio inteiro num painel</span>
                     </div>
                     <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="2 de 3: Estoque" aria-hidden="true">
-                      <img src="assets/help-manual/estoque-overview.png" alt="Estoque real do Sisweb — saldo, rastreabilidade, relatórios" loading="lazy">
+                      <img src="assets/help-manual/mockups/hero/desktop-estoque.png" alt="Estoque do Sisweb em monitor premium — saldo, rastreabilidade, relatórios" loading="lazy" width="1600" height="1220" decoding="async">
                       <span class="lv-slide-cap">Estoque — saldo real do pátio</span>
                     </div>
                     <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="3 de 3: Vendas" aria-hidden="true">
-                      <img src="assets/help-manual/vendas-overview.png" alt="Vendas do Sisweb — orçamentos, pedidos, financeiro sincronizado" loading="lazy">
+                      <img src="assets/help-manual/mockups/hero/desktop-vendas.png" alt="Vendas do Sisweb em monitor premium — orçamentos, pedidos, financeiro sincronizado" loading="lazy" width="1600" height="1220" decoding="async">
                       <span class="lv-slide-cap">Vendas — do orçamento ao pedido</span>
                     </div>
                   </div>
@@ -233,6 +238,8 @@
                 </div>
               </div>
             </div>
+            <div class="lv-monitor-neck" aria-hidden="true"></div>
+            <div class="lv-monitor-base" aria-hidden="true"></div>
           </div>
         </div>
         <div class="lv-phone-wrap">
@@ -243,15 +250,15 @@
                   <div class="lv-carousel" id="lv-hero-phone-carousel" role="region" aria-roledescription="carrossel" aria-label="Painel real do Sisweb no celular" tabindex="0" data-autoplay="5500">
                     <div class="lv-viewport lv-phone-viewport">
                       <div class="lv-slide is-active" role="group" aria-roledescription="slide" aria-label="1 de 3: Dashboard">
-                        <img src="assets/help-manual/index-mobile.png" alt="Dashboard do Sisweb no celular — gestão no bolso" loading="lazy">
+                        <img src="assets/help-manual/mockups/hero/mobile-dashboard.png" alt="Dashboard do Sisweb em smartphone premium — gestão no bolso" loading="lazy" width="800" height="1600" decoding="async">
                         <span class="lv-slide-cap">Dashboard — o pátio inteiro num painel</span>
                       </div>
                       <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="2 de 3: Estoque" aria-hidden="true">
-                        <img src="assets/help-manual/estoque-mobile.png" alt="Estoque de pátio no celular — saldo real e rastreio" loading="lazy">
+                        <img src="assets/help-manual/mockups/hero/mobile-estoque.png" alt="Estoque de pátio em smartphone premium — saldo real e rastreio" loading="lazy" width="800" height="1600" decoding="async">
                         <span class="lv-slide-cap">Estoque — saldo real e rastreio</span>
                       </div>
                       <div class="lv-slide" role="group" aria-roledescription="slide" aria-label="3 de 3: Vendas" aria-hidden="true">
-                        <img src="assets/help-manual/vendas-mobile.png" alt="Vendas do Sisweb no celular — orçamentos e pedidos" loading="lazy">
+                        <img src="assets/help-manual/mockups/hero/mobile-vendas.png" alt="Vendas do Sisweb em smartphone premium — orçamentos e pedidos" loading="lazy" width="800" height="1600" decoding="async">
                         <span class="lv-slide-cap">Vendas — do orçamento ao pedido</span>
                       </div>
                     </div>
@@ -270,10 +277,9 @@
             </div>
           </div>
         </div>
-    </div>
-    <div class="lv-hero-phone-cap" style="display:none;"><i class="fas fa-mobile-alt" aria-hidden="true"></i> No celular</div>
   </div>
-  <!-- Assinatura: pilha de toras em CSS puro -->
+    </div>
+    <!-- Assinatura: pilha de toras em CSS puro -->
   <div class="lv-logpile" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 </section>
 
@@ -442,13 +448,13 @@
     <div class="lv-vitrine-real">
       <!-- Mockup Desktop -->
       <div class="lv-device-mockup lv-desktop">
-        <img src="assets/help-manual/mockups/desktop/index.png" alt="Dashboard desktop do Sisweb — visão completa do pátio" loading="lazy">
+        <img src="assets/help-manual/mockups/hero/desktop-dashboard.png" alt="Dashboard do Sisweb em monitor premium — visão completa do pátio" loading="lazy" width="1600" height="1220" decoding="async">
         <span class="lv-device-label">Desktop — gestão completa em tela grande</span>
       </div>
       <!-- Mockup Mobile (2 screenshots lado a lado) -->
       <div class="lv-device-mockup lv-mobile">
-        <img src="assets/help-manual/mockups/mobile/index.png" alt="Dashboard mobile do Sisweb" loading="lazy">
-        <img src="assets/help-manual/mockups/mobile/estoque.png" alt="Estoque mobile do Sisweb — saldo real e rastreio" loading="lazy">
+        <img src="assets/help-manual/mockups/hero/mobile-dashboard.png" alt="Dashboard do Sisweb em smartphone premium" loading="lazy" width="800" height="1600" decoding="async">
+        <img src="assets/help-manual/mockups/hero/mobile-estoque.png" alt="Estoque do Sisweb em smartphone premium — saldo real e rastreio" loading="lazy" width="800" height="1600" decoding="async">
         <span class="lv-device-label">Mobile — no bolso, no pátio</span>
       </div>
     </div>
@@ -464,16 +470,22 @@
       <svg viewBox="0 0 800 460" class="lv-diagram-svg" aria-hidden="true">
         <ellipse cx="400" cy="230" rx="300" ry="170" fill="none" stroke="#4A3A26" stroke-width="2" stroke-dasharray="8 8" class="lv-orbit"/>
         <ellipse cx="400" cy="230" rx="230" ry="120" fill="none" stroke="#3A2E1E" stroke-width="2" stroke-dasharray="4 8" class="lv-orbit-slow"/>
-        <path d="M400 106 L400 158" class="lv-arrow"/><path d="M596 128 L508 172" class="lv-arrow"/><path d="M664 230 L548 230" class="lv-arrow"/><path d="M596 332 L508 288" class="lv-arrow"/><path d="M400 354 L400 302" class="lv-arrow"/><path d="M204 332 L292 288" class="lv-arrow"/><path d="M136 230 L252 230" class="lv-arrow"/><path d="M204 128 L292 172" class="lv-arrow"/>
+        <path d="M460 230 L666 230" class="lv-arrow"/><path d="M454 256 L640 288" class="lv-arrow"/><path d="M437 277 L566 335" class="lv-arrow"/><path d="M413 288 L459 361" class="lv-arrow"/><path d="M387 288 L341 361" class="lv-arrow"/><path d="M363 277 L234 335" class="lv-arrow"/><path d="M346 256 L160 288" class="lv-arrow"/><path d="M340 230 L134 230" class="lv-arrow"/><path d="M346 204 L160 172" class="lv-arrow"/><path d="M363 183 L234 125" class="lv-arrow"/><path d="M387 172 L341 99" class="lv-arrow"/><path d="M413 172 L459 99" class="lv-arrow"/><path d="M437 183 L566 125" class="lv-arrow"/><path d="M454 204 L640 172" class="lv-arrow"/>
         <g class="lv-node lv-node-center" data-module="RTDB"><circle cx="400" cy="230" r="46"/><circle cx="400" cy="230" r="32" class="lv-rings"/><circle cx="400" cy="230" r="12" class="lv-heart"/><text x="400" y="292">Banco único</text><title>Fonte única de dados — todos os módulos leem e escrevem aqui</title></g>
-        <g class="lv-node" data-module="clientes"><circle cx="400" cy="60" r="26"/><circle cx="400" cy="60" r="16" class="lv-rings"/><circle cx="400" cy="60" r="6" class="lv-heart"/><text x="400" y="100">Clientes</text><title>Cadastro único de clientes</title></g>
-        <g class="lv-node" data-module="tora"><circle cx="640" cy="105" r="26"/><circle cx="640" cy="105" r="16" class="lv-rings"/><circle cx="640" cy="105" r="6" class="lv-heart"/><text x="640" y="145">Tora</text><title>Romaneio de toras e cubagem</title></g>
-        <g class="lv-node" data-module="estoque"><circle cx="710" cy="230" r="26"/><circle cx="710" cy="230" r="16" class="lv-rings"/><circle cx="710" cy="230" r="6" class="lv-heart"/><text x="710" y="270">Estoque</text><title>Estoque de pátio com saldo real</title></g>
-        <g class="lv-node" data-module="vendas"><circle cx="640" cy="355" r="26"/><circle cx="640" cy="355" r="16" class="lv-rings"/><circle cx="640" cy="355" r="6" class="lv-heart"/><text x="640" y="395">Vendas</text><title>Vendas que alimentam o financeiro</title></g>
-        <g class="lv-node" data-module="financeiro"><circle cx="400" cy="400" r="26"/><circle cx="400" cy="400" r="16" class="lv-rings"/><circle cx="400" cy="400" r="6" class="lv-heart"/><text x="400" y="440">Financeiro</text><title>Contas a pagar e receber</title></g>
-        <g class="lv-node" data-module="folha"><circle cx="160" cy="355" r="26"/><circle cx="160" cy="355" r="16" class="lv-rings"/><circle cx="160" cy="355" r="6" class="lv-heart"/><text x="160" y="395">Folha</text><title>Folha de pagamento e banco de horas</title></g>
-        <g class="lv-node" data-module="fiscal"><circle cx="90" cy="230" r="26"/><circle cx="90" cy="230" r="16" class="lv-rings"/><circle cx="90" cy="230" r="6" class="lv-heart"/><text x="90" y="270">NF-e/MDF-e</text><title>Documentos fiscais do carregamento</title></g>
-        <g class="lv-node" data-module="compras"><circle cx="160" cy="105" r="26"/><circle cx="160" cy="105" r="16" class="lv-rings"/><circle cx="160" cy="105" r="6" class="lv-heart"/><text x="160" y="145">Compras</text><title>Compras que entram no estoque</title></g>
+        <g class="lv-node" data-module="estoque"><circle cx="700" cy="230" r="22"/><circle cx="700" cy="230" r="13" class="lv-rings"/><circle cx="700" cy="230" r="5" class="lv-heart"/><text x="700" y="272">Estoque</text><title>Estoque de pátio com saldo real</title></g>
+        <g class="lv-node" data-module="vendas"><circle cx="670" cy="303" r="22"/><circle cx="670" cy="303" r="13" class="lv-rings"/><circle cx="670" cy="303" r="5" class="lv-heart"/><text x="670" y="345">Vendas</text><title>Vendas que alimentam o financeiro</title></g>
+        <g class="lv-node" data-module="pct"><circle cx="587" cy="361" r="22"/><circle cx="587" cy="361" r="13" class="lv-rings"/><circle cx="587" cy="361" r="5" class="lv-heart"/><text x="587" y="403">PCT</text><title>Romaneio de pacotes com cubagem</title></g>
+        <g class="lv-node" data-module="financeiro"><circle cx="467" cy="394" r="22"/><circle cx="467" cy="394" r="13" class="lv-rings"/><circle cx="467" cy="394" r="5" class="lv-heart"/><text x="467" y="436">Financeiro</text><title>Contas a pagar e receber</title></g>
+        <g class="lv-node" data-module="folha"><circle cx="333" cy="394" r="22"/><circle cx="333" cy="394" r="13" class="lv-rings"/><circle cx="333" cy="394" r="5" class="lv-heart"/><text x="333" y="436">Folha</text><title>Folha de pagamento e banco de horas</title></g>
+        <g class="lv-node" data-module="preromaneio"><circle cx="213" cy="361" r="22"/><circle cx="213" cy="361" r="13" class="lv-rings"/><circle cx="213" cy="361" r="5" class="lv-heart"/><text x="213" y="403">Pré-romaneio</text><title>Pré-romaneio que vira romaneio</title></g>
+        <g class="lv-node" data-module="fiscal"><circle cx="130" cy="303" r="22"/><circle cx="130" cy="303" r="13" class="lv-rings"/><circle cx="130" cy="303" r="5" class="lv-heart"/><text x="130" y="345">NF-e/MDF-e</text><title>Documentos fiscais do carregamento</title></g>
+        <g class="lv-node" data-module="empresa"><circle cx="100" cy="230" r="22"/><circle cx="100" cy="230" r="13" class="lv-rings"/><circle cx="100" cy="230" r="5" class="lv-heart"/><text x="100" y="272">Empresa</text><title>Empresa e tenant da operação</title></g>
+        <g class="lv-node" data-module="compras"><circle cx="130" cy="157" r="22"/><circle cx="130" cy="157" r="13" class="lv-rings"/><circle cx="130" cy="157" r="5" class="lv-heart"/><text x="130" y="123">Compras</text><title>Compras que entram no estoque</title></g>
+        <g class="lv-node" data-module="tl"><circle cx="213" cy="99" r="22"/><circle cx="213" cy="99" r="13" class="lv-rings"/><circle cx="213" cy="99" r="5" class="lv-heart"/><text x="213" y="65">TL</text><title>Romaneio de toras longas</title></g>
+        <g class="lv-node" data-module="clientes"><circle cx="333" cy="66" r="22"/><circle cx="333" cy="66" r="13" class="lv-rings"/><circle cx="333" cy="66" r="5" class="lv-heart"/><text x="333" y="32">Clientes</text><title>Cadastro único de clientes</title></g>
+        <g class="lv-node" data-module="dashboard"><circle cx="467" cy="66" r="22"/><circle cx="467" cy="66" r="13" class="lv-rings"/><circle cx="467" cy="66" r="5" class="lv-heart"/><text x="467" y="32">Dashboard</text><title>Painel com KPIs do pátio</title></g>
+        <g class="lv-node" data-module="tora"><circle cx="587" cy="99" r="22"/><circle cx="587" cy="99" r="13" class="lv-rings"/><circle cx="587" cy="99" r="5" class="lv-heart"/><text x="587" y="65">Tora</text><title>Romaneio de toras e cubagem</title></g>
+        <g class="lv-node" data-module="pes"><circle cx="670" cy="157" r="22"/><circle cx="670" cy="157" r="13" class="lv-rings"/><circle cx="670" cy="157" r="5" class="lv-heart"/><text x="670" y="123">Pés</text><title>Romaneio de pés e peças</title></g>
       </svg>
       <div id="lv-diagram-tooltip" class="lv-tooltip" hidden></div>
     </div>
@@ -508,8 +520,43 @@
     <p class="lv-eyebrow"><i class="fas fa-tags"></i> Ofertas por tempo limitado</p>
     <h2 id="cupons-titulo" class="lv-section-title">Cupons ativos para economizar na assinatura</h2>
     <p class="lv-section-sub">Desconto de verdade no checkout — do primeiro romaneio ao fechamento do mês. Use o cupom na hora de assinar; vale para os planos indicados em cada oferta.</p>
-    <div id="lv-coupon-list" class="lv-coupons-grid" aria-live="polite"></div>
+    <div id="lv-coupon-list" class="lv-coupons-grid" aria-live="polite"><article class="lv-coupon-card lv-coupon-skeleton" aria-hidden="true"><div class="lv-coupon-off">–</div><div><span class="lv-coupon-code">···</span></div><p class="lv-coupon-meta">Buscando ofertas…</p></article><article class="lv-coupon-card lv-coupon-skeleton" aria-hidden="true"><div class="lv-coupon-off">–</div><div><span class="lv-coupon-code">···</span></div><p class="lv-coupon-meta">Buscando ofertas…</p></article></div>
     <p class="lv-coupons-note"><i class="fas fa-handshake"></i> Foi indicado por um parceiro? Informe o código dele no cadastro — e confira se o cupom também vale para o seu plano.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="lv-section" aria-labelledby="faq-titulo">
+  <div class="lv-container">
+    <p class="lv-eyebrow"><i class="fas fa-circle-question"></i> Dúvidas frequentes</p>
+    <h2 id="faq-titulo" class="lv-section-title">Perguntas de quem carrega caminhão</h2>
+    <p class="lv-section-sub">Respostas diretas antes de você criar a conta ou chamar no WhatsApp.</p>
+    <div class="lv-faq-list">
+      <details class="lv-faq-item" open>
+        <summary>O teste é realmente grátis?</summary>
+        <p>Sim: 30 dias grátis para testar no seu pátio, sem cartão e sem fidelidade.</p>
+      </details>
+      <details class="lv-faq-item">
+        <summary>Tem fidelidade ou multa de cancelamento?</summary>
+        <p>Não. Sem fidelidade — o cancelamento é feito pelo WhatsApp, sem burocracia.</p>
+      </details>
+      <details class="lv-faq-item">
+        <summary>Funciona no celular dentro do pátio?</summary>
+        <p>Sim. O Sisweb instala como aplicativo (PWA) no Android e no iPhone: romaneio, estoque e vendas no bolso do apontador, com o mesmo login do escritório.</p>
+      </details>
+      <details class="lv-faq-item">
+        <summary>Quais módulos estão incluídos?</summary>
+        <p>14 módulos num login único: Dashboard, Vendas, Compras, Estoque, Romaneios (Tora, TL, PCT, Pés e Pré-romaneio), Financeiro, Folha, NF-e/MDF-e, Cadastros e Empresa.</p>
+      </details>
+      <details class="lv-faq-item">
+        <summary>Tem desconto na assinatura?</summary>
+        <p>Sim: cupons ativos na seção de ofertas e código de parceiro no cadastro — confira sempre se o cupom vale para o seu plano.</p>
+      </details>
+      <details class="lv-faq-item">
+        <summary>Como falo com o suporte?</summary>
+        <p>Pelo WhatsApp (91) 99131-1049 ou pela Central de Suporte dentro do sistema, com histórico de tickets por empresa.</p>
+      </details>
+    </div>
   </div>
 </section>
 
@@ -531,10 +578,11 @@
 </footer>
 
 <!-- Flutuantes -->
+<div class="lv-sticky-cta"><a href="https://sisweb-7ce82.web.app/login.html?mode=register&plan=starter&cupom=LANDING30" class="lv-btn lv-btn-primary"><i class="fas fa-rocket"></i> Começar agora — 30 dias grátis</a></div>
 <a href="https://wa.me/5591991311049?text=Ol%C3%A1!%20Vim%20pela%20p%C3%A1gina%20de%20vendas%20do%20Sisweb%20e%20quero%20falar%20com%20um%20consultor." class="lv-float lv-float-wa" aria-label="Conversar no WhatsApp com a Sisweb: +55 91 99131-1049" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i></a>
 <!-- Instagram: botão oculto até haver handle oficial. Não publicar link placeholder. -->
 
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="landing-vendas.js?v=29d65b88c8c1"></script>
+<script src="landing-vendas.js?v=70f5e14470c1"></script>
 </body>
 </html>

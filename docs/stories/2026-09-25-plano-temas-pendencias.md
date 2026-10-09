@@ -549,3 +549,12 @@ deles. Apuração com sessão logada + instrumentação do render:
 - [x] Após qualquer mudança em CSS/JS: `node scripts/sync-css-cachebusters.mjs --check`
       (com `--resync` se o conteúdo mudou mas o `?v=` já era hash) — nenhum `?v=`
       obsoleto; nunca versionar trabalho paralelo junto.
+
+## Sessão 09/10 — validação Onda 24 + perfil Zen
+- Onda 24 validada em produção (commit `dea27d9`, SW `2026-10-08-onda24`):
+  W2 789→383/386ms; paridade detalhado-por-categoria OK (`Tauari - Tora`,
+  R$ 1.000,00); toggle resumo/detalhado OK; alturas PCT 38px; toast da baixa
+  exibe a mensagem do servidor verbatim (teto 300).
+- Perfil global OpenCode Zen registrado: `AGENTS.md` (seção permanente fora dos
+  blocos AIOX) + `docs/core/CEREBRO-SISWEB.md` (seção 18, protocolo de uso do
+  Cérebro). Espelho da regra: consultar o Cérebro antes, registrar ao final.

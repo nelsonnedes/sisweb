@@ -1,4 +1,4 @@
-const HELP_VERSION = '2026-06-06-manual-prints-sanitizados';
+const HELP_VERSION = '2026-10-06-manual-prints-reais-mockups';
 
 function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
@@ -19,41 +19,42 @@ function safeList(items, tag) {
 }
 
 function buildTopics() {
-    const fict = 'Dados fictícios';
     const topics = [
         {
             id: 'inicio',
             category: 'Começando',
             icon: 'fa-compass',
             title: 'Visão geral e ordem recomendada',
-            lead: 'Use este capítulo para entender o caminho mais seguro: configurar empresa, cadastrar bases, operar módulos e acompanhar indicadores.',
-            tags: ['fluxo inicial', 'multi-tenant', fict],
+            lead: 'Painel de entrada com indicadores rápidos, cotação USD/BRL em tempo real, atalhos para os módulos principais e visão geral das operações.',
+            tags: ['fluxo inicial', 'multi-tenant', 'dashboard', 'cotação'],
             steps: [
-                'Entre com usuário autorizado e confirme se a empresa/tenant aparece corretamente.',
-                'Complete Empresa, Perfil, Clientes, Fornecedores e Espécies antes de operar.',
-                'Use Vendas, Compras, Estoque, Romaneios, Financeiro e Folha conforme a rotina do dia.',
-                'Consulte Ajuda e Suporte pelo menu de configurações quando precisar registrar um ticket.'
+                'Acesse o Sisweb com seu e-mail e senha autorizados e confira a empresa ativa no topo.',
+                'Acompanhe na tela inicial a cotação oficial USD/BRL e notificações de pendências.',
+                'Antes de emitir pedidos, complete os cadastros base em Empresa, Clientes, Fornecedores e Espécies.',
+                'Utilize os módulos operacionais (Vendas, Compras, Estoque, Romaneios, Financeiro e Folha) conforme a rotina do dia.',
+                'Em caso de dúvidas técnicas ou suporte, acione a Central de Suporte pelo rodapé ou menu de configurações.'
             ],
             features: [
-                'Menu superior com módulos oficiais do sistema.',
-                'Alertas pelo sininho para pendências importantes.',
-                'PWA com atualização automática e instalação em mobile/desktop.',
-                'Rodapé “Fale Conosco” abrindo a Central de Suporte.'
+                'Dashboard central com cotação cambial USD/BRL atualizada.',
+                'Menu superior unificado com todos os módulos operacionais.',
+                'Sininho de notificações com contagem de alertas não lidos.',
+                'Instalação PWA no desktop e smartphones (Android/iOS).',
+                'Central de Suporte acessível com um clique no rodapé Fale Conosco.'
             ],
-            modals: ['Ajuda rápida', 'Suporte Sisweb', 'Sobre', 'Confirmações do sistema'],
-            warning: 'Este manual é operacional. Regras fiscais, trabalhistas e ambientais devem ser conferidas com profissional responsável quando houver impacto legal.',
+            modals: ['Alertas e Notificações', 'Central de Suporte Sisweb', 'Sobre o Sistema', 'Confirmações de Operação'],
+            warning: 'Este manual é operacional. Regras fiscais, trabalhistas e ambientais devem ser conferidas com o responsável técnico ou contábil da sua empresa.',
             mockups: [
                 {
-                    title: 'Dashboard inicial',
-                    caption: 'Painel de entrada com KPIs, alertas e atalhos. Os valores são exemplos neutros.',
-                    tabs: ['Home', 'Vendas', 'Estoque', 'Financeiro', 'Cadastros', 'Romaneios'],
-                    kpis: [['Romaneios', '12'], ['A receber', 'R$ 1.250,00'], ['A pagar', 'R$ 640,00']],
-                    chips: [['Online', 'green'], ['Tenant: Empresa Exemplo', ''], ['Atualizado agora', '']],
-                    table: {
-                        title: 'Pendências de hoje',
-                        headers: ['Tipo', 'Módulo', 'Ação'],
-                        rows: [['Alerta', 'Financeiro', 'Revisar'], ['Rotina', 'Folha', 'Conferir'], ['Suporte', 'Sistema', 'Abrir']]
-                    }
+                    title: 'Visão Desktop — Dashboard Inicial',
+                    caption: 'Painel central do Sisweb em tela grande com cards de indicadores, cotação de moedas e barra de navegação.',
+                    image: 'assets/help-manual/mockups/desktop/inicio.png',
+                    alt: 'Mockup Desktop do Dashboard Inicial Sisweb'
+                },
+                {
+                    title: 'Visão Mobile / PWA — Dashboard Inicial',
+                    caption: 'Interface otimizada para smartphones com menu compacto, cards empilhados e acesso rápido às operações.',
+                    image: 'assets/help-manual/mockups/mobile/inicio.png',
+                    alt: 'Mockup Mobile do Dashboard Inicial Sisweb'
                 }
             ]
         },
@@ -62,28 +63,35 @@ function buildTopics() {
             category: 'Começando',
             icon: 'fa-bars',
             title: 'Menu, PWA, alertas e sessão',
-            lead: 'Explica como navegar, instalar o Sisweb como aplicativo e manter a sessão de forma confiável.',
-            tags: ['menu', 'PWA', 'mobile', 'logout'],
+            lead: 'Aprenda a navegar pelas trilhas do Sisweb, alternar entre os temas Claro e Escuro, instalar o sistema como PWA e gerenciar a sessão.',
+            tags: ['menu', 'PWA', 'mobile', 'tema dark/light', 'sessão'],
             steps: [
-                'No desktop, use os grupos do menu superior e as opções de configurações.',
-                'No mobile/PWA, abra a sidebar e use Ajuda, Suporte, Assinatura e Sair.',
-                'Quando houver nova versão, o service worker atualiza os arquivos sem reinstalar o aplicativo.',
-                'Se uma tela pedir login novamente, volte pelo fluxo normal para restaurar a sessão com segurança.'
+                'No desktop, utilize o menu horizontal suspenso categorizado por áreas funcionais.',
+                'No smartphone, toque no botão hamburger para abrir a gaveta lateral completa com atalhos e perfil.',
+                'Selecione o tema de visualização (Claro, Escuro ou Automático do Sistema) através das Configurações de Tema.',
+                'Instale o Sisweb na tela inicial pelo navegador (PWA) para abrir como aplicativo nativo sem barras de endereço.',
+                'Para encerrar o expediente com segurança, utilize o botão Sair na barra de usuário ou gaveta lateral.'
             ],
             features: [
-                'Sidebar mobile com logout visível.',
-                'Sininho com área clicável completa.',
-                'Atalho de instalação PWA.',
-                'Cache de HTML/JS/CSS configurado para atualização frequente.'
+                'Menu suspenso com submenus organizados por fluxo de trabalho.',
+                'Gaveta lateral (sidebar) responsiva com navegação por toque.',
+                'Alternância instantânea de temas visuais (Claro, Escuro e Sistema).',
+                'Instalador PWA para operação rápida no pátio e em campo.',
+                'Sessão autenticada e protegida com renovação automática de credenciais.'
             ],
-            modals: ['Alertas', 'Configurações', 'Suporte', 'Sobre'],
+            modals: ['Menu Lateral Mobile', 'Configurações de Tema', 'Central de Suporte', 'Confirmar Encerramento de Sessão'],
             mockups: [
                 {
-                    title: 'Sidebar mobile',
-                    caption: 'Menu compacto para PWA, com opções críticas acessíveis em telas pequenas.',
-                    tabs: ['Home', 'Ajuda', 'Suporte', 'Assinatura', 'Sair'],
-                    fields: ['Buscar módulo', 'Empresa Exemplo', 'Usuário Operador'],
-                    cards: [['Instalar Sisweb', 'Disponível quando o navegador permitir.'], ['Atualizações', 'O app verifica nova versão automaticamente.']]
+                    title: 'Visão Desktop — Menu e Navegação',
+                    caption: 'Barra superior com grupos de módulos, sininho de notificações, seletor de tema e perfil do usuário.',
+                    image: 'assets/help-manual/mockups/desktop/navegacao.png',
+                    alt: 'Mockup Desktop do Menu e Navegação Sisweb'
+                },
+                {
+                    title: 'Visão Mobile / PWA — Menu e Gaveta',
+                    caption: 'Gaveta de navegação mobile com links organizados, dados do tenant e botão de logout visível.',
+                    image: 'assets/help-manual/mockups/mobile/navegacao.png',
+                    alt: 'Mockup Mobile do Menu e Navegação Sisweb'
                 }
             ]
         },
@@ -92,32 +100,36 @@ function buildTopics() {
             category: 'Configuração',
             icon: 'fa-building',
             title: 'Empresa e tenant',
-            lead: 'Centraliza dados da empresa, identidade visual e validação do tenant usado nas operações.',
-            tags: ['companyId', 'CNPJ', 'logo', fict],
+            lead: 'Centraliza os dados cadastrais da empresa, logotipo institucional para relatórios e PDFs, chave PIX para cobrança e geolocalização.',
+            tags: ['companyId', 'CNPJ', 'logo', 'georeferenciamento', 'PIX'],
             steps: [
-                'Abra Configurações > Empresa.',
-                'Confira razão social, CNPJ, endereço, telefone e logo institucional.',
-                'Salve e valide se os demais módulos carregam dados do mesmo tenant.',
-                'Quando precisar de correção administrativa, abra um ticket na Central de Suporte.'
+                'Acesse o menu Configurações > Empresa.',
+                'Preencha Razão Social, Nome Fantasia, CNPJ e Inscrição Estadual.',
+                'Faça upload do logotipo da empresa para cabeçalhos de pedidos e relatórios de romaneios.',
+                'Configure a chave PIX e dados bancários que constarão nas lâminas de pagamento para clientes.',
+                'Utilize o botão Localizar coordenadas para registrar a geolocalização exata do pátio ou sede.',
+                'Clique em Salvar Empresa para sincronizar os dados em todo o ecossistema.'
             ],
             features: [
-                'Cadastro com campos de identificação.',
-                'Logo armazenada fora do Realtime Database quando aplicável.',
-                'Bloqueio de duplicidade de CNPJ em companies diferentes.',
-                'Correções sensíveis devem ser solicitadas ao suporte com justificativa.'
+                'Cadastro completo de identificação jurídica e fiscal.',
+                'Upload otimizado de logo institucional em nuvem.',
+                'Chave PIX e dados bancários para cobrança integrada.',
+                'Georeferenciamento de precisão para pátios madeireiros.',
+                'Listagem de empresas cadastradas com busca e paginação.'
             ],
-            modals: ['Upload/seleção de logo', 'Confirmação de salvamento', 'Central de Suporte para correções sensíveis'],
+            modals: ['Selecionar Logo', 'Localizar Coordenadas', 'Empresas Cadastradas', 'Imprimir Relatório de Empresas'],
             mockups: [
                 {
-                    title: 'Cadastro da empresa',
-                    caption: 'Exemplo fictício de empresa com campos de identificação.',
-                    tabs: ['Dados', 'Endereço', 'Contato'],
-                    fields: ['Razão Social: Empresa Exemplo LTDA', 'CNPJ: 00.000.000/0001-00', 'Cidade/UF: Exemplo/PA', 'Telefone: (00) 00000-0000'],
-                    cards: [['Logo do sistema', 'Arquivo institucional sem base64 no banco.'], ['Tenant ativo', 'companyId resolvido pela sessão.']]
+                    title: 'Visão Desktop — Gestão de Empresa',
+                    caption: 'Formulário completo com dados da empresa, seção PIX/Bancária, geolocalização e lista de unidades.',
+                    image: 'assets/help-manual/mockups/desktop/empresa.png',
+                    alt: 'Mockup Desktop de Gestão de Empresa'
                 },
                 {
-                    title: 'Empresas cadastradas',
-                    caption: 'Modal/listagem de empresas em ambiente de treinamento, sem CNPJ real.'
+                    title: 'Visão Mobile / PWA — Gestão de Empresa',
+                    caption: 'Layout vertical adaptado para conferência e edição rápida dos dados da empresa no celular.',
+                    image: 'assets/help-manual/mockups/mobile/empresa.png',
+                    alt: 'Mockup Mobile de Gestão de Empresa'
                 }
             ]
         },
@@ -126,35 +138,35 @@ function buildTopics() {
             category: 'Cadastros',
             icon: 'fa-database',
             title: 'Clientes, fornecedores e espécies',
-            lead: 'Cadastros base alimentam vendas, compras, romaneios, financeiro, estoque e relatórios.',
-            tags: ['clientes', 'fornecedores', 'espécies'],
+            lead: 'Bases mestras do sistema que alimentam vendas, compras, romaneios de toras, estoque e movimentações financeiras.',
+            tags: ['clientes', 'fornecedores', 'espécies', 'botânica'],
             steps: [
-                'Cadastre clientes antes de vendas e romaneios.',
-                'Cadastre fornecedores antes de compras e contas a pagar.',
-                'Mantenha espécies e parâmetros de medição revisados.',
-                'Use busca, filtros e edição com cuidado para preservar histórico.'
+                'Acesse Clientes, Fornecedores ou Gerenciar Espécies pelos menus correspondentes.',
+                'Clique em Novo Cliente ou Novo Fornecedor para abrir o formulário em janela modal.',
+                'Preencha nome/razão social, CPF/CNPJ, telefone, e-mail e endereço.',
+                'No Gerenciador de Espécies, cadastre nomes vulgares, científicos e coeficientes de cálculo.',
+                'Utilize os filtros de pesquisa instantânea e paginação para localizar registros históricos.'
             ],
             features: [
-                'Listas com pesquisa e ações.',
-                'Modais de novo/editar cliente e fornecedor.',
-                'Espécies com parâmetros para cálculo de madeira.',
-                'Importação de espécies quando aplicável.'
+                'Cadastro ágil de clientes com dados de contato e faturamento.',
+                'Gestão de fornecedores com histórico de fornecimento.',
+                'Gerenciador Unificado de Espécies com busca rápida.',
+                'Validações fiscais contra duplicidade de documentos.',
+                'Tabelas compactas com paginação e ordenação por coluna.'
             ],
-            modals: ['Novo Cliente', 'Lista de Clientes', 'Novo Fornecedor', 'Lista de Fornecedores', 'Nova Espécie', 'Lista de Espécies'],
+            modals: ['Novo Cliente', 'Editar Cliente', 'Novo Fornecedor', 'Editar Fornecedor', 'Nova Espécie', 'Gerenciador Unificado de Espécies'],
             mockups: [
                 {
-                    title: 'Lista de cadastros',
-                    caption: 'Tabela fictícia com ações de edição sem expor clientes reais.',
-                    tabs: ['Clientes', 'Fornecedores', 'Espécies'],
-                    table: {
-                        title: 'Registros cadastrados',
-                        headers: ['Nome', 'Documento', 'Status', 'Ações'],
-                        rows: [['Cliente Exemplo', '000.000.000-00', 'Ativo', 'Editar'], ['Fornecedor Modelo', '00.000.000/0001-00', 'Ativo', 'Editar'], ['Espécie Exemplo', 'Parâmetro', 'Ativo', 'Editar']]
-                    },
-                    modal: {
-                        title: 'Novo Cliente',
-                        rows: ['Nome/Razão Social', 'Documento', 'Telefone', 'Endereço', 'Salvar']
-                    }
+                    title: 'Visão Desktop — Gerenciar Clientes',
+                    caption: 'Tabela de clientes com busca instantânea, status ativo, paginação compacta e ações rápidas.',
+                    image: 'assets/help-manual/mockups/desktop/cadastros.png',
+                    alt: 'Mockup Desktop de Gerenciar Clientes'
+                },
+                {
+                    title: 'Visão Mobile / PWA — Gerenciar Clientes',
+                    caption: 'Visualização mobile em cards responsivos com botões de chamada e edição rápida.',
+                    image: 'assets/help-manual/mockups/mobile/cadastros.png',
+                    alt: 'Mockup Mobile de Gerenciar Clientes'
                 }
             ]
         },
@@ -163,37 +175,35 @@ function buildTopics() {
             category: 'Operação',
             icon: 'fa-file-alt',
             title: 'Romaneios e pré-romaneio',
-            lead: 'Fluxo de medição e emissão de documentos operacionais: Pré-Romaneio, TL, PCT, Pés e Tora.',
-            tags: ['TL', 'PCT', 'Pés', 'Tora', 'impressão'],
+            lead: 'Apontamento, medição e cubagem de toras de madeira nos formatos padrão de mercado: Pré-Romaneio, Tora Longa (TL), Pontas (PCT), Pés e Tora.',
+            tags: ['TL', 'PCT', 'Pés', 'Tora', 'cubagem Francon', 'impressão'],
             steps: [
-                'Crie o Pré-Romaneio com cliente, espécie e itens previstos.',
-                'Escolha o tipo correto de romaneio: TL, PCT, Pés ou Tora.',
-                'Adicione itens, confira medidas, totais e observações.',
-                'Salve, liste, edite se necessário e imprima com colunas configuradas.'
+                'Escolha o tipo de romaneio adequado (Tora, TL, PCT ou Pés) ou inicie um Pré-Romaneio.',
+                'Selecione o fornecedor ou cliente e a espécie florestal correspondente.',
+                'Lance as toras informando comprimento e diâmetros (ou importe via planilha Excel padronizada).',
+                'O sistema calcula instantaneamente o volume em metros cúbicos (m³) pelas regras Francon e geométrica.',
+                'Salve o romaneio para gerar a numeração sequencial oficial e emitir o espelho de impressão formatado.'
             ],
             features: [
-                'Seletores de cliente e espécie.',
-                'Lista de romaneios salvos.',
-                'Configuração de colunas de impressão.',
-                'Integração com vendas/estoque quando aplicável.'
+                'Emissão nos 4 formatos do mercado florestal (Tora, TL, PCT, Pés).',
+                'Cubagem Francon e geométrica com precisão decimal em tempo real.',
+                'Importação em lote de peças a partir de modelo Excel.',
+                'Numeração sequencial e profissional para controle do pátio.',
+                'Configuração de colunas de impressão e download em PDF.'
             ],
-            modals: ['Lista de Romaneios', 'Lista de Clientes', 'Lista de Espécies', 'Configurar colunas impressas', 'Novo Cliente', 'Nova Espécie'],
+            modals: ['Lista de Romaneios', 'Importar Planilha Excel', 'Configurar Colunas de Impressão', 'Pré-Visualizar Espelho', 'Adicionar Peça'],
             mockups: [
                 {
-                    title: 'Emissão de romaneio',
-                    caption: 'Formulário fictício de emissão e tabela de itens.',
-                    tabs: ['Pré-Romaneio', 'TL', 'PCT', 'Pés', 'Tora'],
-                    fields: ['Cliente: Cliente Exemplo', 'Espécie: Espécie Modelo', 'Data: 06/06/2026'],
-                    table: {
-                        title: 'Itens do romaneio',
-                        headers: ['Item', 'Medida', 'Volume', 'Ações'],
-                        rows: [['001', '2,20 x 0,35', '0,269 m³', 'Editar'], ['002', '2,40 x 0,40', '0,377 m³', 'Editar']]
-                    },
-                    modal: { title: 'Lista de Romaneios', rows: ['Pesquisar', 'Selecionar', 'Imprimir', 'Configurar colunas'] }
+                    title: 'Visão Desktop — Romaneio de Tora',
+                    caption: 'Tela de lançamento com grade de peças, cálculo simultâneo de cubagem e botões de importação Excel.',
+                    image: 'assets/help-manual/mockups/desktop/romaneios.png',
+                    alt: 'Mockup Desktop de Romaneio de Tora'
                 },
                 {
-                    title: 'Lista de romaneios',
-                    caption: 'Janela de consulta com romaneios fictícios, filtros e ações de impressão.'
+                    title: 'Visão Mobile / PWA — Romaneio de Tora',
+                    caption: 'Lançamento de medidas otimizado para celulares, permitindo apontamento direto no pátio da serraria.',
+                    image: 'assets/help-manual/mockups/mobile/romaneios.png',
+                    alt: 'Mockup Mobile de Romaneio de Tora'
                 }
             ]
         },
@@ -202,42 +212,36 @@ function buildTopics() {
             category: 'Operação',
             icon: 'fa-shopping-cart',
             title: 'Vendas e pedidos',
-            lead: 'Registra pedidos de venda, produtos, itens de romaneio, contas a receber e relatórios.',
-            tags: ['pedido', 'cliente', 'receber', 'relatório'],
+            lead: 'Gestão completa do ciclo de vendas: pedidos de madeira serrada, carrinho com conferência de cubagem, reserva, baixa atômica de estoque e faturamento.',
+            tags: ['pedidos', 'clientes', 'estoque serrados', 'baixa automática', 'relatórios'],
             steps: [
-                'Abra Vendas > Sistema de Vendas.',
-                'Clique em Novo Pedido e selecione cliente.',
-                'Escolha item manual, produto cadastrado ou romaneio.',
-                'Informe condições de pagamento e salve o pedido.',
-                'Use Lista de Pedidos e Relatórios para acompanhar, imprimir e filtrar.'
+                'Acesse Vendas > Sistema de Vendas e clique em Novo Pedido.',
+                'Selecione o cliente cadastrado e a condição de pagamento.',
+                'Adicione produtos do catálogo ou itens de madeira serrada especificando medidas e volume.',
+                'O sistema valida saldos em estoque, ocultando produtos zerados e prevenindo vendas a descoberto.',
+                'Ao aprovar o pedido, o estoque é deduzido em ponto único e os títulos a receber são criados no financeiro.',
+                'Emita a ordem de carregamento e o espelho do pedido para entrega.'
             ],
             features: [
-                'Novo pedido com status.',
-                'Itens manuais, produtos e romaneios.',
-                'Contas a receber vinculadas.',
-                'Relatórios com seleção de colunas e ações em lote.'
+                'Carrinho com suporte a unidades mistas (m³, peças, metro linear, m²).',
+                'Dedução de estoque em ponto único na aprovação com estorno seguro.',
+                'Integração imediata com o módulo de Contas a Receber.',
+                'Impressão limpa de pedidos para expedição e motorista.',
+                'Relatórios consolidados de vendas por período, cliente ou produto.'
             ],
-            modals: ['Lista de Pedidos', 'Novo Produto', 'Configurar colunas', 'Detalhes do Pedido', 'Novo Cliente'],
+            modals: ['Novo Pedido de Venda', 'Listar Pedidos', 'Lista de Pedidos', 'Detalhes do Pedido', 'Estoque de Serrados', 'Configurar Colunas de Relatório'],
             mockups: [
                 {
-                    title: 'Pedido de venda',
-                    caption: 'Pedido fictício com itens, totais e contas a receber.',
-                    tabs: ['Pedidos', 'Clientes', 'Produtos', 'Relatórios'],
-                    fields: ['Cliente: Cliente Exemplo', 'Status: Aberto', 'Forma: Pix', 'Vencimento: 10/06/2026'],
-                    table: {
-                        title: 'Itens do pedido',
-                        headers: ['Produto', 'Qtd.', 'Valor', 'Total'],
-                        rows: [['Produto Exemplo', '2', 'R$ 120,00', 'R$ 240,00'], ['Romaneio TL 001', '1', 'R$ 360,00', 'R$ 360,00']]
-                    },
-                    modal: { title: 'Lista de Pedidos', rows: ['Pesquisar pedidos', 'Filtrar período', 'Imprimir selecionados', 'Ações centralizadas'] }
+                    title: 'Visão Desktop — Sistema de Vendas',
+                    caption: 'Formulário de novo pedido com abas de Clientes, Serrados e Relatórios, carrinho dinâmico e parcelas.',
+                    image: 'assets/help-manual/mockups/desktop/vendas.png',
+                    alt: 'Mockup Desktop do Sistema de Vendas'
                 },
                 {
-                    title: 'Lista de pedidos',
-                    caption: 'Modal real de pedidos com filtros, coluna Atualizado e ações centralizadas.'
-                },
-                {
-                    title: 'Detalhes do pedido',
-                    caption: 'Visualização de pedido, itens, totalização e botões de imprimir/editar.'
+                    title: 'Visão Mobile / PWA — Sistema de Vendas',
+                    caption: 'Acompanhamento e aprovação de pedidos de venda na palma da mão com resumo financeiro.',
+                    image: 'assets/help-manual/mockups/mobile/vendas.png',
+                    alt: 'Mockup Mobile do Sistema de Vendas'
                 }
             ]
         },
@@ -246,38 +250,36 @@ function buildTopics() {
             category: 'Operação',
             icon: 'fa-shopping-bag',
             title: 'Compras e contas a pagar',
-            lead: 'Controla pedidos de compra, fornecedores, produtos, carrinho de itens e contas a pagar.',
-            tags: ['compra', 'fornecedor', 'pagar', 'produto'],
+            lead: 'Aquisição de matéria-prima, toras e insumos com controle de fornecedores, carrinho de compras e sincronização com o contas a pagar.',
+            tags: ['compras', 'fornecedores', 'insumos', 'contas a pagar', 'relatórios'],
             steps: [
-                'Abra Estoque > Sistema de Compras.',
-                'Crie Novo Pedido de Compra e selecione fornecedor.',
-                'Adicione itens manuais, produtos cadastrados ou itens vinculados a romaneio.',
-                'Informe contas a pagar e salve.',
-                'Use relatórios para exportar CSV/PDF e configurar colunas.'
+                'Acesse Compras > Pedidos de Compra e clique em Novo Pedido.',
+                'Selecione o fornecedor ou realize um cadastro rápido diretamente na tela.',
+                'Lance os produtos, matérias-primas ou serviços adquiridos com custo unitário e quantidade.',
+                'Defina as condições de pagamento e datas de vencimento das parcelas.',
+                'Salve para gerar os lançamentos no Contas a Pagar e atualizar as previsões de desembolso.',
+                'Utilize os relatórios para exportar extratos de compras em CSV e PDF.'
             ],
             features: [
-                'Pedido de compra com carrinho de itens.',
-                'Cadastro rápido de fornecedor.',
-                'Produtos e relatórios de compras.',
-                'Lista de pedidos com impressão selecionada.'
+                'Carrinho de compras com conferência de impostos e custo total.',
+                'Geração automática de parcelas vinculadas ao Contas a Pagar.',
+                'Cadastro rápido de fornecedor sem sair do fluxo de compras.',
+                'Histórico completo de compras por fornecedor e período.',
+                'Relatórios de compras com exportação facilitada para contabilidade.'
             ],
-            modals: ['Lista de Pedidos', 'Produto', 'Detalhes do Pedido', 'Novo Fornecedor', 'Configurar colunas de compras'],
+            modals: ['Novo Pedido de Compra', 'Listar Pedidos de Compra', 'Detalhes da Compra', 'Novo Fornecedor', 'Configurar Colunas'],
             mockups: [
                 {
-                    title: 'Pedido de compra',
-                    caption: 'Compra fictícia com fornecedor e contas a pagar.',
-                    tabs: ['Pedidos', 'Fornecedores', 'Produtos', 'Relatórios'],
-                    fields: ['Fornecedor: Fornecedor Modelo', 'Produto: Item Exemplo', 'Condição: 2 parcelas'],
-                    table: {
-                        title: 'Carrinho',
-                        headers: ['Item', 'Qtd.', 'Custo', 'Total'],
-                        rows: [['Produto Exemplo', '5', 'R$ 80,00', 'R$ 400,00'], ['Serviço Exemplo', '1', 'R$ 150,00', 'R$ 150,00']]
-                    },
-                    modal: { title: 'Detalhes do Pedido', rows: ['Itens', 'Pagamento', 'Imprimir', 'Editar'] }
+                    title: 'Visão Desktop — Sistema de Compras',
+                    caption: 'Painel com grade de produtos, fornecedores vinculados, carrinho e condições de pagamento.',
+                    image: 'assets/help-manual/mockups/desktop/compras.png',
+                    alt: 'Mockup Desktop do Sistema de Compras'
                 },
                 {
-                    title: 'Lista de pedidos de compra',
-                    caption: 'Modal real de compras com filtros, fornecedor, status e ações do pedido.'
+                    title: 'Visão Mobile / PWA — Sistema de Compras',
+                    caption: 'Consulta e registro de compras em dispositivos móveis durante negociações no campo.',
+                    image: 'assets/help-manual/mockups/mobile/compras.png',
+                    alt: 'Mockup Mobile do Sistema de Compras'
                 }
             ]
         },
@@ -286,37 +288,36 @@ function buildTopics() {
             category: 'Gestão',
             icon: 'fa-warehouse',
             title: 'Estoque de toras e almoxarifado',
-            lead: 'Acompanha entradas, saídas, consulta de toras, almoxarifado, movimentações, rastreabilidade e relatórios.',
-            tags: ['entrada', 'saída', 'almoxarifado', 'rastreabilidade'],
+            lead: 'Gestão integral do pátio madeireiro e almoxarifado: entrada e saída de toras por plaqueta, quarentena, conferência de cubagem e movimentações.',
+            tags: ['entrada toras', 'saída toras', 'plaqueta', 'almoxarifado', 'rastreabilidade'],
             steps: [
-                'Registre Entrada Toras ou Entrada Almoxarifado conforme o tipo de item.',
-                'Faça Saída Toras ou baixa de produto com motivo/destino.',
-                'Use Consultar Toras e Movimentações para rastrear histórico.',
-                'Configure colunas e imprima relatórios quando necessário.'
+                'Registre a Entrada de Toras vinculada a romaneios ou manual com número de plaqueta física.',
+                'Espécies fora de cadastro entram com aviso de quarentena para conferência botânica antes da liberação.',
+                'Utilize Saída de Toras para registrar serragem, desdobro ou venda com destino formal.',
+                'No Almoxarifado, controle ferramentas, lâminas, peças de manutenção e materiais de consumo.',
+                'Consulte o histórico de movimentações com busca ágil por número de plaqueta ou lote.',
+                'Emita relatórios de saldo físico com conferência de volume cúbico.'
             ],
             features: [
-                'Abas de Entrada, Saída, Consulta, Almoxarifado, Movimentações e Relatórios.',
-                'Coluna Ações fixa em tabelas extensas.',
-                'Seleção de toras e rastreabilidade.',
-                'Relatórios profissionais com colunas configuráveis.'
+                'Controle de pátio por número de plaqueta física e espécie.',
+                'Quarentena inteligente e badge revisar para espécies e fornecedores pendentes.',
+                'Almoxarifado completo para peças, insumos e EPIs com saldo mínimo.',
+                'Rastreabilidade ponta a ponta desde o romaneio até a saída da madeira.',
+                'Busca unificada de tora com layout padronizado de botões e ações.'
             ],
-            modals: ['Seleção de Toras', 'Rastreabilidade', 'Configurar colunas', 'Confirmar estorno/baixa', 'Baixa de Produto'],
+            modals: ['Entrada de Toras', 'Saída de Toras', 'Consultar Toras', 'Baixa de Produto / Almoxarifado', 'Rastreabilidade'],
             mockups: [
                 {
-                    title: 'Controle de estoque',
-                    caption: 'Visão fictícia de toras, almoxarifado e movimentações.',
-                    tabs: ['Entrada Toras', 'Saída Toras', 'Consultar', 'Almoxarifado', 'Relatórios'],
-                    kpis: [['Toras', '34'], ['Volume', '12,450 m³'], ['Produtos', '18']],
-                    table: {
-                        title: 'Movimentações',
-                        headers: ['Data', 'Tipo', 'Item', 'Saldo', 'Ações'],
-                        rows: [['06/06', 'Entrada', 'Tora 001', 'Disponível', 'Ver'], ['06/06', 'Saída', 'Produto A', '12 un.', 'Ver']]
-                    },
-                    modal: { title: 'Rastreabilidade', rows: ['Origem', 'Romaneio', 'Movimentações', 'Responsável'] }
+                    title: 'Visão Desktop — Controle de Estoque',
+                    caption: 'Abas de Entrada, Saída, Almoxarifado e Movimentações com busca instantânea e saldo consolidado.',
+                    image: 'assets/help-manual/mockups/desktop/estoque.png',
+                    alt: 'Mockup Desktop do Controle de Estoque'
                 },
                 {
-                    title: 'Rastreabilidade',
-                    caption: 'Modal de histórico do item, útil para conferir origem, saída e responsável.'
+                    title: 'Visão Mobile / PWA — Controle de Estoque',
+                    caption: 'Consulta de toras e baixa de produtos no celular para conferência presencial no pátio.',
+                    image: 'assets/help-manual/mockups/mobile/estoque.png',
+                    alt: 'Mockup Mobile do Controle de Estoque'
                 }
             ]
         },
@@ -325,38 +326,35 @@ function buildTopics() {
             category: 'Gestão',
             icon: 'fa-chart-line',
             title: 'Financeiro',
-            lead: 'Controla contas a receber, contas a pagar, fluxo de caixa, relatórios, anexos e pagamentos.',
-            tags: ['receber', 'pagar', 'fluxo', 'anexos'],
+            lead: 'Gestão do fluxo de caixa e contas a pagar/receber, conciliação de vencimentos civis, cálculo de juros/multas e anexo em nuvem de comprovantes.',
+            tags: ['contas a pagar', 'contas a receber', 'fluxo de caixa', 'anexos', 'juros'],
             steps: [
-                'Use Dashboard para conferir vencidas e saldo projetado.',
-                'Cadastre contas a receber ou pagar nas abas específicas.',
-                'Anexe comprovantes quando necessário.',
-                'Registre pagamento/baixa pelo modal correto.',
-                'Gere relatórios e exportações por período.'
+                'Acesse Financeiro e consulte o Dashboard para verificar o saldo projetado e títulos vencidos.',
+                'Gerencie as obrigações nas abas Contas a Pagar e Contas a Receber com filtros por período e status.',
+                'Anexe notas, boletos e comprovantes bancários diretamente em cada lançamento.',
+                'Ao realizar uma quitação, registre o pagamento informando juros, descontos e conta bancária.',
+                'Monitore o Fluxo de Caixa Projetado para 30 dias para planejamento de liquidez.'
             ],
             features: [
-                'Filtros por data, status, cliente/fornecedor e descrição.',
-                'Gerar parcelas.',
-                'Anexos por conta.',
-                'Configuração de colunas para impressão.'
+                'Dashboard financeiro executivo com gráficos de receitas e despesas.',
+                'Fluxo de caixa projetado para previsão de pagamentos futuros.',
+                'Armazenamento seguro de anexos e comprovantes em nuvem.',
+                'Cálculo automático de juros e encargos por atraso.',
+                'Exportação de extratos e relatórios com colunas customizáveis.'
             ],
-            modals: ['Registrar Pagamento', 'Anexos', 'Configurar colunas', 'Cadastro rápido de cliente/fornecedor'],
+            modals: ['Registrar Pagamento / Baixa', 'Gerenciar Anexos', 'Gerar Parcelas', 'Configurar Colunas Financeiras'],
             mockups: [
                 {
-                    title: 'Contas e fluxo',
-                    caption: 'Valores fictícios para demonstrar leitura do financeiro.',
-                    tabs: ['Dashboard', 'Receber', 'Pagar', 'Fluxo', 'Relatórios'],
-                    kpis: [['Receber', 'R$ 1.250,00'], ['Pagar', 'R$ 640,00'], ['Saldo', 'R$ 610,00']],
-                    table: {
-                        title: 'Títulos',
-                        headers: ['Venc.', 'Pessoa', 'Valor', 'Status'],
-                        rows: [['10/06', 'Cliente Exemplo', 'R$ 250,00', 'Aberto'], ['12/06', 'Fornecedor Modelo', 'R$ 140,00', 'Pendente']]
-                    },
-                    modal: { title: 'Registrar Pagamento', rows: ['Data de pagamento', 'Valor pago', 'Forma', 'Observação'] }
+                    title: 'Visão Desktop — Sistema Financeiro',
+                    caption: 'Painel com saldo projetado, abas de Receber/Pagar/Fluxo e tabela analítica de títulos.',
+                    image: 'assets/help-manual/mockups/desktop/financas.png',
+                    alt: 'Mockup Desktop do Sistema Financeiro'
                 },
                 {
-                    title: 'Registrar pagamento',
-                    caption: 'Modal de baixa financeira com data, valor, forma de pagamento e observação.'
+                    title: 'Visão Mobile / PWA — Sistema Financeiro',
+                    caption: 'Visualização rápida de títulos a vencer e pagamentos do dia na versão para smartphones.',
+                    image: 'assets/help-manual/mockups/mobile/financas.png',
+                    alt: 'Mockup Mobile do Sistema Financeiro'
                 }
             ]
         },
@@ -365,42 +363,36 @@ function buildTopics() {
             category: 'Gestão',
             icon: 'fa-file-invoice-dollar',
             title: 'Folha de pagamento',
-            lead: 'Gerencia funcionários, lançamentos, PIX/QR Code, recibos, banco de horas e relatórios.',
-            tags: ['funcionário', 'PIX', 'recibo', 'mês fechado'],
+            lead: 'Gestão de equipe e pagamentos no padrão madeireiro: controle por quinzena e mês fechado, diárias, geração de QR Code PIX e recibos formais.',
+            tags: ['funcionários', 'PIX BR Code', 'recibos', 'quinzena', 'banco de horas'],
             steps: [
-                'Cadastre funcionários e dados bancários/PIX com nome do favorecido quando necessário.',
-                'Escolha Mês/Ano e registre lançamentos de quinzena ou mês.',
-                'Use QR Code PIX somente para saldo a pagar e confira favorecido, banco, chave e valor.',
-                'Dê baixa em quinzena/mês e emita recibos e relatórios com valores históricos preservados.',
-                'Use ações recolhidas para lançamentos pagos e cards no PWA.'
+                'Cadastre os funcionários com cargo, salário base, diária e chave PIX cadastrada.',
+                'No período de competência, lance diárias trabalhadas, horas extras, vales e deduções.',
+                'Utilize o botão de QR Code PIX para gerar a cobrança instantânea com o valor líquido exato.',
+                'Efetue a baixa do pagamento (a linha é recolhida mantendo o foco nas pendências abertas).',
+                'Emita e imprima o recibo de pagamento em formato profissional para colheita de assinatura.',
+                'Consulte o histórico em Folhas Fechadas e o saldo em Banco de Horas (BH).'
             ],
             features: [
-                'Funcionários, cargos, lançamentos, filtros e relatórios.',
-                'QR Code PIX com valor líquido e chave visível.',
-                'Recibos de quinzena antes/depois da baixa.',
-                'Resumo da folha, folhas fechadas e banco de horas.'
+                'Flexibilidade de fechamento: 1ª Quinzena, 2ª Quinzena e Mês Completo.',
+                'QR Code PIX com código BR Code dinâmico e cópia de chave integrada.',
+                'Recibos com layout limpo e pronto para impressão ou assinatura.',
+                'Ações recolhidas para pagamentos já quitados, facilitando a conferência.',
+                'Lançamento e extrato consolidado de Banco de Horas (BH).'
             ],
-            modals: ['Editar Funcionário', 'QR Code PIX', 'Resumo da Folha', 'Folhas Fechadas', 'Recibo', 'Banco de Horas'],
+            modals: ['Novo Funcionário', 'Novo Cargo', 'Lançar Folha', 'QR Code PIX', 'Recibo de Pagamento', 'Resumo da Folha', 'Lançar BH'],
             mockups: [
                 {
-                    title: 'Lançamentos de folha',
-                    caption: 'Tela fictícia com abertos primeiro e pagos recolhidos.',
-                    tabs: ['Funcionários', 'Lançamentos', 'Relatórios', 'Banco de Horas'],
-                    kpis: [['Abertos', '8'], ['Pagos', '12'], ['Líquido', 'R$ 0,00']],
-                    table: {
-                        title: 'Lançamentos',
-                        headers: ['Funcionário', 'Tipo', 'Valor pago', 'Saldo', 'Ações'],
-                        rows: [['Funcionário Exemplo', 'Quinzena', 'R$ 600,00', 'R$ 720,00', 'Ver QR'], ['Colaborador Modelo', 'Mês Fechado Pago', 'R$ 1.850,00', 'R$ 0,00', 'Expandir']]
-                    },
-                    modal: { title: 'QR Code PIX', rows: ['QR Code', 'Favorecido', 'Banco', 'Valor líquido', 'Chave Pix'] }
+                    title: 'Visão Desktop — Folha de Pagamento',
+                    caption: 'Grade de lançamentos com total bruto, quinzenas, acréscimos e botões para geração de PIX e recibo.',
+                    image: 'assets/help-manual/mockups/desktop/folha.png',
+                    alt: 'Mockup Desktop da Folha de Pagamento'
                 },
                 {
-                    title: 'Editar Funcionário - PIX',
-                    caption: 'Cadastro PIX com nome do favorecido, chave, tipo da chave e banco para conferência.'
-                },
-                {
-                    title: 'QR Code PIX',
-                    caption: 'Modal de pagamento com QR fictício, favorecido, banco, chave Pix e valor líquido.'
+                    title: 'Visão Mobile / PWA — Folha de Pagamento',
+                    caption: 'Pagamento de funcionários via QR Code PIX diretamente pelo smartphone no pátio.',
+                    image: 'assets/help-manual/mockups/mobile/folha.png',
+                    alt: 'Mockup Mobile da Folha de Pagamento'
                 }
             ]
         },
@@ -409,34 +401,36 @@ function buildTopics() {
             category: 'Operação',
             icon: 'fa-receipt',
             title: 'Notas Fiscais e MDF-e',
-            lead: 'Fluxos fiscais para NF-e, DANFE, certificados e documentos de transporte.',
-            tags: ['NF-e', 'DANFE', 'MDF-e', 'certificado'],
+            lead: 'Módulo fiscal especializado no setor florestal e madeireiro: emissão de NF-e, DANFE, MDF-e de transporte e gestão de Certificado Digital A1.',
+            tags: ['NF-e', 'DANFE', 'MDF-e', 'certificado A1', 'SEFAZ'],
             steps: [
-                'Configure preferências fiscais e certificado conforme o tipo permitido.',
-                'Revise produtos, transporte, volumes e natureza da operação antes de emitir.',
-                'Valide XML/DANFE em ambiente correto.',
-                'Acompanhe consultas, cancelamentos e status de retorno.'
+                'Configure o Certificado Digital A1 no ambiente seguro do sistema.',
+                'No assistente de emissão em 4 etapas, preencha: 1. Operação, 2. Destinatário, 3. Itens e 4. Transporte.',
+                'Revise CFOP, NCM de madeira, alíquotas tributárias e volumes transportados.',
+                'Gere a prévia do DANFE para conferência dos dados fiscais.',
+                'Transmita a NF-e para a SEFAZ e, após autorização, emita o Manifesto de Documentos Fiscais (MDF-e).'
             ],
             features: [
-                'Notas Fiscais com revisão guiada.',
-                'DANFE com transporte e volumes.',
-                'MDF-e para transporte.',
-                'Certificado A1/nuvem conforme configuração.'
+                'Assistente sequencial em 4 etapas guiadas (Operação, Destinatário, Itens, Transporte).',
+                'Emissão integrada de NF-e e Manifesto Eletrônico de Documentos Fiscais (MDF-e).',
+                'Visualização, download e impressão de DANFE em PDF com logomarca.',
+                'Gestão segura de Certificado Digital A1 com chamadas autenticadas.',
+                'Painel de consulta de status de lotes e cancelamentos homologados.'
             ],
-            modals: ['Revisão fiscal', 'Certificado', 'Produtos NF', 'Volumes/Transporte', 'Cancelamento'],
-            warning: 'Este capítulo é operacional. A emissão fiscal deve respeitar regras vigentes e validação contábil/fiscal.',
+            modals: ['Assistente de Emissão', 'Destinatário Fiscal', 'Transporte e Volumes', 'Configuração de Certificado Digital', 'Consulta SEFAZ'],
+            warning: 'Este manual é operacional. A parametrização tributária e enquadramento fiscal devem ser validados com o contador da sua empresa.',
             mockups: [
                 {
-                    title: 'Revisão fiscal',
-                    caption: 'Exemplo sem dados fiscais reais.',
-                    tabs: ['NF-e', 'Produtos', 'Transporte', 'DANFE', 'MDF-e'],
-                    fields: ['Natureza: Venda Exemplo', 'Ambiente: Homologação', 'Produto: Item Fiscal Exemplo'],
-                    table: {
-                        title: 'Itens fiscais',
-                        headers: ['Produto', 'NCM', 'Qtd.', 'Total'],
-                        rows: [['Produto Exemplo', '0000.00.00', '1', 'R$ 100,00']]
-                    },
-                    modal: { title: 'Enviar para SEFAZ', rows: ['Validar XML', 'Assinar', 'Transmitir', 'Consultar retorno'] }
+                    title: 'Visão Desktop — Sistema Fiscal',
+                    caption: 'Painel de emissão com abas de consulta, etapas de preenchimento fiscal e prévia de documentos.',
+                    image: 'assets/help-manual/mockups/desktop/fiscal.png',
+                    alt: 'Mockup Desktop do Sistema Fiscal'
+                },
+                {
+                    title: 'Visão Mobile / PWA — Sistema Fiscal',
+                    caption: 'Consulta e envio rápido de DANFEs para motoristas e transportadores em trânsito.',
+                    image: 'assets/help-manual/mockups/mobile/fiscal.png',
+                    alt: 'Mockup Mobile do Sistema Fiscal'
                 }
             ]
         },
@@ -445,32 +439,35 @@ function buildTopics() {
             category: 'Conta',
             icon: 'fa-star',
             title: 'Assinatura e planos',
-            lead: 'Acompanha status, trial, pagamentos, prorrogação e renovação de acesso.',
-            tags: ['plano', 'pagamento', 'trial', 'prorrogação'],
+            lead: 'Acompanhamento do status da conta, plano contratado, vigência, prorrogações temporárias e regularização de faturamento.',
+            tags: ['assinatura', 'planos', 'status', 'regularização', 'prorrogação'],
             steps: [
-                'Abra Assinatura pelo menu.',
-                'Confira status, plano e vencimento.',
-                'Se necessário, envie comprovante ou solicite prorrogação.',
-                'Aguarde análise do suporte financeiro Sisweb quando houver pagamento pendente.'
+                'Acesse Assinatura pelo menu de usuário ou pelo alerta de vigência.',
+                'Verifique o Plano Atual, data de contratação, data de vencimento e dias restantes de acesso.',
+                'Caso necessite de prazo adicional para faturamento, utilize o botão Solicitar Prorrogação informando justificativa.',
+                'Gere a lâmina de pagamento com chave PIX para renovação instantânea.',
+                'Caso haja pendência de renovação, você poderá continuar trabalhando em Modo Leitura sem perda de dados históricos.'
             ],
             features: [
-                'Status da assinatura.',
-                'Planos disponíveis.',
-                'Pagamento PIX/cartão conforme configuração.',
-                'Solicitação de prorrogação auditável.'
+                'Painel informativo com contagem regressiva de dias restantes.',
+                'Canal auditável para solicitação de prorrogação temporária.',
+                'Geração de pagamento via PIX para liberação automatizada.',
+                'Modo Leitura protegido para garantir acesso contínuo aos dados.',
+                'Comunicação direta com o administrador do sistema.'
             ],
-            modals: ['Pagamento', 'Comprovante', 'Solicitar prorrogação', 'Confirmação de plano'],
+            modals: ['Renovar Assinatura', 'Solicitar prorrogação', 'Nova Mensagem para o Admin', 'Minhas Conversas'],
             mockups: [
                 {
-                    title: 'Status da assinatura',
-                    caption: 'Exemplo fictício de plano e vencimento.',
-                    tabs: ['Status', 'Planos', 'Pagamento'],
-                    kpis: [['Plano', 'Mensal'], ['Status', 'Ativo'], ['Vence em', '12 dias']],
-                    cards: [['Próxima renovação', '10/06/2026'], ['Suporte', 'Central de Suporte disponível']]
+                    title: 'Visão Desktop — Status da Assinatura',
+                    caption: 'Painel com plano ativo, dias restantes, canal de mensagens com a administração e renovação.',
+                    image: 'assets/help-manual/mockups/desktop/assinatura.png',
+                    alt: 'Mockup Desktop do Status da Assinatura'
                 },
                 {
-                    title: 'Pagamento da assinatura',
-                    caption: 'Fluxo de pagamento/renovação ilustrado com dados neutros.'
+                    title: 'Visão Mobile / PWA — Status da Assinatura',
+                    caption: 'Visualização da vigência e atalhos de renovação na interface mobile do Sisweb.',
+                    image: 'assets/help-manual/mockups/mobile/assinatura.png',
+                    alt: 'Mockup Mobile do Status da Assinatura'
                 }
             ]
         },
@@ -479,31 +476,35 @@ function buildTopics() {
             category: 'Conta',
             icon: 'fa-user-edit',
             title: 'Meu Perfil',
-            lead: 'Dados do usuário, contato, senha e preferências de sessão.',
-            tags: ['usuário', 'senha', 'perfil'],
+            lead: 'Configuração da conta pessoal do operador, dados cadastrais, alteração de senha e ativação de Autenticação em Duas Etapas (2FA).',
+            tags: ['meu perfil', 'senha', '2FA', 'segurança', 'avatar'],
             steps: [
-                'Abra Configurações > Meu Perfil.',
-                'Atualize nome, contato e informações permitidas.',
-                'Altere senha quando o fluxo estiver disponível.',
-                'Salve e confira o toast de confirmação.'
+                'Acesse Configurações > Meu Perfil.',
+                'Confira suas informações pessoais e clique em Editar para atualizar telefone ou cargo.',
+                'Para reforçar sua segurança, clique em Ativar 2FA e escaneie o código com seu aplicativo autenticador (Google Authenticator).',
+                'Altere sua senha de acesso periodicamente através do modal Atualizar Senha.',
+                'Personalize seu avatar com a opção Alterar Foto para identificação rápida no sistema.'
             ],
             features: [
-                'Formulário de dados pessoais.',
-                'Preferências de conta.',
-                'Integração com sessão Firebase.',
-                'Mensagens de sucesso/erro.'
+                'Edição segura de dados cadastrais do operador.',
+                'Autenticação de Dois Fatores (2FA / TOTP) integrada no padrão RFC 6238.',
+                'Atualização de credenciais de acesso em canal criptografado.',
+                'Personalização de imagem de perfil sincronizada na barra superior.',
+                'Auditoria de permissões vinculadas ao seu papel no sistema.'
             ],
-            modals: ['Alterar senha', 'Confirmação de salvamento'],
+            modals: ['Editar Informações Pessoais', 'Atualizar Senha', 'Configurar 2FA (Ativar / Desativar)', 'Alterar Foto'],
             mockups: [
                 {
-                    title: 'Perfil do usuário',
-                    caption: 'Dados fictícios de perfil.',
-                    fields: ['Nome: Usuário Exemplo', 'Email: usuario@exemplo.local', 'Telefone: (00) 00000-0000'],
-                    cards: [['Segurança', 'Use senha forte e sessão individual.'], ['Empresa', 'Tenant herdado da autenticação.']]
+                    title: 'Visão Desktop — Meu Perfil',
+                    caption: 'Dados do operador, badges de permissão, botões de alteração de senha e ativação de 2FA.',
+                    image: 'assets/help-manual/mockups/desktop/perfil.png',
+                    alt: 'Mockup Desktop do Meu Perfil'
                 },
                 {
-                    title: 'Editar informações pessoais',
-                    caption: 'Modal de edição do perfil, sem telefone ou e-mail real.'
+                    title: 'Visão Mobile / PWA — Meu Perfil',
+                    caption: 'Acesso rápido às preferências do usuário e segurança em telas de smartphones.',
+                    image: 'assets/help-manual/mockups/mobile/perfil.png',
+                    alt: 'Mockup Mobile do Meu Perfil'
                 }
             ]
         },
@@ -512,46 +513,53 @@ function buildTopics() {
             category: 'Suporte',
             icon: 'fa-headset',
             title: 'Central de Suporte',
-            lead: 'Registra tickets com contexto da tela, tenant, módulo, usuário e mensagem, mantendo WhatsApp/E-mail/Copiar como fallback.',
-            tags: ['ticket', 'multi-tenant', 'rascunho offline'],
+            lead: 'Canal de atendimento técnico oficial com tickets bidirecionais, contingência com rascunho offline e integração rápida com WhatsApp e E-mail.',
+            tags: ['central de suporte', 'tickets', 'multi-tenant', 'rascunho offline', 'whatsapp'],
             steps: [
-                'Abra Suporte pelo menu de configurações ou pelo rodapé “Fale Conosco”.',
-                'Descreva a necessidade com o máximo de contexto operacional.',
-                'Clique em Enviar ticket para gravar no backend.',
-                'Se estiver offline, o rascunho fica salvo localmente no dispositivo para envio posterior.',
-                'Use WhatsApp, E-mail ou Copiar dados como fallback.'
+                'Abra a Central de Suporte pelo menu de navegação ou clicando em Fale Conosco no rodapé.',
+                'Clique em Novo Ticket e digite uma descrição detalhada da sua solicitação ou dúvida.',
+                'O sistema anexa automaticamente o diagnóstico técnico de tela e tenant sem expor dados confidenciais.',
+                'Clique em Enviar Ticket para registrar na fila prioritária de atendimento.',
+                'Se estiver sem conexão com a internet, o rascunho é preservado localmente e você pode acionar o fallback por WhatsApp ou E-mail.'
             ],
             features: [
-                'Criação via Cloud Function autenticada.',
-                'Tenant resolvido no servidor.',
-                'Rate limit e sanitização de mensagem.',
-                'Encaminhamento interno para equipe autorizada do Sisweb.'
+                'Tickets com histórico completo de interações e respostas.',
+                'Contexto automático de diagnóstico técnico e tenant.',
+                'Rascunho offline resiliente com envio quando a rede for restaurada.',
+                'Botão de direcionamento direto para o WhatsApp oficial com mensagem pré-montada.',
+                'Opção Copiar Dados para colar informações de erro no chat de suporte.'
             ],
-            modals: ['Suporte Sisweb', 'Resposta do suporte', 'Rascunho offline', 'Fallback WhatsApp/E-mail'],
+            modals: ['Novo Ticket', 'Meus Tickets', 'Enviar Ticket', 'Resposta do suporte', 'Copiar Dados de Diagnóstico'],
             mockups: [
                 {
-                    title: 'Modal de suporte',
-                    caption: 'Fluxo fictício de abertura de ticket, sem envio de dados reais.',
-                    fields: ['Módulo: Folha de Pagamento', 'Empresa/Tenant: Empresa Exemplo', 'Usuário: Operador Exemplo'],
-                    modal: { title: 'Suporte Sisweb', rows: ['Mensagem', 'Enviar ticket', 'WhatsApp', 'E-mail', 'Copiar dados'] },
-                    chips: [['Rascunho offline', 'amber'], ['Rate limit', ''], ['Auditável', 'green']]
+                    title: 'Visão Desktop — Central de Suporte',
+                    caption: 'Modal de suporte integrado com campos de mensagem, envio de ticket, WhatsApp e fallback por e-mail.',
+                    image: 'assets/help-manual/mockups/desktop/suporte.png',
+                    alt: 'Mockup Desktop da Central de Suporte'
+                },
+                {
+                    title: 'Visão Mobile / PWA — Central de Suporte',
+                    caption: 'Abertura de chamados técnicos rápida no celular com acionamento direto do WhatsApp.',
+                    image: 'assets/help-manual/mockups/mobile/suporte.png',
+                    alt: 'Mockup Mobile da Central de Suporte'
                 }
             ]
         }
     ];
+
     const generatedGallery = (typeof window !== 'undefined' && window.SISWEB_HELP_FULL_GALLERY) || {};
     return topics.map((topic) => ({
         ...topic,
         mockups: [
             ...(topic.mockups || []).map((shot, index) => ({
-            ...shot,
-            image: `assets/help-manual/${topic.id}-${index + 1}.png`,
-            alt: `Print sanitizado do módulo ${topic.title}: ${shot.title}`
+                ...shot,
+                image: shot.image || `assets/help-manual/${topic.id}-${index + 1}.png`,
+                alt: shot.alt || `Print sanitizado do módulo ${topic.title}: ${shot.title}`
             })),
             ...((generatedGallery[topic.id] || []).map((shot) => ({
                 ...shot,
                 title: shot.title || 'Print complementar',
-                caption: shot.caption || 'Print real do layout em ambiente de treinamento, com dados fictícios.'
+                caption: shot.caption || 'Print do layout em operação no sistema.'
             })))
         ]
     }));
@@ -644,7 +652,7 @@ function renderMockup(spec) {
 
 function renderShotVisual(shot) {
     if (shot && shot.image) {
-        return `<img class="manual-shot-image" src="${escapeHtml(shot.image)}?v=${HELP_VERSION}" alt="${escapeHtml(shot.alt || shot.title || 'Print sanitizado do Sisweb')}" loading="lazy" decoding="async">`;
+        return `<img class="manual-shot-image" src="${escapeHtml(shot.image)}?v=${HELP_VERSION}" alt="${escapeHtml(shot.alt || shot.title || 'Print do Sisweb')}" loading="lazy" decoding="async">`;
     }
     return renderMockup(shot || {});
 }
@@ -723,7 +731,7 @@ function initHelpPage() {
     function filteredTopics() {
         const term = normalizeText(searchEl && searchEl.value ? searchEl.value : '');
         if (!term) return allTopics.slice();
-        const tokens = term.split(/\s+/).filter(Boolean);
+        const tokens = term.split(/\\s+/).filter(Boolean);
         return allTopics.filter((topic) => tokens.every((token) => topic._idx.includes(token)));
     }
 

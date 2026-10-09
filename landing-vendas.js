@@ -1,6 +1,6 @@
-// Landing Vendas — Diagrama animado (sem expor admin.html) + Carrosseis da vitrine e do hero.
+// Landing Vendas — Diagrama animado (sem expor admin.html) + Carrosseis do hero.
 // Hooks publicos: #lv-diagram, #lv-diagram-tooltip, .lv-node[data-module],
-// #lv-hero-carousel, #lv-phone-carousel, #lv-desk-carousel (.lv-slide, .lv-dot, .lv-prev, .lv-next).
+// #lv-hero-carousel, #lv-hero-phone-carousel (.lv-slide, .lv-dot, .lv-prev, .lv-next).
 // Nao renomear sem atualizar landing-vendas.html e landing-vendas.css.
 const TOOLTIPS = {
   "RTDB": "Banco unico Firebase: todos os modulos leem e escrevem aqui, com dados separados por empresa.",
@@ -11,7 +11,13 @@ const TOOLTIPS = {
   "financeiro": "financas.html — contas a pagar e receber, com juros por dia civil (America/Sao_Paulo).",
   "folha": "Folha de pagamento — lancamentos, filtros e banco de horas da serraria.",
   "fiscal": "notas-fiscais.html — NF-e e MDF-e para o carregamento sair documentado.",
-  "compras": "compras.html — pedido de compra que entra direto no estoque e no contas a pagar."
+  "compras": "compras.html — pedido de compra que entra direto no estoque e no contas a pagar.",
+  "dashboard": "index.html — painel com KPIs do patio em tempo real.",
+  "tl": "romaneiotl.html — romaneio de toras longas com cubagem.",
+  "pct": "romaneiopct.html — romaneio de pacotes com resumo CONAMA.",
+  "pes": "romaneiopes.html — romaneio de pes e pecas serradas.",
+  "preromaneio": "preromaneio.html — pre-romaneio que vira romaneio oficial.",
+  "empresa": "company.html — empresa e tenant da operacao."
 };
 
 // Texto comercial para compartilhamento no WhatsApp
@@ -82,9 +88,8 @@ Chega de romaneio no papel, cubagem na calculadora e planilha paralela. O Sisweb
   }, 4000);
 })();
 
-// Vitrine "Veja o Sisweb por dentro" + hero "Painel real" — carrossel vanilla (sem dependencias).
+// Hero "Painel real" — carrossel vanilla (sem dependencias).
 // Autoplay com pausa em hover/focus, setas, dots clicaveis, teclado e swipe.
-// O hero (#lv-hero-carousel) reaproveita tudo sem dots: setas + autoplay de 6s.
 (function(){
   function initCarousel(id){
     const root = document.getElementById(id);
@@ -151,12 +156,45 @@ Chega de romaneio no papel, cubagem na calculadora e planilha paralela. O Sisweb
   }
   initCarousel('lv-hero-carousel');
   initCarousel('lv-hero-phone-carousel');
-  initCarousel('lv-phone-carousel');
-  initCarousel('lv-desk-carousel');
   loadActiveCoupons();
   initShareButton();
+  initTopbarMenu();
   initRoiCalculator();
 })();
+
+// Menu hamburger + sidebar mobile do topbar
+function initTopbarMenu(){
+  const burger = document.getElementById('lv-hamburger');
+  const menu = document.getElementById('lv-topbar-menu');
+  const backdrop = document.getElementById('lv-topbar-backdrop');
+  const closeBtn = document.getElementById('lv-drawer-close');
+  const topbar = document.querySelector('.lv-topbar');
+  if(!burger || !menu || !topbar) return;
+
+  const setOpen = (open)=>{
+    topbar.classList.toggle('menu-open', open);
+    burger.setAttribute('aria-expanded', String(open));
+    burger.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+    if(backdrop) backdrop.hidden = !open;
+    document.body.style.overflow = open ? 'hidden' : '';
+  };
+
+  burger.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    setOpen(!topbar.classList.contains('menu-open'));
+  });
+  if(closeBtn) closeBtn.addEventListener('click', ()=> setOpen(false));
+  if(backdrop) backdrop.addEventListener('click', ()=> setOpen(false));
+  menu.addEventListener('click', (e)=>{
+    if(e.target.closest('a')) setOpen(false);
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && topbar.classList.contains('menu-open')){
+      setOpen(false);
+      burger.focus();
+    }
+  });
+}
 
 // Botão de compartilhar no WhatsApp
 function initShareButton(){

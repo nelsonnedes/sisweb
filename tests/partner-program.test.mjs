@@ -141,13 +141,13 @@ test('login preserva rota do portal e não aplica redirecionamento empresarial',
 
 test('vitrine do iphone usa capturas mobile reais', () => {
   const landing = readFileSync('landing-vendas.html', 'utf8');
-  assert.match(landing, /index-mobile\.png/);
-  assert.match(landing, /estoque-mobile\.png|vendas-mobile\.png/);
+  assert.match(landing, /mockups\/hero\/mobile-dashboard\.png/);
+  assert.match(landing, /mockups\/hero\/mobile-(estoque|vendas)\.png/);
   const css = readFileSync('landing-vendas.css', 'utf8');
   assert.match(css, /aspect-ratio:\s?9\/18/);
   const hosting = JSON.parse(readFileSync('hosting-files.json', 'utf8'));
   const files = Array.isArray(hosting) ? hosting : hosting.files || [];
-  for (const img of ['assets/help-manual/index-mobile.png', 'assets/help-manual/estoque-mobile.png', 'assets/help-manual/vendas-mobile.png']) {
+  for (const img of ['assets/help-manual/mockups/hero/mobile-dashboard.png', 'assets/help-manual/mockups/hero/mobile-estoque.png', 'assets/help-manual/mockups/hero/mobile-vendas.png']) {
     assert.ok(files.includes(img), `manifesto sem: ${img}`);
   }
 });
@@ -164,7 +164,7 @@ test('landing vitrine exibe carrosseis iphone e desktop com telas reais', () => 
   assert.match(js, /initCarousel\('lv-hero-phone-carousel'\)/);
   assert.match(js, /initCarousel\('lv-hero-carousel'\)/);
   assert.match(landing, /id="lv-hero-carousel"/);
-  assert.match(landing, /index-overview\.png/);
+  assert.match(landing, /mockups\/hero\/desktop-dashboard\.png/);
   assert.match(js, /initCarousel\('lv-hero-carousel'\)/);
 });
 
@@ -173,7 +173,7 @@ test('landing direciona o painel do parceiro para login autenticado', () => {
   assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/portal-parceiro\.html"[^>]*>.*Meu painel do Parceiro/);
   assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/portal-parceiro\.html"[^>]*>.*Acessar meu Painel/);
   assert.match(landing, /id="lv-hero-phone-carousel"/);
-  assert.match(landing, /id="lv-hero-phone-carousel"[\s\S]*assets\/help-manual\/index-mobile\.png/);
+  assert.match(landing, /id="lv-hero-phone-carousel"[\s\S]*assets\/help-manual\/mockups\/hero\/mobile-dashboard\.png/);
   assert.match(readFileSync('landing-vendas.js', 'utf8'), /initCarousel\('lv-hero-phone-carousel'\)/);
 });
 

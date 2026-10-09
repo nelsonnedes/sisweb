@@ -5,6 +5,7 @@
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
 > Atualizado em: 2026-09-21 (Sessao 77: menu/CRUD/mobile folha + padrao cards + scroll-guard + SW purge)
+> Perfil global OpenCode Zen registrado em 2026-10-09 — ver seção 18 (protocolo de uso do Cérebro).
 
 ---
 
@@ -1008,3 +1009,24 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
   - **Causa 2:** hashes JS desatualizados após as edições (`commerce-pdf-share.js`, `sisweb-theme.js` mudaram mas os HTMLs mantinham o hash antigo); `folha_pagamento/folha.html` fica fora do injector (subdir + paths `../`) e seu `folha.css`/`commerce-pdf-share.js` também estavam com hash velho; `index.html` carregava os CSS do dashboard sem nenhum `?v`.
   - **Causa 3 (potencial):** Service Worker `sw.js` com `APP_VERSION` antiga + `localStorage` (`sisweb:theme:custom`) com customs antigos mascarando a nova marca.
   - **Fix aplicado:** `node tools/inject-cachebusters.mjs` (27 HTMLs, hashes JS renovados) + bump manual dos 3 CSS de tema `?v=1` → `?v=20260926-fase25-1` em 27 HTMLs (raiz + folha), `?v` adicionado aos CSS do dashboard no `index.html`, `folha.css` e `commerce-pdf-share.js` da folha atualizados. Testes de tema 27/27 verdes após o bump.
+
+## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
+
+- **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").
+- **Protocolo de uso do Cérebro (toda tarefa):**
+  1. Consultar este arquivo ANTES de implementar (não só o histórico: seções 2, 5, 6 valem sempre).
+  2. Aplicar o contexto recuperado (decisões, armadilhas, padrões aprovados) sem repetir perguntas já respondidas.
+  3. Ao final, registrar aqui: decisões técnicas, padrões adotados, preferências novas do usuário, correções recorrentes e stack/convenções (não inventar requisitos — só o observado/aprovado).
+- **Prioridade fixa:** Segurança > Correção > Manutenibilidade > Performance > Conveniência.
+- **Preferências permanentes do usuário (aplicar sem perguntar de novo):**
+  - Engenharia: Clean Code, SOLID, DRY, KISS, Separation of Concerns; validar entradas; tratar erros com logs úteis; reutilizar componentes; analisar arquitetura existente antes de codar.
+  - Modo arquiteto: entender → riscos → arquitetura → plano → implementar; reportar impacto, preservar compatibilidade, evitar regressões; discordar com justificativa técnica quando houver abordagem melhor.
+  - JS/TS: strict onde houver TS, tipagem explícita, evitar `any`, async/await, funções pequenas, ESLint/Prettier, composição over herança.
+  - Python: Ruff, Pyright, tipagem completa, PEP8, dataclasses quando apropriado, Pathlib; sem exceções genéricas.
+  - APIs: REST validada (auth/autorização/paginação/erros/OpenAPI + exemplos request/response).
+  - Banco: evitar N+1, recomendar índices, otimizar joins.
+  - Segurança: varredura automática (SQLi, XSS, CSRF, secrets hardcoded, deps vulneráveis) sempre com mitigação.
+  - Testes p/ código relevante: unitários + integração, positivo/negativo/edge (neste repo: `tests/*.test.mjs` via node:test).
+  - Git: Conventional Commits `tipo(escopo): descrição`.
+  - Docker (quando aplicável): imagens leves, compose, healthchecks, boas práticas de segurança.
+  - Documentar arquitetura, tradeoffs e uso em código significativo.
