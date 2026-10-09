@@ -1524,6 +1524,34 @@ export function isFirebaseOperational() {
 // invalidado em qualquer escrita do próprio serviço (save/update/remove).
 const pendingReadFlights = new Map();
 const readCacheStore = new Map();
+// W2: cache do writePath resolvido por coleção (evita N get() de sonda
+// sequenciais a cada save; ~350ms economizados por escrita não-canônica).
+const writePathCache = new Map();
+const WRITE_PATH_TTL_MS = 5 * 60 * 1000;
+function writePathCacheKey(path) {
+    try {
+        const tenantId = typeof getTenantId === 'function' ? getTenantId() : null;
+        return `${tenantId || 'no-tenant'}::${String(path || '')}`;
+    } catch (_) {
+        return `no-tenant::${String(path || '')}`;
+    }
+}
+function getCachedWritePath(path) {
+    try {
+        const hit = writePathCache.get(writePathCacheKey(path));
+        if (hit && (Date.now() - hit.at) < WRITE_PATH_TTL_MS) return hit.writePath;
+        if (hit) writePathCache.delete(writePathCacheKey(path));
+    } catch (_) {}
+    return null;
+}
+function setCachedWritePath(path, writePath) {
+    try {
+        if (writePath) writePathCache.set(writePathCacheKey(path), { writePath, at: Date.now() });
+    } catch (_) {}
+}
+function dropCachedWritePath(path) {
+    try { writePathCache.delete(writePathCacheKey(path)); } catch (_) {}
+}
 const READ_TTL_BY_CATEGORY = Object.freeze({
     profile: 5 * 60 * 1000,   // perfil do usuário/empresa: 5-10 min
     catalog: 3 * 60 * 1000,   // cadastros: 3-5 min
@@ -2262,6 +2290,11 @@ async function saveToFirebase(path, key, data, options) {
             writePath = 'vendas/pagamentos_carrego';
             console.log('✅ Caminho de escrita de pagamentos definido');
         } else {
+            // W2: reaproveitar resolução anterior (pula as sondas get()).
+            const cachedWp = getCachedWritePath(path);
+            if (cachedWp) {
+                writePath = cachedWp;
+            } else {
             try {
                 const dbRef = ref(db);
                 // Check namespaced candidates
@@ -2290,6 +2323,8 @@ async function saveToFirebase(path, key, data, options) {
                     console.log('ℹ️ Usando alias preferido para escrita');
                 }
             }
+            setCachedWritePath(path, writePath);
+            } // fim reaproveitamento W2
         }
         
         let reference;
@@ -2400,6 +2435,8 @@ async function saveToFirebase(path, key, data, options) {
         };
         
     } catch (error) {
+        // W2: resolução pode ter mudado (ex.: permissão) — derrubar o cache.
+        try { dropCachedWritePath(path); } catch (_) {}
         console.error('❌ Erro ao salvar dados no Firebase:', error && error.code ? error.code : 'unknown');
         if (window.SentryMonitor && window.SentryMonitor.reportDataIssue) {
             window.SentryMonitor.reportDataIssue('gravacao_falhou', {

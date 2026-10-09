@@ -8545,6 +8545,21 @@ window.alternarModoAgrupamentoVendas = function (modo) {
         } else if (modo === 'resumo' && cbResumo.checked) {
             desmarcarOutros(cbResumo);
         }
+        // TORA: o resumo é opcional — desmarcar volta ao detalhado (por
+        // categoria, mesma partição do preview). Serrado mantém o invariante.
+        if (modo === 'resumo' && !cbResumo.checked) {
+            const outrosVisiveis = [cbDims, cbEsp, cbLarg].filter(cb => cb.offsetParent !== null && !cb.disabled);
+            if (outrosVisiveis.length === 0) {
+                try {
+                    const novoModo = lerModoAgrupamentoVendas();
+                    if (novoModo && novoModo !== modoAgrupPreviewVendas) {
+                        limparExclusoesPreviewVendas();
+                    }
+                } catch (_) {}
+                try { if (romaneioSelecionado) __rvRefazerPreviewVendas(); } catch (_) {}
+                return;
+            }
+        }
         // Invariante: sempre um modo selecionado.
         const todos = [cbDims, cbEsp, cbLarg, cbResumo];
         if (!todos.some(cb => cb.checked && !cb.disabled)) {
@@ -8922,9 +8937,11 @@ async function adicionarItensRomaneio() {
     // Definir preço padrão por m³ como fallback (configurável em VendasConfig)
     const precoPadraoPorM3 = VendasConfig.precoPorM3Padrao;
     
-    // Modo de agrupamento obrigatório: o quadro "Agrupar:" sempre tem um selecionado.
+    // Modo de agrupamento obrigatório no serrado; TORA sem resumo = detalhado.
     const modoAgrupamento = lerModoAgrupamentoVendas();
-    if (modoAgrupamento === 'nenhum') {
+    const listaBrutaDims = Array.isArray(romaneioSelecionado.items) ? romaneioSelecionado.items : (Array.isArray(romaneioSelecionado.itens) ? romaneioSelecionado.itens : []);
+    const ehToraDims = !!((romaneioSelecionado && romaneioSelecionado.tipoRomaneio === 'romaneiosTora') || String((romaneioSelecionado && romaneioSelecionado.tipo) || '').toLowerCase() === 'tora' || listaBrutaDims.some(i => i && typeof i === 'object' && (typeof i.rodo !== 'undefined' || typeof i.diametro !== 'undefined')));
+    if (modoAgrupamento === 'nenhum' && !ehToraDims) {
         ToastManager.warning('Selecione um modo no quadro "Agrupar:" para carregar os itens.', 'Agrupamento', 4000);
         return;
     }
@@ -8933,8 +8950,7 @@ async function adicionarItensRomaneio() {
     if (modoAgrupamento === 'dimensoes') {
         // Espécie Espessura x Largura x Comprimento (PCT/TL/PES).
         // Ancora nos itens brutos: o resumo CONAMA descarta o comprimento.
-        const listaBrutaDims = Array.isArray(romaneioSelecionado.items) ? romaneioSelecionado.items : (Array.isArray(romaneioSelecionado.itens) ? romaneioSelecionado.itens : []);
-        const ehToraDims = !!((romaneioSelecionado && romaneioSelecionado.tipoRomaneio === 'romaneiosTora') || String((romaneioSelecionado && romaneioSelecionado.tipo) || '').toLowerCase() === 'tora' || listaBrutaDims.some(i => i && typeof i === 'object' && (typeof i.rodo !== 'undefined' || typeof i.diametro !== 'undefined')));
+        // (listaBrutaDims/ehToraDims já calculados acima para o guarda.)
         if (ehToraDims) {
             ToastManager.warning('O modo Espessura x Largura x Comprimento vale apenas para romaneios PCT/TL/PES.', 'Agrupamento', 4000);
             return;
@@ -9237,8 +9253,54 @@ async function adicionarItensRomaneio() {
             return;
         }
         resumoCarregamentoMsg = `${gruposRes} grupos (Resumo por Espécie) adicionados do romaneio`;
+    } else if (ehToraDims && modoAgrupamento === 'nenhum') {
+        // Detalhado por categoria (TORA sem resumo): mesma partição do preview
+        // (1 item por categoria). Exclusões do preview já aplicadas em
+        // resumoFiltrado; checa ainda o set por espécie como o modo resumo.
+        let linhasDet = 0;
+        Object.keys(resumoFiltrado).forEach(especie => {
+            const especieLimpa = String(especie || '').replace(/^\s*[-–—]\s*/, '').trim();
+            if (romaneioPreviewExcluidosResumo.has(especieLimpa.toUpperCase())) return;
+            Object.keys((resumoFiltrado[especie] && resumoFiltrado[especie].categorias) || {}).forEach(categoria => {
+                const cat = resumoFiltrado[especie].categorias[categoria];
+                if (!(cat && cat.volume > 0)) return;
+                const precoCat = cat.precoUnitario > 0 ? cat.precoUnitario : precoPadraoPorM3;
+                const produtoId = `romaneio_det_${normalizarIdRomaneioParte(especieLimpa)}_${normalizarIdRomaneioParte(categoria)}`;
+                const existente = itensCarrinho.find(i => String(i.tipo || '').toLowerCase() === 'romaneio' && String(i.produtoId || '') === produtoId);
+                if (existente) {
+                    const qAtual = typeof existente.quantidade === 'number' ? existente.quantidade : parseNumberFlexible(existente.quantidade);
+                    const novoQ = (isNaN(qAtual) ? 0 : qAtual) + cat.volume;
+                    const novoTotal = (parseFloat(existente.total) || 0) + (cat.valorTotal || (cat.volume * precoCat));
+                    existente.quantidade = novoQ;
+                    existente.total = novoTotal;
+                    existente.precoUnitario = novoQ > 0 ? novoTotal / novoQ : 0;
+                } else {
+                    itensCarrinho.push({
+                        id: Date.now() + Math.random(),
+                        produtoId,
+                        produtoNome: `${especieLimpa} - ${categoria}`,
+                        especie: especieLimpa,
+                        quantidade: cat.volume,
+                        precoUnitario: precoCat,
+                        total: cat.valorTotal || (cat.volume * precoCat),
+                        tipo: 'romaneio',
+                        unidade: cat.unidade || 'm³',
+                        origemId: idEstavelAtual,
+                        romaneioId: idEstavelAtual,
+                        romaneioNumero: numeroExibicaoAtual,
+                        romaneioTipo: tipoAtual
+                    });
+                }
+                linhasDet++;
+            });
+        });
+        if (linhasDet === 0) {
+            ToastManager.warning('Nenhum item válido para carga detalhada', 'Atenção');
+            return;
+        }
+        resumoCarregamentoMsg = `${linhasDet} itens (detalhado por categoria) adicionados do romaneio`;
     } else {
-        // Inalcançável: modo obrigatório validado acima. Guarda defensiva (fail-closed).
+        // Guarda defensiva (fail-closed).
         ToastManager.warning('Selecione um modo no quadro "Agrupar:" para carregar os itens.', 'Agrupamento', 4000);
         return;
     }

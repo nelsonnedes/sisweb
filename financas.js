@@ -6941,10 +6941,18 @@ async function confirmarPagamento(event) {
         console.error('❌ Erro ao confirmar pagamento:', error);
         const rawMessage = String(error && error.message ? error.message : error || '');
         const isConflict = /aborted|conflito|stale-state/i.test(`${error && error.code || ''} ${rawMessage}`);
+        // Regra de negócio do servidor (ex.: "Data do pagamento não pode
+        // anteceder a última baixa."): exibir o texto real em vez do genérico,
+        // para o usuário saber o que corrigir. Ruído infra cai no genérico.
+        const serverMessage = rawMessage.replace(/^FirebaseError:\s*/i, '').trim();
+        const isInfraNoise = /failed to fetch|load failed|network request failed|cors|functions\/internal/i.test(serverMessage);
+        const showBusiness = !isConflict && serverMessage.length > 0 && serverMessage.length <= 300 && !isInfraNoise;
         mostrarNotificacao(
             isConflict
                 ? 'A conta foi alterada em outra sessão. Os dados foram reconciliados; revise e tente novamente.'
-                : 'Não foi possível confirmar a baixa no servidor. Os dados do formulário foram preservados.',
+                : (showBusiness
+                    ? serverMessage
+                    : 'Não foi possível confirmar a baixa no servidor. Os dados do formulário foram preservados.'),
             'error'
         );
     } finally {

@@ -37,7 +37,7 @@
     <link rel="stylesheet" href="romaneio-comum.css?v=419efeecff71">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=0dcef8a57d9a"></script>
+<script src="menu-component.js?v=4fa77b3ad985"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <link rel="stylesheet" href="print-styles.css?v=f79c9137e576">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -109,6 +109,16 @@
             margin-bottom: 10px;
             height: 31px;
             font-size: 14px;
+        }
+
+        /* Uniformizar altura dos campos do formulário em 38px (padrão dos
+           demais): comprimento/quantidade/peças e o select de pré-romaneio.
+           Seletor por ID supera as regras de classe/elemento. */
+        #comprimento,
+        #quantidade,
+        #pecasPorPacote,
+        #preRomaneioSelect {
+            height: 38px !important;
         }
 
         .campos-grid {
@@ -1439,7 +1449,7 @@
             db,
             auth,
             app
-        } from './firebaseService.js?v=a54a6b8682d4';
+        } from './firebaseService.js?v=85793ccf9090';
         const tenantFromContext = (() => {
             try {
                 if (window.appTenantId) return String(window.appTenantId);

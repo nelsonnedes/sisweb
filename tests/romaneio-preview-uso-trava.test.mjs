@@ -137,7 +137,8 @@ test('vendas: 3 modos exatos, default obrigatório, sem ramo morto', () => {
   assert.match(vendas, /function agruparResumoPorEspessuraVendas\(/);
   assert.match(vendas, /function agruparBrutosPorDimensoesVendas\(/);
   assert.match(vendas, /function limparExclusoesPreviewVendas\(\)/);
-  assert.match(vendas, /Inalcançável: modo obrigatório/);
+  assert.match(vendas, /Detalhado por categoria \(TORA sem resumo\)/);
+  assert.match(vendas, /Guarda defensiva \(fail-closed\)/);
 });
 
 test('vendas: preview fiel por modo (linhas = unidades de carga)', () => {

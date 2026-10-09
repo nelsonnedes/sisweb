@@ -436,6 +436,24 @@ B. **Checkbox "Carregar apenas o Resumo" não desmarcava (compras/TORA).**
 - [x] Gates verdes (lint+typecheck OK, 809 testes 808/0/1).
 - [x] `?v=` resync + SW `2026-10-08-loader-e5`.
 
+## Onda 24 — W2 + paridade resumo vendas + toast baixa + altura campos (08/10, `onda24`)
+- **W2:** medido 745ms/write não-canônico vs 390ms canônico (probes `get()`
+  sequenciais). Fix: cache do writePath por coleção (TTL 5min, derruba em
+  erro). Trava + medição depois no ar.
+- **Paridade vendas:** resumo TORA desmarcável (volta ao detalhado POR
+  CATEGORIA — mesma partição/exclusões do preview; tora-a-tora quebraria o
+  contrato de exclusão do modelo CONAMA). Ajustada 1 trava existente que
+  fixava o `else` antigo.
+- **Toast baixa:** catch descartava a mensagem do servidor; agora exibe o
+  texto da regra de negócio verbatim (ex.: data anterior à última baixa),
+  com teto 300 chars e fallback genérico p/ ruído infra. Toast continua 4s.
+- **Altura campos:** medido no ar (38px vs 31/32/36px). Regra por ID → 38px
+  nas 3 páginas (TL inclui largura, mesma linha). `clienteInput` (31px, com
+  ícone) fora do escopo — relato, não mexi.
+- [x] Travas: `tests/onda24-w2-paridade-toast-altura.test.mjs` (4 testes).
+- [x] Gates verdes (lint+typecheck OK, 817 testes 816/0/1).
+- [x] `?v=` resync + SW `2026-10-08-onda24`.
+
 ## Onda 23 — loader E6 auditoria (08/10, sem mudança)
 - Auditados show/hide de folha (`folha-funcionarios`, com guarda anti-duplo +
   timeout de segurança), species, client e fornecedor: todos pareados com
