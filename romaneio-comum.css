@@ -3818,19 +3818,25 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
     align-items: stretch;
     position: relative;
     width: 100%;
+    height: 38px;
 }
 .species-combobox-inline input {
     flex: 1 1 auto;
     min-width: 0;
+    height: 38px !important;
+    box-sizing: border-box !important;
 }
 .species-combobox-inline .autocomplete-input,
 .species-combobox-inline .input-with-icon {
     padding-right: 10px !important;
+    padding-left: 12px !important;
+    font-size: 14px !important;
+    line-height: 1.3;
 }
 .species-combobox-inline .species-icon-btn {
     width: 36px;
     min-width: 36px;
-    height: 36px;
+    height: 38px;
     padding: 0;
     display: inline-flex;
     align-items: center;
