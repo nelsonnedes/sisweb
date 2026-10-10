@@ -18,7 +18,7 @@
 
     <script type="module">
 
-        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebaseService.js?v=85793ccf9090';
+        import { app, auth, db, storage, functions, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, httpsCallable, storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from './firebaseService.js?v=b41e25b5e148';
     import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- compat shim do singleton (window.firebase para módulos antigos) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -56,7 +56,7 @@
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-    <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
+    <script defer src="sentry-init.js?v=a0ebe6edc1c6"></script>
 <script>
         (function() {
             function isExtErr(m){if(!m)return false;var s=typeof m==='string'?m:(m.message||String(m));s=s.toLowerCase();return s.includes('message channel closed')||s.includes('extension context invalidated')||s.includes('chrome-extension://')||s.includes('moz-extension://')||s.includes('safari-extension://');}
@@ -1944,7 +1944,7 @@
     <!-- Serviço Firebase canônico: uma única instância compartilhada por toda a página. -->
     <script>
         window.__siswebFirebaseServiceReady = (async function () {
-            const firebaseSvc = await import('./firebaseService.js?v=85793ccf9090');
+            const firebaseSvc = await import('./firebaseService.js?v=b41e25b5e148');
             window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
             window.FirebaseService = window.firebaseService;
             return window.firebaseService;

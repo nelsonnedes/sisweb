@@ -36,7 +36,7 @@
         })();
     </script>
 <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
-<script src="sentry-init.js?v=7530fe3e6fec"></script>
+<script src="sentry-init.js?v=a0ebe6edc1c6"></script>
 <style>
 :root{--partner-navy:#0f2a43;--partner-blue:var(--lv-mogno,#7C3F16);--partner-green:var(--lv-mata,#1F4D3A);--partner-ink:var(--lv-ink,#2A2118);--partner-muted:var(--lv-muted,#6B5D4A);--partner-line:var(--lv-areia,#E4D6BC);--partner-card:var(--lv-card,#FFFDF7);--partner-tora:var(--lv-tora,#F7F1E5);--partner-body:#4A3D2C;--partner-kpi-ico:#EFE4CE;--partner-row-hover:#F3EAD3;--partner-shadow:0 16px 40px rgba(28,19,11,.12);--partner-radius:16px;--partner-radius-sm:12px}
 /* Ponte de tema: light herda o legado acima (visual idêntico); dark remapeia para os tokens do sistema. */
@@ -105,7 +105,7 @@ html[data-theme="dark"] .partner-debug{background:#0b1220;border-color:var(--sw-
 <div id="partnerReminderModal" class="partner-modal" hidden><div class="partner-modal-card" role="dialog" aria-modal="true" aria-labelledby="partnerReminderTitle"><h3 id="partnerReminderTitle">Enviar recado de cobrança</h3><p>Recado opcional à empresa (máx. 280 caracteres).</p><textarea id="partnerReminderText" maxlength="280" rows="4" placeholder="Ex.: Olá! Sua mensalidade venceu ontem. Qualquer dúvida estou à disposição."></textarea><div class="partner-modal-count"><span id="partnerReminderCount">0</span>/280</div><div id="partnerReminderMessage" class="partner-message" role="status"></div><div class="partner-actions"><button id="partnerReminderCancel" class="lv-btn lv-btn-ghost" type="button">Cancelar</button><button id="partnerReminderConfirm" class="lv-btn lv-btn-primary" type="button"><i class="fas fa-paper-plane"></i> Confirmar envio</button></div></div></div>
 </div></main><footer class="lv-footer"><div class="lv-container"><p>© Sisweb — Programa de Parceiros • <a href="landing-vendas.html#parceiros">Como funciona</a> • <a href="https://wa.me/5591991311049" target="_blank" rel="noopener">Suporte (91) 99131-1049</a></p></div></footer>
 <script type="module">
-import { authService, claimPartnerAccount, getMyPartnerDashboard, getMyPartnerStatus, sendBillingReminder } from './firebaseService.js?v=85793ccf9090';
+import { authService, claimPartnerAccount, getMyPartnerDashboard, getMyPartnerStatus, sendBillingReminder } from './firebaseService.js?v=b41e25b5e148';
 window.partnerPortalServices = { authService, claimPartnerAccount, getMyPartnerDashboard, getMyPartnerStatus, sendBillingReminder };
 window.dispatchEvent(new CustomEvent('sisweb:partner-portal-ready'));
 </script>
