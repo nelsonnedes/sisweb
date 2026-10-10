@@ -32,6 +32,15 @@ const NFStorage = (() => {
   }
 
   // ─── Salvar NF (rascunho ou emitida) ─────────────────────────────────────
+  // Mapeia negacao de regra para texto acionavel (Sentry ja registrou o tecnico).
+  function mapWriteError(e, acao) {
+    const raw = String((e && e.message) || e || '');
+    if (/permission_denied|PERMISSION_DENIED/i.test(raw)) {
+      return new Error('Sem permissão para ' + acao + ' (verifique vínculo com a empresa e assinatura ativa). Detalhe: ' + raw.slice(0, 160));
+    }
+    return e;
+  }
+
   async function salvarNF(tenantId, nfData) {
     const modelo = nfData.modelo || 55;
     const id     = nfData.id || `nf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -43,19 +52,23 @@ const NFStorage = (() => {
       createdAt: nfData.createdAt || new Date().toISOString(),
     };
     // saveToFirebase(path, key, data) — key=id cria subnó
-    await fb().saveToFirebase(modeloPath(tenantId, modelo), id, payload);
+    try {
+      await fb().saveToFirebase(modeloPath(tenantId, modelo), id, payload);
+    } catch (e) { throw mapWriteError(e, 'gravar a NF-e'); }
     return { id, path: `${modeloPath(tenantId, modelo)}/${id}`, payload };
   }
 
   // ─── Atualizar status da NF ───────────────────────────────────────────────
   async function atualizarStatus(tenantId, modelo, nfId, status, extras = {}) {
     const path = `${modeloPath(tenantId, modelo)}/${nfId}`;
-    // key=null → merge sobre o nó existente (substitui completamente)
-    await fb().saveToFirebase(path, null, {
-      status,
-      ...extras,
-      updatedAt: new Date().toISOString(),
-    });
+    // key=null — merge sobre o nó existente (substitui completamente)
+    try {
+      await fb().saveToFirebase(path, null, {
+        status,
+        ...extras,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (e) { throw mapWriteError(e, 'atualizar a NF-e'); }
   }
 
   // ─── Carregar NF por ID ───────────────────────────────────────────────────
