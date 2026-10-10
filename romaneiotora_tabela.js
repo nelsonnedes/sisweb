@@ -1204,9 +1204,11 @@ async function salvarRomaneio() {
             console.log(`📅 Timestamp da última atualização: ${window.ultimaAtualizacaoRomaneio}`);
             console.log("🔄 Flag de atualização necessária ativada");
             
-            // Limpar formulário e estado de edição
-            limparFormulario();
-            limparEstadoEdicao();
+            // Perguntar antes de limpar (paridade TL)
+            if (await confirmDialog({ title: 'Novo romaneio', message: 'Romaneio salvo com sucesso!\n\nDeseja limpar o formulário para criar um novo romaneio?', confirmLabel: 'Limpar formulário' })) {
+                limparFormulario();
+                limparEstadoEdicao();
+            }
             
             // Atualizar displays
             atualizarTotais();

@@ -2894,7 +2894,10 @@
                 }
                 console.log('✅ Romaneio PES salvo no Firebase com sucesso!');
                 notifyUser('Romaneio salvo com sucesso!');
-                resetForm();
+                // Perguntar antes de limpar (paridade TL)
+                if (await confirmDialog({ title: 'Novo romaneio', message: 'Romaneio salvo com sucesso!\n\nDeseja limpar o formulário para criar um novo romaneio?', confirmLabel: 'Limpar formulário' })) {
+                    resetForm();
+                }
             } catch (error) {
                 console.error('❌ Erro ao salvar romaneio no Firebase:', error);
                 notifyUser('Erro ao salvar romaneio. Verifique a conexão e tente novamente.');

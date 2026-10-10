@@ -27,8 +27,7 @@ test('PCT lista: estado de carregamento espelha o TL', async (t) => {
   });
 });
 
-test('PCT itens: toasts espelham o TL', async (t) => {
-  await t.test('editar mostra info como no TL', () => {
+test('PCT itens: toasts espelham o TL', async (t) => {  await t.test('editar mostra info como no TL', () => {
     assert.ok(pctTab.includes("notifyUser('Item carregado para edição', 'info')"),
       'PCT informa item carregado para edicao');
   });
@@ -41,5 +40,30 @@ test('PCT itens: toasts espelham o TL', async (t) => {
   await t.test('adicionar mostra sucesso', () => {
     assert.ok(pctTab.includes("notifyUser('Item adicionado ao romaneio.', 'success')"),
       'PCT confirma item adicionado');
+  });
+});
+
+test('Pos-save: PCT/PES/TORA/pre perguntam limpar como o TL', async (t) => {
+  const prompt = "Deseja limpar o formulário para criar um novo romaneio?";
+  await t.test('PCT pergunta antes de limpar', () => {
+    const src = fs.readFileSync('romaneiopct-tabela.js', 'utf8');
+    assert.ok(src.includes(prompt), 'PCT tem prompt pos-save');
+    assert.ok(src.includes('limparFormularioAposSalvamento();'), 'PCT limpa apos confirmar');
+  });
+
+  await t.test('PES pergunta antes de resetForm', () => {
+    const src = fs.readFileSync('romaneiopes.html', 'utf8');
+    assert.ok(src.includes(prompt), 'PES tem prompt pos-save');
+  });
+
+  await t.test('TORA pergunta antes de limpar', () => {
+    const src = fs.readFileSync('romaneiotora_tabela.js', 'utf8');
+    assert.ok(src.includes(prompt), 'TORA tem prompt pos-save');
+  });
+
+  await t.test('pre-romaneio pergunta antes de limpar', () => {
+    const src = fs.readFileSync('preromaneio.js', 'utf8');
+    assert.ok(src.includes('Deseja limpar o formulário para criar um novo pré-romaneio?'),
+      'pre tem prompt pos-save');
   });
 });

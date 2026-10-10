@@ -1523,9 +1523,11 @@ async function salvarRomaneio() {
         });
         
         notifyUser('Romaneio salvo com sucesso!');
-        
-        // ✅ Limpar formulário pós-salvamento com UX idêntica ao PES
-        limparFormularioAposSalvamento();
+
+        // Perguntar antes de limpar (paridade TL)
+        if (await confirmDialog({ title: 'Novo romaneio', message: 'Romaneio salvo com sucesso!\n\nDeseja limpar o formulário para criar um novo romaneio?', confirmLabel: 'Limpar formulário' })) {
+            limparFormularioAposSalvamento();
+        }
         
     } catch (error) {
         console.error('❌ Erro ao salvar romaneio:', error);

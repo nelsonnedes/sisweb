@@ -1301,16 +1301,18 @@ async function salvarPreRomaneio() {
                 __preNotify('Pré-Romaneio salvo com sucesso!', 'success');
                 __preSetBtn(false);
                 __preRomaneioSaving = false;
-                // Limpar tudo após salvar
-                romaneioItens = [];
-                renderizarTabela();
-                atualizarTotais();
-                romaneioId = null; 
-                preRomaneioEmEdicao = null;
-                document.getElementById('clienteInput').value = '';
-                document.getElementById('dataRomaneio').value = new Date().toISOString().split('T')[0];
-                limparFormularioSerrado(true);
-                limparFormularioTora(true);
+                // Perguntar antes de limpar (paridade TL)
+                if (await confirmDialog({ title: 'Novo pré-romaneio', message: 'Pré-Romaneio salvo com sucesso!\n\nDeseja limpar o formulário para criar um novo pré-romaneio?', confirmLabel: 'Limpar formulário' })) {
+                    romaneioItens = [];
+                    renderizarTabela();
+                    atualizarTotais();
+                    romaneioId = null;
+                    preRomaneioEmEdicao = null;
+                    document.getElementById('clienteInput').value = '';
+                    document.getElementById('dataRomaneio').value = new Date().toISOString().split('T')[0];
+                    limparFormularioSerrado(true);
+                    limparFormularioTora(true);
+                }
             } else {
                 throw new Error('Falha na operação de salvamento.');
             }
