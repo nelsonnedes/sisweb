@@ -532,6 +532,11 @@
             .form-row-main > .form-group:has(#pagarFornecedor) {
                 grid-column: span 2;
             }
+            /* UX 09/10: Observações colado e proporcional ao Anexo (span 2). */
+            .form-row:has(#receberObservacoes) > .form-group:has(#receberObservacoes),
+            .form-row:has(#pagarObservacoes) > .form-group:has(#pagarObservacoes) {
+                grid-column: span 2;
+            }
             .filters-row .fg-status select,
             .filters-row .fg-tipo select {
                 max-width: 180px;
