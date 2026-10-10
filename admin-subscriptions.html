@@ -818,7 +818,7 @@
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         // Variável para armazenar os dados da assinatura atual
@@ -881,7 +881,7 @@
 
         function downloadCurrentProof() {
             if (!currentProofUrl) {
-                alert('Comprovante indisponível para download.');
+                notifyUser('Comprovante indisponível para download.');
                 return;
             }
             const anchor = document.createElement('a');
@@ -1040,7 +1040,7 @@
 
         async function setUserAccessStatusFlow(targetUser, status, source) {
             if (!(await hasSubscriptionsAdminAccess())) {
-                alert('Acesso restrito para gerenciamento de assinaturas.');
+                notifyUser('Acesso restrito para gerenciamento de assinaturas.');
                 window.location.href = 'index.html';
                 return;
             }
@@ -1070,12 +1070,12 @@
                 email: updated.email || ''
             });
             if (source === 'modal') openUserDetails(updated);
-            alert(cloudApplied ? `Status atualizado para "${label}" com sucesso.` : `Status atualizado localmente para "${label}".`);
+            notifyUser(cloudApplied ? `Status atualizado para "${label}" com sucesso.` : `Status atualizado localmente para "${label}".`);
         }
 
         async function setStatusFromModal(status) {
             if (!currentUser) {
-                alert('Nenhum usuário selecionado.');
+                notifyUser('Nenhum usuário selecionado.');
                 return;
             }
             await setUserAccessStatusFlow(currentUser, status, 'modal');
@@ -1382,12 +1382,12 @@
                     } catch (_) {}
                     return true;
                 }
-                alert('Acesso restrito. Você não tem permissões de administrador.');
+                notifyUser('Acesso restrito. Você não tem permissões de administrador.');
                 window.location.href = 'index.html';
                 return false;
             } catch (error) {
                 console.error('Erro ao verificar permissões de admin:', error);
-                alert('Erro ao verificar permissões. Por favor, faça login novamente.');
+                notifyUser('Erro ao verificar permissões. Por favor, faça login novamente.');
                 window.location.href = 'login.html';
                 return false;
             }
@@ -1581,10 +1581,10 @@
                 if (!result || result.success === false) {
                     throw new Error((result && result.error) || 'Falha ao revalidar PIX.');
                 }
-                alert('PIX revalidado com sucesso.');
+                notifyUser('PIX revalidado com sucesso.');
                 await loadAutoPixPayments();
             } catch (error) {
-                alert(error.message || 'Erro ao revalidar PIX.');
+                notifyUser(error.message || 'Erro ao revalidar PIX.');
             }
         }
 
@@ -1791,7 +1791,7 @@
                 document.getElementById('subscriptionModal').style.display = 'block';
             } catch (error) {
                 console.error('Erro ao abrir detalhes do usuário:', error);
-                alert('Erro ao abrir detalhes do usuário');
+                notifyUser('Erro ao abrir detalhes do usuário');
             }
         }
         
@@ -1804,7 +1804,7 @@
         // Aprovar pagamento
         async function approvePayment(user) {
             if (!(await hasSubscriptionsAdminAccess())) {
-                alert('Acesso restrito para gerenciamento de assinaturas.');
+                notifyUser('Acesso restrito para gerenciamento de assinaturas.');
                 window.location.href = 'index.html';
                 return;
             }
@@ -1844,7 +1844,7 @@
                         persistUsersCache(users);
                     }
                     notifyDashboardSync({ status: 'active', uid, email: user.email || '' });
-                    alert('Pagamento aprovado com dupla confirmação e trilha de auditoria.');
+                    notifyUser('Pagamento aprovado com dupla confirmação e trilha de auditoria.');
                     loadSubscriptions(currentFilter);
                     loadAutoPixPayments();
                     return;
@@ -1926,7 +1926,7 @@
                     email: updatedUser.email || ''
                 });
                 
-                alert('Pagamento aprovado com sucesso!');
+                notifyUser('Pagamento aprovado com sucesso!');
                 
                 // Recarregar lista de assinaturas
                 loadSubscriptions(currentFilter);
@@ -1940,14 +1940,14 @@
                 
             } catch (error) {
                 console.error('Erro ao aprovar pagamento:', error);
-                alert(`Erro ao aprovar pagamento: ${error.message}`);
+                notifyUser(`Erro ao aprovar pagamento: ${error.message}`);
             }
         }
         
         // Rejeitar pagamento
         async function rejectPayment(user) {
             if (!(await hasSubscriptionsAdminAccess())) {
-                alert('Acesso restrito para gerenciamento de assinaturas.');
+                notifyUser('Acesso restrito para gerenciamento de assinaturas.');
                 window.location.href = 'index.html';
                 return;
             }
@@ -1987,7 +1987,7 @@
                         persistUsersCache(users);
                     }
                     notifyDashboardSync({ status: 'expired', uid, email: user.email || '' });
-                    alert('Pagamento rejeitado com dupla confirmação e trilha de auditoria.');
+                    notifyUser('Pagamento rejeitado com dupla confirmação e trilha de auditoria.');
                     loadSubscriptions(currentFilter);
                     return;
                 }
@@ -2038,7 +2038,7 @@
                     email: updatedUser.email || ''
                 });
                 
-                alert('Pagamento rejeitado com sucesso!');
+                notifyUser('Pagamento rejeitado com sucesso!');
                 
                 // Recarregar lista de assinaturas
                 loadSubscriptions(currentFilter);
@@ -2052,7 +2052,7 @@
                 
             } catch (error) {
                 console.error('Erro ao rejeitar pagamento:', error);
-                alert(`Erro ao rejeitar pagamento: ${error.message}`);
+                notifyUser(`Erro ao rejeitar pagamento: ${error.message}`);
             }
         }
         
@@ -2131,7 +2131,7 @@
         window.reviewExtensionRequest = async function(uid, requestId, approve, suggestedDays) {
             try {
                 if (!(await hasSuperAdminAccess())) {
-                    alert('Apenas super admin pode revisar solicitações.');
+                    notifyUser('Apenas super admin pode revisar solicitações.');
                     return;
                 }
                 const note = prompt('Informe uma observação da revisão (opcional):', '') || '';
@@ -2154,17 +2154,17 @@
                     reviewNote: note
                 });
                 if (!result.success) throw new Error(result.error || 'Falha ao revisar solicitação.');
-                alert(approve ? 'Prorrogação aprovada com sucesso.' : 'Solicitação rejeitada com sucesso.');
+                notifyUser(approve ? 'Prorrogação aprovada com sucesso.' : 'Solicitação rejeitada com sucesso.');
                 await loadExtensionRequests();
                 await loadSubscriptions(currentFilter);
                 await loadAutoPixPayments();
             } catch (error) {
-                alert(error.message || 'Erro ao revisar solicitação.');
+                notifyUser(error.message || 'Erro ao revisar solicitação.');
             }
         };
         
         async function cleanupSampleData() {
-            alert('Operação removida no modo produção.');
+            notifyUser('Operação removida no modo produção.');
         }
         
         // Função auxiliar para obter detalhes do usuário atual

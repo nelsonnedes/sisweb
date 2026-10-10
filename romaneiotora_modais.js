@@ -714,12 +714,12 @@ async function selectFornecedorFromList(id) {
             selectFornecedor(fornecedor);
         } else {
             console.error("âŒ Fornecedor nÃ£o encontrado com ID:", id);
-            alert('Fornecedor nÃ£o encontrado. A lista foi atualizada do Firebase.');
+            notifyUser('Fornecedor nÃ£o encontrado. A lista foi atualizada do Firebase.');
         }
         
     } catch (error) {
         console.error("âŒ Erro ao selecionar fornecedor:", error);
-        alert('Erro ao carregar dados do fornecedor. Tente novamente.');
+        notifyUser('Erro ao carregar dados do fornecedor. Tente novamente.');
     }
 }
 
@@ -806,12 +806,12 @@ async function editFornecedorFromList(id) {
             
         } else {
             console.error("âŒ Fornecedor nÃ£o encontrado com ID:", id);
-            alert('Fornecedor nÃ£o encontrado. A lista foi atualizada do Firebase.');
+            notifyUser('Fornecedor nÃ£o encontrado. A lista foi atualizada do Firebase.');
         }
         
     } catch (error) {
         console.error("âŒ Erro ao editar fornecedor:", error);
-        alert('Erro ao carregar dados do fornecedor. Tente novamente.');
+        notifyUser('Erro ao carregar dados do fornecedor. Tente novamente.');
     }
 }
 
@@ -1280,12 +1280,12 @@ async function selectSpeciesFromList(id) {
             
         } else {
             console.error("â Œ EspÃ©cie nÃ£o encontrada com ID:", id);
-            alert('EspÃ©cie nÃ£o encontrada. A lista foi atualizada do Firebase.');
+            notifyUser('EspÃ©cie nÃ£o encontrada. A lista foi atualizada do Firebase.');
         }
         
     } catch (error) {
         console.error("âŒ Erro ao selecionar espÃ©cie:", error);
-        alert('Erro ao carregar dados da espÃ©cie. Tente novamente.');
+        notifyUser('Erro ao carregar dados da espÃ©cie. Tente novamente.');
     }
 }
 
@@ -1432,12 +1432,12 @@ async function editSpeciesFromList(speciesId) {
             
         } else {
             console.error("âŒ Modal de ediÃ§Ã£o nÃ£o encontrado");
-            alert('Modal de ediÃ§Ã£o nÃ£o disponÃ­vel. Tente novamente.');
+            notifyUser('Modal de ediÃ§Ã£o nÃ£o disponÃ­vel. Tente novamente.');
         }
         
     } catch (error) {
         console.error("âŒ Erro ao editar espÃ©cie:", error);
-        alert('Erro ao carregar dados da espÃ©cie para ediÃ§Ã£o: ' + error.message);
+        notifyUser('Erro ao carregar dados da espÃ©cie para ediÃ§Ã£o: ' + error.message);
     }
 }
 
@@ -1597,7 +1597,7 @@ async function saveSpecies() {
         
         // ValidaÃ§Ãµes
         if (!nome) {
-            alert('Nome da espÃ©cie Ã© obrigatÃ³rio!');
+            notifyUser('Nome da espÃ©cie Ã© obrigatÃ³rio!');
             document.getElementById('speciesName').focus();
             return false;
         }
@@ -1605,7 +1605,7 @@ async function saveSpecies() {
         if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
             const duplicate = window.SiswebSpeciesModal.getExactDuplicate(nome, id);
             if (duplicate) {
-                alert(`Espécie já cadastrada: ${getSpeciesNameTora(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
+                notifyUser(`Espécie já cadastrada: ${getSpeciesNameTora(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
                 document.getElementById('speciesName').focus();
                 return false;
             }
@@ -2021,7 +2021,7 @@ async function saveClient() {
         
         // ValidaÃ§Ãµes
         if (!nome) {
-            alert('Nome do fornecedor Ã© obrigatÃ³rio!');
+            notifyUser('Nome do fornecedor Ã© obrigatÃ³rio!');
             document.getElementById('clientName').focus();
             return false;
         }
@@ -2304,7 +2304,7 @@ function configureEnterKeyNavigation() {
                         
                     } else {
                         console.error("âŒ FunÃ§Ã£o 'adicionarItem' nÃ£o encontrada ao pressionar Enter no campo 'oco2'");
-                        alert("Erro: FunÃ§Ã£o para adicionar item nÃ£o encontrada!");
+                        notifyUser("Erro: FunÃ§Ã£o para adicionar item nÃ£o encontrada!");
                     }
                 }
             }
@@ -3081,7 +3081,7 @@ async function editarRomaneio(romaneioId) {
         
         if (!romaneioParaEditar) {
             console.error(`âŒ Romaneio ${romaneioId} nÃ£o encontrado para ediÃ§Ã£o`);
-            alert("Romaneio nÃ£o encontrado para ediÃ§Ã£o!");
+            notifyUser("Romaneio nÃ£o encontrado para ediÃ§Ã£o!");
             return;
         }
         
@@ -3587,7 +3587,7 @@ async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
         
         if (!romaneioParaImprimir) {
             console.error(`âŒ Romaneio ${romaneioId} nÃ£o encontrado`);
-            alert("Romaneio nÃ£o encontrado");
+            notifyUser("Romaneio nÃ£o encontrado");
             return;
         }
         
@@ -3615,7 +3615,7 @@ async function imprimirRomaneio(romaneioId, modoImpressao = 'completo') {
         // âœ… VERIFICAR E PROCESSAR ITENS
         const itensOriginais = romaneioParaImprimir.itens || [];
         if (!Array.isArray(itensOriginais) || itensOriginais.length === 0) {
-            alert("NÃ£o hÃ¡ itens para imprimir neste romaneio");
+            notifyUser("NÃ£o hÃ¡ itens para imprimir neste romaneio");
             return;
         }
         
@@ -3941,7 +3941,7 @@ async function excluirItem(index) {
         }
     } catch (error) {
         console.error('âŒ Erro ao excluir item:', error);
-        alert('Erro ao excluir item: ' + error.message);
+        notifyUser('Erro ao excluir item: ' + error.message);
     }
 }
 
@@ -5006,7 +5006,7 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
                 exportarRomaneioExcelFirebase(romaneioId); // Retry
             };
             script.onerror = () => {
-                alert("âŒ NÃ£o foi possÃ­vel carregar a biblioteca de exportaÃ§Ã£o Excel. Verifique sua conexÃ£o com a internet.");
+                notifyUser("âŒ NÃ£o foi possÃ­vel carregar a biblioteca de exportaÃ§Ã£o Excel. Verifique sua conexÃ£o com a internet.");
             };
             document.head.appendChild(script);
             return;
@@ -5073,7 +5073,7 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
         
         if (!romaneioParaExportar) {
             console.error(`âŒ Romaneio ${romaneioId} nÃ£o encontrado para exportaÃ§Ã£o`);
-            alert("Romaneio nÃ£o encontrado para exportaÃ§Ã£o");
+            notifyUser("Romaneio nÃ£o encontrado para exportaÃ§Ã£o");
             return;
         }
         
@@ -5097,7 +5097,7 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
         // Verificar se hÃ¡ itens para exportar
         const itensParaExportar = romaneioParaExportar.itens || [];
         if (!Array.isArray(itensParaExportar) || itensParaExportar.length === 0) {
-            alert("NÃ£o hÃ¡ itens para exportar neste romaneio");
+            notifyUser("NÃ£o hÃ¡ itens para exportar neste romaneio");
             return;
         }
         

@@ -245,12 +245,12 @@ const NFNaturezas = (() => {
     if (window.__nfNatSaving) return;
     const descricao = (document.getElementById('natOpDescricao')?.value || '').trim();
     if (!descricao) {
-      alert('Informe a descrição da Natureza da Operação');
+      notifyUser('Informe a descrição da Natureza da Operação');
       return;
     }
     const tenantId = _tenantId || window.NFService?.getConfig?.()?.tenantId
       || (() => { try { return JSON.parse(localStorage.getItem('company_info') || '{}').companyId || ''; } catch(_) { return ''; } })();
-    if (!tenantId) { alert('Tenant não identificado. Faça login novamente.'); return; }
+    if (!tenantId) { notifyUser('Tenant não identificado. Faça login novamente.'); return; }
     // Trava anti-duplo-clique (F-13).
     window.__nfNatSaving = true;
     var __natSaveBtn = document.getElementById('natOpSalvar');
@@ -289,7 +289,7 @@ const NFNaturezas = (() => {
       } catch (_) {}
       window.__nfNatSaving = false;
     } catch (e) {
-      alert('Erro ao salvar Natureza da Operação: ' + e.message);
+      notifyUser('Erro ao salvar Natureza da Operação: ' + e.message);
       try {
         var __natSaveBtnErr = document.getElementById('natOpSalvar');
         if (__natSaveBtnErr) { __natSaveBtnErr.disabled = false; }

@@ -101,7 +101,7 @@ function saveData(key, data, checkSpace = true) {
         
         // Se for erro de cota excedida, tentar limpar dados antigos
         if (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-            alert('Armazenamento do navegador cheio. Alguns dados antigos serão removidos automaticamente.');
+            notifyUser('Armazenamento do navegador cheio. Alguns dados antigos serão removidos automaticamente.');
             
             // Tentar limpar dados antigos
             cleanOldData();
@@ -111,7 +111,7 @@ function saveData(key, data, checkSpace = true) {
                 localStorage.setItem(canonicalizeDataKey(key), JSON.stringify(data));
                 return true;
             } catch (retryError) {
-                alert('Não foi possível salvar os dados. Recomendamos exportar seus dados importantes.');
+                notifyUser('Não foi possível salvar os dados. Recomendamos exportar seus dados importantes.');
                 console.error('Erro após tentativa de limpeza:', retryError);
                 return false;
             }

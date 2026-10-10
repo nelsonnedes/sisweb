@@ -1642,7 +1642,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     if (typeof window.showSupport === 'function') {
                         window.showSupport();
                     } else {
-                        alert('Suporte indisponível no momento.');
+                        notifyUser('Suporte indisponível no momento.');
                     }
                 });
             });
@@ -1655,7 +1655,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     if (typeof window.showAbout === 'function') {
                         window.showAbout();
                     } else {
-                        alert('Informações sobre o sistema não disponíveis no momento.');
+                        notifyUser('Informações sobre o sistema não disponíveis no momento.');
                     }
                 });
             });

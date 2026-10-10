@@ -581,7 +581,7 @@ class FolhaLancamentos {
                 window.FolhaUtils.showToast(message, type, duration);
             } else {
                 console[(type === 'error') ? 'error' : 'log'](message);
-                if (type === 'error') alert(message);
+                if (type === 'error') notifyUser(message);
             }
         } catch(e) {
             console.error('❌ Erro ao exibir notificação:', e);
@@ -3160,17 +3160,17 @@ ensureSaveButtonBound() {
     // Implementar validateLancamentoData básico
     validateLancamentoData(data) {
     if (!data.funcionario || !String(data.funcionario.nome || '').trim()) {
-        alert('Funcionário é obrigatório');
+        notifyUser('Funcionário é obrigatório');
         return false;
     }
     const funcId = String((data.funcionario && data.funcionario.id) || '').trim();
     if (!funcId) {
-        alert('Selecione o funcionário na lista');
+        notifyUser('Selecione o funcionário na lista');
         return false;
     }
     const salarioBaseVal = Number((data.funcionario && data.funcionario.salarioBase) || data.salarioBase || 0);
     if (!Number.isFinite(salarioBaseVal) || salarioBaseVal <= 0) {
-        alert('Salário base deve ser maior que zero');
+        notifyUser('Salário base deve ser maior que zero');
         return false;
     }
     const tpRaw = String(data.tipoPagamento || '').toLowerCase();
@@ -3185,13 +3185,13 @@ ensureSaveButtonBound() {
         data.percentual = 100;
     }
     if (!String(data.mesAno || '').trim()) {
-        alert('Mês/Ano é obrigatório');
+        notifyUser('Mês/Ano é obrigatório');
         return false;
     }
     if (Array.isArray(data.valesDetalhados)) {
         const valeIncompleto = data.valesDetalhados.find(item => (item.data || item.observacao) && !(Number(item.valor || 0) > 0));
         if (valeIncompleto) {
-            alert('Informe o valor do vale ou remova a linha incompleta.');
+            notifyUser('Informe o valor do vale ou remova a linha incompleta.');
             return false;
         }
     }
@@ -3213,7 +3213,7 @@ ensureSaveButtonBound() {
                 }
             }
             if (!window.database) {
-                alert('Firebase indisponível no momento. Aguarde inicialização ou faça login.');
+                notifyUser('Firebase indisponível no momento. Aguarde inicialização ou faça login.');
                 return;
             }
         } catch(e) { /* silencioso */ }
@@ -3253,7 +3253,7 @@ ensureSaveButtonBound() {
             console.log('✅ Folha salva e evento disparado');
         } catch (error) {
             console.error('❌ Erro ao salvar folha:', error);
-            alert('Erro ao salvar: ' + error.message);
+            notifyUser('Erro ao salvar: ' + error.message);
         } finally {
             this._savingFolha = false;
         }
@@ -3874,7 +3874,7 @@ window.editFolha = function(folhaId) {
         }
     } catch (e) {
         console.error('❌ Erro ao abrir edição de folha:', e);
-        alert('Não foi possível abrir a edição agora.');
+        notifyUser('Não foi possível abrir a edição agora.');
     }
 };
 

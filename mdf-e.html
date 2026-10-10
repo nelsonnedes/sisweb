@@ -939,7 +939,7 @@
 
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
     <!-- Legacy inline implementation kept as a non-executable migration reference. -->
     <script type="text/plain" id="legacy-mdfe-implementation">
@@ -1127,7 +1127,7 @@
         function visualizarManifesto(id) {
             const manifesto = manifestos.find(m => m.id === id);
             if (manifesto) {
-                alert(`MDF-e ${manifesto.numero}\nOrigem: ${manifesto.origem}\nDestino: ${manifesto.destino}\nCondutor: ${manifesto.condutor}`);
+                notifyUser(`MDF-e ${manifesto.numero}\nOrigem: ${manifesto.origem}\nDestino: ${manifesto.destino}\nCondutor: ${manifesto.condutor}`);
             }
         }
 
@@ -1150,7 +1150,7 @@
             
             atualizarTabelaManifestos();
             cancelarEdicao();
-            alert('MDF-e salvo com sucesso!');
+            notifyUser('MDF-e salvo com sucesso!');
         }
 
         function cancelarEdicao() {
@@ -1179,7 +1179,7 @@
 
         function validarFormulario(data) {
             if (!data.numero || !data.serie || !data.dataEmissao || !data.condutor || !data.veiculo) {
-                alert('Por favor, preencha todos os campos obrigatórios.');
+                notifyUser('Por favor, preencha todos os campos obrigatórios.');
                 return false;
             }
             return true;
@@ -1247,7 +1247,7 @@
         console.log("✅ firebaseService carregado no mdf-e.html");
     </script>
     <script src="mdfe-xml-builder.js?v=5f468745ae5d"></script>
-    <script src="mdf-e.js?v=2e6bf6388c6c"></script>
+    <script src="mdf-e.js?v=730c8f87f196"></script>
     <script src="js/sisweb-loading.js?v=b693454010f9"></script>
 </body>
 </html>

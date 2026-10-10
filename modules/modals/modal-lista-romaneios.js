@@ -1038,9 +1038,9 @@ window.ModalListaRomaneios = (function() {
             } else if (window.Utils && window.Utils.showToast) {
                 window.Utils.showToast(message, 'warning');
             } else {
-                alert(message);
+                notifyUser(message);
             }
-        } catch (_) { alert(message); }
+        } catch (_) { notifyUser(message); }
     }
 
     /**

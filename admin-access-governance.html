@@ -227,7 +227,7 @@
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         let refreshTimer = null;
@@ -450,7 +450,7 @@
                 } catch (_) {}
                 await new Promise((resolve) => setTimeout(resolve, 250));
             }
-            alert('Acesso restrito. Você não possui permissão administrativa.');
+            notifyUser('Acesso restrito. Você não possui permissão administrativa.');
             window.location.href = 'index.html';
             return false;
         }
@@ -515,7 +515,7 @@
 
         async function reconcileClaimsNow() {
             if (!window.firebaseService || typeof window.firebaseService.reconcileSuperAdminClaims !== 'function') {
-                alert('Função de reconciliação indisponível.');
+                notifyUser('Função de reconciliação indisponível.');
                 return;
             }
             const extraEmailsRaw = prompt('Emails extras (separados por vírgula) para reconciliar como superadmin:', '') || '';
@@ -530,11 +530,11 @@
                 dryRun
             });
             if (!result || !result.success || !result.data) {
-                alert(`Falha na reconciliação: ${(result && result.error) || 'erro desconhecido'}`);
+                notifyUser(`Falha na reconciliação: ${(result && result.error) || 'erro desconhecido'}`);
                 return;
             }
             const data = result.data || {};
-            alert(`Reconciliação concluída (${dryRun ? 'simulação' : 'aplicada'}): processados=${data.processed || 0}, alterados=${data.changed || 0}, sem alteração=${data.unchanged || 0}, não encontrados=${Array.isArray(data.missing) ? data.missing.length : 0}.`);
+            notifyUser(`Reconciliação concluída (${dryRun ? 'simulação' : 'aplicada'}): processados=${data.processed || 0}, alterados=${data.changed || 0}, sem alteração=${data.unchanged || 0}, não encontrados=${Array.isArray(data.missing) ? data.missing.length : 0}.`);
             await refreshGovernance();
         }
 
@@ -551,13 +551,13 @@
 
         async function auditClaimsNow() {
             if (!window.firebaseService || typeof window.firebaseService.auditAdminClaimsInconsistencies !== 'function') {
-                alert('Função de auditoria indisponível.');
+                notifyUser('Função de auditoria indisponível.');
                 return;
             }
             const includeConsistent = await confirmDialog({ title: 'Escopo da auditoria', message: 'Incluir também usuários consistentes no resultado? OK = sim, Cancelar = somente inconsistentes.', confirmLabel: 'Incluir todos', cancelLabel: 'Somente inconsistentes' });
             const result = await window.firebaseService.auditAdminClaimsInconsistencies({ includeConsistent });
             if (!result || !result.success || !result.data) {
-                alert(`Falha na auditoria: ${(result && result.error) || 'erro desconhecido'}`);
+                notifyUser(`Falha na auditoria: ${(result && result.error) || 'erro desconhecido'}`);
                 return;
             }
             const data = result.data || {};
@@ -574,21 +574,21 @@
                     preview
                 }, null, 2);
             }
-            alert(`Auditoria concluída: total=${data.totalUsers || 0}, inconsistentes=${data.inconsistentCount || 0}, consistentes=${data.consistentCount || 0}, exibidos=${lastAuditFilteredItems.length}.`);
+            notifyUser(`Auditoria concluída: total=${data.totalUsers || 0}, inconsistentes=${data.inconsistentCount || 0}, consistentes=${data.consistentCount || 0}, exibidos=${lastAuditFilteredItems.length}.`);
         }
 
         async function fixAuditedItemsNow() {
             if (!lastAuditData) {
-                alert('Execute a auditoria antes de corrigir itens.');
+                notifyUser('Execute a auditoria antes de corrigir itens.');
                 return;
             }
             const targets = (Array.isArray(lastAuditFilteredItems) ? lastAuditFilteredItems : []).filter((item) => item && item.inconsistent);
             if (!targets.length) {
-                alert('Não há itens inconsistentes no filtro atual.');
+                notifyUser('Não há itens inconsistentes no filtro atual.');
                 return;
             }
             if (!window.firebaseService || typeof window.firebaseService.reconcileSuperAdminClaims !== 'function') {
-                alert('Função de reconciliação indisponível.');
+                notifyUser('Função de reconciliação indisponível.');
                 return;
             }
             const confirmFix = await confirmDialog({ title: 'Corrigir itens', message: `Deseja corrigir ${targets.length} item(ns) inconsistentes exibidos?`, danger: true, confirmLabel: 'Corrigir' });
@@ -602,11 +602,11 @@
                 dryRun: false
             });
             if (!result || !result.success || !result.data) {
-                alert(`Falha ao corrigir itens auditados: ${(result && result.error) || 'erro desconhecido'}`);
+                notifyUser(`Falha ao corrigir itens auditados: ${(result && result.error) || 'erro desconhecido'}`);
                 return;
             }
             const data = result.data || {};
-            alert(`Correção aplicada: processados=${data.processed || 0}, alterados=${data.changed || 0}, sem alteração=${data.unchanged || 0}.`);
+            notifyUser(`Correção aplicada: processados=${data.processed || 0}, alterados=${data.changed || 0}, sem alteração=${data.unchanged || 0}.`);
             await auditClaimsNow();
             await refreshGovernance();
         }

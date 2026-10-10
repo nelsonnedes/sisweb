@@ -6677,7 +6677,7 @@ class FolhaRelatorios {
             const orientacaoSelecionada = String((document.getElementById('resumoOrientacaoImpressao') && document.getElementById('resumoOrientacaoImpressao').value) || 'auto').toLowerCase();
             const somenteAbertos = !!(document.getElementById('resumoSomenteAbertos') && document.getElementById('resumoSomenteAbertos').checked);
             if (!di || !df || cols.length === 0) {
-                alert('Selecione período e ao menos uma coluna.');
+                notifyUser('Selecione período e ao menos uma coluna.');
                 return;
             }
             await this.loadData();

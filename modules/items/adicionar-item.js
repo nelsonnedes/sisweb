@@ -816,7 +816,7 @@ window.AdicionarItem = (function() {
         } else if (typeof toastr !== 'undefined') {
             toastr.error(mensagem);
         } else {
-            alert('❌ Erro: ' + mensagem);
+            notifyUser('❌ Erro: ' + mensagem);
         }
     }
 

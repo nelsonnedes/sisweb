@@ -919,7 +919,7 @@ window.SalvarRomaneio = (function() {
             } else if (window.Utils && window.Utils.showToast) {
                 window.Utils.showToast(msgSucesso, 'success');
             } else {
-                alert(msgSucesso);
+                notifyUser(msgSucesso);
             }
             return true;
         } catch (err) {

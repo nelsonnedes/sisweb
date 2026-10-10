@@ -84,7 +84,7 @@ function saveSpecies(species) {
 
 // Obter as espécies atuais
 if (!resolveTenantId()) {
-    alert('Empresa/tenant não identificado. Limpeza cancelada para evitar alteração global de espécies.');
+    notifyUser('Empresa/tenant não identificado. Limpeza cancelada para evitar alteração global de espécies.');
     throw new Error('Limpeza de espécies bloqueada: tenant/companyId indisponível.');
 }
 
@@ -123,15 +123,15 @@ if (invalidSpecies.length > 0) {
         if (saveSpecies(validSpecies)) {
             console.log(`Limpeza concluída! Foram removidas ${invalidSpecies.length} espécies inválidas.`);
             console.log(`Total de espécies após a limpeza: ${validSpecies.length}`);
-            alert(`Limpeza concluída com sucesso!\nForam removidas ${invalidSpecies.length} espécies inválidas.`);
+            notifyUser(`Limpeza concluída com sucesso!\nForam removidas ${invalidSpecies.length} espécies inválidas.`);
         } else {
             console.error('Erro ao salvar as alterações.');
-            alert('Erro ao salvar as alterações. Verifique o console para mais detalhes.');
+            notifyUser('Erro ao salvar as alterações. Verifique o console para mais detalhes.');
         }
     } else {
         console.log('Operação cancelada pelo usuário.');
     }
 } else {
     console.log('Não foram encontradas espécies inválidas para remover.');
-    alert('Não foram encontradas espécies inválidas para remover.');
+    notifyUser('Não foram encontradas espécies inválidas para remover.');
 } 

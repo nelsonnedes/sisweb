@@ -653,7 +653,7 @@ window.ModalClientes = (function() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(message, 'error');
         } else {
-            alert('Erro: ' + message);
+            notifyUser('Erro: ' + message);
         }
     }
 
@@ -664,7 +664,7 @@ window.ModalClientes = (function() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(message, 'success');
         } else {
-            alert('Sucesso: ' + message);
+            notifyUser('Sucesso: ' + message);
         }
     }
 

@@ -2127,7 +2127,7 @@
     </script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
     <script src="client-service.js?v=b95ca0dfb346"></script>
     <script src="openNewClientModal.js?v=f19ef075d2a7"></script>
@@ -2143,8 +2143,8 @@
     <script src="nf-storage.js?v=7014a46fdd9a"></script>
     <script src="nf-service.js?v=ab492888118c"></script>
     <!-- Novos módulos Fase 0 -->
-    <script src="nf-naturezas.js?v=e898dec93f42"></script>
-    <script src="nf-preferencias.js?v=da09c3b936fb"></script>
+    <script src="nf-naturezas.js?v=633a98d41e77"></script>
+    <script src="nf-preferencias.js?v=e5580c53ca86"></script>
     <script src="nf-produtos-nf.js?v=1c8f0b89d73f"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -2492,41 +2492,41 @@
       const bridgeUrl = document.getElementById('certTokenBridgeUrl')?.value?.trim() || 'http://127.0.0.1:37773';
       const middleware = document.getElementById('certTokenMiddleware')?.value?.trim() || '';
       const tid = obterTenantIdNF();
-      if (!tid) { window.__nfTokenSaving = false; return alert('Tenant não identificado'); }
+      if (!tid) { window.__nfTokenSaving = false; return notifyUser('Tenant não identificado'); }
       try {
         const uid = await obterUidAutenticadoNF();
-        if (!uid) { window.__nfTokenSaving = false; return alert('Sessão autenticada não encontrada. Faça login novamente.'); }
+        if (!uid) { window.__nfTokenSaving = false; return notifyUser('Sessão autenticada não encontrada. Faça login novamente.'); }
         localStorage.setItem(`nf_a3_bridge_${tid}`, JSON.stringify({ bridgeUrl, middleware, updatedAt: new Date().toISOString() }));
         await window.NFCertService.salvarReferenciaA3Token(tid, uid, { bridgeUrl, middleware });
         const statusEl = document.getElementById('certTokenStatus');
         if (statusEl) statusEl.innerHTML = '<div style="background:#fff3cd;color:#856404;padding:8px;border-radius:4px;border:1px solid #ffc107;">⚠️ Tipo A3 físico salvo. A emissão ficará bloqueada até existir ponte local homologada para assinatura XML.</div>';
         verificarStatusCert();
         window.__nfTokenSaving = false;
-      } catch(e) { alert('Erro ao salvar: ' + e.message); window.__nfTokenSaving = false; }
+      } catch(e) { notifyUser('Erro ao salvar: ' + e.message); window.__nfTokenSaving = false; }
     }
     window.salvarTokenManual = salvarTokenManual;
 
     async function uploadCertificado() {
-      if (!window.NFCertService || !window.NFService) return alert('Módulo de certificado não carregado');
+      if (!window.NFCertService || !window.NFService) return notifyUser('Módulo de certificado não carregado');
       const cfg = window.NFService.getConfig();
       const tid = obterTenantIdNF();
       const uid = await obterUidAutenticadoNF();
-      if (!tid) return alert('Empresa da sessão não identificada. Faça login novamente.');
-      if (!uid) return alert('Sessão autenticada não encontrada. Faça login novamente.');
+      if (!tid) return notifyUser('Empresa da sessão não identificada. Faça login novamente.');
+      if (!uid) return notifyUser('Sessão autenticada não encontrada. Faça login novamente.');
       const tipo = document.getElementById('certTipo')?.value;
       if (tipo === 'A1') {
         const arquivo = document.getElementById('certArquivo')?.files[0];
         const senha   = document.getElementById('certSenha')?.value;
-        if (!arquivo) return alert('Selecione o arquivo .pfx/.p12');
-        if (!senha)   return alert('Informe a senha do certificado');
+        if (!arquivo) return notifyUser('Selecione o arquivo .pfx/.p12');
+        if (!senha)   return notifyUser('Informe a senha do certificado');
         try {
           const btn = document.getElementById('btnUploadCert');
           btn.disabled = true; btn.textContent = 'Enviando...';
           const meta = await window.NFCertService.uploadCertificadoA1(tid, uid, arquivo, senha);
-          alert(`✅ Certificado enviado!\nTitular: ${meta.titular}\nValidade: ${new Date(meta.validoAte).toLocaleDateString('pt-BR')}`);
+          notifyUser(`✅ Certificado enviado!\nTitular: ${meta.titular}\nValidade: ${new Date(meta.validoAte).toLocaleDateString('pt-BR')}`);
           verificarStatusCert();
         } catch(e) {
-          alert('❌ Erro ao enviar certificado: ' + e.message);
+          notifyUser('❌ Erro ao enviar certificado: ' + e.message);
         } finally {
           const btn = document.getElementById('btnUploadCert');
           if(btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-upload"></i> Enviar Certificado'; }
@@ -2534,7 +2534,7 @@
       } else if (tipo === 'token') {
         await salvarTokenManual();
       } else {
-        alert('Configuração de certificado em nuvem será implementada na próxima fase.');
+        notifyUser('Configuração de certificado em nuvem será implementada na próxima fase.');
       }
     }
     window.uploadCertificado = uploadCertificado;
@@ -2542,12 +2542,12 @@
     async function removerCertificado() {
       if (!await confirmDialog({ title: 'Remover certificado', message: 'Remover o certificado digital? A emissão ficará bloqueada.', danger: true, confirmLabel: 'Remover' })) return;
       const tid = obterTenantIdNF();
-      if (!tid) return alert('Empresa da sessão não identificada. Faça login novamente.');
+      if (!tid) return notifyUser('Empresa da sessão não identificada. Faça login novamente.');
       try {
         await window.NFCertService.removerCertificado(tid);
-        alert('Certificado removido.');
+        notifyUser('Certificado removido.');
         verificarStatusCert();
-      } catch(e) { alert('Erro: ' + e.message); }
+      } catch(e) { notifyUser('Erro: ' + e.message); }
     }
     window.removerCertificado = removerCertificado;
 
@@ -2570,12 +2570,12 @@
     async function conectarA3Nuvem() {
       const provedor  = document.getElementById('certProvedor')?.value;
       const clientId  = document.getElementById('certNuvemClientId')?.value?.trim();
-      if (!provedor)  return alert('Selecione o provedor');
-      if (!clientId)  return alert('Informe o Client ID obtido no portal do provedor');
+      if (!provedor)  return notifyUser('Selecione o provedor');
+      if (!clientId)  return notifyUser('Informe o Client ID obtido no portal do provedor');
       const tid = obterTenantIdNF();
       const uid = await obterUidAutenticadoNF();
-      if (!tid) return alert('Tenant não identificado. Faça login novamente.');
-      if (!uid) return alert('Sessão autenticada não encontrada. Faça login novamente.');
+      if (!tid) return notifyUser('Tenant não identificado. Faça login novamente.');
+      if (!uid) return notifyUser('Sessão autenticada não encontrada. Faça login novamente.');
       const btn = document.getElementById('btnConectarNuvem');
       if (btn) { btn.disabled = true; btn.textContent = 'Aguardando autenticação…'; }
       const al = document.getElementById('certAlerta');
@@ -2591,7 +2591,7 @@
           al.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;';
           al.textContent = '❌ Erro ao conectar: ' + e.message;
         }
-        alert('Erro ao conectar A3 Nuvem: ' + e.message);
+        notifyUser('Erro ao conectar A3 Nuvem: ' + e.message);
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-link"></i> Conectar via OAuth'; }
       }
@@ -2637,7 +2637,7 @@
       const cnpjVal = cfg.empresa.cnpj;
       if (cnpjVal && window.NFValidator?.validarCNPJ && !window.NFValidator.validarCNPJ(cnpjVal)) {
         if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Salvar Configurações da Empresa/NF-e/Impostos'; }
-        return alert('⚠️ CNPJ da empresa inválido. Verifique.');
+        return notifyUser('⚠️ CNPJ da empresa inválido. Verifique.');
       }
 
       // Obter tenantId com o mesmo resolvedor seguro da sessao operacional
@@ -2649,7 +2649,7 @@
 
       if (!tid) {
         if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Salvar Configurações da Empresa/NF-e/Impostos'; }
-        return alert('⚠️ Tenant não identificado. Faça login novamente.');
+        return notifyUser('⚠️ Tenant não identificado. Faça login novamente.');
       }
 
       try {
@@ -2727,7 +2727,7 @@
           setTimeout(() => { if(certAlerta) certAlerta.style.display='none'; }, 7000);
         }
       } catch(e) {
-        alert('❌ Erro ao salvar: ' + e.message);
+        notifyUser('❌ Erro ao salvar: ' + e.message);
       } finally {
         if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Salvar Configurações da Empresa/NF-e/Impostos'; }
       }
@@ -3911,12 +3911,12 @@
 
     // ─── Abrir DANFE de nota da lista ─────────────────────
     async function abrirDANFENota(nfId) {
-      if (!window.NFService || !window.NFDanfe) return alert('Módulos não carregados');
+      if (!window.NFService || !window.NFDanfe) return notifyUser('Módulos não carregados');
       try {
         const tid = obterTenantIdNF();
-        if (!tid) return alert('Tenant não identificado');
+        if (!tid) return notifyUser('Tenant não identificado');
         const nf  = await window.NFStorage.carregarNF(tid, 55, nfId);
-        if (!nf) return alert('Nota não encontrada');
+        if (!nf) return notifyUser('Nota não encontrada');
         if (!nf.xmlAutorizado && window.NFStorage.carregarXML) {
           try {
             nf.xmlAutorizado = await window.NFStorage.carregarXML(tid, nfId, nf.xmlStoragePath || nf.xmlPath || '');
@@ -3926,7 +3926,7 @@
         }
         await nfAplicarLogoEmpresaAoDanfe(nf, tid);
         window.NFDanfe.abrirDANFE(nf);
-      } catch(e) { alert('Erro ao gerar DANFE: ' + e.message); }
+      } catch(e) { notifyUser('Erro ao gerar DANFE: ' + e.message); }
     }
 
     function obterTenantIdNF() {
@@ -4144,31 +4144,31 @@
     async function iniciarCancelamento(nfId, chave, nProt) {
       const just = prompt('Justificativa do cancelamento (mínimo 15 caracteres):');
       if (!just) return;
-      if (just.trim().length < 15) return alert('Justificativa deve ter pelo menos 15 caracteres');
+      if (just.trim().length < 15) return notifyUser('Justificativa deve ter pelo menos 15 caracteres');
       const senha = prompt('Senha do certificado A1 para assinar o evento:');
       if (!senha) return;
       try {
         const tid = obterTenantIdNF();
-        if (!tid) return alert('Tenant não identificado');
+        if (!tid) return notifyUser('Tenant não identificado');
         const cfg = window.NFService.getConfig() || {};
         const data = await window.firebaseService.callFunction('nf_cancelarNFe', {
           tenantId: tid, nfId, modelo: 55, chave, nProt, justificativa: just,
           senhaA1: senha, ambiente: cfg.nfe?.ambiente || 'homologacao',
           cnpjEmit: cfg.empresa?.cnpj || '',
         });
-        alert(data.cancelada ? '✅ NF-e cancelada com sucesso!' : `⚠️ ${data.xMotivo}`);
+        notifyUser(data.cancelada ? '✅ NF-e cancelada com sucesso!' : `⚠️ ${data.xMotivo}`);
         consultarNotas();
-      } catch(e) { alert('Erro no cancelamento: ' + e.message); }
+      } catch(e) { notifyUser('Erro no cancelamento: ' + e.message); }
     }
 
     async function editarRascunho(nfId) {
       try {
         const tid = obterTenantIdNF();
-        if (!tid) return alert('Tenant não identificado');
+        if (!tid) return notifyUser('Tenant não identificado');
 
         // Carregar NF do Firebase
         const nf = await window.NFStorage.carregarNF(tid, 55, nfId);
-        if (!nf) return alert('Rascunho não encontrado');
+        if (!nf) return notifyUser('Rascunho não encontrado');
 
         // Ir para aba emissão
         showTab('emissao');
@@ -4242,7 +4242,7 @@
 
         mostrarAlertaEmissao(`✅ Rascunho #${String(nf.numero||'').padStart(9,'0') || nfId.slice(-6)} carregado. Revise e clique em Emitir.`, 'ok');
       } catch(e) {
-        alert('Erro ao carregar rascunho: ' + e.message);
+        notifyUser('Erro ao carregar rascunho: ' + e.message);
       }
     }
 
@@ -4504,7 +4504,7 @@
     async function nfRemoverNatureza(id, desc) {
       if (!await confirmDialog({ title: 'Remover natureza', message: `Remover a natureza "${desc}"?`, danger: true, confirmLabel: 'Remover' })) return;
       const tid = obterTenantIdNF();
-      if (!tid) return alert('Tenant não identificado');
+      if (!tid) return notifyUser('Tenant não identificado');
       // Trava anti-duplo-clique por registro (F-13).
       var __nfRemKey = 'nat-del:' + String(id || '');
       if (!window.__nfNatDeleting) window.__nfNatDeleting = new Set();
@@ -4514,9 +4514,9 @@
         await window.NFNaturezas.remover(tid, id);
         nfRenderizarTabelaNaturezas();
         window.NFNaturezas?.popularSelect?.('nfNatOpSelect');
-        alert('✅ Natureza removida.');
+        notifyUser('✅ Natureza removida.');
         try { window.__nfNatDeleting.delete(__nfRemKey); } catch (_) {}
-      } catch(e) { alert('Erro: ' + e.message); try { window.__nfNatDeleting.delete(__nfRemKey); } catch (_) {} }
+      } catch(e) { notifyUser('Erro: ' + e.message); try { window.__nfNatDeleting.delete(__nfRemKey); } catch (_) {} }
     }
     window.nfEditarNatureza  = nfEditarNatureza;
     window.nfRemoverNatureza = nfRemoverNatureza;
@@ -4920,7 +4920,7 @@
         function visualizarNota(id) {
             const nota = notasFiscais.find(n => n.id === id);
             if (nota) {
-                alert(`Nota Fiscal ${nota.numero}\nSérie: ${nota.serie}\nValor: R$ ${nota.valorTotal.toFixed(2)}`);
+                notifyUser(`Nota Fiscal ${nota.numero}\nSérie: ${nota.serie}\nValor: R$ ${nota.valorTotal.toFixed(2)}`);
             }
         }
 
@@ -4962,7 +4962,7 @@
             
             atualizarTabelaNotas();
             cancelarEdicao();
-            alert('Nota fiscal salva com sucesso!');
+            notifyUser('Nota fiscal salva com sucesso!');
         }
 
         function cancelarEdicao() {
@@ -4985,7 +4985,7 @@
 
         function validarFormulario(data) {
             if (!data.numero || !data.serie || !data.dataEmissao) {
-                alert('Por favor, preencha todos os campos obrigatórios.');
+                notifyUser('Por favor, preencha todos os campos obrigatórios.');
                 return false;
             }
             return true;

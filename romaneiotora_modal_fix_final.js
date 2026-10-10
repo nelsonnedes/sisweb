@@ -155,7 +155,7 @@ function abrirModalFornecedorPadronizado() {
     }
     
     console.error("❌ Nenhum sistema de modal disponível");
-    alert("Erro: Sistema de modal não disponível. Verifique se todos os scripts foram carregados.");
+    notifyUser("Erro: Sistema de modal não disponível. Verifique se todos os scripts foram carregados.");
 }
 
 // ✅ 4. FUNÇÃO PARA ABRIR MODAL DE NOVO FORNECEDOR
@@ -213,7 +213,7 @@ function abrirModalNovoFornecedor() {
     }
     
     console.error("❌ Modal de fornecedor não encontrado");
-    alert("Erro: Modal de fornecedor não encontrado.");
+    notifyUser("Erro: Modal de fornecedor não encontrado.");
 }
 
 // ✅ 5. FUNÇÃO PARA CARREGAR LISTA DE FORNECEDORES

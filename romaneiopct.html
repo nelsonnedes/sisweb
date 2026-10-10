@@ -128,7 +128,7 @@
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     
     <style>
@@ -2258,10 +2258,10 @@
                 <button type="button" id="btnAdicionar" class="btn-adicionar" onclick="adicionarItem()">
                     <i class="fas fa-plus"></i> Adicionar
                 </button>
-                <button type="button" id="btnSalvar" class="btn-salvar" onclick="if(typeof window.salvarRomaneio === 'function') { window.salvarRomaneio(); } else if(typeof salvarRomaneio === 'function') { salvarRomaneio(); } else { alert('Erro: Função salvarRomaneio não disponível. Tente recarregar a página.'); }">
+                <button type="button" id="btnSalvar" class="btn-salvar" onclick="if(typeof window.salvarRomaneio === 'function') { window.salvarRomaneio(); } else if(typeof salvarRomaneio === 'function') { salvarRomaneio(); } else { notifyUser('Erro: Função salvarRomaneio não disponível. Tente recarregar a página.'); }">
                     <i class="fas fa-save"></i> Salvar
                 </button>
-                <button type="button" id="btnListar" class="btn-listar" onclick="if(typeof window.abrirListaRomaneios === 'function') { window.abrirListaRomaneios(); } else if(typeof abrirListaRomaneios === 'function') { abrirListaRomaneios(); } else { alert('Lista ainda carregando. Aguarde e tente novamente.'); }">
+                <button type="button" id="btnListar" class="btn-listar" onclick="if(typeof window.abrirListaRomaneios === 'function') { window.abrirListaRomaneios(); } else if(typeof abrirListaRomaneios === 'function') { abrirListaRomaneios(); } else { notifyUser('Lista ainda carregando. Aguarde e tente novamente.'); }">
                     <i class="fas fa-list"></i> Listar
                 </button>
                 <div class="pre-romaneio-group">
@@ -2780,11 +2780,11 @@
     <script src="species-store.js?v=f6f5cff9d5aa"></script>
     <script src="species-modal-standard.js?v=99a77a1d4946"></script>
     <script src="modules/crud/species-crud.js?v=e2f99af03340"></script>
-    <script src="data-functions.js?v=91e538fd25e4"></script>
+    <script src="data-functions.js?v=bfe2dce0382f"></script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="validation-system.js?v=f70152f1f65e"></script>
     <script src="cache-system.js?v=a307288b87e9"></script>
-    <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
+    <script src="pre-romaneio-selector.js?v=25012edb1794"></script>
     <script type="module">
         // Importar firebaseService COMPLETO e disponibilizar globalmente
         import { 
@@ -2887,15 +2887,15 @@
         console.log("✅ Funções disponíveis:", Object.keys(window.firebaseService));
     </script>
     <script src="client-utils.js?v=d93fb3fb82f5"></script>
-    <script src="client-modal-handler.js?v=4772af1e6bfb"></script>
+    <script src="client-modal-handler.js?v=32bc22d9247c"></script>
     <script src="client-service.js?v=b95ca0dfb346"></script>
     <script src="schema-migration-contatos.js?v=3a574e7e3324"></script>
     
     <!-- ✅ CORREÇÕES PARA SALVAMENTO DE CLIENTES -->
-    <script src="romaneios-client-save-fix.js?v=9f4df8ca50a8"></script>
+    <script src="romaneios-client-save-fix.js?v=95d795703c1c"></script>
     
     <!-- ❌ DESABILITADO: species-manager.js - CONFLITA COM MODAIS PADRONIZADOS PCT -->
-    <!-- <script src="species-manager.js?v=937b2c144983"></script> -->
+    <!-- <script src="species-manager.js?v=c7889367d74d"></script> -->
     <script src="dimensoes.js?v=c93c3dabc7a7"></script>
     
     <!-- Inicializar variáveis globais -->
@@ -2954,38 +2954,38 @@
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
 
     <!-- ✅ CORREÇÃO CRÍTICA: Tabela com função adicionarItem -->
-    <script src="romaneiopct-tabela.js?v=2ad790a145fd"></script>
+    <script src="romaneiopct-tabela.js?v=66cc422ef868"></script>
     
     <!-- ✅ SISTEMA DE FORMATAÇÃO PCT UNIFICADO -->
     <script src="romaneiopct-formatacao.js?v=56c8fa2e012f"></script>
     
     <!-- ✅ SISTEMA PRINCIPAL ROMANEIOPCT - NAVEGAÇÃO ENTER E INICIALIZAÇÃO -->
-    <script src="romaneiopct-main.js?v=47d691b99c7a"></script>
+    <script src="romaneiopct-main.js?v=ab69a9371ca9"></script>
     
     <script src="romaneio-print-config.js?v=179c8544dedf"></script>
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
 
     <!-- 1. Sistema de impressão específico PCT -->
-    <script src="modules/romaneiopct/imprimir-romaneio-pct.js?v=5ca6a814a069"></script>
+    <script src="modules/romaneiopct/imprimir-romaneio-pct.js?v=99e78d48c75b"></script>
     
     <!-- 2. Sistema de preservação de propriedades financeiras PCT -->
     <script src="modules/romaneiopct/preservar-propriedades-financeiras.js?v=557f1791c0db"></script>
     
     <!-- 3. Sistema de carregamento de dados PCT -->
-    <script src="modules/romaneiopct/carregar-romaneio-pct.js?v=3fbd9bf132df"></script>
+    <script src="modules/romaneiopct/carregar-romaneio-pct.js?v=426ecc5650ec"></script>
     <script src="modules/core/romaneio-messages.js?v=114b5f8a30f6"></script>
     
     <!-- 4. Modal de Lista de Romaneios PCT -->
     <script src="modules/core/romaneio-list-columns.js?v=210bbf18cbc0" data-page="pct" data-target="listaRomaneios"></script>
-    <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=b0a3e19ff946"></script>
+    <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=5e1e4e3c1cb9"></script>
     <script src="js/sisweb-loading.js?v=b693454010f9"></script>
     
     <!-- 5. Modal de Clientes PCT -->
-    <script src="modules/romaneiopct/modal-clientes-pct.js?v=e37e0ee842ea"></script>
+    <script src="modules/romaneiopct/modal-clientes-pct.js?v=9e4ec7627a36"></script>
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pct" data-target="clientListTable"></script>
     
     <!-- 6. Modal de Espécies PCT -->
-    <script src="modules/romaneiopct/modal-especies-pct.js?v=55f939371fe2"></script>
+    <script src="modules/romaneiopct/modal-especies-pct.js?v=43d97671ae98"></script>
     
     <!-- 7. Navegação Enter PCT -->
     <script src="modules/romaneiopct/navegacao-pct.js?v=bbcab0362ba9"></script>
@@ -3266,7 +3266,7 @@
                 window.ModalListaRomaneiosPCT.openModal();
             } else {
                 console.error('❌ ModalListaRomaneiosPCT não disponível');
-                alert('Modal de lista de romaneios não disponível. Recarregue a página.');
+                notifyUser('Modal de lista de romaneios não disponível. Recarregue a página.');
             }
         }
         
@@ -3396,7 +3396,7 @@
                 setTimeout(() => debugModalGeometry('clientListModal'), 50);
             } else {
                 console.error('❌ ModalClientesPCT não disponível');
-                alert('Modal de clientes não disponível. Recarregue a página.');
+                notifyUser('Modal de clientes não disponível. Recarregue a página.');
             }
         }
         
@@ -3439,7 +3439,7 @@
             }
             
             // Fallback com alerta
-            alert('Sistema de espécies não está disponível. Recarregue a página.');
+            notifyUser('Sistema de espécies não está disponível. Recarregue a página.');
             }
         }
         
@@ -3542,7 +3542,7 @@
                 `Não foi possível abrir o formulário de edição do cliente.\nID: ${clientId}` :
                 'Não foi possível abrir o formulário de novo cliente.\nVerifique se a página carregou completamente.';
             
-            alert(message);
+            notifyUser(message);
         }
         
         function openNewSpeciesModal(eventOrId = null) {
@@ -3608,7 +3608,7 @@
             
             // Último recurso
             console.warn('❌ Nenhum modal de espécie disponível');
-            alert('Use o ícone de lista de espécies (🌿) ao lado do campo para gerenciar espécies.');
+            notifyUser('Use o ícone de lista de espécies (🌿) ao lado do campo para gerenciar espécies.');
         }
         
         function resolveCompanyId() {
@@ -3780,7 +3780,7 @@
                             console.log(`✅ PCT: Campo especieInput preenchido com "${nomeEspecie}"`);
                         }
                         
-                        alert(`✅ Espécie "${nomeEspecie}" criada com sucesso!`);
+                        notifyUser(`✅ Espécie "${nomeEspecie}" criada com sucesso!`);
                         return;
                     } else {
                         throw new Error('Falha ao salvar no Firebase');
@@ -3799,13 +3799,13 @@
                         console.log(`✅ PCT: Campo especieInput preenchido com "${nomeEspecie}"`);
                     }
                     
-                    alert(`✅ Espécie "${nomeEspecie}" criada com sucesso!`);
+                    notifyUser(`✅ Espécie "${nomeEspecie}" criada com sucesso!`);
                     console.log('✅ PCT: Nova espécie salva no localStorage');
                 }
                 
             } catch (error) {
                 console.error('❌ PCT: Erro ao criar nova espécie:', error);
-                alert(`❌ Erro ao criar espécie: ${error.message}`);
+                notifyUser(`❌ Erro ao criar espécie: ${error.message}`);
             }
         }
         
@@ -3879,7 +3879,7 @@
                 const obs = obsField ? obsField.value.trim() : '';
 
                 if (!name) {
-                    alert('Nome do cliente é obrigatório');
+                    notifyUser('Nome do cliente é obrigatório');
                     if (nameField) nameField.focus();
                     return false;
                 }
@@ -3979,11 +3979,11 @@
                 if (window.ModalClientesPCT && typeof window.ModalClientesPCT.refresh === 'function') {
                     await window.ModalClientesPCT.refresh();
                 }
-                alert(`Cliente "${finalClient?.nome || finalClient?.name || name}" salvo com sucesso!`);
+                notifyUser(`Cliente "${finalClient?.nome || finalClient?.name || name}" salvo com sucesso!`);
                 return false;
             } catch (error) {
                 console.error('❌ Erro ao salvar cliente:', error);
-                alert(`Erro ao salvar cliente: ${error.message}`);
+                notifyUser(`Erro ao salvar cliente: ${error.message}`);
                 return false;
             }
         }
@@ -4014,7 +4014,7 @@
             
             if (!modal || !title || !form) {
                 console.error('❌ Elementos do modal de espécie não encontrados');
-                alert('Erro: Modal de espécie não está disponível.');
+                notifyUser('Erro: Modal de espécie não está disponível.');
                 return;
             }
             
@@ -4052,7 +4052,7 @@
             
             if (!modal || !title || !form) {
                 console.error('❌ Elementos do modal de espécie não encontrados');
-                alert('Erro: Modal de espécie não está disponível.');
+                notifyUser('Erro: Modal de espécie não está disponível.');
                 return;
             }
             
@@ -4126,7 +4126,7 @@
             const currentSpeciesId = String(document.getElementById('speciesId')?.value || window.editingSpeciesIdPCT || '').trim();
             
             if (!nome) {
-                alert('❌ Nome da espécie é obrigatório!');
+                notifyUser('❌ Nome da espécie é obrigatório!');
                 nomeInput.focus();
                 return false;
             }
@@ -4160,7 +4160,7 @@
                   dupPCT = { blocked: Boolean(legacy), ghost: false, record: legacy };
               }
               if (dupPCT && dupPCT.blocked) {
-                  alert(`Espécie já cadastrada: ${getSpeciesDisplayName(dupPCT.record)}. Use o cadastro existente para evitar duplicidade.`);
+                  notifyUser(`Espécie já cadastrada: ${getSpeciesDisplayName(dupPCT.record)}. Use o cadastro existente para evitar duplicidade.`);
                   nomeInput.focus();
                   return false;
               }
@@ -4186,7 +4186,7 @@
                         const result = await window.firebaseService.saveToFirebase('especies', especieData.id, especieData);
                         if (result && result.success) {
                             console.log('✅ Espécie editada no Firebase');
-                            alert(`✅ Espécie "${nome}" atualizada com sucesso!`);
+                            notifyUser(`✅ Espécie "${nome}" atualizada com sucesso!`);
                         } else {
                             throw new Error('Falha ao salvar no Firebase');
                         }
@@ -4194,7 +4194,7 @@
                         const result = await window.firebaseService.saveData(`especies/${especieData.id}`, especieData);
                         if (result && result.success) {
                             console.log('✅ Espécie editada via saveData no Firebase');
-                            alert(`✅ Espécie "${nome}" atualizada com sucesso!`);
+                            notifyUser(`✅ Espécie "${nome}" atualizada com sucesso!`);
                         } else {
                             throw new Error('Falha ao salvar no Firebase');
                         }
@@ -4213,7 +4213,7 @@
                         }
                         writeLocalStorageValue('especies', especies);
                         console.log('✅ Espécie editada no localStorage');
-                        alert(`✅ Espécie "${nome}" atualizada com sucesso!`);
+                        notifyUser(`✅ Espécie "${nome}" atualizada com sucesso!`);
                     }
                 } else {
                     // CRIAR nova espécie
@@ -4226,7 +4226,7 @@
                         const result = await window.firebaseService.saveToFirebase('especies', especieData.id, especieData);
                         if (result && result.success) {
                             console.log('✅ Nova espécie salva no Firebase');
-                            alert(`✅ Espécie "${nome}" criada com sucesso!`);
+                            notifyUser(`✅ Espécie "${nome}" criada com sucesso!`);
                             
                             // Preencher campo automaticamente
                             const especieInput = document.getElementById('especieInput');
@@ -4243,7 +4243,7 @@
                         especies.push(especieData);
                         writeLocalStorageValue('especies', especies);
                         console.log('✅ Nova espécie salva no localStorage');
-                        alert(`✅ Espécie "${nome}" criada com sucesso!`);
+                        notifyUser(`✅ Espécie "${nome}" criada com sucesso!`);
                         
                         // Preencher campo automaticamente
                         const especieInput = document.getElementById('especieInput');
@@ -4285,7 +4285,7 @@
                 
             } catch (error) {
                 console.error('❌ Erro ao salvar espécie:', error);
-                alert(`❌ Erro ao salvar espécie: ${error.message}`);
+                notifyUser(`❌ Erro ao salvar espécie: ${error.message}`);
                 return false;
             }
         }

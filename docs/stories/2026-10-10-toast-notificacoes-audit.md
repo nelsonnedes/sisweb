@@ -165,7 +165,28 @@ CSS** (`.toast.success`), não chamadas JS — únicos consumidores da API toast
 - [x] T5/T4/T6/T2 delegando (zero fallback `alert`)
 - [x] Teste trava + `npm run lint/typecheck/test` verdes
 - [x] `?v=` + SW bump + commit por onda + deploy + Ctrl+F5
-- [ ] Onda E: `confirmDialog` — E1 núcleo concluído (§13); falta E2.
+- [x] Onda E: `confirmDialog` — E1 núcleo (§13) + E2 restante (§14).
+- [x] Reescritas: classificador cobre multilinha (§6.4) e casos técnicos
+      ('Tenant…', 'error.message' seguem para toast error com texto original).
+- [x] Teste trava + `npm run lint/typecheck/test` verdes (982/0/1).
+- [x] `?v=` + commit por onda + deploy + Ctrl+F5.
+- [x] Não-conformidades registradas como débito (§15).
+
+## 15. Onda F — source-level + validação final (2026-10-10)
+
+- Novo helper `window.notifyUser(msg, type?, opts?)` no serviço (classificação
+  padrão quando sem tipo explícito).
+- Rename mecânico `alert(` → `notifyUser(` em ~70 arquivos (verificado
+  chamador a chamador por amostragem + `node --check` + suite + smoke 18
+  páginas): zero `alert(` restante exceto 4 exceções documentadas na trava
+  (bookmarklets e dev-tools que podem rodar fora do Sisweb) + comentários.
+- Redirect `window.alert` mantido como rede permanente (cobre libs terceiras
+  e código dinâmico); override redundante do T1 congela via flag existente.
+- `prompt()` do wipe financeiro mantido (fora do escopo alert/confirm;
+  candidato a `AdminUI.prompt` em follow-up).
+- Validação final: lint/typecheck limpos, suite 982/0/1, smoke 18 páginas
+  (notifyUser+confirmDialog presentes, toast renderiza, zero dialogs nativos,
+  zero pageerrors), deploy verificado.
 - [ ] Reescritas amigáveis §6.2 (§6.4 multilinha)
 - [ ] Registrar não-conformidades novas como débito arquitetural
 

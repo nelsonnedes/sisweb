@@ -31,7 +31,7 @@ function __preModalNotify(msg, type) {
         if (typeof window.__toast === 'function') { window.__toast(msg, type); return; }
         if (window.Utils && window.Utils.showToast) { window.Utils.showToast(msg, type); return; }
     } catch (_) {}
-    try { alert(msg); } catch (_) {}
+    try { notifyUser(msg); } catch (_) {}
 }
 function __preModalBegin(key) {
     try {
@@ -372,7 +372,7 @@ function populateClientModal(client) {
 function editPreRomaneioClient(id) {
     const client = cachedClients.find(c => String(c.id) === String(id));
     if (!client) {
-        alert('Cliente não encontrado.');
+        notifyUser('Cliente não encontrado.');
         return;
     }
     const form = document.getElementById('clientForm');
@@ -512,11 +512,11 @@ if (clientForm) {
         const obs = document.getElementById('clientObs')?.value || '';
 
         if (!name || !String(name).trim()) {
-            alert('Nome é obrigatório.');
+            notifyUser('Nome é obrigatório.');
             return;
         }
         if (!state || !city) {
-            alert('Selecione Estado e Cidade.');
+            notifyUser('Selecione Estado e Cidade.');
             return;
         }
 
@@ -571,7 +571,7 @@ if (clientForm) {
             // caminho base + id + payload (2 args gravava em "[object Object]").
             const tenantId = (typeof resolveTenantId === 'function' ? resolveTenantId() : null);
             if (!tenantId) {
-                alert('Empresa não identificada na sessão. Recarregue a página e tente novamente.');
+                notifyUser('Empresa não identificada na sessão. Recarregue a página e tente novamente.');
                 return;
             }
             const basePath = `companies/${tenantId}/clients`;
@@ -600,7 +600,7 @@ if (clientForm) {
                     }
                     cachedClients.sort((a, b) => (a.name || a.nome || '').localeCompare(b.name || b.nome || ''));
                     renderClientList();
-                    alert('Cliente atualizado com sucesso!');
+                    notifyUser('Cliente atualizado com sucesso!');
                 }
                 selectPreRomaneioClient(id, dataToSave.name);
                 closeNewClientModal();
@@ -609,7 +609,7 @@ if (clientForm) {
             }
         } catch (error) {
             console.error(error);
-            alert('Erro ao salvar cliente.');
+            notifyUser('Erro ao salvar cliente.');
         }
     });
 }
@@ -818,14 +818,14 @@ if (speciesForm) {
               dupPre = { blocked: Boolean(legacy), ghost: false, record: legacy };
           }
           if (dupPre && dupPre.blocked) {
-              alert(`Espécie já cadastrada: ${window.SiswebSpeciesModal.getDisplayName(dupPre.record)}. Use o cadastro existente para evitar duplicidade.`);
+              notifyUser(`Espécie já cadastrada: ${window.SiswebSpeciesModal.getDisplayName(dupPre.record)}. Use o cadastro existente para evitar duplicidade.`);
               document.getElementById('speciesName').focus();
               return;
           }
 
           try {
               if (!window.SpeciesCRUD || typeof window.SpeciesCRUD.save !== 'function') {
-                  alert('Módulo de espécies não carregado. Recarregue a página e tente novamente.');
+                  notifyUser('Módulo de espécies não carregado. Recarregue a página e tente novamente.');
                   return;
               }
               // ✅ Escrita canônica (trava inflight + read-back + invalidação única)
@@ -839,13 +839,13 @@ if (speciesForm) {
                 if (listModal && listModal.style.display === 'block') {
                     openSpeciesListModal();
                 }
-                alert('Espécie cadastrada com sucesso!');
+                notifyUser('Espécie cadastrada com sucesso!');
             } else {
                 throw new Error('Erro ao salvar' + (result && result.error ? `: ${result.error}` : ''));
             }
         } catch (error) {
             console.error(error);
-            alert('Erro ao cadastrar espécie.');
+            notifyUser('Erro ao cadastrar espécie.');
         }
     });
 }
@@ -1189,7 +1189,7 @@ async function carregarPreRomaneio(id, dadosPreCarregados = null) {
         __preModalEnd(__preLoadKey);
     } else {
         __preModalEnd(typeof __preLoadKey !== 'undefined' ? __preLoadKey : null);
-        alert('Pré-Romaneio não encontrado para edição.');
+        notifyUser('Pré-Romaneio não encontrado para edição.');
     }
     } finally {
         __preModalEnd(typeof __preLoadKey !== 'undefined' ? __preLoadKey : null);

@@ -377,7 +377,7 @@ function criarFuncaoSalvarClientesUnificada() {
                 const pathBase = tenantId ? `companies/${tenantId}/clients` : 'clients';
                 if (!tenantId) {
                     console.error("❌ ERRO CRÍTICO: Tenant ID não encontrado! O cliente não será salvo para evitar perda de dados.");
-                    alert("Erro de permissão: Não foi possível identificar a empresa. Recarregue a página e tente novamente.");
+                    notifyUser("Erro de permissão: Não foi possível identificar a empresa. Recarregue a página e tente novamente.");
                     throw new Error("Tenant ID não identificado. Operação abortada.");
                 } else {
                     console.log(`✅ Tenant ID detectado: ${tenantId}`);
@@ -643,7 +643,7 @@ function corrigirSaveClientGlobal() {
                 const pathBase = tenantId ? `companies/${tenantId}/clients` : 'clients';
                 if (!tenantId) {
                     console.error("❌ ERRO CRÍTICO: Tenant ID não encontrado! O cliente não será salvo para evitar perda de dados.");
-                    alert("Erro de permissão: Não foi possível identificar a empresa. Recarregue a página e tente novamente.");
+                    notifyUser("Erro de permissão: Não foi possível identificar a empresa. Recarregue a página e tente novamente.");
                     throw new Error("Tenant ID não identificado. Operação abortada.");
                 } else {
                     console.log(`✅ Tenant ID detectado: ${tenantId}. Salvando em: ${pathBase}`);
@@ -823,7 +823,7 @@ function corrigirDeleteClientGlobal() {
             let tenantId = resolveTenantId();
             if (!tenantId) {
                 console.error("❌ ERRO CRÍTICO: Tenant ID não encontrado para exclusão!");
-                alert("Erro de permissão: Não foi possível identificar a empresa.");
+                notifyUser("Erro de permissão: Não foi possível identificar a empresa.");
                 throw new Error("Tenant ID não identificado.");
             }
 

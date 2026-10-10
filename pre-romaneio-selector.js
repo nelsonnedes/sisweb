@@ -633,7 +633,7 @@ const PreRomaneioSelector = (function() {
                         if (window.Utils && typeof window.Utils.showToast === 'function') {
                             window.Utils.showToast('Selecione um Pré-Romaneio.', 'warning');
                         } else {
-                            alert('Selecione um Pré-Romaneio.');
+                            notifyUser('Selecione um Pré-Romaneio.');
                         }
                     }
                 };

@@ -101,6 +101,8 @@ test('Onda C: classificador alert()->toast acerta as categorias', async (t) => {
     ['Retorno SEFAZ: 100 - Autorizado o uso', 'success'],
     ['Configuração em nuvem será implementada na próxima fase.', 'info'],
     ['Fornecedor selecionado para o pedido.', 'info'],
+    ['Armazenamento do navegador cheio. Dados antigos serão removidos.', 'warning'],
+    ['Suporte indisponível no momento.', 'warning'],
   ];
   for (const [msg, esperado] of casos) {
     await t.test(`"${msg.slice(0, 42)}..." => ${esperado}`, () => {
@@ -199,6 +201,42 @@ test('Onda E2: restante do codigo vivo usa confirmDialog', async (t) => {
     // Interceptor legado de dev-tool preservado e mapeado.
     const corr = fs.readFileSync('correcao-lista-romaneios.js', 'utf8');
     assert.ok(corr.includes('confirmOriginal'), 'interceptor documentado');
+  });
+});
+test('Onda F: source-level sem alert() nativo (excecoes documentadas)', async (t) => {
+  const pathMod = await import('node:path');
+  await t.test('nenhum alert() fora das excecoes', () => {
+    const SKIP_DIRS = ['backup', 'node_modules', '.git', 'functions', 'tools', 'tmp',
+      'marqueting', 'scripts', 'tests', '.aiox-core', '.claude', '.codex',
+      'hosting-dist', '.codex-worktrees'];
+    const excecoes = ['bookmarklet_hibrido.js', 'correcao_bookmarklet.js',
+      'corrigir_vendas_romaneios.js', 'migrateToFirebase.js'];
+    const achados = [];
+    const varrer = (dir) => {
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const abs = pathMod.join(dir, ent.name);
+        const rel = pathMod.relative(process.cwd(), abs).replace(/\\/g, '/');
+        if (ent.isDirectory()) {
+          if (SKIP_DIRS.includes(ent.name)) continue;
+          if (rel === 'assets/vendor') continue;
+          varrer(abs);
+        } else if (/\.js$|\.html$/.test(ent.name)) {
+          if (rel.startsWith('assets/vendor/')) continue;
+          const src = fs.readFileSync(abs, 'utf8');
+          const n = (src.match(/(?<![.\w])alert\s*\(/g) || []).length;
+          if (n > 0 && !excecoes.some((e) => rel.endsWith(e))) achados.push(`${rel}:${n}`);
+        }
+      }
+    };
+    varrer(process.cwd());
+    assert.deepStrictEqual(achados, [], `alert() fora de excecao: ${achados.join(', ')}`);
+  });
+
+  await t.test('notifyUser exposto e usado no codigo vivo', () => {
+    assert.ok(svc.includes('window.notifyUser'), 'servico expoe window.notifyUser');
+    const estoque = fs.readFileSync('estoque.js', 'utf8');
+    assert.ok(estoque.includes('notifyUser('), 'estoque usa notifyUser');
+    assert.ok(!/(?<![.\w])alert\s*\(/.test(estoque), 'estoque sem alert()');
   });
 });
 test('Onda B: ToastManager unificado e familia legada removida', async (t) => {

@@ -937,7 +937,7 @@ window.ModalClientesPCT = (function() {
             
             if (client) {
                 const msg = `Dados do cliente:\nNome: ${client.nome}\nCidade: ${client.cidade}\nEstado: ${client.estado}\nTelefone: ${client.telefone}\nEmail: ${client.email}`;
-                alert(msg);
+                notifyUser(msg);
             } else {
                 showError('Funcionalidade de edição não disponível');
             }
@@ -1233,7 +1233,7 @@ window.ModalClientesPCT = (function() {
             window.Utils.showToast(message, 'error');
         } else {
             console.error('PCT:', message);
-            alert('Erro: ' + message);
+            notifyUser('Erro: ' + message);
         }
     }
 
@@ -1245,7 +1245,7 @@ window.ModalClientesPCT = (function() {
             window.Utils.showToast(message, 'success');
         } else {
             console.log('PCT:', message);
-            alert('Sucesso: ' + message);
+            notifyUser('Sucesso: ' + message);
         }
     }
 

@@ -7929,7 +7929,7 @@ async function carregarRomaneiosPorTipo() {
         atualizarEstadoAgrupamentoVendas(tipoSelecionado);
     } catch (error) {
         console.error('Erro ao carregar romaneios:', error);
-        alert('Erro ao carregar romaneios. Verifique o console para mais detalhes.');
+        notifyUser('Erro ao carregar romaneios. Verifique o console para mais detalhes.');
     }
 }
 
@@ -7958,7 +7958,7 @@ async function carregarDadosRomaneio() {
         const romaneio = romaneios[parseInt(indiceRomaneio)];
         
         if (!romaneio) {
-            alert('Romaneio não encontrado');
+            notifyUser('Romaneio não encontrado');
             return;
         }
         
@@ -8004,7 +8004,7 @@ async function carregarDadosRomaneio() {
         
     } catch (error) {
         console.error('Erro ao carregar dados do romaneio:', error);
-        alert('Erro ao processar romaneio. Verifique o console para mais detalhes.');
+        notifyUser('Erro ao processar romaneio. Verifique o console para mais detalhes.');
     }
 }
 

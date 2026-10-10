@@ -20,7 +20,7 @@ function importarRomaneio() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(msg, "warning");
         } else {
-            alert(msg);
+            notifyUser(msg);
         }
         // Focar no campo de fornecedor
         if (fornecedorInput) fornecedorInput.focus();
@@ -34,7 +34,7 @@ function importarRomaneio() {
         fileInput.click();
     } else {
         console.error("❌ Input de arquivo 'importFileInput' não encontrado.");
-        alert("Erro interno: Input de arquivo não encontrado.");
+        notifyUser("Erro interno: Input de arquivo não encontrado.");
     }
 }
 
@@ -90,7 +90,7 @@ function handleFileSelect(event) {
             if (window.Utils && window.Utils.showToast) {
                 window.Utils.showToast("Erro ao ler o arquivo Excel: " + error.message, "error");
             } else {
-                alert("Erro ao ler o arquivo Excel: " + error.message);
+                notifyUser("Erro ao ler o arquivo Excel: " + error.message);
             }
         }
         
@@ -100,7 +100,7 @@ function handleFileSelect(event) {
     
     reader.onerror = function(ex) {
         console.error("❌ Erro na leitura do arquivo", ex);
-        alert("Erro na leitura do arquivo.");
+        notifyUser("Erro na leitura do arquivo.");
     };
 
     reader.readAsArrayBuffer(file);
@@ -109,7 +109,7 @@ function handleFileSelect(event) {
 // Função para processar os dados JSON e adicionar ao romaneio
 function processarDadosImportados(data) {
     if (!data || data.length === 0) {
-        alert("Planilha vazia ou formato inválido.");
+        notifyUser("Planilha vazia ou formato inválido.");
         return;
     }
 
@@ -192,7 +192,7 @@ function processarDadosImportados(data) {
     });
 
     if (!colEspecie) {
-        alert("Não foi possível identificar a coluna de 'Espécie' na planilha. Verifique os cabeçalhos.");
+        notifyUser("Não foi possível identificar a coluna de 'Espécie' na planilha. Verifique os cabeçalhos.");
         return;
     }
 
@@ -319,7 +319,7 @@ function processarDadosImportados(data) {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(msg, "success");
         } else {
-            alert(msg);
+            notifyUser(msg);
         }
         
         // Ir para a última página
@@ -335,7 +335,7 @@ function processarDadosImportados(data) {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(msg, "error");
         } else {
-            alert(msg);
+            notifyUser(msg);
         }
     }
 }

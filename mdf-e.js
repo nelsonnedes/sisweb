@@ -225,24 +225,24 @@ function adicionarDocumento() {
     const peso = parseFloat(document.getElementById('nfPeso').value) || 0;
     
     if (!chave || chave.length !== 44) {
-        alert('Por favor, informe uma chave de NF-e válida (44 dígitos)');
+        notifyUser('Por favor, informe uma chave de NF-e válida (44 dígitos)');
         return;
     }
     
     if (!valor || parseFloat(valor.replace(/[^\d,]/g, '').replace(',', '.')) <= 0) {
-        alert('Por favor, informe um valor válido');
+        notifyUser('Por favor, informe um valor válido');
         return;
     }
     
     if (peso <= 0) {
-        alert('Por favor, informe um peso válido');
+        notifyUser('Por favor, informe um peso válido');
         return;
     }
     
     // Verificar se já existe
     const jaExiste = documentosFiscais.some(doc => doc.chave === chave);
     if (jaExiste) {
-        alert('Esta NF-e já foi adicionada');
+        notifyUser('Esta NF-e já foi adicionada');
         return;
     }
     
@@ -320,10 +320,10 @@ async function salvarRascunhoMdfe() {
         await salvarDados(payload);
         if (index !== -1) mdfes[index] = payload;
         else mdfes.push(payload);
-        alert('Rascunho salvo com sucesso!');
+        notifyUser('Rascunho salvo com sucesso!');
     } catch (error) {
         console.error('❌ Erro ao salvar rascunho MDF-e:', error);
-        alert(`Não foi possível salvar o rascunho: ${error.message}`);
+        notifyUser(`Não foi possível salvar o rascunho: ${error.message}`);
         return;
     } finally {
         try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
@@ -338,7 +338,7 @@ async function emitirMdfe() {
     if (!dadosMdfe) return;
     
     if (documentosFiscais.length === 0) {
-        alert('É necessário adicionar pelo menos um documento fiscal');
+        notifyUser('É necessário adicionar pelo menos um documento fiscal');
         return;
     }
     
@@ -393,13 +393,13 @@ async function emitirMdfe() {
             numeroAtualMdfe = numero + 1;
         }
         if (!result?.autorizada) {
-            alert(`MDF-e rejeitado: ${result?.xMotivo || 'retorno sem autorização'}`);
+            notifyUser(`MDF-e rejeitado: ${result?.xMotivo || 'retorno sem autorização'}`);
             return;
         }
-        alert('MDF-e autorizado com sucesso!\nProtocolo: ' + (payload.protocolo || 'não informado'));
+        notifyUser('MDF-e autorizado com sucesso!\nProtocolo: ' + (payload.protocolo || 'não informado'));
     } catch (error) {
         console.error('❌ Erro ao salvar MDF-e:', error);
-        alert(`Não foi possível salvar o MDF-e: ${error.message}`);
+        notifyUser(`Não foi possível salvar o MDF-e: ${error.message}`);
         return;
     } finally {
         try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
@@ -448,22 +448,22 @@ function coletarDadosFormulario() {
         
         // Validações básicas
         if (!dados.ufInicio || !dados.ufFim) {
-            alert('Por favor, selecione as UFs de início e fim');
+            notifyUser('Por favor, selecione as UFs de início e fim');
             return null;
         }
         
         if (!dados.municipioCarregamento || !dados.municipioDescarregamento) {
-            alert('Por favor, informe os municípios de carregamento e descarregamento');
+            notifyUser('Por favor, informe os municípios de carregamento e descarregamento');
             return null;
         }
         
         if (!dados.veiculo.placa || !dados.veiculo.renavam) {
-            alert('Por favor, informe os dados do veículo');
+            notifyUser('Por favor, informe os dados do veículo');
             return null;
         }
         
         if (!dados.condutor.nome || !dados.condutor.cpf || !dados.condutor.cnh) {
-            alert('Por favor, informe os dados do condutor');
+            notifyUser('Por favor, informe os dados do condutor');
             return null;
         }
         
@@ -471,7 +471,7 @@ function coletarDadosFormulario() {
         
     } catch (error) {
         console.error('❌ Erro ao coletar dados:', error);
-        alert('Erro ao processar dados do formulário');
+        notifyUser('Erro ao processar dados do formulário');
         return null;
     }
 }
@@ -584,23 +584,23 @@ async function encerrarMdfe() {
     const municipioEncerramento = document.getElementById('municipioEncerramento').value;
     
     if (!mdfeId) {
-        alert('Selecione um MDF-e para encerrar');
+        notifyUser('Selecione um MDF-e para encerrar');
         return;
     }
     
     if (!dataEncerramento) {
-        alert('Informe a data/hora de encerramento');
+        notifyUser('Informe a data/hora de encerramento');
         return;
     }
     
     if (!municipioEncerramento) {
-        alert('Informe o município de encerramento');
+        notifyUser('Informe o município de encerramento');
         return;
     }
     
     const mdfe = mdfes.find(m => m.id === mdfeId);
     if (!mdfe) {
-        alert('MDF-e não encontrado');
+        notifyUser('MDF-e não encontrado');
         return;
     }
     
@@ -625,10 +625,10 @@ async function encerrarMdfe() {
         document.getElementById('protocoloEncerramento').value = mdfe.protocoloEncerramento;
     } catch (error) {
         console.error('❌ Erro ao salvar encerramento MDF-e:', error);
-        alert(`Não foi possível salvar o encerramento: ${error.message}`);
+        notifyUser(`Não foi possível salvar o encerramento: ${error.message}`);
         return;
     }
-    alert('MDF-e encerrado com sucesso!\nProtocolo: ' + mdfe.protocoloEncerramento);
+    notifyUser('MDF-e encerrado com sucesso!\nProtocolo: ' + mdfe.protocoloEncerramento);
     
     // Limpar formulário
     document.getElementById('mdfeEncerramento').value = '';
@@ -669,10 +669,10 @@ async function encerrarMdfeRapido(id) {
         mdfe.protocoloEncerramento = result.protocolo || '';
     } catch (error) {
         console.error('❌ Erro ao salvar encerramento rápido MDF-e:', error);
-        alert(`Não foi possível salvar o encerramento: ${error.message}`);
+        notifyUser(`Não foi possível salvar o encerramento: ${error.message}`);
         return;
     }
-    alert('MDF-e encerrado com sucesso!');
+    notifyUser('MDF-e encerrado com sucesso!');
     
     consultarMdfes();
     atualizarDashboard();
@@ -721,14 +721,14 @@ function visualizarMdfe(id) {
         detalhes += `\nObservações: ${mdfe.observacoes}`;
     }
     
-    alert(detalhes);
+    notifyUser(detalhes);
 }
 
 // Editar MDF-e
 function editarMdfe(id) {
     const mdfe = mdfes.find(m => m.id === id);
     if (!mdfe || mdfe.status !== 'rascunho') {
-        alert('Apenas rascunhos podem ser editados');
+        notifyUser('Apenas rascunhos podem ser editados');
         return;
     }
     
@@ -758,7 +758,7 @@ function editarMdfe(id) {
     // Ir para aba de emissão
     showTab('emissao');
     
-    alert('MDF-e carregado para edição');
+    notifyUser('MDF-e carregado para edição');
 }
 
 // Atualizar dashboard
@@ -784,7 +784,7 @@ async function gerarRelatorioMdfe() {
     const dataFim = document.getElementById('relMdfePeriodoFim').value;
     
     if (!dataInicio || !dataFim) {
-        alert('Selecione o período para o relatório');
+        notifyUser('Selecione o período para o relatório');
         return;
     }
     
@@ -794,7 +794,7 @@ async function gerarRelatorioMdfe() {
     });
     
     if (mdfesRelatorio.length === 0) {
-        alert('Nenhum MDF-e encontrado no período selecionado');
+        notifyUser('Nenhum MDF-e encontrado no período selecionado');
         return;
     }
     
@@ -830,13 +830,13 @@ async function gerarRelatorioMdfe() {
         novaJanela = null;
     }
     if (!novaJanela || novaJanela.closed === true) {
-        alert('Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.');
+        notifyUser('Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.');
         return;
     }
     try {
         if (!novaJanela.document) throw new Error('alvo parcial');
     } catch (_) {
-        alert('Impressão bloqueada no mobile. Permita popups para imprimir.');
+        notifyUser('Impressão bloqueada no mobile. Permita popups para imprimir.');
         try { if (!novaJanela.closed) novaJanela.close(); } catch (_) {}
         return;
     }
@@ -854,7 +854,7 @@ async function gerarRelatorioMdfe() {
     `);
         novaJanela.document.close();
     } catch (_) {
-        alert('Falha ao preparar documento de impressão.');
+        notifyUser('Falha ao preparar documento de impressão.');
         return;
     }
     try { novaJanela.focus(); } catch (_) {}
@@ -899,11 +899,11 @@ async function consultarMdfeFiscal(id) {
         mdfe.cStat = result?.cStat || '';
         mdfe.xMotivo = result?.xMotivo || '';
         mdfe.protocolo = result?.protocolo || mdfe.protocolo || '';
-        alert(`Retorno SEFAZ: ${mdfe.cStat} - ${mdfe.xMotivo}`);
+        notifyUser(`Retorno SEFAZ: ${mdfe.cStat} - ${mdfe.xMotivo}`);
         consultarMdfes();
     } catch (error) {
         console.error('❌ Erro ao consultar MDF-e:', error);
-        alert(`Não foi possível consultar o MDF-e: ${error.message}`);
+        notifyUser(`Não foi possível consultar o MDF-e: ${error.message}`);
     }
 }
 

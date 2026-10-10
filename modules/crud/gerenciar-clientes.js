@@ -926,7 +926,7 @@ window.GerenciarClientes = (function() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(mensagem, 'success');
         } else {
-            alert(mensagem);
+            notifyUser(mensagem);
         }
         
         console.log(`✅ ${mensagem}`);
@@ -942,7 +942,7 @@ window.GerenciarClientes = (function() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(mensagem, 'error');
         } else {
-            alert('Erro: ' + mensagem);
+            notifyUser('Erro: ' + mensagem);
         }
         
         console.error(`❌ ${mensagem}`);

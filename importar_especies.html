@@ -48,7 +48,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
     </script><!-- Menu Component -->
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
     
     <!-- 🛡️ Sentry: monitoramento de erros em produção (local, sem CDN) -->
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
@@ -281,7 +281,7 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
             const user = await authService.getCurrentUser();
             if (!user) {
                 if (!noRedirect) {
-                    alert('Acesso negado! Você precisa estar logado.');
+                    notifyUser('Acesso negado! Você precisa estar logado.');
                     window.location.href = 'login.html';
                 }
                 throw new Error('Usuário não autenticado');
@@ -326,7 +326,7 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
 
             if (!tenant) {
                 if (!noRedirect) {
-                    alert('Selecione/defina a empresa antes de importar espécies.');
+                    notifyUser('Selecione/defina a empresa antes de importar espécies.');
                     window.location.href = 'company.html';
                 }
                 throw new Error('Tenant/company não definido');
@@ -515,7 +515,7 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
         // Event Listeners
         elements.analyzeBtn.addEventListener('click', async () => {
             const text = elements.excelData.value;
-            if (!text) return alert('Cole os dados primeiro.');
+            if (!text) return notifyUser('Cole os dados primeiro.');
 
             elements.loadingOverlay.style.display = 'flex';
 
@@ -586,7 +586,7 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
 
             } catch (e) {
                 console.error(e);
-                alert('Erro na análise: ' + e.message);
+                notifyUser('Erro na análise: ' + e.message);
             } finally {
                 elements.loadingOverlay.style.display = 'none';
             }
@@ -638,12 +638,12 @@ Bagassa guianensis Aubl. - Tatajuba"></textarea>
                     successCount++;
                 }
 
-                alert(`Importação concluída! ${successCount} registros processados.`);
+                notifyUser(`Importação concluída! ${successCount} registros processados.`);
                 window.location.href = 'species.html';
 
             } catch (e) {
                 console.error(e);
-                alert('Erro na importação: ' + e.message);
+                notifyUser('Erro na importação: ' + e.message);
             } finally {
                 elements.loadingOverlay.style.display = 'none';
             }

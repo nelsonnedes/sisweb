@@ -2209,7 +2209,7 @@
                 const reason = String(params.get('reason') || '').toLowerCase();
                 const intent = String(params.get('intent') || '').toLowerCase();
                 if (reason === 'readonly_expired') {
-                    alert('Seu período de modo leitura expirou. Para continuar no sistema, renove sua assinatura.');
+                    notifyUser('Seu período de modo leitura expirou. Para continuar no sistema, renove sua assinatura.');
                 }
             } catch (_) {}
             const details = await loadAuthenticatedSubscriptionContext({ rerender: true });
@@ -2599,7 +2599,7 @@
             if (status !== 'approved') return;
             applyLocalSubscriptionActivationFromPix(paymentRecord.plan, paymentRecord);
             setTimeout(() => {
-                alert('Pagamento PIX confirmado. Sua assinatura foi ativada.');
+                notifyUser('Pagamento PIX confirmado. Sua assinatura foi ativada.');
                 closePaymentModal();
                 window.location.href = 'index.html';
             }, 500);
@@ -2630,11 +2630,11 @@
         async function startPixAutomaticPayment() {
             if (!currentPlan) return;
             if (!window.firebaseService || typeof window.firebaseService.createPixPayment !== 'function') {
-                alert('Serviço PIX automático indisponível no momento.');
+                notifyUser('Serviço PIX automático indisponível no momento.');
                 return;
             }
             if (!isPixMethodEnabled()) {
-                alert('PIX não está habilitado no momento. Use o envio manual de comprovante.');
+                notifyUser('PIX não está habilitado no momento. Use o envio manual de comprovante.');
                 setPaymentFlowMode('manual');
                 return;
             }
@@ -2676,11 +2676,11 @@
 
         async function revalidatePixPaymentNow() {
             if (!currentPixPayment || !currentPixPayment.paymentId) {
-                alert('Nenhum PIX ativo para revalidar.');
+                notifyUser('Nenhum PIX ativo para revalidar.');
                 return;
             }
             if (!window.firebaseService || typeof window.firebaseService.revalidatePixPayment !== 'function') {
-                alert('Serviço de revalidação indisponível no momento.');
+                notifyUser('Serviço de revalidação indisponível no momento.');
                 return;
             }
             const helper = document.getElementById('pixAutoHelper');
@@ -2704,7 +2704,7 @@
         function copyPixAutoCode() {
             const code = String(document.getElementById('pixCodeValue')?.textContent || '').trim();
             if (!code || code === 'Código PIX ainda não gerado.' || code === 'Código PIX indisponível') {
-                alert('Gere uma cobrança PIX antes de copiar o código.');
+                notifyUser('Gere uma cobrança PIX antes de copiar o código.');
                 return;
             }
             navigator.clipboard.writeText(code).then(() => {
@@ -2795,7 +2795,7 @@
                                                         <p style="margin-bottom: 10px; color: #f8fafc;">Escaneie o QR Code abaixo no app do seu banco:</p>
                                                         <img src="data:image/png;base64,${qrCodeBase64}" style="width: 250px; height: 250px; display: block; margin: 0 auto 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"/>
                                                         <p style="margin-bottom: 10px; color: #f8fafc;">Ou utilize a opção Copia e Cola:</p>
-                                                        <input type="text" value="${qrCode}" style="width:100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white; text-align: center; margin-bottom: 20px; cursor: pointer;" readonly onclick="this.select(); document.execCommand('copy'); alert('Código PIX copiado!');" />
+                                                        <input type="text" value="${qrCode}" style="width:100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white; text-align: center; margin-bottom: 20px; cursor: pointer;" readonly onclick="this.select(); document.execCommand('copy'); notifyUser('Código PIX copiado!');" />
                                                         <p style="font-size: 0.9em; color: #94a3b8;">Sua assinatura será ativada automaticamente após a confirmação do pagamento pelo banco (pode levar alguns segundos). Você pode fechar esta janela após pagar.</p>
                                                     </div>`;
                                                     helper.style.display = 'block';
@@ -3515,11 +3515,11 @@
                 }))) return;
                 const trialDays = parseInt(subscriptionSettings && subscriptionSettings.freeTrialDays, 10) || 0;
                 if (!trialDays) {
-                    alert('Plano grátis está desativado nas configurações comerciais.');
+                    notifyUser('Plano grátis está desativado nas configurações comerciais.');
                     return;
                 }
                 if (hasConsumedFreeTrial(currentUserDetails)) {
-                    alert('Este usuário já utilizou o plano grátis. Apenas o administrador pode conceder dias extras.');
+                    notifyUser('Este usuário já utilizou o plano grátis. Apenas o administrador pode conceder dias extras.');
                     return;
                 }
                 if (!window.firebaseService || typeof window.firebaseService.activateFreeTrial !== 'function') {
@@ -3535,18 +3535,18 @@
                 }
                 const status = String((result && result.data && result.data.status) || '').toLowerCase();
                 if (status === 'active') {
-                    alert('Sua assinatura já está ativa. Redirecionando para o sistema...');
+                    notifyUser('Sua assinatura já está ativa. Redirecionando para o sistema...');
                 } else if (status === 'trial_active') {
-                    alert('Plano grátis ativado com sucesso. Redirecionando para o sistema...');
+                    notifyUser('Plano grátis ativado com sucesso. Redirecionando para o sistema...');
                 } else {
-                    alert('Status de assinatura atualizado com sucesso. Redirecionando para o sistema...');
+                    notifyUser('Status de assinatura atualizado com sucesso. Redirecionando para o sistema...');
                 }
                 setFreePlanBusy(false);
                 try { await loadAuthenticatedSubscriptionContext({}); } catch (_) {}
                 window.location.href = resolvePostTrialDestination();
             } catch (error) {
                 setFreePlanBusy(false);
-                alert(friendlySubscriptionErrorMessage(error && error.message ? error.message : 'Erro ao ativar plano grátis.'));
+                notifyUser(friendlySubscriptionErrorMessage(error && error.message ? error.message : 'Erro ao ativar plano grátis.'));
             }
         }
 
@@ -3561,7 +3561,7 @@
             const amountElement = document.getElementById('paymentAmount');
             const selectedPlan = subscriptionSettings && subscriptionSettings.plans ? subscriptionSettings.plans[plan] : null;
             if (!selectedPlan || selectedPlan.enabled === false) {
-                alert('Plano indisponível no momento.');
+                notifyUser('Plano indisponível no momento.');
                 return;
             }
             const amount = getPlanAmountFromSettings(plan);
@@ -3635,11 +3635,11 @@
         function copyPixKey() {
             const pixKey = document.getElementById('pixKey').textContent;
             if (!pixKey || pixKey === '-') {
-                alert('Chave PIX indisponível.');
+                notifyUser('Chave PIX indisponível.');
                 return;
             }
             navigator.clipboard.writeText(pixKey).then(() => {
-                alert('Chave PIX copiada!');
+                notifyUser('Chave PIX copiada!');
             });
         }
 
@@ -3742,7 +3742,7 @@
         async function enviarComprovante() {
             const file = document.getElementById('comprovante').files[0];
             if (!file) {
-                alert('Por favor, selecione um comprovante primeiro.');
+                notifyUser('Por favor, selecione um comprovante primeiro.');
                 return;
             }
             if (!(await requireSubscriptionLogin('subscription_proof'))) return;
@@ -3782,12 +3782,12 @@
                 if (!uploadResult.success) {
                     throw new Error(uploadResult.error || 'Falha ao enviar comprovante para o banco de dados.');
                 }
-                alert('Comprovante enviado com sucesso para análise administrativa.');
+                notifyUser('Comprovante enviado com sucesso para análise administrativa.');
                 const transactionMeta = collectTransactionMeta(selectedMethod);
                 await finalizePendingSubmission(userData, validationCode, selectedMethod, paymentNotes, 'storage_upload', proofHash, uploadResult.data || null, transactionMeta);
             } catch (error) {
                 console.error('Erro geral:', error);
-                alert('Erro ao enviar o comprovante: ' + error.message);
+                notifyUser('Erro ao enviar o comprovante: ' + error.message);
             } finally {
                 document.getElementById('btnEnviar').disabled = false;
                 document.getElementById('btnEnviar').textContent = 'Enviar Comprovante';
@@ -3803,7 +3803,7 @@
                     document.getElementById('fileName').textContent = file.name;
                     document.getElementById('btnEnviar').disabled = false;
                 } catch (error) {
-                    alert(error.message);
+                    notifyUser(error.message);
                     this.value = ''; // Limpar o input
                     document.getElementById('fileName').textContent = '';
                     document.getElementById('btnEnviar').disabled = true;
@@ -3876,7 +3876,7 @@
 
         async function openSubscriptionPublicMessageCenter() {
             if (typeof window.showSupport !== 'function') {
-                alert('Central de Mensagens ainda está carregando. Aguarde alguns segundos e tente novamente.');
+                notifyUser('Central de Mensagens ainda está carregando. Aguarde alguns segundos e tente novamente.');
                 return;
             }
             const authenticated = await hasAuthenticatedSubscriptionUser();

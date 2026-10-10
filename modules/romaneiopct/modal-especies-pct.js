@@ -717,7 +717,7 @@ window.ModalEspeciesPCT = (function() {
                 }
                 
                 if (novoNome.trim() === '') {
-                    alert('❌ Nome da espécie não pode estar vazio!');
+                    notifyUser('❌ Nome da espécie não pode estar vazio!');
                     return;
                 }
                 
@@ -934,7 +934,7 @@ window.ModalEspeciesPCT = (function() {
             window.Utils.showToast(message, 'error');
         } else {
             console.error('PCT:', message);
-            alert('Erro: ' + message);
+            notifyUser('Erro: ' + message);
         }
     }
 

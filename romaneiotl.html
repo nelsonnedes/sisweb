@@ -47,7 +47,7 @@
     <!-- Loading / status styles reutilizáveis -->
     <link rel="stylesheet" href="folha_pagamento/folha-loading-styles.css?v=77577ee80c04">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     
     <!--
@@ -1652,7 +1652,7 @@
                 <div class="buttons-container" style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; align-items: center;">
                     <button type="button" id="addButton" class="btn-adicionar"><i class="fas fa-plus"></i> Adicionar</button>
                     <button type="button" id="btnSalvar" class="btn-salvar" onclick="salvarRomaneio()"><i class="fas fa-save"></i> Salvar</button>
-                    <button type="button" id="btnListar" class="btn-listar" onclick="if(typeof window.abrirListaRomaneios === 'function') { window.abrirListaRomaneios(); } else if(typeof abrirListaRomaneios === 'function') { abrirListaRomaneios(); } else { alert('Lista ainda carregando. Aguarde e tente novamente.'); }"><i class="fas fa-list"></i> Listar</button>
+                    <button type="button" id="btnListar" class="btn-listar" onclick="if(typeof window.abrirListaRomaneios === 'function') { window.abrirListaRomaneios(); } else if(typeof abrirListaRomaneios === 'function') { abrirListaRomaneios(); } else { notifyUser('Lista ainda carregando. Aguarde e tente novamente.'); }"><i class="fas fa-list"></i> Listar</button>
                     <div class="pre-romaneio-group" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <div class="pre-romaneio-left" style="display: flex; gap: 5px; align-items: center;">
                             <label for="preRomaneioSelect" style="margin: 0;">Pré-Romaneio (TL):</label>
@@ -2000,42 +2000,42 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="modules/core/firebase-service.js?v=03a9d649c238"></script>
     <script src="modules/core/utils.js?v=8a4ed44c30b5"></script>
     <script src="modules/core/romaneio-messages.js?v=114b5f8a30f6"></script>
-    <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
+    <script src="pre-romaneio-selector.js?v=25012edb1794"></script>
     
     <!-- Estados e Cidades (dependência para CRUD) -->
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     
     <!-- Módulos CRUD (dependem de estados-cidades) -->
-    <script src="modules/crud/gerenciar-clientes.js?v=20febf00b6e4"></script>
+    <script src="modules/crud/gerenciar-clientes.js?v=53a6a57aef65"></script>
     <script src="modules/crud/species-crud.js?v=e2f99af03340"></script>
-<script src="modules/crud/gerenciar-especies.js?v=aa7e76b5726e"></script>
+<script src="modules/crud/gerenciar-especies.js?v=2f4d0396458e"></script>
     
     <!-- Módulos de Navegação e Formatação -->
     <script src="modules/core/navegacao-enter.js?v=eb76c699775d"></script>
     <script src="modules/core/formatacao-campos.js?v=68d9ed39c238"></script>
     
     <!-- Módulos de Itens -->
-    <script src="modules/items/adicionar-item.js?v=770a7aee9ea8"></script>
+    <script src="modules/items/adicionar-item.js?v=a6ba9f687520"></script>
     <script src="romaneio-table-enhancements.js?v=290d67a3557c"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="modules/items/renderizar-tabela.js?v=1750110786ff"></script>
-    <script src="modules/items/editar-item.js?v=b879216c7fc2"></script>
-    <script src="modules/items/excluir-item.js?v=fe1dab93ee03"></script>
+    <script src="modules/items/editar-item.js?v=77c8b087559b"></script>
+    <script src="modules/items/excluir-item.js?v=587b25f4f636"></script>
     
     <!-- Módulos de Romaneio -->
-    <script src="modules/romaneio/salvar-romaneio.js?v=e5bfbe604657"></script>
+    <script src="modules/romaneio/salvar-romaneio.js?v=7173e3483a25"></script>
     <script src="romaneio-print-config.js?v=179c8544dedf"></script>
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
-    <script src="modules/reports/imprimir-romaneio.js?v=034fc9934084"></script>
+    <script src="modules/reports/imprimir-romaneio.js?v=4288f55b2004"></script>
 
     <!-- Módulos de Modais (dependem dos CRUD) -->
-    <script src="modules/modals/modal-clientes.js?v=bf5f8cc587ac"></script>
+    <script src="modules/modals/modal-clientes.js?v=87c836707ae1"></script>
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="tl" data-target="clientListTable"></script>
-    <script src="modules/modals/modal-especies.js?v=6ed25fce5fb5"></script>
+    <script src="modules/modals/modal-especies.js?v=24940724b713"></script>
     <script src="modules/core/romaneio-list-columns.js?v=210bbf18cbc0" data-page="tl" data-target="listaRomaneios"></script>
-    <script src="modules/modals/modal-lista-romaneios.js?v=1eef2e9598ee"></script>
+    <script src="modules/modals/modal-lista-romaneios.js?v=9eaff70ac922"></script>
     <script src="js/sisweb-loading.js?v=b693454010f9"></script>
-    <script src="romaneios-client-save-fix.js?v=9f4df8ca50a8"></script>
+    <script src="romaneios-client-save-fix.js?v=95d795703c1c"></script>
     <script src="schema-migration-contatos.js?v=3a574e7e3324"></script>
 
     <script>
@@ -2253,14 +2253,14 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                         console.log('   Tipo de window.adicionarItem:', typeof window.adicionarItem);
                         
                         // Mostrar erro amigável para o usuário
-                        alert('❌ Erro: Módulo de adicionar item não foi carregado corretamente. Recarregue a página.');
+                        notifyUser('❌ Erro: Módulo de adicionar item não foi carregado corretamente. Recarregue a página.');
                         
                     } catch (error) {
                         console.error('❌ ERRO na função chamarAdicionarItem:', error);
                         console.error('Stack trace:', error.stack);
                         
                         // Mostrar erro detalhado
-                        alert('❌ Erro interno ao adicionar item: ' + error.message + '\n\nVerifique o console para mais detalhes.');
+                        notifyUser('❌ Erro interno ao adicionar item: ' + error.message + '\n\nVerifique o console para mais detalhes.');
                     }
                 };
                 
@@ -2286,12 +2286,12 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     if (window.ModalListaRomaneios && typeof window.ModalListaRomaneios.openModal === 'function') {
                         window.ModalListaRomaneios.openModal();
                     } else {
-                        alert('Sistema ainda carregando. Tente novamente em alguns segundos.');
+                        notifyUser('Sistema ainda carregando. Tente novamente em alguns segundos.');
                     }
                 }, 300);
             } catch (e) {
                 console.error('❌ Erro ao abrir lista de romaneios:', e);
-                alert('Erro ao abrir lista de romaneios: ' + (e && e.message ? e.message : e));
+                notifyUser('Erro ao abrir lista de romaneios: ' + (e && e.message ? e.message : e));
             }
         };
         // Alias direto para compatibilidade com handlers inline

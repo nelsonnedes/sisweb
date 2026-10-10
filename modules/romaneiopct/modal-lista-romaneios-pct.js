@@ -1294,9 +1294,9 @@ window.ModalListaRomaneiosPCT = (function() {
             } else if (window.Utils && window.Utils.showToast) {
                 window.Utils.showToast(message, 'error');
             } else {
-                alert(message);
+                notifyUser(message);
             }
-        } catch (_) { alert(message); }
+        } catch (_) { notifyUser(message); }
     }
 
     function showSuccess(message) {
@@ -1306,9 +1306,9 @@ window.ModalListaRomaneiosPCT = (function() {
             } else if (window.Utils && window.Utils.showToast) {
                 window.Utils.showToast(message, 'success');
             } else {
-                alert(message);
+                notifyUser(message);
             }
-        } catch (_) { alert(message); }
+        } catch (_) { notifyUser(message); }
     }
 
     function showWarning(message) {
@@ -1318,9 +1318,9 @@ window.ModalListaRomaneiosPCT = (function() {
             } else if (window.Utils && window.Utils.showToast) {
                 window.Utils.showToast(message, 'warning');
             } else {
-                alert(message);
+                notifyUser(message);
             }
-        } catch (_) { alert(message); }
+        } catch (_) { notifyUser(message); }
     }
 
     /**

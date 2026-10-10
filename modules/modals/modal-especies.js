@@ -772,7 +772,7 @@ window.ModalEspecies = (function() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(message, 'error');
         } else {
-            alert('Erro: ' + message);
+            notifyUser('Erro: ' + message);
         }
     }
 

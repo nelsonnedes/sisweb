@@ -991,7 +991,7 @@
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         function getAnyUid(user) {
@@ -1146,7 +1146,7 @@
         async function createSubUser(event) {
             event.preventDefault();
             if (!(await hasSuperAdminAccess())) {
-                alert('Apenas o super admin pode criar sub-usuários.');
+                notifyUser('Apenas o super admin pode criar sub-usuários.');
                 return;
             }
             const spinner = document.getElementById('subuser-spinner');
@@ -1202,9 +1202,9 @@
                 document.getElementById('permSubscriptions').checked = true;
                 document.getElementById('permSettings').checked = false;
                 renderSubUsersTable();
-                alert('Sub-usuário criado com sucesso.');
+                notifyUser('Sub-usuário criado com sucesso.');
             } catch (error) {
-                alert(error.message || 'Erro ao criar sub-usuário.');
+                notifyUser(error.message || 'Erro ao criar sub-usuário.');
             } finally {
                 spinner.style.display = 'none';
             }
@@ -1213,13 +1213,13 @@
         window.toggleSubUserActive = async function(uid, activeFlag) {
             try {
                 if (!(await hasSuperAdminAccess())) {
-                    alert('Apenas o super admin pode alterar status de sub-usuário.');
+                    notifyUser('Apenas o super admin pode alterar status de sub-usuário.');
                     return;
                 }
                 const users = parseUsersCacheSafe();
                 const index = users.findIndex((u) => String(getAnyUid(u)) === String(uid));
                 if (index < 0) {
-                    alert('Sub-usuário não encontrado.');
+                    notifyUser('Sub-usuário não encontrado.');
                     return;
                 }
                 const nextActive = activeFlag === true || activeFlag === 'true';
@@ -1240,7 +1240,7 @@
                 }
                 renderSubUsersTable();
             } catch (error) {
-                alert(error.message || 'Erro ao atualizar sub-usuário.');
+                notifyUser(error.message || 'Erro ao atualizar sub-usuário.');
             }
         };
 
@@ -1249,12 +1249,12 @@
             try {
                 const isAdmin = await hasSettingsAdminAccess();
                 if (isAdmin) return true;
-                alert('Acesso restrito. Você não tem permissões de administrador.');
+                notifyUser('Acesso restrito. Você não tem permissões de administrador.');
                 window.location.href = 'index.html';
                 return false;
             } catch (error) {
                 console.error('Erro ao verificar permissões de admin:', error);
-                alert('Erro ao verificar permissões. Por favor, faça login novamente.');
+                notifyUser('Erro ao verificar permissões. Por favor, faça login novamente.');
                 window.location.href = 'login.html';
                 return false;
             }
@@ -1865,10 +1865,10 @@
                 }
                 const result = await window.firebaseService.extendSubscriptionAccess(uid, days);
                 if (!result.success) throw new Error(result.error || 'Falha ao prorrogar assinatura.');
-                alert(`Prorrogação aplicada com sucesso: +${days} dia(s).`);
+                notifyUser(`Prorrogação aplicada com sucesso: +${days} dia(s).`);
                 document.getElementById('extendTargetUid').value = '';
             } catch (error) {
-                alert(error.message || 'Erro ao prorrogar assinatura.');
+                notifyUser(error.message || 'Erro ao prorrogar assinatura.');
             } finally {
                 spinner.style.display = 'none';
             }
@@ -1909,11 +1909,11 @@
                     URL.revokeObjectURL(url);
                 }, 0);
                 
-                alert('Backup gerado com sucesso!');
+                notifyUser('Backup gerado com sucesso!');
                 
             } catch (error) {
                 console.error('Erro ao gerar backup:', error);
-                alert('Erro ao gerar backup. Tente novamente.');
+                notifyUser('Erro ao gerar backup. Tente novamente.');
             } finally {
                 // Esconder spinner
                 document.getElementById('backup-spinner').style.display = 'none';
@@ -1936,7 +1936,7 @@
             
             // Verificar se é um arquivo JSON
             if (!file.name.toLowerCase().endsWith('.json')) {
-                alert('Por favor, selecione um arquivo de backup válido (formato .json)');
+                notifyUser('Por favor, selecione um arquivo de backup válido (formato .json)');
                 return;
             }
             
@@ -2021,7 +2021,7 @@
                         console.log(`✅ Backup importado com sucesso! ${importedKeys} itens restaurados`);
                         
                         // Mostrar resultado
-                        alert(`✅ Backup importado com sucesso!\n\n📊 Estatísticas:\n• ${importedKeys} itens restaurados\n• ${importedUsers.length} usuários importados\n\nA página será recarregada para aplicar as mudanças.`);
+                        notifyUser(`✅ Backup importado com sucesso!\n\n📊 Estatísticas:\n• ${importedKeys} itens restaurados\n• ${importedUsers.length} usuários importados\n\nA página será recarregada para aplicar as mudanças.`);
                         
                         // Recarregar página para aplicar mudanças
                         setTimeout(() => {
@@ -2030,7 +2030,7 @@
                         
                     } catch (parseError) {
                         console.error('❌ Erro ao processar backup:', parseError);
-                        alert('Erro ao processar arquivo de backup. Verifique se o arquivo está correto e não foi corrompido.');
+                        notifyUser('Erro ao processar arquivo de backup. Verifique se o arquivo está correto e não foi corrompido.');
                     } finally {
                         document.getElementById('import-spinner').style.display = 'none';
                     }
@@ -2038,7 +2038,7 @@
                 
                 reader.onerror = function() {
                     console.error('❌ Erro ao ler arquivo');
-                    alert('Erro ao ler o arquivo de backup.');
+                    notifyUser('Erro ao ler o arquivo de backup.');
                     document.getElementById('import-spinner').style.display = 'none';
                 };
                 
@@ -2047,7 +2047,7 @@
                 
             } catch (error) {
                 console.error('❌ Erro geral na importação:', error);
-                alert('Erro ao importar backup: ' + error.message);
+                notifyUser('Erro ao importar backup: ' + error.message);
                 document.getElementById('import-spinner').style.display = 'none';
             }
         }
@@ -2085,11 +2085,11 @@
                 // Salvar usuários atualizados
                 persistLocalValue('users', users);
                 
-                alert(`Limpeza concluída! ${cleaned} assinaturas expiradas foram removidas.`);
+                notifyUser(`Limpeza concluída! ${cleaned} assinaturas expiradas foram removidas.`);
                 
             } catch (error) {
                 console.error('Erro ao limpar dados:', error);
-                alert('Erro ao limpar dados. Tente novamente.');
+                notifyUser('Erro ao limpar dados. Tente novamente.');
             } finally {
                 // Esconder spinner
                 document.getElementById('cleanup-spinner').style.display = 'none';
@@ -2151,14 +2151,14 @@
                     persistLocalValue('users', [adminUser]);
                 }
                 
-                alert('Sistema redefinido com sucesso! A página será recarregada.');
+                notifyUser('Sistema redefinido com sucesso! A página será recarregada.');
                 
                 // Recarregar a página
                 window.location.reload();
                 
             } catch (error) {
                 console.error('Erro ao redefinir sistema:', error);
-                alert('Erro ao redefinir sistema: ' + error.message);
+                notifyUser('Erro ao redefinir sistema: ' + error.message);
             } finally {
                 // Esconder spinner
                 document.getElementById('reset-spinner').style.display = 'none';

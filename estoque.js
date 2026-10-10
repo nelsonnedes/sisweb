@@ -765,13 +765,13 @@ function normalizarNomeEspecieCadastrada(nome) {
 function validarEspecieEntrada(nome, showAlert = true) {
     const valor = String(nome || '').trim();
     if (!valor) {
-        if (showAlert) alert('Informe a espécie.');
+        if (showAlert) notifyUser('Informe a espécie.');
         return { ok: false, nome: '' };
     }
 
     if (especiesEntradaErroCarga || !especiesEntradaCarregadas) {
         if (showAlert) {
-            alert('A lista de espécies cadastradas ainda não foi carregada com segurança. Aguarde alguns instantes ou recarregue a página antes de lançar a tora.');
+            notifyUser('A lista de espécies cadastradas ainda não foi carregada com segurança. Aguarde alguns instantes ou recarregue a página antes de lançar a tora.');
         }
         return { ok: false, nome: valor };
     }
@@ -781,13 +781,13 @@ function validarEspecieEntrada(nome, showAlert = true) {
 
     if (especiesEntradaCadastradas.length === 0) {
         if (showAlert) {
-            alert('Nenhuma espécie cadastrada foi carregada. Cadastre ou carregue uma espécie antes de lançar a tora.');
+            notifyUser('Nenhuma espécie cadastrada foi carregada. Cadastre ou carregue uma espécie antes de lançar a tora.');
         }
         return { ok: false, nome: valor };
     }
 
     if (showAlert) {
-        alert('Espécie não encontrada no cadastro. Selecione uma espécie cadastrada ou use o botão + para cadastrar antes de lançar a tora.');
+        notifyUser('Espécie não encontrada no cadastro. Selecione uma espécie cadastrada ou use o botão + para cadastrar antes de lançar a tora.');
     }
     return { ok: false, nome: valor };
 }
@@ -2135,13 +2135,13 @@ function carregarItensDoRomaneioSelecionado() {
     const id = select.value;
 
     if (!id) {
-        alert('Selecione um romaneio primeiro.');
+        notifyUser('Selecione um romaneio primeiro.');
         return;
     }
 
     const romaneio = findRomaneioEntradaById(id);
     if (!romaneio) {
-        alert('Romaneio não encontrado. Recarregue a página e tente novamente.');
+        notifyUser('Romaneio não encontrado. Recarregue a página e tente novamente.');
         return;
     }
 
@@ -2189,12 +2189,12 @@ function carregarItensDoRomaneioSelecionado() {
             itensEntrada = [...itensEntrada, ...novosItens];
             paginaAtualEntrada = 1; // Resetar paginação ao carregar novos itens
             renderizarTabelaEntrada();
-            alert(`Carregados ${novosItens.length} itens do romaneio.`);
+            notifyUser(`Carregados ${novosItens.length} itens do romaneio.`);
         } else {
-            alert('Este romaneio não possui itens.');
+            notifyUser('Este romaneio não possui itens.');
         }
     } else {
-        alert('Este romaneio não possui itens.');
+        notifyUser('Este romaneio não possui itens.');
     }
 }
 
@@ -2207,13 +2207,13 @@ async function adicionarItemEntrada() {
 
     const plaqueta = String(document.getElementById('plaquetaEntrada').value || '').trim();
     if (!plaqueta) {
-        alert('Informe a plaqueta.');
+        notifyUser('Informe a plaqueta.');
         return;
     }
     const ignorarId = romaneioSelecionadoId || (toraEmEdicao ? toraEmEdicao.id : '');
     const toraExistente = encontrarToraPorPlaqueta(plaqueta, ignorarId);
     if (toraExistente || itemEntradaTemPlaqueta(plaqueta, ignorarId)) {
-        alert('Já existe uma tora com esta plaqueta no estoque ou na lista de entrada. Verifique antes de adicionar.');
+        notifyUser('Já existe uma tora com esta plaqueta no estoque ou na lista de entrada. Verifique antes de adicionar.');
         return;
     }
     const especieValidacao = validarEspecieEntrada(document.getElementById('especieEntrada').value, true);
@@ -2294,12 +2294,12 @@ async function atualizarToraEditada() {
 
     const plaqueta = String(document.getElementById('plaquetaEntrada').value || '').trim();
     if (!plaqueta) {
-        alert('Informe a plaqueta.');
+        notifyUser('Informe a plaqueta.');
         return;
     }
     const toraDuplicada = encontrarToraPorPlaqueta(plaqueta, originalId);
     if (toraDuplicada) {
-        alert(`Já existe outra tora com a plaqueta "${plaqueta}". Ajuste a plaqueta antes de atualizar.`);
+        notifyUser(`Já existe outra tora com a plaqueta "${plaqueta}". Ajuste a plaqueta antes de atualizar.`);
         return;
     }
 
@@ -2338,7 +2338,7 @@ async function atualizarToraEditada() {
     const fornecedorNome = String(fornecedorInfo.nome || fornecedorId || '').trim();
 
     if (romaneio && fornecedorId && (fornecedorRomaneio.id || fornecedorRomaneio.nome) && !fornecedoresSaoCompativeis({ id: fornecedorId, nome: fornecedorNome }, fornecedorRomaneio)) {
-        alert('O fornecedor selecionado não corresponde ao fornecedor do romaneio. Selecione o fornecedor correto ou deixe o romaneio em branco.');
+        notifyUser('O fornecedor selecionado não corresponde ao fornecedor do romaneio. Selecione o fornecedor correto ou deixe o romaneio em branco.');
         return;
     }
 
@@ -2434,7 +2434,7 @@ async function atualizarToraEditada() {
         estoqueAtual = estoqueAtualizadoLocal;
         movimentacoes = movimentacoesAtualizadasLocal;
         hideLoading();
-        alert('Tora atualizada com sucesso.');
+        notifyUser('Tora atualizada com sucesso.');
         toraEmEdicao = null;
         setModoEdicaoEntrada(null);
         limparCamposEntrada(true);
@@ -2445,7 +2445,7 @@ async function atualizarToraEditada() {
     } catch (error) {
         hideLoading();
         console.error('Erro ao atualizar tora:', error);
-        alert('Erro ao atualizar tora: ' + error.message);
+        notifyUser('Erro ao atualizar tora: ' + error.message);
     }
 }
 
@@ -3566,7 +3566,7 @@ async function registrarEntrada(event) {
     try { window.firebaseService?.reconnectDatabase?.(); } catch (_) {}
 
     if (itensEntrada.length === 0) {
-        alert('Adicione itens à lista antes de salvar.');
+        notifyUser('Adicione itens à lista antes de salvar.');
         return;
     }
 
@@ -3577,7 +3577,7 @@ async function registrarEntrada(event) {
     const documento = romaneioSelecionadoId ? `Romaneio ${romaneioSelecionadoId}` : 'Entrada Manual';
 
     if (!fornecedorId) {
-        alert('Selecione um fornecedor.');
+        notifyUser('Selecione um fornecedor.');
         return;
     }
 
@@ -3615,7 +3615,7 @@ async function registrarEntrada(event) {
     });
     if (plaquetasDuplicadas.length > 0) {
         const lista = [...new Set(plaquetasDuplicadas)].slice(0, 5).join(', ');
-        alert(`Existem plaquetas duplicadas no estoque ou nesta entrada: ${lista}. Corrija antes de salvar.`);
+        notifyUser(`Existem plaquetas duplicadas no estoque ou nesta entrada: ${lista}. Corrija antes de salvar.`);
         return;
     }
     // Trava anti-duplo-submit (E-01b): o loading existe, mas sem flag o 2o
@@ -3725,9 +3725,9 @@ async function registrarEntrada(event) {
         hideLoading();
         if (especiesPendentes.length > 0) {
             const listaP = [...new Set(especiesPendentes)].slice(0, 5).join(', ');
-            alert(`Entrada de ${totalItens} toras realizada com sucesso! Atenção: espécie(s) fora do cadastro importada(s) para revisão: ${listaP}. Corrija na Consulta (editar tora).`);
+            notifyUser(`Entrada de ${totalItens} toras realizada com sucesso! Atenção: espécie(s) fora do cadastro importada(s) para revisão: ${listaP}. Corrija na Consulta (editar tora).`);
         } else {
-            alert(`Entrada de ${totalItens} toras realizada com sucesso!`);
+            notifyUser(`Entrada de ${totalItens} toras realizada com sucesso!`);
         }
 
         // Limpar tudo
@@ -3758,7 +3758,7 @@ async function registrarEntrada(event) {
     } catch (error) {
         hideLoading();
         console.error('Erro ao registrar entrada:', error);
-        alert('Erro ao processar entrada: ' + error.message);
+        notifyUser('Erro ao processar entrada: ' + error.message);
         try {
             const __entradaSubmitBtnErr = document.querySelector('#entradaForm button[type="submit"]');
             if (__entradaSubmitBtnErr) { __entradaSubmitBtnErr.disabled = false; }
@@ -3991,7 +3991,7 @@ function toggleToraSelecao(toraId, isChecked, updateCheckbox = true) {
             if (window.ToastManager && typeof window.ToastManager.warning === 'function') {
                 window.ToastManager.warning(`A tora ${tora.plaqueta || toraId} já está carregada na baixa`, 'Duplicidade');
             } else {
-                alert(`A tora ${tora.plaqueta || toraId} já está carregada na baixa.`);
+                notifyUser(`A tora ${tora.plaqueta || toraId} já está carregada na baixa.`);
             }
         }
         if (index === -1 && !jaNaTabela) {
@@ -4015,7 +4015,7 @@ function toggleToraSelecao(toraId, isChecked, updateCheckbox = true) {
 
 function confirmarSelecaoToras() {
     if (torasSelecionadasModal.length === 0) {
-        alert('Selecione pelo menos uma tora para baixa');
+        notifyUser('Selecione pelo menos uma tora para baixa');
         return;
     }
 
@@ -4046,7 +4046,7 @@ function adicionarToraManualSaida() {
     const oco2 = parseFloat((oco2El && oco2El.value) || 0) || 0;
 
     if (!plaqueta || !especieRaw || diametro <= 0 || comprimento <= 0) {
-        alert('Preencha Plaqueta, Espécie, Rodo e Comprimento para adicionar manualmente.');
+        notifyUser('Preencha Plaqueta, Espécie, Rodo e Comprimento para adicionar manualmente.');
         return;
     }
 
@@ -4060,7 +4060,7 @@ function adicionarToraManualSaida() {
         if (window.ToastManager && typeof window.ToastManager.warning === 'function') {
             window.ToastManager.warning(`A plaqueta ${plaqueta} já está na tabela de baixa`, 'Duplicidade');
         } else {
-            alert(`A plaqueta ${plaqueta} já está na tabela de baixa.`);
+            notifyUser(`A plaqueta ${plaqueta} já está na tabela de baixa.`);
         }
         return;
     }
@@ -4191,7 +4191,7 @@ function atualizarAcoesExclusaoToras() {
 async function excluirTorasSaidaSelecionadas() {
     const ids = obterIdsTorasSaidaPersistidasSelecionadas();
     if (ids.length === 0) {
-        alert('Selecione ao menos uma tora cadastrada no estoque. Itens manuais não podem ser excluídos por esta ação.');
+        notifyUser('Selecione ao menos uma tora cadastrada no estoque. Itens manuais não podem ser excluídos por esta ação.');
         return { success: false, count: 0 };
     }
     return excluirTorasDoEstoqueEmLote(ids, { origem: 'baixa_individual' });
@@ -4200,7 +4200,7 @@ async function excluirTorasSaidaSelecionadas() {
 async function excluirTorasModalSelecionadas() {
     const ids = obterIdsTorasModalMarcadasParaExclusao();
     if (ids.length === 0) {
-        alert('Selecione ao menos uma tora ainda não carregada na baixa.');
+        notifyUser('Selecione ao menos uma tora ainda não carregada na baixa.');
         return { success: false, count: 0 };
     }
     return excluirTorasDoEstoqueEmLote(ids, { origem: 'modal_baixa_lote' });
@@ -4364,7 +4364,7 @@ async function registrarSaida(event) {
 
     try {
         if (torasSelecionadasBaixa.length === 0) {
-            alert('Selecione pelo menos uma tora para baixa');
+            notifyUser('Selecione pelo menos uma tora para baixa');
             return;
         }
 
@@ -4377,7 +4377,7 @@ async function registrarSaida(event) {
         const remessaId = generateUniqueId('REM');
 
         if (!tipoSaida) {
-            alert('Selecione o tipo de saída');
+            notifyUser('Selecione o tipo de saída');
             return;
         }
         registrarSaidaEmAndamento = true;
@@ -4497,9 +4497,9 @@ async function registrarSaida(event) {
         } catch (_) {}
         registrarSaidaEmAndamento = false;
         if (qtdManuais > 0) {
-            alert(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) baixada(s) do estoque e ${qtdManuais} tora(s) manual(is) registrada(s) no histórico.`);
+            notifyUser(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) baixada(s) do estoque e ${qtdManuais} tora(s) manual(is) registrada(s) no histórico.`);
         } else {
-            alert(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) removida(s) do estoque.`);
+            notifyUser(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) removida(s) do estoque.`);
         }
 
         // Limpar seleção e formulário
@@ -4519,7 +4519,7 @@ async function registrarSaida(event) {
             }
         } catch (_) {}
         registrarSaidaEmAndamento = false;
-        alert('Erro ao registrar saída: ' + error.message);
+        notifyUser('Erro ao registrar saída: ' + error.message);
     }
 }
 
@@ -4693,25 +4693,25 @@ async function estornarRemessaBaixa() {
         if (movSelArray.length > 0) {
             candidatos = movimentacoes.filter(m => movSelArray.includes(String(m.id)) && m.tipo === 'saida');
             if (candidatos.length === 0) {
-                alert('Nenhuma movimentação de SAÍDA selecionada para estorno.');
+                notifyUser('Nenhuma movimentação de SAÍDA selecionada para estorno.');
                 return;
             }
             if (candidatos.length !== movSelArray.length) {
-                alert('Algumas movimentações selecionadas não são de SAÍDA e serão ignoradas.');
+                notifyUser('Algumas movimentações selecionadas não são de SAÍDA e serão ignoradas.');
             }
             remessa = "Selecionadas";
         } else {
             const input = document.getElementById('filtroRemessaBaixa');
             remessa = input ? String(input.value || '').trim() : '';
             if (!remessa) {
-                alert('Selecione movimentações na tabela usando os checkboxes OU informe a Remessa de Baixa (Ex: REM...) para estornar.');
+                notifyUser('Selecione movimentações na tabela usando os checkboxes OU informe a Remessa de Baixa (Ex: REM...) para estornar.');
                 if (input) input.focus();
                 return;
             }
             const remessaNorm = remessa.toLowerCase();
             candidatos = movimentacoes.filter(m => m && String(m.remessaId || '').toLowerCase() === remessaNorm && m.tipo === 'saida');
             if (!candidatos.length) {
-                alert('Nenhuma baixa encontrada para esta remessa.');
+                notifyUser('Nenhuma baixa encontrada para esta remessa.');
                 return;
             }
         }
@@ -4731,7 +4731,7 @@ async function estornarRemessaBaixa() {
             alteradas.push(tora);
         });
         if (!alteradas.length) {
-            alert('Nenhuma tora correspondente encontrada no estoque. Estorno cancelado.');
+            notifyUser('Nenhuma tora correspondente encontrada no estoque. Estorno cancelado.');
             return;
         }
         const movAntes = movimentacoes.length;
@@ -4781,10 +4781,10 @@ async function estornarRemessaBaixa() {
             renderizarRastreabilidade(window.rastreabilidadeFiltrosAtuais || { status: 'ativo' });
         }
 
-        alert(`Remessa/Seleção ${remessa} estornada com sucesso!\nToras restauradas: ${alteradas.length}\nMovimentações removidas: ${removidas}\nRastreabilidade estornada: ${rastreabilidadeAfetada.length}`);
+        notifyUser(`Remessa/Seleção ${remessa} estornada com sucesso!\nToras restauradas: ${alteradas.length}\nMovimentações removidas: ${removidas}\nRastreabilidade estornada: ${rastreabilidadeAfetada.length}`);
     } catch (error) {
         console.error('Erro ao estornar remessa:', error);
-        alert('Erro ao estornar remessa: ' + error.message);
+        notifyUser('Erro ao estornar remessa: ' + error.message);
     }
 }
 
@@ -5039,7 +5039,7 @@ function adicionarToraNaBaixa(tora, options = {}) {
     if (!tora || tora.id == null) return false;
     const exists = torasSelecionadasBaixa.some(t => String(t.id) === String(tora.id));
     if (exists) {
-        if (options.alertDuplicate !== false) alert('Esta tora já está na lista de baixa.');
+        if (options.alertDuplicate !== false) notifyUser('Esta tora já está na lista de baixa.');
         return false;
     }
     torasSelecionadasBaixa.push(tora);
@@ -5056,7 +5056,7 @@ function finalizarAdicaoPlaquetaSaida(mensagem = '') {
 
 function adicionarToraBaixaPorPlaqueta() {
     if (!toraEncontradaBaixa) {
-        alert('Busque uma plaqueta válida antes de adicionar.');
+        notifyUser('Busque uma plaqueta válida antes de adicionar.');
         return false;
     }
     const adicionada = adicionarToraNaBaixa(toraEncontradaBaixa);
@@ -5072,7 +5072,7 @@ function adicionarToraBaixaPorPlaquetaId(toraId) {
 function adicionarTorasPlaquetaSelecionadas() {
     const ids = Array.from(saidaPlaquetaSelecionadas);
     if (ids.length === 0) {
-        alert('Selecione pelo menos uma tora na lista.');
+        notifyUser('Selecione pelo menos uma tora na lista.');
         return;
     }
     let adicionadas = 0;
@@ -5081,7 +5081,7 @@ function adicionarTorasPlaquetaSelecionadas() {
         if (adicionarToraNaBaixa(tora, { alertDuplicate: false })) adicionadas++;
     });
     if (adicionadas === 0) {
-        alert('Nenhuma tora nova foi adicionada. Verifique se elas já estão na tabela de baixa.');
+        notifyUser('Nenhuma tora nova foi adicionada. Verifique se elas já estão na tabela de baixa.');
         return;
     }
     finalizarAdicaoPlaquetaSaida(`${adicionadas} tora(s) adicionada(s) à baixa. Digite outra plaqueta para continuar.`);
@@ -5460,7 +5460,7 @@ async function excluirTorasDoEstoqueEmLote(ids, options = {}) {
         tora && !tora.manualForaEstoque && idsSolicitados.has(String(tora.id))
     );
     if (toras.length === 0) {
-        alert('Nenhuma tora cadastrada no estoque foi selecionada para exclusão.');
+        notifyUser('Nenhuma tora cadastrada no estoque foi selecionada para exclusão.');
         return { success: false, count: 0 };
     }
 
@@ -5540,11 +5540,11 @@ async function excluirTorasDoEstoqueEmLote(ids, options = {}) {
         atualizarFiltros();
         carregarTabelaMovimentacoes(filtroMovimentacoesAtual);
 
-        alert(`${toras.length} tora(s) excluída(s) permanentemente do estoque.`);
+        notifyUser(`${toras.length} tora(s) excluída(s) permanentemente do estoque.`);
         return { success: true, count: toras.length };
     } catch (error) {
         console.error('Erro ao excluir toras do estoque:', error);
-        alert('Erro ao excluir toras: ' + (error && error.message ? error.message : String(error)));
+        notifyUser('Erro ao excluir toras: ' + (error && error.message ? error.message : String(error)));
         return { success: false, count: 0 };
     } finally {
         exclusaoTorasEmLoteEmAndamento = false;
@@ -6284,7 +6284,7 @@ async function excluirMovimentacoesSelecionadas() {
         } catch (_) { ids = []; }
     }
     if (ids.length === 0) {
-        alert('Selecione ao menos uma movimentação para excluir.');
+        notifyUser('Selecione ao menos uma movimentação para excluir.');
         return;
     }
     if (!await confirmDialog({ title: 'Excluir movimentações', message: `Excluir ${ids.length} movimentação(ões) selecionada(s)? Esta ação não pode ser desfeita. (Não devolve toras ao estoque — use Estornar para isso.)`, danger: true, confirmLabel: 'Excluir' })) return;
@@ -6308,14 +6308,14 @@ async function excluirMovimentacoesSelecionadas() {
         } catch (_) { ok = false; }
         if (!ok) {
             try { movimentacoes = backup; } catch (_) {}
-            alert('Não foi possível excluir no servidor. Verifique sua conexão e permissões.');
+            notifyUser('Não foi possível excluir no servidor. Verifique sua conexão e permissões.');
             return;
         }
         try { movimentacoesSelecionadas.clear(); } catch (_) {}
         try { const mc = document.getElementById('checkTodasMovimentacoes'); if (mc) mc.checked = false; } catch (_) {}
         try { await carregarTabelaMovimentacoes(filtroMovimentacoesAtual); } catch (_) {}
         try { atualizarContadorMovExcluir(); } catch (_) {}
-        alert(`${ids.length} movimentação(ões) excluída(s).`);
+        notifyUser(`${ids.length} movimentação(ões) excluída(s).`);
     } finally {
         __excluirMovEmAndamento = false;
     }
@@ -7261,7 +7261,7 @@ function toggleTodasColunasRelatorio(checked) {
 async function abrirConfiguracaoColunasRelatorio() {
     const tipo = document.getElementById('tipoRelatorio')?.value || '';
     if (!isEstoqueReportColumnsSupported(tipo)) {
-        alert('Este tipo de relatório não possui colunas configuráveis.');
+        notifyUser('Este tipo de relatório não possui colunas configuráveis.');
         return;
     }
     await ensureEstoqueReportColumnsConfigLoaded(tipo);
@@ -8280,7 +8280,7 @@ async function imprimirRelatorioEstoque() {
     const data = window.__ultimoRelatorioEstoque || {};
     const tipoRelatorio = data.tipoRelatorio || document.getElementById('tipoRelatorio')?.value || '';
     if (!tipoRelatorio) {
-        alert('Por favor, selecione um tipo de relatório antes de imprimir.');
+        notifyUser('Por favor, selecione um tipo de relatório antes de imprimir.');
         return;
     }
     const content = document.getElementById('relatorioContent');
@@ -8345,7 +8345,7 @@ async function exportarRelatorioEstoqueExcel() {
     const data = window.__ultimoRelatorioEstoque || {};
     const tipoRelatorio = data.tipoRelatorio || document.getElementById('tipoRelatorio')?.value || '';
     if (!tipoRelatorio) {
-        alert('Por favor, selecione um tipo de relatório antes de exportar.');
+        notifyUser('Por favor, selecione um tipo de relatório antes de exportar.');
         return;
     }
     const content = document.getElementById('relatorioContent');
@@ -8373,7 +8373,7 @@ async function exportarRelatorioEstoqueExcel() {
     const tbody = table.querySelector('tbody');
     
     if (!thead || !tbody) {
-        alert('Nenhum dado para exportar.');
+        notifyUser('Nenhum dado para exportar.');
         return;
     }
     
@@ -8394,7 +8394,7 @@ async function exportarRelatorioEstoqueExcel() {
     
     // Criar workbook
     if (typeof XLSX === 'undefined') {
-        alert('Biblioteca SheetJS (XLSX) não carregada. Tente recarregar a página.');
+        notifyUser('Biblioteca SheetJS (XLSX) não carregada. Tente recarregar a página.');
         return;
     }
     
@@ -8810,7 +8810,7 @@ async function visualizarMovimentacoesDetalhes() {
     } catch (error) {
         console.error('Erro ao carregar detalhes das movimentações:', error);
         if (typeof hideLoading === 'function') hideLoading();
-        alert('Erro ao carregar detalhes: ' + (error && error.message ? error.message : error));
+        notifyUser('Erro ao carregar detalhes: ' + (error && error.message ? error.message : error));
     } finally {
         __movDetInFlight = false;
     }
@@ -8819,7 +8819,7 @@ async function visualizarMovimentacoesDetalhes() {
 function imprimirDetalhesMovimentacoes() {
     const doc = window.__movimentacoesDetalhesPrint;
     if (!doc || !doc.htmlCompleto) {
-        alert('Abra os detalhes antes de imprimir.');
+        notifyUser('Abra os detalhes antes de imprimir.');
         return;
     }
     imprimirHtmlEstoque(doc.htmlCompleto, 'width=1100,height=800');
@@ -9329,7 +9329,7 @@ function abrirNovaEspecie(inputId = '') {
         const nome = prompt("Nome da nova espécie:");
         if (nome) {
              // Lógica simplificada ou alerta
-             alert("Por favor, aguarde o carregamento completo do gerenciador de espécies.");
+             notifyUser("Por favor, aguarde o carregamento completo do gerenciador de espécies.");
         }
     }
 }
@@ -9344,7 +9344,7 @@ async function abrirListaEspeciesEntrada(inputId = '') {
         await window.speciesManagerInstance.openModal();
         return;
     }
-    alert('Lista de espécies ainda não carregada. Aguarde alguns instantes e tente novamente.');
+    notifyUser('Lista de espécies ainda não carregada. Aguarde alguns instantes e tente novamente.');
 }
 
 // Funções de armazenamento

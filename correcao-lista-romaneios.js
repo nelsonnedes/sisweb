@@ -188,7 +188,7 @@ async function abrirListaRomaneiosCorrigida() {
         
     } catch (error) {
         console.error('❌ Erro ao abrir lista corrigida:', error);
-        alert('Erro ao carregar lista de romaneios: ' + error.message);
+        notifyUser('Erro ao carregar lista de romaneios: ' + error.message);
     }
 }
 
@@ -728,7 +728,7 @@ window.imprimirRomaneioToraExternal = async function(romaneioId, index, tipo = '
         
         if (!romaneioParaImprimir) {
             console.error(`❌ Romaneio ${romaneioId} não encontrado`);
-            alert("Romaneio não encontrado");
+            notifyUser("Romaneio não encontrado");
             return;
         }
         
@@ -758,7 +758,7 @@ window.imprimirRomaneioToraExternal = async function(romaneioId, index, tipo = '
         
     } catch (error) {
         console.error('❌ Erro ao imprimir romaneio:', error);
-        alert('Erro ao imprimir romaneio: ' + error.message);
+        notifyUser('Erro ao imprimir romaneio: ' + error.message);
     }
 };
 
@@ -1623,7 +1623,7 @@ window.editarRomaneio = function(romaneioId) {
     }
     
     // Senão, implementar edição básica
-    alert(`Função de edição será implementada. ID: ${romaneioId}`);
+    notifyUser(`Função de edição será implementada. ID: ${romaneioId}`);
 };
 
 // Função para excluir romaneio - CORRIGIDA
@@ -1745,7 +1745,7 @@ window.excluirRomaneio = async function(romaneioId) {
         }
         
         console.log(`✅ Romaneio ${romaneioId} excluído com sucesso`);
-        alert(`✅ Romaneio ${romaneioId} excluído com sucesso!`);
+        notifyUser(`✅ Romaneio ${romaneioId} excluído com sucesso!`);
         
         // ✅ MARCAR PARA FORÇAR ATUALIZAÇÃO E ATUALIZAR APENAS SE MODAL ESTIVER ABERTO
         window.romaneioListaNecessitaAtualizacao = true;
@@ -1768,7 +1768,7 @@ window.excluirRomaneio = async function(romaneioId) {
         
     } catch (error) {
         console.error('❌ Erro ao excluir romaneio:', error);
-        alert('❌ Erro ao excluir romaneio: ' + error.message);
+        notifyUser('❌ Erro ao excluir romaneio: ' + error.message);
     }
 };
 

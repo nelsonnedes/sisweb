@@ -942,7 +942,7 @@ window.DashboardCore = (function() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(message, 'error');
         } else {
-            alert('Erro no dashboard: ' + message);
+            notifyUser('Erro no dashboard: ' + message);
         }
     }
 

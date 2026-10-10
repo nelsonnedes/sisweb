@@ -39,7 +39,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
     <style>
         * {
             margin: 0;
@@ -1997,7 +1997,7 @@
             const targetView = view === 'tickets' ? 'tickets' : 'new';
             const openModal = () => {
                 if (typeof window.showSupport !== 'function') {
-                    alert('Central de mensagens ainda está carregando. Aguarde alguns segundos e tente novamente.');
+                    notifyUser('Central de mensagens ainda está carregando. Aguarde alguns segundos e tente novamente.');
                     return;
                 }
                 window.showSupport();
@@ -2034,10 +2034,10 @@
                 }
                 const result = await window.firebaseService.requestSubscriptionExtension({ requestedDays, justification });
                 if (!result.success) throw new Error(result.error || 'Falha ao enviar solicitação.');
-                alert('Solicitação enviada para análise do administrador.');
+                notifyUser('Solicitação enviada para análise do administrador.');
                 document.getElementById('extensionJustification').value = '';
             } catch (error) {
-                alert(error.message || 'Erro ao solicitar prorrogação.');
+                notifyUser(error.message || 'Erro ao solicitar prorrogação.');
             }
         }
 
@@ -2053,10 +2053,10 @@
                     }
                     const data = result.data || {};
                     const graceDays = Number(data.graceDays || data.days || 0);
-                    alert(`Modo leitura ativado por ${graceDays || 'alguns'} dia(s).`);
+                    notifyUser(`Modo leitura ativado por ${graceDays || 'alguns'} dia(s).`);
                     window.location.href = 'index.html';
                 } catch (error) {
-                    alert(error && error.message ? error.message : 'Não foi possível ativar o modo leitura.');
+                    notifyUser(error && error.message ? error.message : 'Não foi possível ativar o modo leitura.');
                 }
             })();
         }

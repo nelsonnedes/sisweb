@@ -499,11 +499,11 @@ function substituirFuncoesGlobais() {
                         await window.loadClientForEdit(fornecedor);
                     } else {
                         console.error("❌ Fornecedor não encontrado:", id);
-                        alert('Fornecedor não encontrado!');
+                        notifyUser('Fornecedor não encontrado!');
                     }
                 } catch (error) {
                     console.error("❌ Erro ao editar fornecedor:", error);
-                    alert('Erro ao editar fornecedor: ' + error.message);
+                    notifyUser('Erro ao editar fornecedor: ' + error.message);
                 }
             };
         } else {

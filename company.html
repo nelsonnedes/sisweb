@@ -16,7 +16,7 @@
         }
     </script>
     <!-- Toast unificado (carrega ANTES de qualquer uso de window.__toast) -->
-    <script type="module" src="./modules/core/toast.js?v=4376b6ac2f84"></script>
+    <script type="module" src="./modules/core/toast.js?v=bb0f3e5b8eec"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
@@ -42,7 +42,7 @@
         })();
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
@@ -1528,9 +1528,9 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 console.log('[company-toast]', type || 'info', s);
                 if (typeof window.__toast === 'function') { window.__toast(s, type, opts); return; }
                 if (window.Utils && typeof window.Utils.showToast === 'function') { window.Utils.showToast(s, type); return; }
-                alert(s);
+                notifyUser(s);
             } catch (_) {
-                try { alert(s || 'Aviso'); } catch (_) {}
+                try { notifyUser(s || 'Aviso'); } catch (_) {}
             }
         }
 
@@ -1662,7 +1662,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     const msg = 'Coordenadas geográficas inválidas.';
                     if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
                     else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
-                    else alert(msg);
+                    else notifyUser(msg);
                 }
                 throw new Error('Coordenadas geográficas inválidas.');
             }
@@ -1707,7 +1707,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 const msg = 'Geolocalização indisponível neste navegador.';
                 if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
                 else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
-                else alert(msg);
+                else notifyUser(msg);
                 return;
             }
             navigator.geolocation.getCurrentPosition(
@@ -1726,7 +1726,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     const msg = error && error.message ? error.message : 'Não foi possível localizar as coordenadas.';
                     if (typeof window.__toast === 'function') window.__toast(msg, 'warning');
                     else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
-                    else alert(msg);
+                    else notifyUser(msg);
                 },
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
             );
@@ -1935,7 +1935,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     const msg = 'Superadmin global não pode criar ou editar empresas nesta tela.';
                     if (typeof window.__toast === 'function') window.__toast(msg, 'warning', { duration: 5000 });
                     else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
-                    else alert(msg);
+                    else notifyUser(msg);
                 } catch (_) {}
                 return;
             }
@@ -2224,7 +2224,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 try {
                     companyToast(msg, 'error', { duration: 5000 });
                 } catch (_) {
-                    alert(msg);
+                    notifyUser(msg);
                 }
             } finally {
                 restoreCompanySaveButton();
@@ -2680,7 +2680,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             console.log("🏢 === INICIALIZANDO SISTEMA DE EMPRESAS ===");
             const access = await resolveCompanyPageAccess();
             if (!access.allow) {
-                alert('Acesso restrito para gerenciamento de empresa nesta sessão.');
+                notifyUser('Acesso restrito para gerenciamento de empresa nesta sessão.');
                 window.location.href = 'index.html';
                 return;
             }

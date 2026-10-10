@@ -266,7 +266,7 @@ window.openNewClientModal = function() {
                         window.showToast('Cliente salvo (fallback)', 'success');
                     } else {
                         console.error('❌ Nenhum serviço de salvamento disponível');
-                        alert('Erro: Serviço de salvamento indisponível. Recarregue a página.');
+                        notifyUser('Erro: Serviço de salvamento indisponível. Recarregue a página.');
                         return;
                     }
                 } else {
@@ -297,7 +297,7 @@ window.openNewClientModal = function() {
                 }
             } catch (err) {
                 console.error("❌ Erro CRÍTICO no handler do modal:", err);
-                alert("Erro ao salvar cliente: " + err.message);
+                notifyUser("Erro ao salvar cliente: " + err.message);
             }
         });
     } catch (e) {

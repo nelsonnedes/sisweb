@@ -50,7 +50,7 @@ async function initFirebase() {
         return { firebase, db: firebase.database() };
     } catch (error) {
         console.error("Erro ao inicializar Firebase:", error);
-        alert("Erro ao inicializar Firebase. Será usado localStorage como fallback.");
+        notifyUser("Erro ao inicializar Firebase. Será usado localStorage como fallback.");
         return null;
     }
 }
@@ -283,7 +283,7 @@ async function importSpecies() {
     const tenantId = resolveTenantId();
 
     if (!tenantId) {
-        alert('Empresa/tenant não identificado. Importação cancelada para evitar gravação global de espécies.');
+        notifyUser('Empresa/tenant não identificado. Importação cancelada para evitar gravação global de espécies.');
         console.error('Importação de espécies bloqueada: tenant/companyId indisponível.');
         return;
     }
@@ -431,16 +431,16 @@ async function importSpecies() {
                 console.log(`- ${updateCount} espécies foram atualizadas`);
                 console.log(`- Dados salvos em: ${saveSuccess ? 'Firebase' : ''} ${localSaveSuccess ? 'localStorage' : ''}`);
                 
-                alert(`Importação concluída com sucesso!\n${importCount} espécies adicionadas\n${updateCount} espécies atualizadas`);
+                notifyUser(`Importação concluída com sucesso!\n${importCount} espécies adicionadas\n${updateCount} espécies atualizadas`);
             } else {
                 console.error('\n❌ Erro ao salvar as espécies importadas.');
-                alert('Erro ao salvar as espécies importadas. Verifique o console para mais detalhes.');
+                notifyUser('Erro ao salvar as espécies importadas. Verifique o console para mais detalhes.');
             }
         } else {
             console.log('\nImportação cancelada pelo usuário.');
         }
     } else {
-        alert('Não há espécies para processar.');
+        notifyUser('Não há espécies para processar.');
         console.log('\nNão há espécies para processar.');
     }
 }

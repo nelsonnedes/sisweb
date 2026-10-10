@@ -26,7 +26,7 @@ async function saveClientFirebaseFirst(e) {
         };
         
         if (!clientData.name) {
-            alert('Nome é obrigatório!');
+            notifyUser('Nome é obrigatório!');
             return;
         }
         
@@ -70,16 +70,16 @@ async function saveClientFirebaseFirst(e) {
         
         // ✅ SALVAR NO FIREBASE COM PRIORIDADE
         if (await saveData('clients', clients)) {
-            alert('Cliente salvo com sucesso!');
+            notifyUser('Cliente salvo com sucesso!');
             clearForm();
             await showClientList();
         } else {
-            alert('Erro ao salvar cliente');
+            notifyUser('Erro ao salvar cliente');
         }
         
     } catch (error) {
         console.error("❌ Erro ao salvar cliente:", error);
-        alert('Erro ao salvar cliente. Verifique sua conexão e tente novamente.');
+        notifyUser('Erro ao salvar cliente. Verifique sua conexão e tente novamente.');
     }
 }
 
@@ -117,7 +117,7 @@ async function deleteClientFirebaseFirst(id) {
         const clienteParaExcluir = clients.find(c => String(c.id) === String(id));
         if (!clienteParaExcluir) {
             console.warn("⚠️ Cliente não encontrado para exclusão:", id);
-            alert('Cliente não encontrado.');
+            notifyUser('Cliente não encontrado.');
             return;
         }
         
@@ -137,7 +137,7 @@ async function deleteClientFirebaseFirst(id) {
         
     } catch (error) {
         console.error("❌ Erro ao excluir cliente:", error);
-        alert('Erro ao excluir cliente. Verifique sua conexão e tente novamente.');
+        notifyUser('Erro ao excluir cliente. Verifique sua conexão e tente novamente.');
     }
 }
 
@@ -190,12 +190,12 @@ async function editClientFirebaseFirst(id) {
             console.log("✅ Formulário preenchido para edição:", client.name);
         } else {
             console.error("❌ Cliente não encontrado para edição:", id);
-            alert('Cliente não encontrado.');
+            notifyUser('Cliente não encontrado.');
         }
         
     } catch (error) {
         console.error("❌ Erro ao editar cliente:", error);
-        alert('Erro ao carregar dados do cliente. Verifique sua conexão e tente novamente.');
+        notifyUser('Erro ao carregar dados do cliente. Verifique sua conexão e tente novamente.');
     }
 }
 

@@ -37,7 +37,7 @@
     <link rel="stylesheet" href="romaneio-comum.css?v=4fea9c9e9451">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <link rel="stylesheet" href="print-styles.css?v=f79c9137e576">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1483,11 +1483,11 @@
         };
     </script>
     <script src="client-utils.js?v=d93fb3fb82f5"></script>
-    <script src="client-modal-handler.js?v=4772af1e6bfb"></script>
+    <script src="client-modal-handler.js?v=32bc22d9247c"></script>
     <script src="client-service.js?v=b95ca0dfb346"></script>
     <script src="schema-migration-contatos.js?v=3a574e7e3324"></script>
-    <script src="romaneios-client-save-fix.js?v=9f4df8ca50a8"></script>
-    <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
+    <script src="romaneios-client-save-fix.js?v=95d795703c1c"></script>
+    <script src="pre-romaneio-selector.js?v=25012edb1794"></script>
     <script src="romaneio-table-enhancements.js?v=290d67a3557c"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="romaneio-print-config.js?v=179c8544dedf"></script>
@@ -2284,12 +2284,12 @@
         // Função para adicionar item
         function adicionarItem() {
             if (!selectedClient) {
-                alert('Selecione um cliente para adicionar itens');
+                notifyUser('Selecione um cliente para adicionar itens');
                 return;
             }
             
             if (!selectedSpecies) {
-                alert('Selecione uma espécie para adicionar itens');
+                notifyUser('Selecione uma espécie para adicionar itens');
                 return;
             }
 
@@ -2300,7 +2300,7 @@
             const pecasPorPacote = parseInt(document.getElementById('pecasPorPacote').value || '1', 10) || 1;
             
             if (espessura <= 0 || largura <= 0 || comprimento <= 0 || isNaN(quantidade) || quantidade <= 0) {
-                alert('Preencha corretamente espessura, largura, comprimento e quantidade.');
+                notifyUser('Preencha corretamente espessura, largura, comprimento e quantidade.');
                 return;
             }
             
@@ -2691,7 +2691,7 @@
                     }
                 } catch (error) {
                     console.error('Erro ao salvar cliente:', error);
-                    alert('Erro ao salvar cliente: ' + (error.message || error));
+                    notifyUser('Erro ao salvar cliente: ' + (error.message || error));
                 }
             });
             
@@ -2812,12 +2812,12 @@
 
         async function salvarRomaneio() {
             if (!selectedClient) {
-                alert('Selecione um cliente para salvar o romaneio');
+                notifyUser('Selecione um cliente para salvar o romaneio');
                 return;
             }
             
             if (itens.length === 0) {
-                alert('Adicione pelo menos um item ao romaneio');
+                notifyUser('Adicione pelo menos um item ao romaneio');
                 return;
             }
             
@@ -2832,7 +2832,7 @@
             // Criar romaneio
             const companyId = resolveCompanyId();
             if (!companyId) {
-                alert('Sessão expirada ou empresa não selecionada. Recarregue a página e tente novamente.');
+                notifyUser('Sessão expirada ou empresa não selecionada. Recarregue a página e tente novamente.');
                 return;
             }
 
@@ -2883,7 +2883,7 @@
             console.log('💾 Salvando Romaneio PES...', dataObj);
             
             if (!window.firebaseService || typeof window.firebaseService.saveToFirebase !== 'function') {
-                alert('FirebaseService indisponível. Recarregue a página antes de salvar.');
+                notifyUser('FirebaseService indisponível. Recarregue a página antes de salvar.');
                 return;
             }
 
@@ -2893,11 +2893,11 @@
                     throw new Error(result?.error || 'Falha ao salvar no Firebase');
                 }
                 console.log('✅ Romaneio PES salvo no Firebase com sucesso!');
-                alert('Romaneio salvo com sucesso!');
+                notifyUser('Romaneio salvo com sucesso!');
                 resetForm();
             } catch (error) {
                 console.error('❌ Erro ao salvar romaneio no Firebase:', error);
-                alert('Erro ao salvar romaneio. Verifique a conexão e tente novamente.');
+                notifyUser('Erro ao salvar romaneio. Verifique a conexão e tente novamente.');
             }
         }
 
@@ -2926,7 +2926,7 @@
                         await showRomaneiosList();
                     } catch (error) {
                         console.error('❌ Erro ao abrir modal de listagem PES:', error);
-                        if (!window.__skipAuthRedirect) alert('Não foi possível abrir a lista de romaneios PES. Recarregue a página e tente novamente.');
+                        if (!window.__skipAuthRedirect) notifyUser('Não foi possível abrir a lista de romaneios PES. Recarregue a página e tente novamente.');
                     }
                 });
             }
@@ -3491,7 +3491,7 @@
                     }
                 } catch (error) {
                     console.error('Erro ao excluir cliente:', error);
-                    alert('Erro ao excluir cliente: ' + (error.message || error));
+                    notifyUser('Erro ao excluir cliente: ' + (error.message || error));
                 } finally {
                     try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
                 }
@@ -3712,7 +3712,7 @@
             if (window.SiswebSpeciesModal && typeof window.SiswebSpeciesModal.getExactDuplicate === 'function') {
                 const duplicate = window.SiswebSpeciesModal.getExactDuplicate(speciesData.especie, idToSave, () => currentSpeciesList);
                 if (duplicate) {
-                    alert(`Espécie já cadastrada: ${getSpeciesDisplayName(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
+                    notifyUser(`Espécie já cadastrada: ${getSpeciesDisplayName(duplicate)}. Use o cadastro existente para evitar duplicidade.`);
                     return false;
                 }
             }
@@ -3750,7 +3750,7 @@
                     }
                 } catch (error) {
                     console.error('⚠️ Erro ao salvar espécie no Firebase:', error);
-                    alert('Erro ao salvar espécie no Firebase. Verifique a conexão e tente novamente.');
+                    notifyUser('Erro ao salvar espécie no Firebase. Verifique a conexão e tente novamente.');
                     return false;
                 }
 
@@ -3765,7 +3765,7 @@
                       window.dispatchEvent(new CustomEvent('species:updated', { detail: { id: idToSave, nome: dataWithCompany.especie } }));
                   } catch (_) {}
 
-                  alert(isEditing ? 'Espécie atualizada com sucesso!' : 'Espécie cadastrada com sucesso!');
+                  notifyUser(isEditing ? 'Espécie atualizada com sucesso!' : 'Espécie cadastrada com sucesso!');
                   await carregarEspecies({ force: true }); // Recarregar a lista de espécies
                   if (!isEditing) {
                       // ✅ Preencher o campo com a espécie recém-criada (paridade TL/PCT/Pré)
@@ -3775,7 +3775,7 @@
                   }
                   return true;
             } else {
-                alert('Erro ao salvar espécie. Por favor, tente novamente.');
+                notifyUser('Erro ao salvar espécie. Por favor, tente novamente.');
                 return false;
             }
         }
@@ -4316,11 +4316,11 @@
                 || romaneiosPesModalList[index]
                 || romaneios[index];
             if (!alvo) {
-                alert('Romaneio não encontrado para edição.');
+                notifyUser('Romaneio não encontrado para edição.');
                 return;
             }
             if (!hasTenantOwnership(alvo)) {
-                alert('Operação bloqueada: romaneio não pertence à empresa ativa.');
+                notifyUser('Operação bloqueada: romaneio não pertence à empresa ativa.');
                 return;
             }
             romaneioEmEdicao = String(alvo.id);
@@ -4361,7 +4361,7 @@
                 || romaneiosPesModalList[index]
                 || romaneios[index];
             if (!alvo) {
-                if (!window.__skipAuthRedirect) alert('Romaneio não encontrado para clonagem.');
+                if (!window.__skipAuthRedirect) notifyUser('Romaneio não encontrado para clonagem.');
                 return;
             }
             // Limpar identificadores para salvar como novo registro
@@ -4401,7 +4401,7 @@
             } else if (window.Utils && window.Utils.showToast) {
                 window.Utils.showToast(msg, 'success');
             } else {
-                alert(msg);
+                notifyUser(msg);
             }
         }
         window.clonarRomaneio = clonarRomaneio;
@@ -4415,11 +4415,11 @@
                 const romaneios = await loadRomaneiosPesCompany();
                 const alvo = romaneiosPesModalList[index] || romaneios[index];
                 if (!alvo) {
-                    alert('Romaneio não encontrado para exclusão.');
+                    notifyUser('Romaneio não encontrado para exclusão.');
                     return;
                 }
                 if (!hasTenantOwnership(alvo)) {
-                    alert('Operação bloqueada: romaneio não pertence à empresa ativa.');
+                    notifyUser('Operação bloqueada: romaneio não pertence à empresa ativa.');
                     return;
                 }
                 // A chave real no Firebase pode divergir do id normalizado
@@ -4458,7 +4458,7 @@
                     console.warn('⚠️ Erro ao remover romaneio no Firebase:', e);
                 }
                 if (!ok) {
-                    alert('Falha ao excluir romaneio no servidor.' + (ultimoErro ? ` (${ultimoErro.slice(0, 120)})` : ''));
+                    notifyUser('Falha ao excluir romaneio no servidor.' + (ultimoErro ? ` (${ultimoErro.slice(0, 120)})` : ''));
                     return;
                 }
                 // Purgar espelhos locais (senão o fallback de localStorage
@@ -4698,11 +4698,11 @@
             const romaneios = await loadRomaneiosPesCompany();
             const romaneio = romaneiosPesModalList[index] || romaneios[index];
             if (!romaneio) {
-                alert('Romaneio não encontrado');
+                notifyUser('Romaneio não encontrado');
                 return;
             }
             if (!hasTenantOwnership(romaneio)) {
-                alert('Operação bloqueada: romaneio não pertence à empresa ativa.');
+                notifyUser('Operação bloqueada: romaneio não pertence à empresa ativa.');
                 return;
             }
             const printMode = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizePrintMode === 'function'
@@ -4742,7 +4742,7 @@
                 };
             }).filter((item) => item.espessura > 0 && item.largura > 0 && item.comprimento > 0 && item.quantidadePecas > 0);
             if (!itensNorm.length) {
-                alert('Romaneio sem itens válidos para impressão.');
+                notifyUser('Romaneio sem itens válidos para impressão.');
                 return;
             }
             const totais = itensNorm.reduce((acc, item) => {
@@ -5339,13 +5339,13 @@
                 printWindow = null;
             }
             if (!printWindow || printWindow.closed === true) {
-                alert('Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.');
+                notifyUser('Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.');
                 return;
             }
             try {
                 if (!printWindow.document) throw new Error('alvo parcial');
             } catch (_) {
-                alert('Impressão bloqueada no mobile. Permita popups para imprimir.');
+                notifyUser('Impressão bloqueada no mobile. Permita popups para imprimir.');
                 try { if (!printWindow.closed) printWindow.close(); } catch (_) {}
                 return;
             }
@@ -5354,7 +5354,7 @@
                 printWindow.document.write(printContent);
                 printWindow.document.close();
             } catch (_) {
-                alert('Falha ao preparar documento de impressão.');
+                notifyUser('Falha ao preparar documento de impressão.');
                 return;
             }
             try {

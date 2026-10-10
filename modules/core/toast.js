@@ -12,7 +12,7 @@
  * 
  * API global (compatibilidade):
  *   window.__toast(message, type, opts)
- *   window.alert(message)  // redireciona para toast
+ *   (redirect de popup nativo agora vive em js/notification-service.js)
  */
 
 const TOAST_CONFIG = {

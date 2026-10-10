@@ -295,7 +295,7 @@ function setupNavegacaoEnterPCT() {
                             
                         } else {
                             console.error('❌ Função adicionarItem não encontrada');
-                            alert('Erro: Função adicionarItem não disponível');
+                            notifyUser('Erro: Função adicionarItem não disponível');
                         }
                     } else {
                         // ✅ NAVEGAR PARA PRÓXIMO CAMPO

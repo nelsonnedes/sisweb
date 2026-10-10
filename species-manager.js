@@ -1387,7 +1387,7 @@ class SpeciesManager {
                     const msg = `A espécie "${duplicateName}" já existe no cadastro. Usando o cadastro existente para evitar duplicidade.`;
                     if (typeof window.__toast === 'function') window.__toast(msg, 'warning', { duration: 5000 });
                     else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'warning');
-                    else alert(msg);
+                    else notifyUser(msg);
                 } catch (_) {}
 
                 if (!id) {

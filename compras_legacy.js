@@ -277,7 +277,7 @@ function selecionarFornecedorInlineCompra() {
             const f = Array.isArray(fornecedoresInlineCache) ? fornecedoresInlineCache[idx] : null;
             if (f) {
                 preencherFornecedorNoForm(f);
-                alert('Fornecedor selecionado para o pedido.');
+                notifyUser('Fornecedor selecionado para o pedido.');
             }
         }
     } catch (e) {
@@ -303,7 +303,7 @@ function selecionarFornecedorCompra() {
             fornecedorSelecionadoCompra = f;
             const input = document.getElementById('fornecedorCompra');
             if (input) input.value = f.nome || f.name || f.razaoSocial || f.fantasia || 'Fornecedor selecionado';
-            alert('Fornecedor selecionado para o pedido.');
+            notifyUser('Fornecedor selecionado para o pedido.');
             showTabCompra('pedido');
         }
     }
@@ -416,12 +416,12 @@ function mostrarPreviewTora(romaneio) {
 
 function adicionarItensRomaneioCompra() {
     if (!romaneioSelecionadoCompra) {
-        alert('Selecione um romaneio TORA primeiro.');
+        notifyUser('Selecione um romaneio TORA primeiro.');
         return;
     }
     const resumo = extrairResumoTora(romaneioSelecionadoCompra);
     if (Object.keys(resumo).length === 0) {
-        alert('Nenhum item válido encontrado no romaneio selecionado.');
+        notifyUser('Nenhum item válido encontrado no romaneio selecionado.');
         return;
     }
 
@@ -488,7 +488,7 @@ function adicionarItemManualCompra() {
         const precoStr = document.getElementById('produtoManualPreco')?.value || '0';
         const preco = parseCurrencySimple(precoStr);
         if (!nome || !(qtd > 0)) {
-            alert('Informe produto e quantidade válida.');
+            notifyUser('Informe produto e quantidade válida.');
             return;
         }
         const item = {
@@ -501,10 +501,10 @@ function adicionarItemManualCompra() {
         itensCompra.push(item);
         atualizarTabelaItensCompra();
         atualizarTotaisCompra();
-        alert('Item adicionado ao pedido.');
+        notifyUser('Item adicionado ao pedido.');
     } catch (e) {
         console.error('Erro ao adicionar item manual:', e);
-        alert('Falha ao adicionar item.');
+        notifyUser('Falha ao adicionar item.');
     }
 }
 
@@ -515,7 +515,7 @@ function adicionarContaPagar() {
         let vencStr = document.getElementById('contaVencimento')?.value || '';
         const tipo = document.getElementById('contaTipo')?.value || 'a_prazo';
         const obs = document.getElementById('contaObservacao')?.value || '';
-        if (!(valor > 0)) { alert('Informe um valor válido.'); return; }
+        if (!(valor > 0)) { notifyUser('Informe um valor válido.'); return; }
         let venc = vencStr ? new Date(vencStr) : null;
         if (!venc && (dias > 0)) {
             const hoje = new Date();
@@ -529,7 +529,7 @@ function adicionarContaPagar() {
         renderizarContasPagar();
     } catch (e) {
         console.error('Erro ao adicionar conta a pagar:', e);
-        alert('Falha ao adicionar conta.');
+        notifyUser('Falha ao adicionar conta.');
     }
 }
 
@@ -618,25 +618,25 @@ async function salvarPedidoCompra() {
             await registrarEntradaEstoque(pedido);
         }
 
-        alert(editandoPedidoCompraId ? 'Pedido de compra atualizado.' : 'Pedido de compra salvo.');
+        notifyUser(editandoPedidoCompraId ? 'Pedido de compra atualizado.' : 'Pedido de compra salvo.');
         editandoPedidoCompraId = null;
         cancelarPedidoCompra();
     } catch (e) {
         console.error('Erro ao salvar pedido de compra:', e);
-        alert('Falha ao salvar pedido.');
+        notifyUser('Falha ao salvar pedido.');
     }
 }
 
 function validarPedidoCompra(pedido) {
     // Deve ter pelo menos um item
     if (!Array.isArray(pedido.itens) || pedido.itens.length === 0) {
-        alert('Adicione ao menos um item ao pedido antes de salvar.');
+        notifyUser('Adicione ao menos um item ao pedido antes de salvar.');
         return false;
     }
     // Fornecedor obrigatório
     const fornecedorNome = pedido.fornecedor?.nome || pedido.fornecedor?.name || pedido.fornecedor?.fantasia || pedido.fornecedor?.razaoSocial || (typeof pedido.fornecedor === 'string' ? pedido.fornecedor : '');
     if (!fornecedorNome) {
-        alert('Selecione/aplique um fornecedor ao pedido antes de salvar.');
+        notifyUser('Selecione/aplique um fornecedor ao pedido antes de salvar.');
         return false;
     }
     // Para confirmados, é obrigatório ao menos uma conta com vencimento
@@ -644,7 +644,7 @@ function validarPedidoCompra(pedido) {
         const contas = Array.isArray(pedido.contasPagar) ? pedido.contasPagar : [];
         const validas = contas.filter(c => (parseCurrencySimple(c.valor || 0) > 0) && !!(c.vencimento || '').trim());
         if (validas.length === 0) {
-            alert('Para confirmar o pedido, inclua ao menos uma conta com valor e vencimento.');
+            notifyUser('Para confirmar o pedido, inclua ao menos uma conta com valor e vencimento.');
             return false;
         }
     }
@@ -762,7 +762,7 @@ async function listarPedidosCompra() {
         showTabCompra('pedido');
     } catch (e) {
         console.error('Erro ao listar pedidos de compra:', e);
-        alert('Falha ao listar pedidos.');
+        notifyUser('Falha ao listar pedidos.');
     }
 }
 
@@ -778,7 +778,7 @@ async function editarPedidoCompra(pedidoId) {
     try {
         const lista = await getData('compras') || [];
         const pedido = Array.isArray(lista) ? lista.find(p => String(p.id) === String(pedidoId)) : null;
-        if (!pedido) { alert('Pedido não encontrado'); return; }
+        if (!pedido) { notifyUser('Pedido não encontrado'); return; }
 
         editandoPedidoCompraId = pedido.id;
         // Mostrar formulário
@@ -803,7 +803,7 @@ async function editarPedidoCompra(pedidoId) {
         renderizarContasPagar();
     } catch (e) {
         console.error('Erro ao editar pedido:', e);
-        alert('Falha ao editar pedido.');
+        notifyUser('Falha ao editar pedido.');
     }
 }
 
@@ -814,11 +814,11 @@ async function excluirPedidoCompra(pedidoId) {
         const atualizadas = Array.isArray(lista) ? lista.filter(p => String(p.id) !== String(pedidoId)) : [];
         await saveData('compras', atualizadas);
         await removerContasPagarDoPedido(pedidoId);
-        alert('Pedido excluído e contas associadas removidas.');
+        notifyUser('Pedido excluído e contas associadas removidas.');
         await listarPedidosCompra();
     } catch (e) {
         console.error('Erro ao excluir pedido:', e);
-        alert('Falha ao excluir pedido.');
+        notifyUser('Falha ao excluir pedido.');
     }
 }
 
@@ -887,7 +887,7 @@ function aplicarFiltroPedidosCompra() {
             showTabCompra('pedido');
         } catch (e) {
             console.error('Erro ao aplicar filtros:', e);
-            alert('Falha ao aplicar filtros.');
+            notifyUser('Falha ao aplicar filtros.');
         }
     })();
 }
@@ -913,17 +913,17 @@ function limparItensCompra() {
         if (tbody) tbody.innerHTML = '';
         const totalEl = document.getElementById('totalCompras');
         if (totalEl) totalEl.textContent = 'R$ 0,00';
-        alert('Itens de compra limpos.');
+        notifyUser('Itens de compra limpos.');
     } catch (e) {
         console.error('Erro ao limpar itens:', e);
-        alert('Falha ao limpar itens.');
+        notifyUser('Falha ao limpar itens.');
     }
 }
 
 function exportarItensCSV() {
     try {
         if (!Array.isArray(itensCompra) || itensCompra.length === 0) {
-            alert('Não há itens para exportar.');
+            notifyUser('Não há itens para exportar.');
             return;
         }
         const headers = ['produto','quantidade_m3','preco_unitario','total'];
@@ -945,7 +945,7 @@ function exportarItensCSV() {
         URL.revokeObjectURL(url);
     } catch (e) {
         console.error('Erro ao exportar CSV de itens:', e);
-        alert('Falha ao exportar CSV.');
+        notifyUser('Falha ao exportar CSV.');
     }
 }
 
@@ -1035,14 +1035,14 @@ function gerarRelatorioCompras() {
         container.innerHTML = tableHtml;
     } catch (e) {
         console.error('Erro ao gerar relatório:', e);
-        alert('Falha ao gerar relatório.');
+        notifyUser('Falha ao gerar relatório.');
     }
 }
 
 function exportarRelatorioCSV() {
     try {
         if (!ultimoRelatorio || ultimoRelatorio.length === 0) {
-            alert('Nenhum relatório para exportar. Gere primeiro.');
+            notifyUser('Nenhum relatório para exportar. Gere primeiro.');
             return;
         }
         const headers = ['especie','volume','preco_medio','valor_total'];
@@ -1064,7 +1064,7 @@ function exportarRelatorioCSV() {
         URL.revokeObjectURL(url);
     } catch (e) {
         console.error('Erro ao exportar relatório CSV:', e);
-        alert('Falha ao exportar CSV.');
+        notifyUser('Falha ao exportar CSV.');
     }
 }
 

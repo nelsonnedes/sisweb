@@ -390,7 +390,7 @@
 					}
                 } catch (err) {
                     console.error('// [BH] Erro ao aplicar compensação FIFO', err);
-                    alert('Erro ao aplicar compensação. Tente novamente.');
+                    notifyUser('Erro ao aplicar compensação. Tente novamente.');
                 }
             });
 
@@ -494,7 +494,7 @@
                         }
                         if (!funcIdAtual) {
                             console.warn('// [BH] funcId não resolvido no salvar');
-                            alert('Selecione um funcionário e clique em Buscar antes de salvar.');
+                            notifyUser('Selecione um funcionário e clique em Buscar antes de salvar.');
                             return;
                         }
                         const dataEl = tbody.querySelector(`.bh-ger-data[data-id="${id}"]`);
@@ -526,7 +526,7 @@
                             btnBuscar.click();
                         } catch (error) {
 							console.error('Erro ao salvar lançamento:', error);
-							alert('Erro ao salvar o lançamento. Tente novamente.');
+							notifyUser('Erro ao salvar o lançamento. Tente novamente.');
 						}
 					} else if (btnExcluir) {
 						e.preventDefault();
@@ -546,7 +546,7 @@
                             btnBuscar.click();
                         } catch (error) {
 							console.error('Erro ao excluir lançamento:', error);
-							alert('Erro ao excluir o lançamento. Tente novamente.');
+							notifyUser('Erro ao excluir o lançamento. Tente novamente.');
 						}
 					}
 				};

@@ -3434,7 +3434,7 @@ window.ImprimirRomaneio = (function() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(mensagem, 'error');
         } else {
-            alert('Erro na impressão: ' + mensagem);
+            notifyUser('Erro na impressão: ' + mensagem);
         }
     }
 

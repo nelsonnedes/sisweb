@@ -407,7 +407,7 @@ function adicionarItem() {
         // ✅ VALIDAÇÕES OBRIGATÓRIAS
         if (!comprimentoStr || comprimentoStr.trim() === '') {
             console.warn('⚠️ Campo comprimento vazio:', { valor: comprimentoStr, tipo: typeof comprimentoStr });
-            alert('Por favor, preencha o campo Comprimento.');
+            notifyUser('Por favor, preencha o campo Comprimento.');
             campos.comprimento?.focus();
             window.isAddingItem = false;
             return;
@@ -415,28 +415,28 @@ function adicionarItem() {
         
         if (!larguraStr || larguraStr.trim() === '') {
             console.warn('⚠️ Campo largura vazio:', { valor: larguraStr, tipo: typeof larguraStr });
-            alert('Por favor, preencha o campo Largura.');
+            notifyUser('Por favor, preencha o campo Largura.');
             campos.largura?.focus();
             window.isAddingItem = false;
             return;
         }
         
         if (!espessuraStr) {
-            alert('Por favor, preencha o campo Espessura.');
+            notifyUser('Por favor, preencha o campo Espessura.');
             campos.espessura?.focus();
             window.isAddingItem = false;
             return;
         }
         
         if (!quantidadeStr) {
-            alert('Por favor, preencha o campo Quantidade.');
+            notifyUser('Por favor, preencha o campo Quantidade.');
             campos.quantidade?.focus();
             window.isAddingItem = false;
             return;
         }
         
         if (!especieNome) {
-            alert('Por favor, selecione uma espécie.');
+            notifyUser('Por favor, selecione uma espécie.');
             campos.especieInput?.focus();
             window.isAddingItem = false;
             return;
@@ -476,28 +476,28 @@ function adicionarItem() {
         });
         
         if (isNaN(comprimento) || comprimento <= 0) {
-            alert('Por favor, insira um comprimento válido.');
+            notifyUser('Por favor, insira um comprimento válido.');
             campos.comprimento?.focus();
             window.isAddingItem = false;
             return;
         }
         
         if (isNaN(largura) || largura <= 0) {
-            alert('Por favor, insira uma largura válida.');
+            notifyUser('Por favor, insira uma largura válida.');
             campos.largura?.focus();
             window.isAddingItem = false;
             return;
         }
         
         if (isNaN(espessura) || espessura <= 0) {
-            alert('Por favor, insira uma espessura válida.');
+            notifyUser('Por favor, insira uma espessura válida.');
             campos.espessura?.focus();
             window.isAddingItem = false;
             return;
         }
         
         if (isNaN(quantidade) || quantidade <= 0) {
-            alert('Por favor, insira uma quantidade válida.');
+            notifyUser('Por favor, insira uma quantidade válida.');
             campos.quantidade?.focus();
             window.isAddingItem = false;
             return;
@@ -533,7 +533,7 @@ function adicionarItem() {
                 comprimento, largura, espessura, quantidade, pecasPorPacote,
                 volumeTotal, valorUnitario
             });
-            alert('Erro nos cálculos. Verifique os valores inseridos.');
+            notifyUser('Erro nos cálculos. Verifique os valores inseridos.');
             window.isAddingItem = false;
             return;
         }
@@ -625,7 +625,7 @@ function adicionarItem() {
         
     } catch (error) {
         console.error('❌ Erro na função adicionarItem:', error);
-        alert('Erro ao adicionar item: ' + error.message);
+        notifyUser('Erro ao adicionar item: ' + error.message);
     } finally {
         window.isAddingItem = false;
     }
@@ -710,7 +710,7 @@ async function editarItem(index) {
         
     } catch (error) {
         console.error('❌ Erro ao editar item:', error);
-        alert('Erro ao editar item: ' + error.message);
+        notifyUser('Erro ao editar item: ' + error.message);
     }
 }
 
@@ -748,7 +748,7 @@ async function removerItem(index) {
         
     } catch (error) {
         console.error('❌ Erro ao remover item:', error);
-        alert('Erro ao remover item: ' + error.message);
+        notifyUser('Erro ao remover item: ' + error.message);
     }
 }
 
@@ -1256,7 +1256,7 @@ async function salvarRomaneio() {
         
         // Verificar se existe cliente selecionado
         if (!clienteAtual) {
-            alert('Por favor, selecione um cliente.');
+            notifyUser('Por favor, selecione um cliente.');
             window.isSavingRomaneio = false;
             return;
         }
@@ -1265,7 +1265,7 @@ async function salvarRomaneio() {
         const nomeCliente = clienteAtual.nome || clienteAtual.name;
         if (!nomeCliente || nomeCliente.trim() === '') {
             console.error('❌ Cliente sem nome válido:', clienteAtual);
-            alert('Cliente selecionado é inválido. Por favor, selecione novamente.');
+            notifyUser('Cliente selecionado é inválido. Por favor, selecione novamente.');
             window.isSavingRomaneio = false;
             return;
         }
@@ -1273,13 +1273,13 @@ async function salvarRomaneio() {
         console.log('✅ Cliente validado:', nomeCliente);
         
         if (!window.romaneioItems || window.romaneioItems.length === 0) {
-            alert('Por favor, adicione pelo menos um item ao romaneio.');
+            notifyUser('Por favor, adicione pelo menos um item ao romaneio.');
             window.isSavingRomaneio = false;
             return;
         }
         const tenantId = resolveTenantId();
         if (!tenantId) {
-            alert('Não foi possível identificar a empresa ativa. Refaça o login para continuar.');
+            notifyUser('Não foi possível identificar a empresa ativa. Refaça o login para continuar.');
             window.isSavingRomaneio = false;
             return;
         }
@@ -1519,14 +1519,14 @@ async function salvarRomaneio() {
             ultimoRomaneio: romaneio.id
         });
         
-        alert('Romaneio salvo com sucesso!');
+        notifyUser('Romaneio salvo com sucesso!');
         
         // ✅ Limpar formulário pós-salvamento com UX idêntica ao PES
         limparFormularioAposSalvamento();
         
     } catch (error) {
         console.error('❌ Erro ao salvar romaneio:', error);
-        alert('Erro ao salvar romaneio: ' + error.message);
+        notifyUser('Erro ao salvar romaneio: ' + error.message);
     } finally {
         window.isSavingRomaneio = false;
         try { if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}

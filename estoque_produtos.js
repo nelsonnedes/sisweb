@@ -18,7 +18,7 @@ function __almNotify(msg, type) {
         if (typeof window.__toast === 'function') { window.__toast(msg, type); return; }
         if (window.Utils && window.Utils.showToast) { window.Utils.showToast(msg, type); return; }
     } catch (_) {}
-    try { alert(msg); } catch (_) {}
+    try { notifyUser(msg); } catch (_) {}
 }
 function __almLoading(show, msg) {
     try {
@@ -682,19 +682,19 @@ async function salvarProdutoAlmoxarifadoPeloFormulario(e) {
     const obs = String((obsEl ? obsEl.value : '') || '').trim();
 
     if (!nome) {
-        alert('Informe o nome do produto.');
+        notifyUser('Informe o nome do produto.');
         if (nomeEl) nomeEl.focus();
         return false;
     }
     if (!Number.isFinite(qtd) || qtd < 0) {
-        alert('Informe uma quantidade válida maior ou igual a zero.');
+        notifyUser('Informe uma quantidade válida maior ou igual a zero.');
         if (qtdEl) qtdEl.focus();
         return false;
     }
 
     const idx = (estoqueProdutos || []).findIndex(p => String(p.id) === id);
     if (idx < 0) {
-        alert('Produto não encontrado.');
+        notifyUser('Produto não encontrado.');
         produtoAlmoxarifadoEmEdicao = null;
         atualizarModoFormularioProduto(false);
         return false;
@@ -813,7 +813,7 @@ async function registrarEntradaProduto(e) {
     const obs = (obsEl ? obsEl.value : '').trim();
 
     if (!data || qtd <= 0) {
-        alert('Informe data e quantidade válida.');
+        notifyUser('Informe data e quantidade válida.');
         return;
     }
 
@@ -826,7 +826,7 @@ async function registrarEntradaProduto(e) {
     }
 
     if (!produto && !nome) {
-        alert('Informe o produto.');
+        notifyUser('Informe o produto.');
         return;
     }
     const __opEntradaProd = __almBegin('entrada-prod', __almSubmitBtn('entradaProdutoForm'), 'Registrando...');
@@ -1388,7 +1388,7 @@ function abrirEditarProdutoAlmoxarifado(prodId) {
     if (!id) return;
     const prod = (estoqueProdutos || []).find(p => String(p.id) === id);
     if (!prod) {
-        alert('Produto não encontrado.');
+        notifyUser('Produto não encontrado.');
         return;
     }
     
@@ -1440,19 +1440,19 @@ async function salvarEdicaoModalProdutoAlmoxarifado(e) {
     const obs = String(document.getElementById('editModalProdutoObs')?.value || '').trim();
 
     if (!nome) {
-        alert('Informe o nome do produto.');
+        notifyUser('Informe o nome do produto.');
         document.getElementById('editModalProdutoNome')?.focus();
         return false;
     }
     if (!Number.isFinite(qtd) || qtd < 0) {
-        alert('Informe uma quantidade válida maior ou igual a zero.');
+        notifyUser('Informe uma quantidade válida maior ou igual a zero.');
         document.getElementById('editModalProdutoQtd')?.focus();
         return false;
     }
 
     const idx = (estoqueProdutos || []).findIndex(p => String(p.id) === id);
     if (idx < 0) {
-        alert('Produto não encontrado.');
+        notifyUser('Produto não encontrado.');
         return false;
     }
     const __opEditProd = __almBegin('edit-prod', __almSubmitBtn('formEditarProdutoAlmoxarifado'), 'Salvando...');
@@ -1830,19 +1830,19 @@ async function registrarSaidaProduto({ prodId, qtd, motivo, data, responsavel, t
     const direcaoEstoque = 'saida';
 
     if (!prodId || !(qtd > 0) || !data || !motivoFinal || !responsavelFinal) {
-        alert('Preencha produto, data, responsável, quantidade e motivo/destino corretamente.');
+        notifyUser('Preencha produto, data, responsável, quantidade e motivo/destino corretamente.');
         return false;
     }
 
     const prod = estoqueProdutos.find(p => String(p.id) === String(prodId));
     if (!prod) {
-        alert('Produto não encontrado no estoque.');
+        notifyUser('Produto não encontrado no estoque.');
         return false;
     }
 
     const saldoAtual = Number(prod.quantidade || 0);
     if (qtd > saldoAtual) {
-        alert(`Quantidade indisponível! Saldo atual: ${formatNumber(saldoAtual, 2)} ${prod.unidade || 'un'}`);
+        notifyUser(`Quantidade indisponível! Saldo atual: ${formatNumber(saldoAtual, 2)} ${prod.unidade || 'un'}`);
         return false;
     }
 
@@ -2565,7 +2565,7 @@ async function editarMovimentacaoProduto(movId) {
         ensureMovimentacaoEditModal();
         const movs = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
         const mov = movs.find(m => String(m.id) === id);
-        if (!mov) { alert('Movimentação não encontrada.'); return; }
+        if (!mov) { notifyUser('Movimentação não encontrada.'); return; }
         const dataIso = mov.data ? new Date(mov.data).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
         document.getElementById('editMovId').value = id;
         document.getElementById('editMovData').value = dataIso;
@@ -2579,7 +2579,7 @@ async function editarMovimentacaoProduto(movId) {
         modal.style.display = 'block';
     } catch (e) {
         console.error(e);
-        alert('Erro ao abrir edição: ' + (e.message || e));
+        notifyUser('Erro ao abrir edição: ' + (e.message || e));
     }
 }
 
@@ -2588,13 +2588,13 @@ async function salvarEdicaoMovimentacaoProduto() {
         const id = String(document.getElementById('editMovId')?.value || '').trim();
         if (!id) return;
         const dataVal = document.getElementById('editMovData')?.value || '';
-        if (!dataVal) { alert('Informe a data.'); return; }
+        if (!dataVal) { notifyUser('Informe a data.'); return; }
         const origem = String(document.getElementById('editMovOrigem')?.value || '').trim();
         const responsavel = String(document.getElementById('editMovResponsavel')?.value || '').trim();
         const motivo = String(document.getElementById('editMovMotivo')?.value || '').trim();
         const movs = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
         const idx = movs.findIndex(m => String(m.id) === id);
-        if (idx < 0) { alert('Movimentação não encontrada.'); return; }
+        if (idx < 0) { notifyUser('Movimentação não encontrada.'); return; }
         const __opEditMov = __almBegin('edit-mov-prod', __almSubmitBtn('modalEditarMovProduto'), 'Salvando...');
         if (!__opEditMov) return;
         const current = movs[idx] || {};
@@ -2627,17 +2627,17 @@ async function estornarMovimentacaoProduto(movId) {
         if (!id) return;
         const movs = normalizarListaProdutosFirebase(await swGet('movimentacoesProdutos') || []);
         const idx = movs.findIndex(m => String(m.id) === id);
-        if (idx < 0) { alert('Movimentação não encontrada.'); return; }
+        if (idx < 0) { notifyUser('Movimentação não encontrada.'); return; }
         const mov = movs[idx] || {};
         const already = !!(mov.estornado || mov.estornoId || mov.estornadoEm);
-        if (already) { alert('Esta movimentação já foi estornada.'); return; }
+        if (already) { notifyUser('Esta movimentação já foi estornada.'); return; }
         const tipoOrig = normalizarTipoMovimentacaoProduto(mov.tipo || mov.tipoMovimentacao);
         const direcaoOrig = obterDirecaoMovimentoProduto(mov, tipoOrig === 'saida' || tipoOrig === 'devolucao' ? 'saida' : 'entrada');
-        if (!['entrada', 'saida', 'ajuste', 'devolucao'].includes(tipoOrig)) { alert('Tipo de movimentação inválido.'); return; }
+        if (!['entrada', 'saida', 'ajuste', 'devolucao'].includes(tipoOrig)) { notifyUser('Tipo de movimentação inválido.'); return; }
         const qtd = Number(mov.quantidade || 0);
-        if (!(qtd > 0)) { alert('Quantidade inválida.'); return; }
+        if (!(qtd > 0)) { notifyUser('Quantidade inválida.'); return; }
         const prodId = String(mov.produtoId || '').trim();
-        if (!prodId) { alert('Produto inválido.'); return; }
+        if (!prodId) { notifyUser('Produto inválido.'); return; }
         if (!await confirmDialog({ title: 'Estornar movimentação', message: 'Confirma estornar esta movimentação? Isso irá gerar uma movimentação inversa e ajustar o estoque.', danger: true, confirmLabel: 'Estornar' })) return;
         const __opEstornoProd = __almBegin('estorno-prod', null, 'Estornando...');
         if (!__opEstornoProd) return;
@@ -2645,7 +2645,7 @@ async function estornarMovimentacaoProduto(movId) {
         const produtos = await swGet('estoqueProdutos') || [];
         const produtosArr = Array.isArray(produtos) ? produtos.slice() : Object.values(produtos || {});
         const pIdx = produtosArr.findIndex(p => String(p.id) === prodId);
-        if (pIdx < 0) { alert('Produto não encontrado no estoque.'); return; }
+        if (pIdx < 0) { notifyUser('Produto não encontrado no estoque.'); return; }
 
         const opposite = direcaoOrig === 'entrada' ? 'saida' : 'entrada';
         const nowIso = new Date().toISOString();
@@ -2655,7 +2655,7 @@ async function estornarMovimentacaoProduto(movId) {
         const prod = { ...(produtosArr[pIdx] || {}) };
         const currentQtd = Number(prod.quantidade || 0);
         const newQtd = opposite === 'entrada' ? (currentQtd + qtd) : (currentQtd - qtd);
-        if (newQtd < 0) { alert('Estorno resultaria em estoque negativo. Operação cancelada.'); return; }
+        if (newQtd < 0) { notifyUser('Estorno resultaria em estoque negativo. Operação cancelada.'); return; }
         prod.quantidade = newQtd;
         atualizarProdutoUltimaMovimentacao(prod, {
             tipo: opposite,

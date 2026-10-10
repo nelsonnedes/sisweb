@@ -195,13 +195,13 @@ function adicionarItem() {
     const valorUnitario = parseCurrencyValue(document.getElementById('itemValorUnitario').value);
     
     if (!produtoId || !quantidade || quantidade <= 0 || !valorUnitario || valorUnitario <= 0) {
-        alert('Preencha todos os campos do item corretamente');
+        notifyUser('Preencha todos os campos do item corretamente');
         return;
     }
     
     const produto = produtos.find(p => p.id === produtoId);
     if (!produto) {
-        alert('Produto não encontrado');
+        notifyUser('Produto não encontrado');
         return;
     }
     
@@ -307,7 +307,7 @@ async function emitirNotaFiscal() {
             await atualizarEstoqueProdutos(itensNota, 'saida');
         }
         
-        alert(`Nota Fiscal emitida com sucesso!\nNúmero: ${nota.numero}\nChave: ${nota.chave}`);
+        notifyUser(`Nota Fiscal emitida com sucesso!\nNúmero: ${nota.numero}\nChave: ${nota.chave}`);
         limparFormulario();
         atualizarProximoNumero();
         try {
@@ -320,7 +320,7 @@ async function emitirNotaFiscal() {
         
     } catch (error) {
         console.error('Erro ao emitir nota fiscal:', error);
-        alert('Erro ao emitir nota fiscal: ' + error.message);
+        notifyUser('Erro ao emitir nota fiscal: ' + error.message);
         try {
             const __nfSubmitBtnErr = document.querySelector('#nfForm button[type="submit"]');
             if (__nfSubmitBtnErr) { __nfSubmitBtnErr.disabled = false; }
@@ -335,17 +335,17 @@ function criarObjetoNota(status) {
     const tipo = document.getElementById('nfTipo').value;
     
     if (!clienteId) {
-        alert('Selecione um cliente');
+        notifyUser('Selecione um cliente');
         return null;
     }
     
     if (!tipo) {
-        alert('Selecione o tipo de operação');
+        notifyUser('Selecione o tipo de operação');
         return null;
     }
     
     if (itensNota.length === 0) {
-        alert('Adicione pelo menos um item à nota fiscal');
+        notifyUser('Adicione pelo menos um item à nota fiscal');
         return null;
     }
     
@@ -519,7 +519,7 @@ function gerarRelatorio() {
     const dataFim = document.getElementById('relPeriodoFim').value;
     
     if (!dataInicio || !dataFim) {
-        alert('Informe o período do relatório');
+        notifyUser('Informe o período do relatório');
         return;
     }
     
@@ -529,7 +529,7 @@ function gerarRelatorio() {
     });
     
     // Aqui seria gerado um relatório mais detalhado
-    alert(`Relatório gerado para o período:\n${formatDate(dataInicio)} a ${formatDate(dataFim)}\n\nTotal de notas: ${notasPeriodo.length}\nValor total: ${formatCurrency(notasPeriodo.reduce((total, nf) => total + nf.total, 0))}`);
+    notifyUser(`Relatório gerado para o período:\n${formatDate(dataInicio)} a ${formatDate(dataFim)}\n\nTotal de notas: ${notasPeriodo.length}\nValor total: ${formatCurrency(notasPeriodo.reduce((total, nf) => total + nf.total, 0))}`);
 }
 
 // Funções de configuração
@@ -555,11 +555,11 @@ async function salvarConfiguracoes() {
         document.getElementById('nfSerie').value = configuracoes.serie;
         atualizarProximoNumero();
         
-        alert('Configurações salvas com sucesso!');
+        notifyUser('Configurações salvas com sucesso!');
         
     } catch (error) {
         console.error('Erro ao salvar configurações:', error);
-        alert('Erro ao salvar configurações: ' + error.message);
+        notifyUser('Erro ao salvar configurações: ' + error.message);
     }
 }
 

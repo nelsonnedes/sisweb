@@ -504,7 +504,7 @@
                     
                 } else {
                     console.error('❌ Romaneio não possui itens válidos');
-                    alert('Romaneio não possui itens válidos.');
+                    notifyUser('Romaneio não possui itens válidos.');
                 }
             } else {
                 // Log detalhado para diagnóstico
@@ -512,11 +512,11 @@
                 console.error('❌ Romaneio não encontrado com ID/numero:', id);
                 console.warn('📊 Amostra de IDs disponíveis:', amostra);
                 console.warn('📦 Total no dataset pós-merge:', romaneios.length);
-                alert('Romaneio não encontrado para edição. Tente novamente pela lista.');
+                notifyUser('Romaneio não encontrado para edição. Tente novamente pela lista.');
             }
         } catch (error) {
             console.error('❌ Erro ao carregar romaneio:', error);
-            alert('Erro ao carregar romaneio: ' + error.message);
+            notifyUser('Erro ao carregar romaneio: ' + error.message);
         }
     }
 
@@ -598,12 +598,12 @@
             } else if (window.Utils && window.Utils.showToast) {
                 window.Utils.showToast(msg, 'success');
             } else {
-                alert(msg);
+                notifyUser(msg);
             }
             return true;
         } catch (err) {
             console.error('❌ Erro ao clonar romaneio PCT:', err);
-            alert('Erro ao clonar romaneio: ' + err.message);
+            notifyUser('Erro ao clonar romaneio: ' + err.message);
             return false;
         }
     }

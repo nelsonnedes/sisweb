@@ -937,7 +937,7 @@ window.editarRomaneioGeneric = (type, id) => { if (type === 'tora') window.edita
                     const msg = 'Não foi possível excluir no servidor. Verifique sua conexão.';
                     if (typeof window.__toast === 'function') window.__toast(msg, 'error');
                     else if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, 'error');
-                    else alert(msg);
+                    else notifyUser(msg);
                 } catch (_) {}
                 console.error('Falha ao excluir romaneio:', (e && e.message) || e);
                 __hideLoader();
@@ -1026,7 +1026,7 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
     const romaneios = await window.romaneioToraManager.getData();
     const romaneio = romaneios.find(r => r.id === romaneioId || r.firebaseKey === romaneioId);
     
-    if (!romaneio) { alert('Romaneio não encontrado'); return; }
+    if (!romaneio) { notifyUser('Romaneio não encontrado'); return; }
     const companyInfo = (() => {
         try {
             const raw = localStorage.getItem('company_info') || localStorage.getItem('companyInfo');
@@ -1057,11 +1057,11 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
     } catch (_) {
         w = null;
     }
-    if(!w || w.closed === true) { alert('Popup bloqueado'); return; }
+    if(!w || w.closed === true) { notifyUser('Popup bloqueado'); return; }
     try {
         if (!w.document) throw new Error('alvo parcial');
     } catch (_) {
-        alert('Impressão bloqueada no mobile. Permita popups para imprimir.');
+        notifyUser('Impressão bloqueada no mobile. Permita popups para imprimir.');
         try { if (!w.closed) w.close(); } catch (_) {}
         return;
     }
@@ -1133,7 +1133,7 @@ const html = `
         w.document.write(html);
         w.document.close();
     } catch (_) {
-        alert('Falha ao preparar documento de impressão.');
+        notifyUser('Falha ao preparar documento de impressão.');
         return;
     }
     try { w.focus(); } catch (_) {}
@@ -1159,7 +1159,7 @@ window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
         } catch (_) {}
     }
     
-    if (!romaneio) { alert('Romaneio não encontrado!'); return; }
+    if (!romaneio) { notifyUser('Romaneio não encontrado!'); return; }
     
     console.log("Carregando para edição:", romaneio);
     
@@ -1261,7 +1261,7 @@ window.clonarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
         } catch (_) {}
     }
     
-    if (!romaneio) { alert('Romaneio não encontrado para clonagem!'); return; }
+    if (!romaneio) { notifyUser('Romaneio não encontrado para clonagem!'); return; }
     
     console.log("📋 Clonando Romaneio Tora:", romaneio);
     
@@ -1324,7 +1324,7 @@ window.clonarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
     } else if (typeof window.__toast === 'function') {
         window.__toast(msg, 'success');
     } else {
-        alert(msg);
+        notifyUser(msg);
     }
 };
 

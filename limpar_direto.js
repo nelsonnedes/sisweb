@@ -59,15 +59,15 @@ if (invalidClients.length > 0) {
         if (saveClients(validClients)) {
             console.log(`Limpeza concluída! Foram removidos ${invalidClients.length} clientes inválidos.`);
             console.log(`Total de clientes após a limpeza: ${validClients.length}`);
-            alert(`Limpeza concluída com sucesso!\nForam removidos ${invalidClients.length} clientes inválidos.`);
+            notifyUser(`Limpeza concluída com sucesso!\nForam removidos ${invalidClients.length} clientes inválidos.`);
         } else {
             console.error('Erro ao salvar as alterações.');
-            alert('Erro ao salvar as alterações. Verifique o console para mais detalhes.');
+            notifyUser('Erro ao salvar as alterações. Verifique o console para mais detalhes.');
         }
     } else {
         console.log('Operação cancelada pelo usuário.');
     }
 } else {
     console.log('Não foram encontrados clientes inválidos para remover.');
-    alert('Não foram encontrados clientes inválidos para remover.');
+    notifyUser('Não foram encontrados clientes inválidos para remover.');
 } 

@@ -118,7 +118,7 @@ test('E-01 registrarSaida: lock + overlay + botão restaurado nos dois fins', ()
   assert.match(b, /querySelector\('#saidaForm button\[type="submit"\]'\)/);
   assert.match(b, /Registrando\.\.\./);
   assert.match(b, /registrarSaidaEmAndamento = false;\s*\n\s*if \(qtdManuais/);
-  assert.match(est, /registrarSaidaEmAndamento = false;\s*\n\s*alert\('Erro ao registrar saída/);
+  assert.match(est, /registrarSaidaEmAndamento = false;\s*\n\s*notifyUser\('Erro ao registrar saída/);
   assert.match(b, /hideLoading\(\)/);
 });
 

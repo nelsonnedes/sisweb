@@ -510,7 +510,7 @@ function adicionarItemSerrado() {
         
         // Validação básica
         if (!especie || espessura <= 0 || largura <= 0 || comprimento <= 0 || quantidade <= 0) {
-            alert('Preencha todos os campos obrigatórios com valores válidos.');
+            notifyUser('Preencha todos os campos obrigatórios com valores válidos.');
             return;
         }
         
@@ -560,7 +560,7 @@ function adicionarItemSerrado() {
         
     } catch (e) {
         console.error('Erro ao adicionar item:', e);
-        alert('Erro ao adicionar item. Verifique os valores.');
+        notifyUser('Erro ao adicionar item. Verifique os valores.');
     }
 }
 
@@ -586,7 +586,7 @@ function adicionarItemTora() {
         }
         
         if (!especie || rodo <= 0 || comp <= 0) {
-            alert('Preencha Espécie, Rodo e Comprimento.');
+            notifyUser('Preencha Espécie, Rodo e Comprimento.');
             return;
         }
         
@@ -635,7 +635,7 @@ function adicionarItemTora() {
         
     } catch (e) {
         console.error('Erro tora:', e);
-        alert('Erro ao adicionar tora.');
+        notifyUser('Erro ao adicionar tora.');
     }
 }
 
@@ -1172,7 +1172,7 @@ function __preNotify(msg, type) {
         if (typeof window.__toast === 'function') { window.__toast(msg, type); return; }
         if (window.Utils && window.Utils.showToast) { window.Utils.showToast(msg, type); return; }
     } catch (_) {}
-    try { alert(msg); } catch (_) {}
+    try { notifyUser(msg); } catch (_) {}
 }
 function __preSetBtn(busy) {
     try {
@@ -1190,7 +1190,7 @@ function __preSetBtn(busy) {
 }
 async function salvarPreRomaneio() {
     if (romaneioItens.length === 0) {
-        alert('Adicione itens antes de salvar.');
+        notifyUser('Adicione itens antes de salvar.');
         return;
     }
     
@@ -1201,7 +1201,7 @@ async function salvarPreRomaneio() {
         const dataTora = document.getElementById('dataRomaneioTora').value;
         
         if (!fornecedorNome || !dataTora) {
-            alert('Preencha Fornecedor e Data.');
+            notifyUser('Preencha Fornecedor e Data.');
             return;
         }
         
@@ -1212,7 +1212,7 @@ async function salvarPreRomaneio() {
         data = document.getElementById('dataRomaneio').value;
         
         if (!clienteNome || !data) {
-            alert('Preencha Cliente e Data.');
+            notifyUser('Preencha Cliente e Data.');
             return;
         }
     }
@@ -1231,7 +1231,7 @@ async function salvarPreRomaneio() {
 
     const tenantId = resolveTenantId();
     if (!tenantId) {
-        alert('Empresa não identificada. Reabra a página e selecione a empresa ativa antes de salvar.');
+        notifyUser('Empresa não identificada. Reabra a página e selecione a empresa ativa antes de salvar.');
         return;
     }
     if (__preRomaneioSaving) return;
@@ -1323,7 +1323,7 @@ async function salvarPreRomaneio() {
     } else {
         __preSetBtn(false);
         __preRomaneioSaving = false;
-        alert('Serviço Firebase indisponível. Verifique a conexão.');
+        notifyUser('Serviço Firebase indisponível. Verifique a conexão.');
     }
 }
 

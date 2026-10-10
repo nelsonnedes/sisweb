@@ -260,9 +260,9 @@ const NFPreferencias = (() => {
       try {
         await salvar(tenantId, prefs);
         aplicarNaFormulario();
-        alert('✅ Preferências salvas!');
+        notifyUser('✅ Preferências salvas!');
       } catch (e) {
-        alert('Erro ao salvar preferências: ' + e.message);
+        notifyUser('Erro ao salvar preferências: ' + e.message);
       }
     });
   }

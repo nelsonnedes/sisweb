@@ -427,7 +427,7 @@
         setTimeout(() => URL.revokeObjectURL(url), 10000);
       } catch (err) {
         console.error('Falha ao abrir Lâmina PIX:', err);
-        alert('Erro ao gerar PDF da Lâmina PIX: ' + err.message);
+        notifyUser('Erro ao gerar PDF da Lâmina PIX: ' + err.message);
       }
     },
 
@@ -460,7 +460,7 @@
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       } catch (err) {
         console.error('Falha ao compartilhar Lâmina PIX:', err);
-        alert('Erro ao compartilhar PDF: ' + err.message);
+        notifyUser('Erro ao compartilhar PDF: ' + err.message);
       }
     }
   };

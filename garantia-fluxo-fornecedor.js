@@ -186,19 +186,19 @@ window.garantiaFornecedor = {
                 
                 // Validações básicas
                 if (!dados.nome) {
-                    alert('Nome do fornecedor é obrigatório!');
+                    notifyUser('Nome do fornecedor é obrigatório!');
                     document.getElementById('clientName')?.focus();
                     return false;
                 }
                 
                 if (!dados.estado) {
-                    alert('Estado é obrigatório!');
+                    notifyUser('Estado é obrigatório!');
                     document.getElementById('clientState')?.focus();
                     return false;
                 }
                 
                 if (!dados.cidade) {
-                    alert('Cidade é obrigatória!');
+                    notifyUser('Cidade é obrigatória!');
                     document.getElementById('clientCity')?.focus();
                     return false;
                 }
@@ -353,7 +353,7 @@ window.garantiaFornecedor = {
                     const mensagem = isEdit ? 
                         `Fornecedor "${dados.nome}" atualizado com sucesso!` : 
                         `Fornecedor "${dados.nome}" cadastrado com sucesso!`;
-                    alert(mensagem);
+                    notifyUser(mensagem);
                     
                     console.log('✅ FORNECEDOR SALVO COM SUCESSO');
                     return true;
@@ -361,7 +361,7 @@ window.garantiaFornecedor = {
                 
             } catch (error) {
                 console.error('❌ Erro ao salvar fornecedor:', error);
-                alert(`Erro ao salvar fornecedor: ${error.message}`);
+                notifyUser(`Erro ao salvar fornecedor: ${error.message}`);
                 return false;
             }
         };
@@ -407,7 +407,7 @@ window.garantiaFornecedor = {
             const fornecedor = fornecedores.find(f => f.id === id);
             
             if (!fornecedor) {
-                alert('Fornecedor não encontrado!');
+                notifyUser('Fornecedor não encontrado!');
                 return;
             }
             
@@ -426,7 +426,7 @@ window.garantiaFornecedor = {
             
         } catch (error) {
             console.error('❌ Erro ao selecionar fornecedor:', error);
-            alert('Erro ao selecionar fornecedor!');
+            notifyUser('Erro ao selecionar fornecedor!');
         }
     },
     
@@ -455,7 +455,7 @@ window.garantiaFornecedor = {
             const fornecedor = fornecedores.find(f => f.id === id);
             
             if (!fornecedor) {
-                alert('❌ Fornecedor não encontrado!');
+                notifyUser('❌ Fornecedor não encontrado!');
                 console.error('Fornecedor não encontrado:', id);
                 return;
             }
@@ -535,7 +535,7 @@ window.garantiaFornecedor = {
             
         } catch (error) {
             console.error('❌ Erro ao editar fornecedor:', error);
-            alert(`❌ Erro ao editar fornecedor: ${error.message}`);
+            notifyUser(`❌ Erro ao editar fornecedor: ${error.message}`);
         }
     },
     
@@ -611,7 +611,7 @@ window.garantiaFornecedor = {
             `;
             
             console.log(instrucoes);
-            alert('🚨 Problema de Storage Detectado!\n\nVeja o console (F12) para instruções de como resolver.');
+            notifyUser('🚨 Problema de Storage Detectado!\n\nVeja o console (F12) para instruções de como resolver.');
             
             return { localStorage: false, problema: error.message, instrucoes };
         }

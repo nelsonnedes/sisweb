@@ -20,7 +20,7 @@ function importarRomaneio() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(msg, "warning");
         } else {
-            alert(msg);
+            notifyUser(msg);
         }
         // Focar no campo de fornecedor sem teletransportar a pagina (mobile):
         // preventScroll evita o salto brusco; scrollIntoView centraliza suave.
@@ -39,7 +39,7 @@ function importarRomaneio() {
         fileInput.click();
     } else {
         console.error("❌ Input de arquivo 'importFileInput' não encontrado.");
-        alert("Erro interno: Input de arquivo não encontrado.");
+        notifyUser("Erro interno: Input de arquivo não encontrado.");
     }
 }
 
@@ -87,7 +87,7 @@ function handleFileSelectV4(event) {
             console.error("❌ Erro ao ler arquivo:", error);
             const msg = "Erro ao ler o arquivo Excel: " + error.message;
             if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, "error");
-            else alert(msg);
+            else notifyUser(msg);
         }
         
         event.target.value = '';
@@ -95,7 +95,7 @@ function handleFileSelectV4(event) {
     
     reader.onerror = function(ex) {
         console.error("❌ Erro na leitura do arquivo", ex);
-        alert("Erro na leitura do arquivo.");
+        notifyUser("Erro na leitura do arquivo.");
     };
 
     reader.readAsArrayBuffer(file);
@@ -104,7 +104,7 @@ function handleFileSelectV4(event) {
 // Processador de Matriz (V4)
 function processarMatrizImportada(matrix) {
     if (!matrix || matrix.length === 0) {
-        alert("Planilha vazia.");
+        notifyUser("Planilha vazia.");
         return;
     }
 
@@ -180,7 +180,7 @@ function processarMatrizImportada(matrix) {
     }
 
     if (headerRowIndex === -1) {
-        alert("Não foi possível encontrar a linha de cabeçalho (Espécie, Rodo, Comprimento). Verifique a planilha.");
+        notifyUser("Não foi possível encontrar a linha de cabeçalho (Espécie, Rodo, Comprimento). Verifique a planilha.");
         return;
     }
 
@@ -357,7 +357,7 @@ function processarMatrizImportada(matrix) {
         
         const msg = `${itensAdicionados} itens importados com sucesso!`;
         if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, "success");
-        else alert(msg);
+        else notifyUser(msg);
         
         // Ir para última página
         if (window.romaneioItems.length > 0 && typeof window.changePage === 'function') {
@@ -369,7 +369,7 @@ function processarMatrizImportada(matrix) {
     } else {
         const msg = "Nenhum item válido encontrado.";
         if (window.Utils && window.Utils.showToast) window.Utils.showToast(msg, "warning");
-        else alert(msg);
+        else notifyUser(msg);
     }
 }
 

@@ -220,11 +220,21 @@
     function classifyAlertMessage(text) {
         var l = String(text == null ? '' : text).toLowerCase();
         if (/não foi possível|erro|falha|rejeit|negad|recus|❌|tenant|sessão|não carregad/.test(l)) return 'error';
+        if (/cheio|lotad|quota/.test(l)) return 'warning';
         if (/✅|sucesso|êxito|carregados|excluíd|removid|autorizado|aprovad/.test(l)) return 'success';
-        if (/⚠️|selecione|informe|preencha|adicione|escolha|busque|atenção|atencao|aviso|antes de|ainda não|aguarde|já |duplicad|não |nenhum|nenhuma|não encontrado|não corresponde|corrija|verifique|apenas |bloquead|cancelad|necessário|deve ter|pelo menos|por favor/.test(l)) return 'warning';
+        if (/⚠️|selecione|informe|preencha|adicione|escolha|busque|atenção|atencao|aviso|antes de|ainda não|aguarde|já |duplicad|não |nenhum|nenhuma|não encontrado|não corresponde|corrija|verifique|apenas |bloquead|cancelad|necessário|deve ter|pelo menos|por favor|cheio|lotad|quota|indisponível/.test(l)) return 'warning';
         return 'info';
     }
     window.__classifyAlertMessage = classifyAlertMessage;
+
+    // Onda F: atalho explícito source-level (mesma classificação do redirect).
+    function notifyUser(message, type, opts) {
+        try {
+            if (type) show(message, type, opts);
+            else show(message, classifyAlertMessage(message), opts);
+        } catch (e) {}
+    }
+    window.notifyUser = window.notifyUser || notifyUser;
 
     if (!window.__siswebAlertOverridden) {
         try {

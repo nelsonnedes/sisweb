@@ -11,7 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Romaneio de Toras</title>
     <!-- Toast unificado (carrega ANTES de qualquer uso de window.__toast) -->
-    <script type="module" src="./modules/core/toast.js?v=4376b6ac2f84"></script>
+    <script type="module" src="./modules/core/toast.js?v=bb0f3e5b8eec"></script>
     
     <!-- Scripts do Firebase CDN (PRIMEIRO) -->
     <!-- Firebase via módulo compartilhado (singleton) -->
@@ -1372,7 +1372,7 @@
             <button type="button" id="btnSalvar" class="btn btn-primary" onclick="salvarRomaneio()">
                 <i class="fas fa-save"></i> Salvar
             </button>
-            <button type="button" id="btnListar" class="btn btn-info" onclick="if(typeof window.abrirListaRomaneios === 'function') { window.abrirListaRomaneios(); } else if(typeof abrirListaRomaneios === 'function') { abrirListaRomaneios(); } else { alert('Lista ainda carregando. Aguarde e tente novamente.'); }">
+            <button type="button" id="btnListar" class="btn btn-info" onclick="if(typeof window.abrirListaRomaneios === 'function') { window.abrirListaRomaneios(); } else if(typeof abrirListaRomaneios === 'function') { abrirListaRomaneios(); } else { notifyUser('Lista ainda carregando. Aguarde e tente novamente.'); }">
                 <i class="fas fa-list"></i> Listar
             </button>
             <button type="button" id="btnImportar" class="btn btn-secondary" onclick="importarRomaneio()">
@@ -1687,7 +1687,7 @@
         </div>
     </div>
     <script type="module">
-        import { toast } from './modules/core/toast.js?v=4376b6ac2f84';
+        import { toast } from './modules/core/toast.js?v=bb0f3e5b8eec';
         // Toast já disponível globalmente como window.__toast via modules/core/toast.js
     </script>
     <!-- Modal de Cadastro/Edição de Fornecedor -->
@@ -1935,7 +1935,7 @@
     <script src="estados-cidades.js?v=e634a7c28536"></script>
     <!-- removido: handler de modais de clientes (não utilizado em fornecedores) -->
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=21f3fdc82e10"></script>
+<script src="menu-component.js?v=1a3d6bc4680f"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     
     <!-- Scripts de Correção - ORDEM REORGANIZADA -->
@@ -1956,7 +1956,7 @@
     <script src="species-store.js?v=f6f5cff9d5aa"></script>
     <script src="species-modal-standard.js?v=99a77a1d4946"></script>
     <script src="modules/core/sisweb-data.js?v=b5af248d57f1"></script>
-    <script src="species-manager.js?v=937b2c144983"></script>
+    <script src="species-manager.js?v=c7889367d74d"></script>
     <script src="modules/crud/species-crud.js?v=e2f99af03340"></script>
     
     <!-- Script de fornecedor modals -->
@@ -1965,7 +1965,7 @@
     <script src="schema-migration-contatos.js?v=3a574e7e3324"></script>
     <!-- O monolito romaneiotora_modais.js foi substituido pelos modulos canonicos abaixo. -->
     
-    <script src="romaneios-client-save-fix.js?v=9f4df8ca50a8"></script>
+    <script src="romaneios-client-save-fix.js?v=95d795703c1c"></script>
     
     <!-- Scripts de correção -->
     <script src="correcao-funcoes-ausentes.js?v=c5264b3eec06"></script>
@@ -1981,20 +1981,20 @@
     <script src="romaneio-print-config.js?v=179c8544dedf"></script>
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
     <script src="modules/core/romaneio-list-columns.js?v=210bbf18cbc0" data-page="tora" data-target="romaneioListTable"></script>
-    <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
+    <script src="pre-romaneio-selector.js?v=25012edb1794"></script>
     <script src="coordenador-inicializacao.js?v=013c48db2ca9"></script>
     <script src="romaneiotora.js?v=6d7e519e63a2"></script>
     <script src="romaneiotora_tabela.js?v=92e3a9745567"></script>
-    <script src="romaneio-manager.js?v=3e200be2ebb1"></script>
+    <script src="romaneio-manager.js?v=1fa1648b8d56"></script>
     <script src="js/sisweb-loading.js?v=b693454010f9"></script>
-    <script src="romaneiotora-import-v4.js?v=10866a4070df"></script>
+    <script src="romaneiotora-import-v4.js?v=be06ac87ac2a"></script>
     
     <!-- Scripts de correções -->
     <!-- SCRIPTS PROBLEMÁTICOS DESABILITADOS -->
-    <!-- <script src="correcao-lista-romaneios.js?v=d06725255ee6"></script> -->
+    <!-- <script src="correcao-lista-romaneios.js?v=a6206ebba284"></script> -->
     <!-- <script src="romaneiotora_modal_debug.js"></script> -->
     <!-- <script src="romaneiotora_modal_fix.js?v=0897cff1628d"></script> -->
-    <!-- <script src="romaneiotora_modal_fix_final.js?v=49c4e7d7fd3e"></script> -->
+    <!-- <script src="romaneiotora_modal_fix_final.js?v=a6e3dbc56064"></script> -->
     
     <!-- removido: romaneiotora_modal_fix_final_cleaned.js (sobreposição de modais) -->
 
@@ -2396,7 +2396,7 @@
 
     <!-- removido: standardized-client-modal.js (interferia nos modais de fornecedores) -->
     <!-- ✅ Modal de espécies padronizado (igual TL) -->
-    <script src="modules/modals/modal-especies.js?v=6ed25fce5fb5"></script>
+    <script src="modules/modals/modal-especies.js?v=24940724b713"></script>
     
     <!-- removido: romaneiotora_modal_fix_final.js e romaneiotora-client-modal-fix.js (evitar duplicidade) -->
     
@@ -2851,6 +2851,6 @@
     });
     </script>
     <!-- Módulo de impressão TL/Tora padronizado -->
-    <script src="modules/reports/imprimir-romaneio.js?v=034fc9934084"></script>
+    <script src="modules/reports/imprimir-romaneio.js?v=4288f55b2004"></script>
 </body>
 </html>

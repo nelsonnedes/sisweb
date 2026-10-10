@@ -232,7 +232,7 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
         if (!romaneios || romaneios.length === 0) {
             console.error("Nenhum romaneio encontrado para impressão");
             document.body.removeChild(loadingIndicator);
-            alert('Erro: Nenhum romaneio encontrado para impressão.');
+            notifyUser('Erro: Nenhum romaneio encontrado para impressão.');
             return;
         }
         
@@ -257,7 +257,7 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
         if (!romaneio) {
             console.error(`Romaneio com ID/número ${targetId} não encontrado`);
             document.body.removeChild(loadingIndicator);
-            alert(`Romaneio com ID ou número ${targetId} não encontrado.`);
+            notifyUser(`Romaneio com ID ou número ${targetId} não encontrado.`);
             return;
         }
         
@@ -307,7 +307,7 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
         }
         if (!printWindow || printWindow.closed === true) {
             document.body.removeChild(loadingIndicator);
-            alert("Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.");
+            notifyUser("Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.");
             return;
         }
 
@@ -318,7 +318,7 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
             printWindow.document.close();
         } catch (error) {
             document.body.removeChild(loadingIndicator);
-            alert('Falha ao preparar documento de impressão.');
+            notifyUser('Falha ao preparar documento de impressão.');
             return;
         }
 
@@ -359,7 +359,7 @@ async function imprimirRomaneio(index, tipo = 'completo', romaneioId = null) {
         
     } catch (error) {
         console.error('❌ Erro na impressão:', error);
-        alert('Erro ao preparar impressão: ' + error.message);
+        notifyUser('Erro ao preparar impressão: ' + error.message);
         
         // Remover indicador de carregamento em caso de erro
         if (document.body.contains(loadingIndicator)) {
@@ -2930,7 +2930,7 @@ if (!window.imprimirRomaneio) {
     console.error('❌ EMERGÊNCIA: imprimirRomaneio não foi definida! Criando fallback...');
     window.imprimirRomaneio = function(romaneioId, tipo = 'completo') {
         console.error('❌ FALLBACK: Sistema de impressão não carregado corretamente');
-        alert('Sistema de impressão não disponível. Recarregue a página.');
+        notifyUser('Sistema de impressão não disponível. Recarregue a página.');
     };
 }
 

@@ -40,7 +40,7 @@ window.EditarItem = (function() {
             // Validar índice
             if (index < 0 || index >= items.length) {
                 console.error(`❌ Índice inválido: ${index}. Total de itens: ${items.length}`);
-                alert('Item não encontrado!');
+                notifyUser('Item não encontrado!');
                 return false;
             }
             
@@ -48,7 +48,7 @@ window.EditarItem = (function() {
             const item = items[index];
             if (!item) {
                 console.error(`❌ Item não encontrado no índice ${index}`);
-                alert('Item não encontrado!');
+                notifyUser('Item não encontrado!');
                 return false;
             }
             
@@ -68,7 +68,7 @@ window.EditarItem = (function() {
             
         } catch (error) {
             console.error('❌ Erro ao editar item:', error);
-            alert('Erro ao carregar item para edição. Verifique o console para mais detalhes.');
+            notifyUser('Erro ao carregar item para edição. Verifique o console para mais detalhes.');
             return false;
         }
     }

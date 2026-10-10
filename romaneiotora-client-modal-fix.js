@@ -200,7 +200,7 @@ async function saveClientRomaneitoraCorrigido(e) {
     
     const clientName = document.getElementById('clientName').value.trim();
     if (!clientName) {
-        alert('O nome do cliente/fornecedor é obrigatório.');
+        notifyUser('O nome do cliente/fornecedor é obrigatório.');
         return false;
     }
     
@@ -389,7 +389,7 @@ async function saveClientRomaneitoraCorrigido(e) {
         
     } catch (error) {
         console.error("❌ Erro ao salvar cliente/fornecedor:", error);
-        alert('Erro ao salvar cliente/fornecedor: ' + error.message);
+        notifyUser('Erro ao salvar cliente/fornecedor: ' + error.message);
         return false;
     }
 }

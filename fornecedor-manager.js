@@ -606,12 +606,12 @@ class FornecedorManager {
             } else {
                 console.error("❌ Fornecedor não encontrado com ID:", id);
                 console.log("📋 IDs disponíveis:", fornecedorList.map(f => f.id));
-                alert('Fornecedor não encontrado. A lista foi atualizada do Firebase.');
+                notifyUser('Fornecedor não encontrado. A lista foi atualizada do Firebase.');
             }
             
         } catch (error) {
             console.error("❌ Erro ao selecionar fornecedor:", error);
-            alert('Erro ao carregar dados do fornecedor. Tente novamente.');
+            notifyUser('Erro ao carregar dados do fornecedor. Tente novamente.');
         }
     }
 
@@ -689,12 +689,12 @@ class FornecedorManager {
             } else {
                 console.error("❌ Fornecedor não encontrado com ID:", id);
                 console.log("📋 IDs disponíveis:", fornecedorList.map(f => f.id));
-                alert('Fornecedor não encontrado. A lista foi atualizada do Firebase.');
+                notifyUser('Fornecedor não encontrado. A lista foi atualizada do Firebase.');
             }
             
         } catch (error) {
             console.error("❌ Erro ao editar fornecedor:", error);
-            alert('Erro ao carregar dados do fornecedor. Tente novamente.');
+            notifyUser('Erro ao carregar dados do fornecedor. Tente novamente.');
         }
     }
 
@@ -747,7 +747,7 @@ class FornecedorManager {
             window.openNewClientModal();
         } else {
             console.warn("⚠️ openNewClientModal não disponível");
-            alert('Função para criar novo fornecedor não está disponível.');
+            notifyUser('Função para criar novo fornecedor não está disponível.');
         }
     }
 
@@ -762,7 +762,7 @@ class FornecedorManager {
             window.openClientModal('edit', fornecedor);
         } else {
             console.warn("⚠️ Função de edição não disponível");
-            alert('Função de edição não está disponível.');
+            notifyUser('Função de edição não está disponível.');
         }
     }
 

@@ -199,7 +199,7 @@ window.ExcluirItem = (function() {
         if (window.Utils && window.Utils.showToast) {
             window.Utils.showToast(mensagem, 'error');
         } else {
-            alert(mensagem);
+            notifyUser(mensagem);
         }
     }
 

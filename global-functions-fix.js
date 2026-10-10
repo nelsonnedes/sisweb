@@ -181,7 +181,7 @@ const siswebFallbackOpenSpeciesListModal = function() {
         
     } catch (error) {
         console.error("❌ Erro ao abrir modal de espécies:", error);
-        alert('Erro ao abrir lista de espécies. Recarregue a página.');
+        notifyUser('Erro ao abrir lista de espécies. Recarregue a página.');
     }
 };
 
@@ -258,7 +258,7 @@ const siswebFallbackOpenNewSpeciesModal = function() {
         
     } catch (error) {
         console.error("❌ Erro ao abrir modal de nova espécie:", error);
-        alert('Erro ao abrir modal de nova espécie. Recarregue a página.');
+        notifyUser('Erro ao abrir modal de nova espécie. Recarregue a página.');
     }
 };
 
