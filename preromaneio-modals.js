@@ -392,7 +392,7 @@ function editPreRomaneioClient(id) {
 async function deletePreRomaneioClient(id) {
     const client = cachedClients.find(c => String(c.id) === String(id));
     const clientName = client ? (client.name || client.nome || id) : id;
-    if (!confirm(`Tem certeza que deseja excluir o cliente "${clientName}"?\n\nEsta ação não pode ser desfeita.`)) {
+    if (!await confirmDialog({ title: 'Excluir cliente', message: `Tem certeza que deseja excluir o cliente "${clientName}"?\n\nEsta ação não pode ser desfeita.`, danger: true, confirmLabel: 'Excluir' })) {
         return;
     }
     const __preDelCliKey = 'pre-del-cli:' + String(id || '');
@@ -1197,7 +1197,7 @@ async function carregarPreRomaneio(id, dadosPreCarregados = null) {
 }
 
 async function excluirPreRomaneio(id) {
-    if (!confirm('Tem certeza que deseja excluir este Pré-Romaneio?')) return;
+    if (!await confirmDialog({ title: 'Excluir Pré-Romaneio', message: 'Tem certeza que deseja excluir este Pré-Romaneio?', danger: true, confirmLabel: 'Excluir' })) return;
     const idStr = String(id || '').trim();
     if (!idStr) return;
     const __preDelKey = 'pre-del:' + idStr;

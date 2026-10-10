@@ -1518,7 +1518,7 @@ async function excluirFornecedor(fornecedorId) {
 
         const fornecedorNome = fornecedor ? (fornecedor.nome || fornecedor.name || `ID ${fornecedorId}`) : `ID ${fornecedorId}`;
 
-        if (!confirm(`Tem certeza que deseja excluir o fornecedor "${fornecedorNome}"?\n\nEsta ação não pode ser desfeita.`)) {
+        if (!await confirmDialog({ title: 'Excluir fornecedor', message: `Tem certeza que deseja excluir o fornecedor "${fornecedorNome}"?\n\nEsta ação não pode ser desfeita.`, danger: true, confirmLabel: 'Excluir' })) {
             return;
         }
 

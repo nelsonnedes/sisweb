@@ -676,7 +676,7 @@ async function restaurarEstadoAnterior() {
         });
         
         // ✅ PERGUNTAR AO USUÁRIO SE QUER RESTAURAR
-        if (confirm('Foi encontrado um romaneio em edição anterior. Deseja continuar editando?')) {
+        if (await confirmDialog({ title: 'Continuar edição', message: 'Foi encontrado um romaneio em edição anterior. Deseja continuar editando?', confirmLabel: 'Continuar editando' })) {
             
             // Restaurar itens
             if (estado.itens && Array.isArray(estado.itens)) {

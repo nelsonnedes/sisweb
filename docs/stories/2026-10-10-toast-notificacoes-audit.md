@@ -197,3 +197,21 @@ Padrão E1: destrutivo = `danger:true` + verbo no botão (Excluir/Estornar/
 Limpar/Remover/Apagar). Falta E2: folha, romaneios, modais, fiscal inline,
 menu, cadastros auxiliares (~40 sites) + `prompt()` do wipe (candidato a
 `AdminUI.prompt`/confirmDialog).
+
+## 14. Onda E2 — restante do código vivo (2026-10-10, ~45 sites)
+
+Convertidos: folha (6: excluir folha ×2, baixa quinzena, cargo, funcionário,
+banco de horas), fiscal inline (6: certificado, DANFE, natureza, nota,
+manifesto, documento), menu (limpar alertas), client-service + tora-fix
+(sobrescrever cadastro — choice com 'Atualizar cadastro'), fornecedor,
+correção romaneios, itens (editar/excluir/multi/limpar), salvar-romaneio
+(choice pós-save), modais TL/PCT (cliente, lista, duplo lançamento),
+pré-romaneio (aba, item, cliente, exclusão), romaneio-manager (genérico + tora),
+PCT (funções retry/sync, restore, remover item), tora (romaneio + item),
+PES (cliente + romaneio), admin (13: backup duplo, import duplo, limpeza,
+reset duplo, status, aprovar/rejeitar, governança ×3 com labels OK/Cancelar
+explícitos), company ×2, login (limpeza profunda), perfil (desativar 2FA).
+Exceções documentadas na trava: arquivos mortos (5), vendor SDK, `src/`
+(morto), `.confirm` como método MFA, interceptor `window.confirm` de dev-tool
+preservado. Achado: `romaneiotora_modais.js` tem mojibake pré-existente em
+comentários (fora do escopo); `excluirItem` tora sem chamadores.

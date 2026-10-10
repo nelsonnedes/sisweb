@@ -368,10 +368,12 @@ async function saveClientInner(client) {
         if (nameConflictIndex !== -1 && existingIndex === -1) {
             console.log(`⚠️ Cliente com nome "${clientName}" já existe`);
             
-            const confirmOverwrite = window.confirm(
-                `Um cliente com o nome "${client.name || client.nome}" já existe. ` +
-                `Deseja atualizar o cadastro existente?`
-            );
+            const confirmOverwrite = await confirmDialog({
+                title: 'Cliente já cadastrado',
+                message: `Um cliente com o nome "${client.name || client.nome}" já existe. ` +
+                `Deseja atualizar o cadastro existente?`,
+                confirmLabel: 'Atualizar cadastro'
+            });
             
             if (confirmOverwrite) {
                 // Usar o ID existente, mas atualizar os dados

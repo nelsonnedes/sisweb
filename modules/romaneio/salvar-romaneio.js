@@ -670,11 +670,11 @@ window.SalvarRomaneio = (function() {
     /**
      * Limpar formulário após salvamento
      */
-    function limparFormularioAposSalvamento() {
+    async function limparFormularioAposSalvamento() {
         console.log('🧹 Limpando formulário após salvamento...');
         
         // Confirmar limpeza
-        const limpar = confirm('Romaneio salvo com sucesso!\n\nDeseja limpar o formulário para criar um novo romaneio?');
+        const limpar = await confirmDialog({ title: 'Novo romaneio', message: 'Romaneio salvo com sucesso!\n\nDeseja limpar o formulário para criar um novo romaneio?', confirmLabel: 'Limpar formulário' });
         
         if (limpar) {
             // Usar a função de limpeza completa do módulo AdicionarItem

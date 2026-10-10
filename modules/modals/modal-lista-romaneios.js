@@ -656,7 +656,7 @@ window.ModalListaRomaneios = (function() {
      */
     async function deleteRomaneio(romaneioId) {
         try {
-            if (!confirm(MSG_CONFIRM_DELETE)) return;
+            if (!await confirmDialog({ title: 'Excluir romaneio', message: MSG_CONFIRM_DELETE, danger: true, confirmLabel: 'Excluir' })) return;
             try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
 
             const sid = String(romaneioId);
@@ -1087,7 +1087,7 @@ window.ModalListaRomaneios = (function() {
             // Verificar se já foi lançado
             const jaLancado = await verificarRomaneioJaLancado(romaneioId);
             if (jaLancado) {
-                const confirmar = confirm(MSG_CONFIRM_DUPLICATE_LANCAMENTO);
+                const confirmar = await confirmDialog({ title: 'Lançar novamente', message: MSG_CONFIRM_DUPLICATE_LANCAMENTO, confirmLabel: 'Criar nova conta' });
                 if (!confirmar) return;
             }
             

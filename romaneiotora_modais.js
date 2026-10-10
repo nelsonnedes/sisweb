@@ -3272,7 +3272,7 @@ async function excluirRomaneio(romaneioId) {
         try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
         
         // Confirmar exclusÃ£o
-        if (!confirm("Tem certeza que deseja excluir este romaneio? Esta aÃ§Ã£o nÃ£o pode ser desfeita.")) {
+        if (!await confirmDialog({ title: 'Excluir romaneio', message: 'Tem certeza que deseja excluir este romaneio? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' })) {
             window.deletingRomaneio = false;
             return;
         }
@@ -3912,14 +3912,14 @@ function calcularEstatisticasPorEspecie(itens) {
 }
 
 // âœ… FUNÃ‡ÃƒO PARA EXCLUIR ITEM DO ROMANEIO - CORRIGIDA
-function excluirItem(index) {
+async function excluirItem(index) {
     try {
         console.log(`ðŸ—'ï¸ Excluindo item no Ã­ndice: ${index}`);
         
         // Verificar se o Ã­ndice Ã© vÃ¡lido
         if (index >= 0 && index < window.romaneioItems.length) {
             // Confirmar exclusÃ£o
-            if (confirm('Tem certeza que deseja excluir este item?')) {
+            if (await confirmDialog({ title: 'Excluir item', message: 'Tem certeza que deseja excluir este item?', danger: true, confirmLabel: 'Excluir' })) {
                 // Remover item do array
                 window.romaneioItems.splice(index, 1);
                 

@@ -925,8 +925,8 @@ window.abrirListaRomaneios = window.abrirListaRomaneiosTora;
 
 // Funções Genéricas
 window.editarRomaneioGeneric = (type, id) => { if (type === 'tora') window.editarRomaneioTora(id); else console.log('Edit', type, id); };
-window.excluirRomaneioGeneric = (type, id) => {
-    if (!confirm('Excluir?')) return;
+    window.excluirRomaneioGeneric = async (type, id) => {
+        if (!await confirmDialog({ title: 'Excluir romaneio', message: 'Excluir?', danger: true, confirmLabel: 'Excluir' })) return;
     try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
     const __hideLoader = () => { try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {} };
     try {
@@ -1217,8 +1217,8 @@ window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
     if(window.Utils?.showToast) window.Utils.showToast('Carregado para edição', 'success');
 };
 
-window.excluirRomaneioTora = function(id) {
-    if (confirm('Excluir romaneio Tora?')) {
+window.excluirRomaneioTora = async function(id) {
+    if (await confirmDialog({ title: 'Excluir romaneio Tora', message: 'Excluir romaneio Tora?', danger: true, confirmLabel: 'Excluir' })) {
         try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
         const __hideLoader = () => { try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {} };
         try {

@@ -939,7 +939,7 @@
 
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=32ab283bb545"></script>
+<script src="menu-component.js?v=21f3fdc82e10"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
     <!-- Legacy inline implementation kept as a non-executable migration reference. -->
     <script type="text/plain" id="legacy-mdfe-implementation">
@@ -1117,8 +1117,8 @@
             }
         }
 
-        function excluirManifesto(id) {
-            if (confirm('Tem certeza que deseja excluir este manifesto?')) {
+        async function excluirManifesto(id) {
+            if (await confirmDialog({ title: 'Excluir manifesto', message: 'Tem certeza que deseja excluir este manifesto?', danger: true, confirmLabel: 'Excluir' })) {
                 manifestos = manifestos.filter(m => m.id !== id);
                 atualizarTabelaManifestos();
             }
@@ -1247,7 +1247,7 @@
         console.log("✅ firebaseService carregado no mdf-e.html");
     </script>
     <script src="mdfe-xml-builder.js?v=5f468745ae5d"></script>
-    <script src="mdf-e.js?v=7f61d81724ea"></script>
+    <script src="mdf-e.js?v=2e6bf6388c6c"></script>
     <script src="js/sisweb-loading.js?v=b693454010f9"></script>
 </body>
 </html>

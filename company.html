@@ -42,7 +42,7 @@
         })();
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=32ab283bb545"></script>
+<script src="menu-component.js?v=21f3fdc82e10"></script>
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
@@ -1289,7 +1289,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             console.log("🗑️ === EXCLUINDO EMPRESA ===");
             console.log("Excluindo empresa com ID:", id);
             
-            if (!confirm('Tem certeza que deseja excluir esta empresa?')) {
+            if (!await confirmDialog({ title: 'Excluir empresa', message: 'Tem certeza que deseja excluir esta empresa?', danger: true, confirmLabel: 'Excluir' })) {
                 return;
             }
             
@@ -2500,7 +2500,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
         // ✅ FUNÇÃO deleteCompany CORRIGIDA
         window.deleteCompany = async function(id) {
-            if (!confirm('Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita.')) {
+            if (!await confirmDialog({ title: 'Excluir empresa', message: 'Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' })) {
                 return;
             }
             

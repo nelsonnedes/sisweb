@@ -22,13 +22,13 @@ window.EditarItem = (function() {
     /**
      * ✅ FUNÇÃO PRINCIPAL: Editar Item
      */
-    function editarItem(index) {
+    async function editarItem(index) {
         console.log(`✏️ Solicitação de edição do item no índice: ${index}`);
         
         try {
             // Verificar se já existe um item em edição
             if (typeof itemEmEdicao === 'number' && itemEmEdicao >= 0) {
-                if (!confirm('Você já está editando um item. Deseja cancelar a edição atual e editar este item?')) {
+                if (!await confirmDialog({ title: 'Descartar edição', message: 'Você já está editando um item. Deseja cancelar a edição atual e editar este item?', confirmLabel: 'Descartar e editar' })) {
                     console.log("⚠️ Usuário cancelou a mudança de item em edição");
                     return false;
                 }

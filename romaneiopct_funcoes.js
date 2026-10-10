@@ -538,7 +538,7 @@ async function saveData(key, data) {
                                       `Recomendamos verificar sua conexão com a internet e tentar salvar novamente.`;
                     
                     // Mostrar alerta para romaneios
-                    if (confirm(userMessage + '\n\nDeseja tentar salvar novamente no servidor?')) {
+                    if (await confirmDialog({ title: 'Tentar novamente', message: userMessage + '\n\nDeseja tentar salvar novamente no servidor?', confirmLabel: 'Tentar novamente' })) {
                         // Tentar salvar novamente
                         console.log('🔄 Tentando salvar novamente no Firebase...');
                         return await saveData(key, data);
@@ -1159,7 +1159,7 @@ async function diagnosticarESincronizarDados() {
             
             // Mostrar alerta apenas se houver problemas críticos
             if (diagnostico.localStorage.romaneios > 0 && diagnostico.firebase.romaneios === 0 && diagnostico.firebase.disponivel) {
-                if (confirm(mensagem + 'Deseja tentar sincronizar os dados novamente?')) {
+                if (await confirmDialog({ title: 'Sincronizar novamente', message: mensagem + 'Deseja tentar sincronizar os dados novamente?', confirmLabel: 'Sincronizar' })) {
                     return await diagnosticarESincronizarDados();
                 }
             }
@@ -1211,7 +1211,7 @@ async function forcarSincronizacaoRomaneios() {
         }
         
         // Confirmar com usuário
-        if (!confirm(`Encontrados ${romaneios.length} romaneios no armazenamento local.\n\nDeseja sincronizar todos com o servidor?`)) {
+        if (!await confirmDialog({ title: 'Sincronizar romaneios', message: `Encontrados ${romaneios.length} romaneios no armazenamento local.\n\nDeseja sincronizar todos com o servidor?`, confirmLabel: 'Sincronizar todos' })) {
             return false;
         }
         

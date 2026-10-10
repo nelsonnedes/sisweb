@@ -2127,9 +2127,9 @@
     </script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=32ab283bb545"></script>
+<script src="menu-component.js?v=21f3fdc82e10"></script>
     <script src="cities-loader.js?v=6daa9ba1b097"></script>
-    <script src="client-service.js?v=26fd5bf2abb6"></script>
+    <script src="client-service.js?v=b95ca0dfb346"></script>
     <script src="openNewClientModal.js?v=f19ef075d2a7"></script>
     <script src="storageService.js?v=26c2875bf32d"></script>
     <!-- Módulos Fiscais -->
@@ -2540,7 +2540,7 @@
     window.uploadCertificado = uploadCertificado;
 
     async function removerCertificado() {
-      if (!confirm('Remover o certificado digital? A emissão ficará bloqueada.')) return;
+      if (!await confirmDialog({ title: 'Remover certificado', message: 'Remover o certificado digital? A emissão ficará bloqueada.', danger: true, confirmLabel: 'Remover' })) return;
       const tid = obterTenantIdNF();
       if (!tid) return alert('Empresa da sessão não identificada. Faça login novamente.');
       try {
@@ -3723,7 +3723,7 @@
         irParaEtapaNF('operacao');
         // Oferecer DANFE
         if (danfeData && window.NFDanfe) {
-          if (confirm('NF-e gerada com sucesso! Deseja baixar o DANFE agora?')) {
+          if (await confirmDialog({ title: 'Baixar DANFE', message: 'NF-e gerada com sucesso! Deseja baixar o DANFE agora?', confirmLabel: 'Baixar DANFE' })) {
             window.NFDanfe.downloadDANFE(danfeData);
           }
         }
@@ -4502,7 +4502,7 @@
       if (nat) window.NFNaturezas?.abrirModal?.({ natureza: nat });
     }
     async function nfRemoverNatureza(id, desc) {
-      if (!confirm(`Remover a natureza "${desc}"?`)) return;
+      if (!await confirmDialog({ title: 'Remover natureza', message: `Remover a natureza "${desc}"?`, danger: true, confirmLabel: 'Remover' })) return;
       const tid = obterTenantIdNF();
       if (!tid) return alert('Tenant não identificado');
       // Trava anti-duplo-clique por registro (F-13).
@@ -4910,8 +4910,8 @@
             }
         }
 
-        function excluirNota(id) {
-            if (confirm('Tem certeza que deseja excluir esta nota fiscal?')) {
+        async function excluirNota(id) {
+            if (await confirmDialog({ title: 'Excluir nota fiscal', message: 'Tem certeza que deseja excluir esta nota fiscal?', danger: true, confirmLabel: 'Excluir' })) {
                 notasFiscais = notasFiscais.filter(n => n.id !== id);
                 atualizarTabelaNotas();
             }

@@ -947,7 +947,7 @@ class FolhaCargos {
      * 🗑️ EXCLUIR CARGO
      */
     async deleteCargo(cargoId) {
-        if (!confirm('Tem certeza que deseja excluir este cargo?')) {
+        if (!await confirmDialog({ title: 'Excluir cargo', message: 'Tem certeza que deseja excluir este cargo?', danger: true, confirmLabel: 'Excluir' })) {
             return;
         }
         // Trava anti-duplo-clique + overlay (H-32).

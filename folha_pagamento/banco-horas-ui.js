@@ -532,7 +532,7 @@
 						e.preventDefault();
 						e.stopPropagation();
 						const id = btnExcluir.getAttribute('data-id');
-						const ok = confirm('Excluir este lançamento?');
+						const ok = await confirmDialog({ title: 'Excluir lançamento', message: 'Excluir este lançamento?', danger: true, confirmLabel: 'Excluir' });
 						if (!ok) return;
                         try {
                             const funcIdAtualEl = document.getElementById('bh-ger-func-id');

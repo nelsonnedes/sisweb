@@ -1636,7 +1636,7 @@ window.excluirRomaneio = async function(romaneioId) {
     });
     
     // Confirmar exclusão
-    if (!confirm('Tem certeza que deseja excluir este romaneio? Esta ação não pode ser desfeita.')) {
+    if (!await confirmDialog({ title: 'Excluir romaneio', message: 'Tem certeza que deseja excluir este romaneio? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' })) {
         return;
     }
     
@@ -2256,7 +2256,7 @@ console.log('🔧 Use window.ativarCorrecoesListaRomaneios() para reativar se ne
 window.interceptarEventosExclusao = function() {
     console.log('🔍 Configurando interceptação global de eventos de exclusão...');
     
-    // Interceptar chamadas de confirm() para exclusão de romaneios
+    // Interceptar chamadas de confirmacao nativa para exclusão de romaneios
     const confirmOriginal = window.confirm;
     window.confirm = function(message) {
         const resultado = confirmOriginal.call(this, message);

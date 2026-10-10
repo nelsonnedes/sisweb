@@ -35,8 +35,8 @@ test('E4: deletes PES (romaneio + cliente) mostram/escondem loader', () => {
 });
 
 test('E4: wrappers TORA escondem loader no settle (sem quebrar toast)', () => {
-  assert.match(manager, /window\.excluirRomaneioTora = function/);
-  assert.match(manager, /window\.excluirRomaneioGeneric = \(type, id\) =>/);
+  assert.match(manager, /window\.excluirRomaneioTora = async function/);
+  assert.match(manager, /window\.excluirRomaneioGeneric = async \(type, id\) =>/);
   assert.match(manager, /__hideLoader\(\)/);
   assert.match(manager, /Não foi possível excluir o romaneio no servidor\./);
   assert.match(manager, /Não foi possível excluir no servidor\. Verifique sua conexão\./);

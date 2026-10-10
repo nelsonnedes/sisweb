@@ -991,7 +991,7 @@
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=32ab283bb545"></script>
+<script src="menu-component.js?v=21f3fdc82e10"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         function getAnyUid(user) {
@@ -1879,8 +1879,8 @@
             try {
                 const isAdmin = await checkAdminAccess();
                 if (!isAdmin) return;
-                if (!confirm('Tem certeza que deseja gerar um backup completo do sistema?')) return;
-                if (!confirm('ÚLTIMA CONFIRMAÇÃO: Este backup incluirá todos os dados. Continuar?')) return;
+                if (!await confirmDialog({ title: 'Gerar backup', message: 'Tem certeza que deseja gerar um backup completo do sistema?', confirmLabel: 'Gerar backup' })) return;
+                if (!await confirmDialog({ title: 'Confirmar backup', message: 'ÚLTIMA CONFIRMAÇÃO: Este backup incluirá todos os dados. Continuar?', danger: true, confirmLabel: 'Gerar backup' })) return;
                 // Mostrar spinner
                 document.getElementById('backup-spinner').style.display = 'block';
                 
@@ -1944,7 +1944,7 @@
             document.getElementById('selectedFileName').textContent = file.name;
             
             // Confirmar importação
-            if (confirm(`Deseja importar o backup "${file.name}"? ATENÇÃO: Esta ação irá SUBSTITUIR todos os dados atuais do sistema!`)) {
+            if (await confirmDialog({ title: 'Importar backup', message: `Deseja importar o backup "${file.name}"? ATENÇÃO: Esta ação irá SUBSTITUIR todos os dados atuais do sistema!`, danger: true, confirmLabel: 'Substituir dados' })) {
                 importBackup(file);
             }
         }
@@ -1973,7 +1973,7 @@
                         }
                         
                         // Confirmar novamente antes de aplicar
-                        if (!confirm('ÚLTIMA CONFIRMAÇÃO: Esta ação irá SUBSTITUIR TODOS os dados atuais. Continuar?')) {
+                        if (!await confirmDialog({ title: 'Confirmar importação', message: 'ÚLTIMA CONFIRMAÇÃO: Esta ação irá SUBSTITUIR TODOS os dados atuais. Continuar?', danger: true, confirmLabel: 'Substituir tudo' })) {
                             return;
                         }
                         
@@ -2056,7 +2056,7 @@
         async function cleanupSystem() {
             try {
                 // Confirmar ação
-                if (!confirm('Tem certeza que deseja limpar dados expirados? Esta ação não pode ser desfeita.')) {
+                if (!await confirmDialog({ title: 'Limpar expirados', message: 'Tem certeza que deseja limpar dados expirados? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Limpar' })) {
                     return;
                 }
                 
@@ -2100,11 +2100,11 @@
         async function resetSystem() {
             try {
                 // Confirmar ação múltiplas vezes para evitar ações acidentais
-                if (!confirm('ATENÇÃO: Esta ação irá redefinir TODO o sistema e TODOS os dados serão perdidos. Esta ação NÃO PODE ser desfeita. Deseja continuar?')) {
+                if (!await confirmDialog({ title: 'Redefinir sistema', message: 'ATENÇÃO: Esta ação irá redefinir TODO o sistema e TODOS os dados serão perdidos. Esta ação NÃO PODE ser desfeita. Deseja continuar?', danger: true, confirmLabel: 'Continuar' })) {
                     return;
                 }
                 
-                if (!confirm('ÚLTIMA CHANCE: Tem certeza ABSOLUTA que deseja redefinir o sistema? TODOS os dados serão PERMANENTEMENTE PERDIDOS.')) {
+                if (!await confirmDialog({ title: 'Confirmação final', message: 'ÚLTIMA CHANCE: Tem certeza ABSOLUTA que deseja redefinir o sistema? TODOS os dados serão PERMANENTEMENTE PERDIDOS.', danger: true, confirmLabel: 'Redefinir tudo' })) {
                     return;
                 }
                 

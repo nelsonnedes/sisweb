@@ -288,8 +288,8 @@ function atualizarListaDocumentos() {
 }
 
 // Remover documento
-function removerDocumento(id) {
-    if (confirm('Deseja remover este documento?')) {
+async function removerDocumento(id) {
+    if (await confirmDialog({ title: 'Remover documento', message: 'Deseja remover este documento?', danger: true, confirmLabel: 'Remover' })) {
         documentosFiscais = documentosFiscais.filter(doc => doc.id !== id);
         atualizarListaDocumentos();
     }

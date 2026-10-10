@@ -227,7 +227,7 @@
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=32ab283bb545"></script>
+<script src="menu-component.js?v=21f3fdc82e10"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         let refreshTimer = null;
@@ -523,7 +523,7 @@
                 .split(/[,\s;]+/)
                 .map((v) => v.trim().toLowerCase())
                 .filter(Boolean);
-            const dryRun = confirm('Executar em modo simulação (sem gravar alterações)? Clique OK para simulação, Cancelar para aplicar.');
+            const dryRun = await confirmDialog({ title: 'Modo de execução', message: 'Executar em modo simulação (sem gravar alterações)? Clique OK para simulação, Cancelar para aplicar.', confirmLabel: 'Simular', cancelLabel: 'Aplicar' });
             const result = await window.firebaseService.reconcileSuperAdminClaims({
                 emails,
                 removeCompanyIdClaim: true,
@@ -554,7 +554,7 @@
                 alert('Função de auditoria indisponível.');
                 return;
             }
-            const includeConsistent = confirm('Incluir também usuários consistentes no resultado? OK = sim, Cancelar = somente inconsistentes.');
+            const includeConsistent = await confirmDialog({ title: 'Escopo da auditoria', message: 'Incluir também usuários consistentes no resultado? OK = sim, Cancelar = somente inconsistentes.', confirmLabel: 'Incluir todos', cancelLabel: 'Somente inconsistentes' });
             const result = await window.firebaseService.auditAdminClaimsInconsistencies({ includeConsistent });
             if (!result || !result.success || !result.data) {
                 alert(`Falha na auditoria: ${(result && result.error) || 'erro desconhecido'}`);
@@ -591,7 +591,7 @@
                 alert('Função de reconciliação indisponível.');
                 return;
             }
-            const confirmFix = confirm(`Deseja corrigir ${targets.length} item(ns) inconsistentes exibidos?`);
+            const confirmFix = await confirmDialog({ title: 'Corrigir itens', message: `Deseja corrigir ${targets.length} item(ns) inconsistentes exibidos?`, danger: true, confirmLabel: 'Corrigir' });
             if (!confirmFix) return;
             const uids = targets.map((item) => String(item.uid || '')).filter(Boolean);
             const emails = targets.map((item) => String(item.email || '').toLowerCase()).filter(Boolean);

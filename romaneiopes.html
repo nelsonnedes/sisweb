@@ -37,7 +37,7 @@
     <link rel="stylesheet" href="romaneio-comum.css?v=4fea9c9e9451">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=32ab283bb545"></script>
+<script src="menu-component.js?v=21f3fdc82e10"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <link rel="stylesheet" href="print-styles.css?v=f79c9137e576">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1484,7 +1484,7 @@
     </script>
     <script src="client-utils.js?v=d93fb3fb82f5"></script>
     <script src="client-modal-handler.js?v=4772af1e6bfb"></script>
-    <script src="client-service.js?v=26fd5bf2abb6"></script>
+    <script src="client-service.js?v=b95ca0dfb346"></script>
     <script src="schema-migration-contatos.js?v=3a574e7e3324"></script>
     <script src="romaneios-client-save-fix.js?v=9f4df8ca50a8"></script>
     <script src="pre-romaneio-selector.js?v=e56e428472de"></script>
@@ -3466,10 +3466,10 @@
         }
 
         // Função para excluir cliente da lista (padrão romaneiopct)
-        function deleteClientFromList(clientId) {
+        async function deleteClientFromList(clientId) {
             const client = clients.find(c => c.id == clientId);
             const clientName = client ? (client.name || client.nome || clientId) : clientId;
-            if (!confirm(`Tem certeza que deseja excluir o cliente "${clientName}"?\n\nEsta ação não pode ser desfeita.`)) {
+            if (!await confirmDialog({ title: 'Excluir cliente', message: `Tem certeza que deseja excluir o cliente "${clientName}"?\n\nEsta ação não pode ser desfeita.`, danger: true, confirmLabel: 'Excluir' })) {
                 return;
             }
             (async () => {
@@ -4409,7 +4409,7 @@
         // Função para excluir romaneio (padrão PCT: purga multi-chave + fail-closed,
         // sem reload cego — antes filtrava só por id e ressuscitava via localStorage)
         async function deleteRomaneio(index) {
-            if (confirm("Tem certeza que deseja excluir este romaneio?")) {
+            if (await confirmDialog({ title: 'Excluir romaneio', message: "Tem certeza que deseja excluir este romaneio?", danger: true, confirmLabel: 'Excluir' })) {
                 try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
                 try {
                 const romaneios = await loadRomaneiosPesCompany();

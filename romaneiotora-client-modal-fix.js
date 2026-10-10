@@ -282,7 +282,7 @@ async function saveClientRomaneitoraCorrigido(e) {
             );
             
             if (existingByName) {
-                const confirmOverwrite = confirm(`Já existe um cliente com o nome "${clientName}". Deseja atualizar o cadastro existente?`);
+                const confirmOverwrite = await confirmDialog({ title: 'Cliente já cadastrado', message: `Já existe um cliente com o nome "${clientName}". Deseja atualizar o cadastro existente?`, confirmLabel: 'Atualizar cadastro' });
                 if (confirmOverwrite) {
                     // Atualizar cliente existente
                     const index = clients.findIndex(c => c.id === existingByName.id);

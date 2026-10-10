@@ -2157,7 +2157,7 @@ class FolhaLancamentos {
         try {
             if (!folhaId) { this.showNotification('ID inválido para exclusão', 'error'); return; }
             
-            const confirma = typeof confirm === 'function' ? confirm('Confirma excluir esta folha? Esta ação não pode ser desfeita.') : true;
+            const confirma = await confirmDialog({ title: 'Excluir folha', message: 'Confirma excluir esta folha? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' });
             if (!confirma) return;
             
             // ✅ USAR O MANAGER PARA DELETAR (saveData com null)
@@ -3647,7 +3647,7 @@ window.darBaixaQuinzena = async function(id) {
         try {
             const nomeFunc = (lancamento.funcionario && (lancamento.funcionario.nome || lancamento.funcionario.name)) || '';
             const mesRef = lancamento.mesAno || lancamento.mes || '';
-            if (!confirm(`Confirma dar baixa na quinzena${nomeFunc ? ' de ' + nomeFunc : ''}${mesRef ? ' (' + mesRef + ')' : ''}? O pagamento será registrado no financeiro.`)) {
+            if (!await confirmDialog({ title: 'Dar baixa na quinzena', message: `Confirma dar baixa na quinzena${nomeFunc ? ' de ' + nomeFunc : ''}${mesRef ? ' (' + mesRef + ')' : ''}? O pagamento será registrado no financeiro.`, confirmLabel: 'Dar baixa' })) {
                 __folhaLancamentoEnd(__flKey);
                 return;
             }
@@ -3884,7 +3884,7 @@ window.deleteFolha = async function(folhaId) {
     const __flKey = 'delete:' + String(folhaId || '');
     if (!__folhaLancamentoBegin(__flKey)) return;
     try {
-        const confirma = confirm('Confirma excluir esta folha? Esta ação não pode ser desfeita.');
+        const confirma = await confirmDialog({ title: 'Excluir folha', message: 'Confirma excluir esta folha? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' });
         if (!confirma) { __folhaLancamentoEnd(__flKey); return; }
         
         // ✅ USAR O MANAGER PARA DELETAR (saveData com null)

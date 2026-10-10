@@ -818,7 +818,7 @@
         window.firebaseService = { ...(window.firebaseService || {}), ...firebaseSvc };
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=32ab283bb545"></script>
+<script src="menu-component.js?v=21f3fdc82e10"></script>
     <script src="menu.js?v=7b75ff7dff89"></script>
     <script>
         // Variável para armazenar os dados da assinatura atual
@@ -1046,7 +1046,7 @@
             }
             const label = getStatusLabel(status);
             const who = targetUser.username || targetUser.email || 'usuário';
-            if (!confirm(`Confirma alterar o status de ${who} para "${label}"?`)) return;
+            if (!await confirmDialog({ title: 'Alterar status', message: `Confirma alterar o status de ${who} para "${label}"?`, confirmLabel: 'Alterar' })) return;
             const reasonPrompt = prompt(`Motivo da alteração para "${label}" (opcional):`, '') || '';
             let cloudApplied = false;
             try {
@@ -1808,7 +1808,7 @@
                 window.location.href = 'index.html';
                 return;
             }
-            if (!confirm(`Confirmar aprovação do pagamento para ${user.username || user.email}?`)) {
+            if (!await confirmDialog({ title: 'Aprovar pagamento', message: `Confirmar aprovação do pagamento para ${user.username || user.email}?`, confirmLabel: 'Aprovar' })) {
                 return;
             }
             
@@ -1951,7 +1951,7 @@
                 window.location.href = 'index.html';
                 return;
             }
-            if (!confirm(`Confirmar rejeição do pagamento para ${user.username || user.email}?`)) {
+            if (!await confirmDialog({ title: 'Rejeitar pagamento', message: `Confirmar rejeição do pagamento para ${user.username || user.email}?`, danger: true, confirmLabel: 'Rejeitar' })) {
                 return;
             }
             

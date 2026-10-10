@@ -1337,12 +1337,12 @@
 
         // Botão de limpeza de cache e manutenção
         document.addEventListener('DOMContentLoaded', function () {
-            document.addEventListener('click', function (event) {
+            document.addEventListener('click', async function (event) {
                 const target = event.target && event.target.closest ? event.target.closest('#clearCacheBtn') : null;
                 if (!target) return;
                 event.preventDefault();
                 event.stopPropagation();
-                if (confirm('Isso fará uma limpeza profunda no sistema (Cache, Dados Locais, Login). Deseja continuar?')) {
+                if (await confirmDialog({ title: 'Limpeza profunda', message: 'Isso fará uma limpeza profunda no sistema (Cache, Dados Locais, Login). Deseja continuar?', danger: true, confirmLabel: 'Limpar tudo' })) {
                     if (typeof window.deepCleanAndReload === 'function') {
                         window.deepCleanAndReload();
                     } else {

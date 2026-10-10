@@ -718,7 +718,7 @@ async function editarItem(index) {
 // FUNÇÃO REMOVER ITEM
 // ========================================
 
-function removerItem(index) {
+async function removerItem(index) {
     try {
         console.log(`🗑️ Removendo item no índice ${index}`);
         
@@ -726,7 +726,7 @@ function removerItem(index) {
             throw new Error('Item não encontrado para remoção');
         }
         
-        if (confirm('Tem certeza que deseja remover este item?')) {
+        if (await confirmDialog({ title: 'Remover item', message: 'Tem certeza que deseja remover este item?', danger: true, confirmLabel: 'Remover' })) {
             window.romaneioItems.splice(index, 1);
             // ✅ Se excluiu o item em edição (ou anterior a ele), sair do modo
             // edição: o botão ficava preso em "Atualizar Item" com índice

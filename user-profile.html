@@ -45,7 +45,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=32ab283bb545"></script>
+<script src="menu-component.js?v=21f3fdc82e10"></script>
     <!-- Adicionar fontes do Google para melhorar a tipografia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1673,7 +1673,7 @@
         }
 
         async function disableMfa() {
-            if (!window.confirm('Desativar a autenticação em duas etapas? O login voltará a exigir apenas senha.')) return;
+            if (!await confirmDialog({ title: 'Desativar 2FA', message: 'Desativar a autenticação em duas etapas? O login voltará a exigir apenas senha.', danger: true, confirmLabel: 'Desativar' })) return;
             const disableBtn = document.getElementById('mfaDisableBtn');
             if (disableBtn) disableBtn.disabled = true;
             try {

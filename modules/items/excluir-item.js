@@ -18,7 +18,7 @@ window.ExcluirItem = (function() {
     /**
      * ✅ FUNÇÃO PRINCIPAL: Excluir Item
      */
-    function excluirItem(index) {
+    async function excluirItem(index) {
         console.log(`🗑️ Solicitação de exclusão do item no índice: ${index}`);
         
         try {
@@ -39,7 +39,7 @@ window.ExcluirItem = (function() {
             const item = items[index];
             
             // Confirmar exclusão
-            if (!confirmarExclusao(item, index)) {
+            if (!await confirmarExclusao(item, index)) {
                 console.log('⚠️ Exclusão cancelada pelo usuário');
                 return false;
             }
@@ -76,7 +76,7 @@ window.ExcluirItem = (function() {
     /**
      * Confirmar exclusão com o usuário
      */
-    function confirmarExclusao(item, index) {
+    async function confirmarExclusao(item, index) {
         const especie = item.especie || 'N/A';
         const comprimento = item.comprimento || 0;
         const espessura = item.espessura || item[legacyKey] || 0;
@@ -89,7 +89,7 @@ window.ExcluirItem = (function() {
                         `Quantidade: ${quantidade} peças\n` +
                         `Posição: ${index + 1}`;
         
-        const confirmacao = confirm(mensagem);
+        const confirmacao = await confirmDialog({ title: 'Excluir item', message: mensagem, danger: true, confirmLabel: 'Excluir' });
         console.log(`🤔 Confirmação do usuário: ${confirmacao ? 'SIM' : 'NÃO'}`);
         
         return confirmacao;
@@ -206,7 +206,7 @@ window.ExcluirItem = (function() {
     /**
      * ✅ EXCLUIR MÚLTIPLOS ITENS
      */
-    function excluirMultiplosItens(indices) {
+    async function excluirMultiplosItens(indices) {
         console.log('🗑️ Solicitação de exclusão múltipla:', indices);
         
         if (!Array.isArray(indices) || indices.length === 0) {
@@ -222,7 +222,7 @@ window.ExcluirItem = (function() {
         }
         
         // Confirmar exclusão múltipla
-        const confirmacao = confirm(`Confirma a exclusão de ${indices.length} itens selecionados?`);
+        const confirmacao = await confirmDialog({ title: 'Excluir itens', message: `Confirma a exclusão de ${indices.length} itens selecionados?`, danger: true, confirmLabel: 'Excluir' });
         if (!confirmacao) {
             console.log('⚠️ Exclusão múltipla cancelada pelo usuário');
             return false;
@@ -292,7 +292,7 @@ window.ExcluirItem = (function() {
     /**
      * Limpar todos os itens
      */
-    function limparTodosItens() {
+    async function limparTodosItens() {
         console.log('🧹 Solicitação para limpar todos os itens...');
         
         // Obter quantidade de itens
@@ -304,7 +304,7 @@ window.ExcluirItem = (function() {
         }
         
         // Confirmar limpeza
-        const confirmacao = confirm(`Confirma a remoção de todos os ${items.length} itens do romaneio?`);
+        const confirmacao = await confirmDialog({ title: 'Remover todos os itens', message: `Confirma a remoção de todos os ${items.length} itens do romaneio?`, danger: true, confirmLabel: 'Remover todos' });
         if (!confirmacao) {
             console.log('⚠️ Limpeza cancelada pelo usuário');
             return false;

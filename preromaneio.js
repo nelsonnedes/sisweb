@@ -399,13 +399,13 @@ function setupEnterNavigation() {
  * Gerenciamento de Abas
  * @param {string} tab - 'PCT', 'TL', 'PES', 'TORA'
  */
-function mudarAba(tab) {
+async function mudarAba(tab) {
     // Se houver itens, perguntar antes de trocar (para evitar mistura).
     // Pulada ao carregar pré-romaneio para edição: os itens atuais serão
     // substituídos pelos carregados (antes perguntava e, ao cancelar, os
     // itens do tipo novo eram renderizados na aba antiga).
     if (!window.__LOADING_PREROMANEIO && romaneioItens.length > 0 && tab !== currentTab) {
-        if (!confirm("Trocar de aba limpará os itens atuais. Deseja continuar?")) {
+        if (!await confirmDialog({ title: 'Trocar de aba', message: 'Trocar de aba limpará os itens atuais. Deseja continuar?', danger: true, confirmLabel: 'Trocar e limpar' })) {
             return;
         }
         romaneioItens = [];
@@ -970,8 +970,8 @@ function editarItem(index) {
     }
 }
 
-function removerItem(index) {
-    if (confirm('Tem certeza que deseja excluir este item?')) {
+async function removerItem(index) {
+    if (await confirmDialog({ title: 'Excluir item', message: 'Tem certeza que deseja excluir este item?', danger: true, confirmLabel: 'Excluir' })) {
         romaneioItens.splice(index, 1);
         renderizarTabela();
         atualizarTotais();

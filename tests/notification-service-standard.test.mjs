@@ -162,6 +162,45 @@ test('Onda E1: nucleo destrutivo usa confirmDialog (zero confirm nativo)', async
       'limparCarrinhoItens (compras) async');
   });
 });
+test('Onda E2: restante do codigo vivo usa confirmDialog', async (t) => {
+  const migradosE2 = ['folha_pagamento/folha-lancamentos.js', 'folha_pagamento/folha-cargos.js',
+    'folha_pagamento/folha-funcionarios.js', 'folha_pagamento/banco-horas-ui.js',
+    'menu-component.js', 'mdf-e.js', 'mdf-e.html', 'notas-fiscais.html',
+    'client-service.js', 'fornecedor-modals.js', 'correcao-lista-romaneios.js',
+    'modules/items/editar-item.js', 'modules/items/excluir-item.js',
+    'modules/romaneio/salvar-romaneio.js', 'modules/modals/modal-clientes.js',
+    'modules/romaneiopct/modal-clientes-pct.js', 'modules/modals/modal-lista-romaneios.js',
+    'modules/romaneiopct/modal-lista-romaneios-pct.js', 'preromaneio.js',
+    'preromaneio-modals.js', 'romaneio-manager.js', 'romaneiopct_funcoes.js',
+    'romaneiopct-main.js', 'romaneiopct-tabela.js', 'romaneiotora_modais.js',
+    'romaneiotora-client-modal-fix.js', 'romaneiopes.html', 'admin-settings.html',
+    'admin-subscriptions.html', 'admin-access-governance.html', 'company.html',
+    'login.html', 'user-profile.html'];
+  for (const f of migradosE2) {
+    await t.test(`${f} sem confirm() nativo novo`, () => {
+      const src = fs.readFileSync(f, 'utf8');
+      const nativos = (src.match(/(?<![.\w])confirm\s*\(/g) || []).length;
+      assert.strictEqual(nativos, 0, `${f} ainda tem ${nativos} confirm() nativo(s)`);
+      if (f !== 'correcao-lista-romaneios.js') {
+        assert.ok(!src.includes('window.confirm('), `${f} nao pode chamar window.confirm(`);
+      }
+    });
+  }
+
+  await t.test('excecoes documentadas: morto/vendor/metodo/interceptor', () => {
+    // Arquivos mortos ou vendor mantidos fora do escopo E2.
+    for (const f of ['compras_legacy.js', 'limpar_direto.js', 'firebase/sdk/firebase-auth.js',
+      'src/components/ui/romaneio-table.js']) {
+      assert.ok(fs.existsSync(f), `excecao documentada ainda existe: ${f}`);
+    }
+    // .confirm como metodo MFA nao e popup nativo.
+    const mfa = fs.readFileSync('user-profile.html', 'utf8');
+    assert.ok(mfa.includes('SuperAdminMfa.confirm'), 'MFA usa metodo proprio, nao popup');
+    // Interceptor legado de dev-tool preservado e mapeado.
+    const corr = fs.readFileSync('correcao-lista-romaneios.js', 'utf8');
+    assert.ok(corr.includes('confirmOriginal'), 'interceptor documentado');
+  });
+});
 test('Onda B: ToastManager unificado e familia legada removida', async (t) => {
   await t.test('compras.js e vendas.js delegam show ao servico', () => {
     for (const f of ['compras.js', 'vendas.js']) {

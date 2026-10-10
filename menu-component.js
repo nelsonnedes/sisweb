@@ -1720,10 +1720,10 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             }
             const clearBtn = this.querySelector('#alertsClearBtn');
             if (clearBtn && !clearBtn._bound) {
-                clearBtn.addEventListener('click', (e) => {
+                clearBtn.addEventListener('click', async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (!confirm('Limpar todas as mensagens de alerta?')) return;
+                    if (!await confirmDialog({ title: 'Limpar alertas', message: 'Limpar todas as mensagens de alerta?', confirmLabel: 'Limpar' })) return;
                     try { this.clearSystemAlerts(); } catch (_) {}
                     try { this.renderAlerts(); } catch (_) {}
                 });

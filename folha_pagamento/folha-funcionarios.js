@@ -1221,7 +1221,7 @@ class FolhaFuncionarios {
         const funcionario = this.funcionarios.find(f => f.id === funcionarioId);
         if (!funcionario) return;
         
-        const confirmDelete = confirm(`Tem certeza que deseja excluir o funcionário ${funcionario.nome}?`);
+        const confirmDelete = await confirmDialog({ title: 'Excluir funcionário', message: `Tem certeza que deseja excluir o funcionário ${funcionario.nome}?`, danger: true, confirmLabel: 'Excluir' });
         if (!confirmDelete) return;
         // Trava anti-duplo-clique (H-32): o confirm bloqueia, mas o await nao.
         if (!window.__folhaDelEmAndamento) window.__folhaDelEmAndamento = new Set();

@@ -1013,7 +1013,7 @@ window.ModalListaRomaneiosPCT = (function() {
     }
     
     async function deleteRomaneio(romaneioId) {
-        if (!confirm(MSG_CONFIRM_DELETE)) return;
+        if (!await confirmDialog({ title: 'Excluir romaneio', message: MSG_CONFIRM_DELETE, danger: true, confirmLabel: 'Excluir' })) return;
         console.log(` PCT: Excluindo romaneio ${romaneioId}`);
         try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo romaneio...'); } catch (_) {}
         // Chave real pode divergir do id normalizado (firebaseKey/key/numero).
@@ -1344,7 +1344,7 @@ window.ModalListaRomaneiosPCT = (function() {
             // Verificar se já foi lançado
             if (romaneio.contasReceberLancado === true) {
                 console.log('🎯 PCT: Romaneio já foi lançado anteriormente');
-                const confirmar = confirm(MSG_CONFIRM_DUPLICATE_LANCAMENTO);
+                const confirmar = await confirmDialog({ title: 'Lançar novamente', message: MSG_CONFIRM_DUPLICATE_LANCAMENTO, confirmLabel: 'Criar nova conta' });
                 if (!confirmar) return;
             }
             
