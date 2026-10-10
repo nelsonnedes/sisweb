@@ -43,8 +43,7 @@ test('PCT itens: toasts espelham o TL', async (t) => {  await t.test('editar mos
   });
 });
 
-test('Pos-save: PCT/PES/TORA/pre perguntam limpar como o TL', async (t) => {
-  const prompt = "Deseja limpar o formulário para criar um novo romaneio?";
+test('Pos-save: PCT/PES/TORA/pre perguntam limpar como o TL', async (t) => {  const prompt = "Deseja limpar o formulário para criar um novo romaneio?";
   await t.test('PCT pergunta antes de limpar', () => {
     const src = fs.readFileSync('romaneiopct-tabela.js', 'utf8');
     assert.ok(src.includes(prompt), 'PCT tem prompt pos-save');
@@ -65,5 +64,35 @@ test('Pos-save: PCT/PES/TORA/pre perguntam limpar como o TL', async (t) => {
     const src = fs.readFileSync('preromaneio.js', 'utf8');
     assert.ok(src.includes('Deseja limpar o formulário para criar um novo pré-romaneio?'),
       'pre tem prompt pos-save');
+  });
+});
+
+test('PES/TORA itens: toasts espelham o TL', async (t) => {
+  await t.test('PES editar/adicionar/atualizar com toast', () => {
+    const src = fs.readFileSync('romaneiopes.html', 'utf8');
+    assert.ok(src.includes("notifyUser('Item carregado para edição', 'info')"), 'PES edit info');
+    assert.ok(src.includes("notifyUser('Item atualizado com sucesso!', 'success')"), 'PES update');
+    assert.ok(src.includes("notifyUser('Item adicionado ao romaneio.', 'success')"), 'PES add');
+  });
+
+  await t.test('TORA adicionar/atualizar com toast', () => {
+    const src = fs.readFileSync('romaneiotora_tabela.js', 'utf8');
+    assert.ok(src.includes("'Item atualizado com sucesso!'"), 'TORA update');
+    assert.ok(src.includes("'Item adicionado com sucesso!'"), 'TORA add');
+  });
+});
+
+test('Save TORA/TL: loader padronizado SiswebLoading', async (t) => {
+  await t.test('TORA usa SiswebLoading primeiro', () => {
+    const src = fs.readFileSync('romaneiotora_tabela.js', 'utf8');
+    assert.ok(src.includes("window.SiswebLoading.show('Salvando romaneio...'"),
+      'TORA mostra loader padrao');
+    assert.ok(src.includes('window.SiswebLoading.hide()'), 'TORA esconde loader');
+  });
+
+  await t.test('modulo compartilhado usa SiswebLoading primeiro', () => {
+    const src = fs.readFileSync('modules/romaneio/salvar-romaneio.js', 'utf8');
+    assert.ok(src.includes("window.SiswebLoading.show('Salvando romaneio...'"),
+      'TL mostra loader padrao');
   });
 });

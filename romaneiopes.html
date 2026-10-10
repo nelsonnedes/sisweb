@@ -37,7 +37,7 @@
     <link rel="stylesheet" href="romaneio-comum.css?v=4fea9c9e9451">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=1a3d6bc4680f"></script>
+<script src="menu-component.js?v=f7f27d3a98fa"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <link rel="stylesheet" href="print-styles.css?v=f79c9137e576">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2334,9 +2334,11 @@
                     btnAdicionar.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
                     btnAdicionar.classList.remove('btn-atualizar-item');
                 }
+                notifyUser('Item atualizado com sucesso!', 'success');
             } else {
                 // Adicionar à lista de itens
                 itens.push(item);
+                notifyUser('Item adicionado ao romaneio.', 'success');
             }
             
             // Atualizar a tabela
@@ -2401,6 +2403,7 @@
                 btnAdicionar.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Item';
                 btnAdicionar.classList.add('btn-atualizar-item');
             }
+            notifyUser('Item carregado para edição', 'info');
 
             if (espInput) espInput.focus();
             try {

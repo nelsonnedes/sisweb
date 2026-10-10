@@ -747,6 +747,7 @@ function adicionarItem() {
         }
         
         console.log('Item adicionado com sucesso:', novoItem);
+        notifyUser(editIndex !== null ? 'Item atualizado com sucesso!' : 'Item adicionado com sucesso!', 'success');
         
     } catch (error) {
         console.error('Erro ao adicionar item:', error);
@@ -825,7 +826,7 @@ async function salvarRomaneio() {
         return;
     }
     window.isSavingRomaneio = true;
-    try { if (typeof LoadingManager !== 'undefined' && LoadingManager.show) LoadingManager.show('Salvando romaneio...'); } catch (_) {}
+    try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Salvando romaneio...'); else if (typeof LoadingManager !== 'undefined' && LoadingManager.show) LoadingManager.show('Salvando romaneio...'); } catch (_) {}
     try { const bS = document.getElementById('btnSalvar'); if (bS) bS.disabled = true; } catch (_) {}
     
     try {
@@ -1232,7 +1233,7 @@ async function salvarRomaneio() {
         if (window.Utils && window.Utils.showToast) window.Utils.showToast(`Erro ao salvar romaneio: ${error.message}`, 'error');
     } finally {
         window.isSavingRomaneio = false;
-        try { if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); else if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}
         try { const bS = document.getElementById('btnSalvar'); if (bS) bS.disabled = false; } catch (_) {}
     }
 }

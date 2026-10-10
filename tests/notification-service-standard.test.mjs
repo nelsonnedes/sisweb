@@ -239,6 +239,23 @@ test('Onda F: source-level sem alert() nativo (excecoes documentadas)', async (t
     assert.ok(!/(?<![.\w])alert\s*\(/.test(estoque), 'estoque sem alert()');
   });
 });
+test('Defesa Brave/Shields: watchdog de prontidao do Firebase', async (t) => {
+  await t.test('menu-component vigia firebase e avisa uma vez', () => {
+    const src = fs.readFileSync('menu-component.js', 'utf8');
+    assert.ok(src.includes('watchFirebaseReadiness'), 'watchdog presente');
+    assert.ok(src.includes('firebasePronto'), 'respeita evento de prontidao');
+    assert.ok(src.includes('_FIREBASE_READY'), 'checa flag de prontidao');
+    assert.ok(src.includes('Brave Shields'), 'mensagem orienta sobre bloqueadores');
+  });
+
+  await t.test('HSTS força HTTPS (aviso conexao nao segura)', () => {
+    const cfg = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
+    const global = (cfg.hosting.headers || []).find((h) => h.source === '**');
+    const hsts = (global.headers || []).find((h) => h.key === 'Strict-Transport-Security');
+    assert.ok(hsts && /max-age=31536000/.test(hsts.value), 'HSTS com 1 ano');
+  });
+});
+
 test('Onda B: ToastManager unificado e familia legada removida', async (t) => {
   await t.test('compras.js e vendas.js delegam show ao servico', () => {
     for (const f of ['compras.js', 'vendas.js']) {

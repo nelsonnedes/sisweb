@@ -21,6 +21,35 @@
     }
     ensureNotificationService();
 
+    // Defesa Brave/Shields (2026-10-10): se o Firebase não sinalizar prontidão,
+    // avisa uma vez em vez de deixar a página em "offline" silencioso.
+    function watchFirebaseReadiness() {
+        try {
+            let settled = false;
+            const markOk = () => { settled = true; };
+            window.addEventListener('firebasePronto', markOk, { once: true });
+            setTimeout(() => {
+                try {
+                    if (settled) return;
+                    const pronto = window._FIREBASE_READY === true
+                        || !!window.firebaseService
+                        || !!window.firebase
+                        || !!window._FIREBASE_APP;
+                    if (pronto) { settled = true; return; }
+                    settled = true;
+                    if (window.NotificationService
+                        && typeof window.NotificationService.warning === 'function') {
+                        window.NotificationService.warning(
+                            'Conexão com o Firebase demorou. Verifique a internet ou desative bloqueadores (Brave Shields/AdBlock) para este site.',
+                            { duration: 8000 }
+                        );
+                    }
+                } catch (_) {}
+            }, 20000);
+        } catch (_) {}
+    }
+    watchFirebaseReadiness();
+
     const PWA_VERSION = '2026-10-09-fin-grid';
     const state = {
         deferredPrompt: null,

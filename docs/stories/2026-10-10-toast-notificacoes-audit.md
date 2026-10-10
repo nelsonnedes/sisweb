@@ -187,6 +187,21 @@ CSS** (`.toast.success`), não chamadas JS — únicos consumidores da API toast
 - Validação final: lint/typecheck limpos, suite 982/0/1, smoke 18 páginas
   (notifyUser+confirmDialog presentes, toast renderiza, zero dialogs nativos,
   zero pageerrors), deploy verificado.
+
+## 16. Follow-up romaneios + Brave (2026-10-10)
+
+- PES/TORA itens: toasts de editar (info), atualizar e adicionar (sucesso),
+  paridade com TL (trava §paridade).
+- Save TORA/TL: usavam `LoadingManager` (só existe em vendas.js → loader
+  silencioso nas páginas de romaneio). Agora `SiswebLoading` primeiro
+  (padrão `romaneio-manager.js`), fallback mantido.
+- HSTS (`max-age=1 ano`) no `firebase.json` contra downgrade HTTP.
+- Brave: varredura completa sem vetor de travamento no código (todos os
+  `while` têm timeout, waits assíncronos, SW sem reload-loop, offline só
+  atualiza badge). Hipótese: Shields bloqueando `gstatic`/websocket RTDB
+  (tela mostra "Modo Offline") + lentidão percebida como freeze. Defesa:
+  watchdog no menu avisa 1× após 20s sem Firebase, orientando a desativar
+  bloqueadores. Para confirmar: testar com Shields desativado e URL https.
 - [ ] Reescritas amigáveis §6.2 (§6.4 multilinha)
 - [ ] Registrar não-conformidades novas como débito arquitetural
 

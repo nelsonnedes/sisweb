@@ -139,7 +139,7 @@ window.SalvarRomaneio = (function() {
         
         isProcessing = true;
         // Feedback visual durante coletar→salvar (Firebase pode levar segundos)
-        try { if (typeof LoadingManager !== 'undefined' && LoadingManager.show) LoadingManager.show('Salvando romaneio...'); } catch (_) {}
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Salvando romaneio...'); else if (typeof LoadingManager !== 'undefined' && LoadingManager.show) LoadingManager.show('Salvando romaneio...'); } catch (_) {}
 
         try {
             // Validar dados do romaneio
@@ -177,7 +177,7 @@ window.SalvarRomaneio = (function() {
             return false;
         } finally {
             isProcessing = false;
-            try { if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}
+            try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); else if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}
         }
     }
 
