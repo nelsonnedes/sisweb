@@ -7,7 +7,7 @@
     window.__siswebPWAInitialized = true;
 
     // Onda A (2026-10-10): NotificationService global em todas as páginas do menu.
-    var NOTIFY_VERSION = '2026-10-10-onda-a';
+    var NOTIFY_VERSION = '2026-10-10-onda-c';
     function ensureNotificationService() {
         try {
             if (window.NotificationService && typeof window.NotificationService.show === 'function') return;

@@ -39,9 +39,11 @@ test('NotificationService global existe com API completa', async (t) => {
     assert.ok(svc.includes('opts.duration') || svc.includes('duration'), 'duracao configuravel via opts');
   });
 
-  await t.test('compat window.__toast sem sobrescrever window.alert', () => {
-    assert.ok(svc.includes('window.__toast'), 'define __toast para menu-component');
-    assert.ok(!svc.includes('window.alert ='), 'NAO deve sobrescrever window.alert (Onda F)');
+  await t.test('redirect global alert()->toast instalado com guarda unica', () => {
+    assert.ok(svc.includes('window.alert = function'), 'deve instalar redirect de window.alert');
+    assert.ok(svc.includes('__siswebAlertOverridden'), 'redirect com guarda unica (compativel T1)');
+    assert.ok(svc.includes('classifyAlertMessage'), 'redirect usa classificador de tipo');
+    assert.ok(svc.includes('window.__classifyAlertMessage'), 'classificador exposto para testes');
   });
 });
 
@@ -65,6 +67,47 @@ test('T5 e T4 delegam ao servico (zero fallback alert)', async (t) => {
   }
 });
 
+test('Onda C: classificador alert()->toast acerta as categorias', async (t) => {
+  const m = svc.match(/function classifyAlertMessage\(text\) \{[\s\S]*?\n    \}/);
+  assert.ok(m, 'classificador extraivel do servico');
+  const classify = new Function(`${m[0]}; return classifyAlertMessage;`)();
+
+  const casos = [
+    // [mensagem, tipo esperado]
+    ['Informe a plaqueta.', 'warning'],
+    ['Selecione um romaneio primeiro.', 'warning'],
+    ['O fornecedor selecionado não corresponde ao fornecedor do romaneio.', 'warning'],
+    ['Já existe uma tora com esta plaqueta no estoque.', 'warning'],
+    ['Existem plaquetas duplicadas no estoque: P1. Corrija antes de salvar.', 'warning'],
+    ['Nenhum MDF-e encontrado no período selecionado', 'warning'],
+    ['A lista de espécies ainda não foi carregada. Aguarde.', 'warning'],
+    ['Biblioteca SheetJS (XLSX) não carregada. Tente recarregar a página.', 'error'],
+    ['Módulo de certificado não carregado', 'error'],
+    ['Tenant não identificado', 'error'],
+    ['Sessão autenticada não encontrada. Faça login novamente.', 'error'],
+    ['Não foi possível salvar o MDF-e: erro X', 'error'],
+    ['MDF-e rejeitado: retorno sem autorização', 'error'],
+    ['Falha ao abrir janela de impressão.', 'error'],
+    ['Impressão bloqueada no mobile. Permita popups.', 'warning'],
+    ['Carregados 5 itens do romaneio.', 'success'],
+    ['Tora atualizada com sucesso.', 'success'],
+    ['3 tora(s) excluída(s) permanentemente do estoque.', 'success'],
+    ['Certificado removido.', 'success'],
+    ['MDF-e autorizado com sucesso!\nProtocolo: 123', 'success'],
+    ['✅ NF-e cancelada com sucesso!', 'success'],
+    ['❌ Erro ao enviar certificado: X', 'error'],
+    ['⚠️ CNPJ da empresa inválido. Verifique.', 'warning'],
+    ['MDF-e carregado para edição', 'info'],
+    ['Retorno SEFAZ: 100 - Autorizado o uso', 'success'],
+    ['Configuração em nuvem será implementada na próxima fase.', 'info'],
+    ['Fornecedor selecionado para o pedido.', 'info'],
+  ];
+  for (const [msg, esperado] of casos) {
+    await t.test(`"${msg.slice(0, 42)}..." => ${esperado}`, () => {
+      assert.strictEqual(classify(msg), esperado);
+    });
+  }
+});
 test('Onda B: ToastManager unificado e familia legada removida', async (t) => {
   await t.test('compras.js e vendas.js delegam show ao servico', () => {
     for (const f of ['compras.js', 'vendas.js']) {

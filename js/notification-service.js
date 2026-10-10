@@ -4,7 +4,7 @@
  *   NotificationService.show(message, type, opts)
  *   NotificationService.success|warning|error|info(message, opts)
  *   confirmDialog({ title, message, confirmLabel, cancelLabel, danger }) -> Promise<boolean>
- * Compat: define window.__toast se ausente. NAO sobrescreve o popup nativo (Onda F).
+ * Compat: define window.__toast se ausente + redirect global popup-nativo (Onda C).
  * Cores SOMENTE via tokens var(--sw-*) com fallback hardcoded.
  */
 (function initSiswebNotifications() {
@@ -212,5 +212,26 @@
     // mesmo onde modules/core/toast.js não foi importado.
     if (typeof window.__toast !== 'function' || String(window.__toast).indexOf('[native code]') !== -1) {
         window.__toast = function (message, type, opts) { show(message, type, opts); };
+    }
+
+    // Onda C: redirect global de popup nativo para toast (rede dos alerts legados).
+    // Ordem importa: erro antes de sucesso ('Não foi possível salvar' tem 'salvar'),
+    // sucesso antes de aviso ('cancelada com sucesso' tem 'cancelad').
+    function classifyAlertMessage(text) {
+        var l = String(text == null ? '' : text).toLowerCase();
+        if (/não foi possível|erro|falha|rejeit|negad|recus|❌|tenant|sessão|não carregad/.test(l)) return 'error';
+        if (/✅|sucesso|êxito|carregados|excluíd|removid|autorizado|aprovad/.test(l)) return 'success';
+        if (/⚠️|selecione|informe|preencha|adicione|escolha|busque|atenção|atencao|aviso|antes de|ainda não|aguarde|já |duplicad|não |nenhum|nenhuma|não encontrado|não corresponde|corrija|verifique|apenas |bloquead|cancelad|necessário|deve ter|pelo menos|por favor/.test(l)) return 'warning';
+        return 'info';
+    }
+    window.__classifyAlertMessage = classifyAlertMessage;
+
+    if (!window.__siswebAlertOverridden) {
+        try {
+            window.alert = function (msg) {
+                show(msg, classifyAlertMessage(msg));
+            };
+            window.__siswebAlertOverridden = true;
+        } catch (e) {}
     }
 })();

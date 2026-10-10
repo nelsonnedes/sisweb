@@ -4497,7 +4497,7 @@ async function registrarSaida(event) {
         } catch (_) {}
         registrarSaidaEmAndamento = false;
         if (qtdManuais > 0) {
-            alert(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) baixada(s) do estoque e ${qtdManuais} tora(s) manual(is) registrada(s) no histórico.}`);
+            alert(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) baixada(s) do estoque e ${qtdManuais} tora(s) manual(is) registrada(s) no histórico.`);
         } else {
             alert(`Baixa registrada com sucesso! ${qtdEstoque} tora(s) removida(s) do estoque.`);
         }

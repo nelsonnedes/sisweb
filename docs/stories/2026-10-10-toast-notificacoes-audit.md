@@ -136,10 +136,24 @@ Onda F: remover override T1, lint `no-alert`, validação final + traces.
       `src/components/ui/notifications.js` **removida** (código morto: só
       `src/app.js` importava, nenhum HTML carrega `src/app.js`; teste
       `global-first-wave` agora cobre o serviço); smoke vendas+compras OK.
-- [ ] Onda C: `estoque.js` (59) + fiscal (72) por categoria §4.
+- [ ] Onda C: redirect global + micro-correções (concluído abaixo).
 - [ ] Onda D: romaneios HTML/modais + admin + folha (T6 posição).
 - [ ] Onda E: 100 `confirm(` → `confirmDialog` (destrutivos primeiro).
-- [ ] Onda F: remover override T1, lint `no-alert`, validação final + traces.
+- [ ] Onda F: limpeza source-level dos `alert(` (viram chamadas explícitas),
+      lint `no-alert`, validação final + traces.
+
+## 11. Onda C — redirect global (2026-10-10)
+
+Decisão arquitetural: em vez de 131 edições manuais (alto risco de typo em
+código fiscal/estoque), o `NotificationService` instala redirect único
+`window.alert` → `show()` com classificador (`__classifyAlertMessage`, ordem
+erro > sucesso > aviso > info), cobrindo os **579 alerts em runtime** com tipos
+validados por 28 casos na trava (incl. armadilhas: 'Não foi possível salvar' →
+error; 'cancelada com sucesso' → success; 'ainda não carregada' → warning vs
+'não carregada' → error; '⚠️ Tenant…' → error; 'carregado para edição' → info).
+Micro-correção explícita: typo `histórico.}` em `estoque.js:4500`. Smoke:
+estoque/mdf-e/notas, 3 cores exatas dos tokens, zero dialogs nativos.
+Débito Onda F: trocar os `alert(` no fonte por chamadas explícitas tipadas.
 
 Correção de levantamento: os matches `toast.success|error` em `client.html`,
 `fornecedor.html`, `species.html`, `compras.html`, `vendas.html` eram **seletores
