@@ -277,16 +277,20 @@ test('toasts e notificacoes criticas nao injetam mensagem como HTML', () => {
   const comprasSource = read('compras.js');
   const vendasSource = read('vendas.js');
   const adminUiSource = read('scripts/admin/admin-ui.js');
-  const notificationsSource = read('src/components/ui/notifications.js');
+  const notificationsSource = read('js/notification-service.js');
 
   assert.match(comprasSource, /const safeMessage = escapeHtml\(message\)/);
   assert.doesNotMatch(comprasSource, /<div class="toast-message">\$\{message\}<\/div>/);
 
-  for (const source of [vendasSource, adminUiSource, notificationsSource]) {
+  for (const source of [vendasSource, adminUiSource]) {
     assert.match(source, /messageEl\.textContent = String\(message == null \? '' : message\)/);
     assert.doesNotMatch(source, /toast-message">\$\{message\}/);
     assert.doesNotMatch(source, /notification-message">\$\{message\}/);
   }
+
+  // Onda B: NotificationService global (textContent, sem innerHTML).
+  assert.match(notificationsSource, /msg\.textContent = text/);
+  assert.doesNotMatch(notificationsSource, /innerHTML/);
 });
 
 test('menu global expoe suporte profissional no desktop e no mobile', () => {

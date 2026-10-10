@@ -10716,6 +10716,13 @@ const ToastManager = {
      * @param {number} duration - Duração em ms (0 = não fecha automaticamente)
      */
     show(message, type = 'info', title = '', duration = 4000) {
+        // Onda B: via NotificationService (mesmo visual em vendas/compras).
+        try {
+            if (window.NotificationService && typeof window.NotificationService.show === 'function') {
+                window.NotificationService.show(message, type, { title: title || undefined, duration });
+                return null;
+            }
+        } catch (_) {}
         const container = document.getElementById('toastContainer');
         
         if (!container) {

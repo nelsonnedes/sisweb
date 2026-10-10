@@ -45,6 +45,13 @@ const LoadingManager = {
 
 const ToastManager = {
     show: (message, type = 'info', duration = 3000) => {
+        // Onda B: via NotificationService (mesmo visual em vendas/compras).
+        try {
+            if (window.NotificationService && typeof window.NotificationService.show === 'function') {
+                window.NotificationService.show(message, type, { duration });
+                return;
+            }
+        } catch (_) {}
         const container = document.getElementById('toastContainer');
         if (!container) return;
 

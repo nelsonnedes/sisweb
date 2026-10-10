@@ -64,3 +64,31 @@ test('T5 e T4 delegam ao servico (zero fallback alert)', async (t) => {
     });
   }
 });
+
+test('Onda B: ToastManager unificado e familia legada removida', async (t) => {
+  await t.test('compras.js e vendas.js delegam show ao servico', () => {
+    for (const f of ['compras.js', 'vendas.js']) {
+      const src = fs.readFileSync(f, 'utf8');
+      assert.ok(src.includes('window.NotificationService.show'),
+        `${f} deve delegar ao NotificationService`);
+    }
+  });
+
+  await t.test('assinaturas publicas preservadas (show/helpers/mostrarToast)', () => {
+    const vendas = fs.readFileSync('vendas.js', 'utf8');
+    assert.ok(vendas.includes('show(message, type'), 'vendas show preserva assinatura');
+    assert.ok(vendas.includes('window.ToastManager = ToastManager'), 'expoe window.ToastManager');
+    assert.ok(vendas.includes('window.mostrarToast'), 'expoe window.mostrarToast');
+    const compras = fs.readFileSync('compras.js', 'utf8');
+    assert.ok(compras.includes('success: (msg, title, duration)'),
+      'compras helpers preservam assinatura');
+  });
+
+  await t.test('src/components/ui/notifications.js removido (codigo morto)', () => {
+    assert.ok(!fs.existsSync('src/components/ui/notifications.js'),
+      'arquivo legado morto deve estar removido');
+    const allow = fs.readFileSync('hosting-files.json', 'utf8');
+    assert.ok(!allow.includes('src/components/ui/notifications.js'),
+      'allowlist nao deve conter o arquivo removido');
+  });
+});

@@ -501,7 +501,6 @@
   "src/components/forms/fornecedor-form.js",
   "src/components/forms/romaneio-form.js",
   "src/components/navigation/nav-manager.js",
-  "src/components/ui/notifications.js",
   "src/components/ui/romaneio-table.js",
   "src/constants/app-constants.js",
   "src/scripts/exposeParsersGlobal.js",
