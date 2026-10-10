@@ -98,6 +98,27 @@ test('referências intactas: vendas/compras/NF mantêm Buscar', () => {
   assert.match(nf, /id="nfClienteBusca"/);
 });
 
+test('finanças: Buscar+select com 2x espaço (forms grid, filtros flex)', () => {
+  const fin = readFileSync('financas.html', 'utf8');
+  // Forms: span 2 só em desktop largo.
+  assert.match(fin, /\.form-row-main > \.form-group:has\(#receberCliente\)/);
+  assert.match(fin, /grid-column: span 2;/);
+  // Filtros: a linha é flex (regra tardia vence o grid) → flex-grow dobrado
+  // com especificidade 0,3,0 (vence o 0,2,0 do bloco responsivo).
+  assert.match(fin, /\.filters-row\.filters-row-receber \.fg-cliente/);
+  assert.match(fin, /flex: 2 1 240px;/);
+  assert.match(fin, /min-width: 240px;/);
+  // grid-area só dentro do breakpoint com template (evita linhas implícitas).
+  const i = fin.indexOf('Áreas de grid para reordenar');
+  assert.ok(i >= 0);
+  const media = fin.indexOf('@media (max-width: 1200px)', i);
+  assert.ok(media > i, 'áreas após o comentário e dentro do media');
+  assert.ok(fin.indexOf('.filters-row .fg-cliente { grid-area: cliente; }', i) > media);
+  // Status/Tipo compactos no desktop largo.
+  assert.match(fin, /\.filters-row \.fg-status select/);
+  assert.match(fin, /max-width: 180px;/);
+});
+
 test('helper global filtrarSelectPorBusca existe e é defensivo', () => {
   const menu = readFileSync('menu-component.js', 'utf8');
   assert.match(menu, /window\.filtrarSelectPorBusca = function\(selectId, buscaId\)/);

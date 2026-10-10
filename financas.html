@@ -97,7 +97,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=82aa4b755035"></script>
+<script src="menu-component.js?v=60bcb545402f"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
@@ -480,16 +480,20 @@
             align-items: center;
             justify-self: end;
         }
-        /* Áreas de grid para reordenar em telas médias */
-        .filters-row .fg-status { grid-area: status; }
-        .filters-row .fg-cliente { grid-area: cliente; }
-        .filters-row .fg-fornecedor { grid-area: fornecedor; }
-        .filters-row .fg-categoria { grid-area: categoria; }
-        .filters-row .fg-tipo { grid-area: tipo; }
-        .filters-row .fg-numero { grid-area: numero; }
-        .filters-row .fg-inicio { grid-area: inicio; }
-        .filters-row .fg-fim { grid-area: fim; }
-        .filters-row .actions-group { grid-area: actions; }
+        /* Áreas de grid para reordenar em telas médias (SÓ valem com o template
+           de áreas do breakpoint <=1200px: fora dele, criavam linhas implícitas
+           que quebravam o auto-fit do desktop e o span do Buscar+select). */
+        @media (max-width: 1200px) {
+            .filters-row .fg-status { grid-area: status; }
+            .filters-row .fg-cliente { grid-area: cliente; }
+            .filters-row .fg-fornecedor { grid-area: fornecedor; }
+            .filters-row .fg-categoria { grid-area: categoria; }
+            .filters-row .fg-tipo { grid-area: tipo; }
+            .filters-row .fg-numero { grid-area: numero; }
+            .filters-row .fg-inicio { grid-area: inicio; }
+            .filters-row .fg-fim { grid-area: fim; }
+            .filters-row .actions-group { grid-area: actions; }
+        }
         @media (max-width: 1200px) {
             .filters-row-receber {
                 grid-template-columns: repeat(3, minmax(200px, 1fr));
@@ -517,6 +521,26 @@
                 justify-self: start;
                 margin-right: 8px;
             }
+        }
+
+        /* UX 09/10: Buscar+select de Cliente/Fornecedor com 2x espaço; Status/
+           Tipo e compactos (Valor/Juros/Taxa/Parcelas) cedem espaço. Só desktop
+           largo (>=1201px) nos forms (grid); nos filtros a linha é flex
+           (bloco responsivo posterior vence o grid), então flex-grow dobrado. */
+        @media (min-width: 1201px) {
+            .form-row-main > .form-group:has(#receberCliente),
+            .form-row-main > .form-group:has(#pagarFornecedor) {
+                grid-column: span 2;
+            }
+            .filters-row .fg-status select,
+            .filters-row .fg-tipo select {
+                max-width: 180px;
+            }
+        }
+        .filters-row.filters-row-receber .fg-cliente,
+        .filters-row.filters-row-pagar .fg-fornecedor {
+            flex: 2 1 240px;
+            min-width: 240px;
         }
 
         .modal {

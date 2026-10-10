@@ -68,3 +68,17 @@
 - Publish: SW `2026-10-09-busca-todas` + `?v=` ressincronizado.
 - Deploy 09/10: produção serve SW novo, Buscar nas 3 páginas e helper global
   (`menu-component.js?v=82aa4b755035`).
+
+## Execução 09/10 — Grid do financeiro p/ Buscar+Select (concluída)
+- Forms: grupo Cliente/Fornecedor com `span 2` em `>=1201px` (`:has`, sem tocar
+  no markup); Valor/Juros/Taxa/Parcelas mantidos compactos.
+- Filtros: `grid-column: span` NÃO funcionava — a linha é `flex` (bloco
+  responsivo tardio vence o grid) e os `grid-area` base criavam linhas
+  implícitas. Fix em 2 partes: (1) `grid-area` restrito ao `@media <=1200px`
+  com template; (2) `.fg-cliente/.fg-fornecedor` com `flex: 2 1 240px` em
+  seletor `0,3,0` (vence o `0,2,0` tardio). Status/Tipo com `max-width: 180px`.
+- Medido no ar: 1440px cliente 302 (2x status 151), select 188 + busca;
+  1100px 253 vs 126; 390px sem overflow. Zero pageerrors.
+- Trava: +1 teste (regras de grid/flex/áreas). Gates: lint/typecheck OK,
+  883 testes 882/0/1.
+- Publish: SW `2026-10-09-fin-grid` + `?v=` ressincronizado.
