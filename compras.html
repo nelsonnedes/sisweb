@@ -47,7 +47,7 @@
     <script defer src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script defer src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=24013cd46bac"></script>
+<script src="menu-component.js?v=82aa4b755035"></script>
     <style>
         * {
             margin: 0;
@@ -1202,9 +1202,12 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="produtoSelect">Produto:</label>
-                            <select id="produtoSelect">
-                                <option value="">Selecione um produto</option>
-                            </select>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" id="produtoBusca" placeholder="Buscar produto..." style="flex: 1; min-width: 0;" oninput="filtrarSelectPorBusca('produtoSelect','produtoBusca')">
+                                <select id="produtoSelect" style="flex: 2; min-width: 0;">
+                                    <option value="">Selecione um produto</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group form-group-small">
                             <label for="quantidade">Quantidade:</label>
@@ -1590,9 +1593,12 @@
                 </div>
                 <div class="form-group commerce-filter-field">
                     <label for="relFornecedor">Fornecedor:</label>
-                    <select id="relFornecedor">
-                        <option value="">Todos</option>
-                    </select>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="relFornecedorBusca" placeholder="Buscar..." style="flex: 1; min-width: 0;" oninput="filtrarSelectPorBusca('relFornecedor','relFornecedorBusca')">
+                        <select id="relFornecedor" style="flex: 2; min-width: 0;">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group commerce-filter-field">
                     <label for="relAgrupamento">Agrupar por:</label>

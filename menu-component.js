@@ -6,7 +6,7 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
-    const PWA_VERSION = '2026-10-09-campos-padrao';
+    const PWA_VERSION = '2026-10-09-busca-todas';
     const state = {
         deferredPrompt: null,
         floatingButton: null,
@@ -4759,3 +4759,23 @@ if (document.readyState === 'loading') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureFooter);
     else ensureFooter();
 })();
+
+// Busca em selects (padrao NF, UX 09/10): filtra options por label (+dataset
+// documento quando houver). Uso: oninput="filtrarSelectPorBusca('idSelect','idBusca')".
+// Layout na mesma linha via flex (input flex:1 + select flex:2) em cada pagina.
+window.filtrarSelectPorBusca = function(selectId, buscaId) {
+    try {
+        const select = document.getElementById(selectId);
+        const buscaInput = document.getElementById(buscaId);
+        if (!select || !buscaInput) return;
+        const busca = (buscaInput.value || '').toLowerCase();
+        Array.from(select.options).forEach(opt => {
+            if (!opt.value) { opt.hidden = false; opt.style.display = ''; return; }
+            const label = (opt.textContent || '').toLowerCase();
+            const doc = String((opt.dataset && opt.dataset.documento) || '').toLowerCase();
+            const ok = label.includes(busca) || (doc && doc.includes(busca));
+            opt.hidden = !ok;
+            opt.style.display = ok ? '' : 'none';
+        });
+    } catch (_) {}
+};

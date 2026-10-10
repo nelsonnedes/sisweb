@@ -47,7 +47,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=24013cd46bac"></script>
+<script src="menu-component.js?v=82aa4b755035"></script>
 <script src="modules/core/sisweb-data.js?v=b5af248d57f1"></script>
     <style>
         * {
@@ -2366,9 +2366,12 @@
                     </div>
                     <div class="form-group">
                         <label for="baixaProdutoSelectInline">Produto:</label>
-                        <select id="baixaProdutoSelectInline" required onchange="atualizarInfoProdutoBaixaInline()">
-                            <option value="">Selecione...</option>
-                        </select>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="baixaProdutoBuscaInline" placeholder="Buscar..." style="flex: 1; min-width: 0;" oninput="filtrarSelectPorBusca('baixaProdutoSelectInline','baixaProdutoBuscaInline')">
+                            <select id="baixaProdutoSelectInline" required onchange="atualizarInfoProdutoBaixaInline()" style="flex: 2; min-width: 0;">
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
                         <small id="baixaProdutoInfoInline" class="text-muted"></small>
                     </div>
                     <div class="form-group">
@@ -3209,9 +3212,12 @@
                     </div>
                     <div class="form-group">
                         <label for="entradaProdutoSelect">Produto (existente):</label>
-                        <select id="entradaProdutoSelect">
-                            <option value="">Novo produto</option>
-                        </select>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="entradaProdutoBusca" placeholder="Buscar..." style="flex: 1; min-width: 0;" oninput="filtrarSelectPorBusca('entradaProdutoSelect','entradaProdutoBusca')">
+                            <select id="entradaProdutoSelect" style="flex: 2; min-width: 0;">
+                                <option value="">Novo produto</option>
+                            </select>
+                        </div>
                         <div id="entradaProdutoSaldo" class="saldo-info"></div>
                     </div>
                     <div class="form-group form-group-large">
@@ -3499,9 +3505,12 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="baixaProdutoSelect">Produto:</label>
-                            <select id="baixaProdutoSelect" required onchange="atualizarInfoProdutoBaixa()">
-                                <option value="">Carregando...</option>
-                            </select>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" id="baixaProdutoBusca" placeholder="Buscar..." style="flex: 1; min-width: 0;" oninput="filtrarSelectPorBusca('baixaProdutoSelect','baixaProdutoBusca')">
+                                <select id="baixaProdutoSelect" required onchange="atualizarInfoProdutoBaixa()" style="flex: 2; min-width: 0;">
+                                    <option value="">Carregando...</option>
+                                </select>
+                            </div>
                             <small id="infoSaldoProduto" class="text-muted"></small>
                         </div>
                     </div>

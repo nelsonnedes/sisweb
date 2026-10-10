@@ -97,3 +97,35 @@ test('referências intactas: vendas/compras/NF mantêm Buscar', () => {
   assert.match(compras, /id="fornecedorBusca"/);
   assert.match(nf, /id="nfClienteBusca"/);
 });
+
+test('helper global filtrarSelectPorBusca existe e é defensivo', () => {
+  const menu = readFileSync('menu-component.js', 'utf8');
+  assert.match(menu, /window\.filtrarSelectPorBusca = function\(selectId, buscaId\)/);
+  assert.match(menu, /opt\.hidden = !ok;/);
+  assert.match(menu, /dataset\.documento/);
+});
+
+const buscas = [
+  ['vendas.html', 'produtoSelect', 'produtoBusca'],
+  ['vendas.html', 'relFiltroCliente', 'relClienteBusca'],
+  ['vendas.html', 'relFiltroEspecie', 'relEspecieBusca'],
+  ['compras.html', 'produtoSelect', 'produtoBusca'],
+  ['compras.html', 'relFornecedor', 'relFornecedorBusca'],
+  ['financas.html', 'receberCliente', 'receberClienteBusca'],
+  ['financas.html', 'pagarFornecedor', 'pagarFornecedorBusca'],
+  ['financas.html', 'filtroReceberCliente', 'filtroReceberClienteBusca'],
+  ['financas.html', 'filtroPagarFornecedor', 'filtroPagarFornecedorBusca'],
+  ['estoque.html', 'baixaProdutoSelectInline', 'baixaProdutoBuscaInline'],
+  ['estoque.html', 'entradaProdutoSelect', 'entradaProdutoBusca'],
+  ['estoque.html', 'baixaProdutoSelect', 'baixaProdutoBusca'],
+];
+
+for (const [file, selectId, buscaId] of buscas) {
+  test(`${file}: Buscar filtra ${selectId} na mesma linha`, () => {
+    const src = readFileSync(file, 'utf8');
+    assert.match(src, new RegExp(`id="${buscaId}"`));
+    assert.match(src, new RegExp(`filtrarSelectPorBusca\\('${selectId}','${buscaId}'\\)`));
+    assert.match(src, new RegExp(`id="${buscaId}"[^>]*style="flex: 1;`));
+    assert.match(src, new RegExp(`id="${selectId}"[^>]*style="flex: 2;`));
+  });
+}

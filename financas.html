@@ -97,7 +97,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=7530fe3e6fec"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=24013cd46bac"></script>
+<script src="menu-component.js?v=82aa4b755035"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
@@ -1409,7 +1409,8 @@
                         <div class="form-group">
                             <label for="receberCliente">Cliente:</label>
                             <div class="field-with-action">
-                                <select id="receberCliente" required>
+                                <input type="text" id="receberClienteBusca" placeholder="Buscar..." style="flex: 1; min-width: 0;" oninput="filtrarSelectPorBusca('receberCliente','receberClienteBusca')">
+                                <select id="receberCliente" required style="flex: 2; min-width: 0;">
                                     <option value="">Selecione um cliente</option>
                                 </select>
                                 <button type="button" onclick="abrirCadastroClienteFinanceiro()" class="btn-primary btn-small field-action-btn" title="Novo Cliente">
@@ -1554,9 +1555,12 @@
                     </div>
                     <div class="form-group fg-cliente">
                         <label for="filtroReceberCliente">Cliente:</label>
-                        <select id="filtroReceberCliente">
-                            <option value="">Todos os clientes</option>
-                        </select>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="filtroReceberClienteBusca" placeholder="Buscar..." style="flex: 1; min-width: 0;" oninput="filtrarSelectPorBusca('filtroReceberCliente','filtroReceberClienteBusca')">
+                            <select id="filtroReceberCliente" style="flex: 2; min-width: 0;">
+                                <option value="">Todos os clientes</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group fg-categoria">
                         <label for="filtroReceberCategoria">Categoria:</label>
@@ -1638,7 +1642,8 @@
                         <div class="form-group">
                             <label for="pagarFornecedor">Fornecedor:</label>
                             <div class="field-with-action">
-                                <select id="pagarFornecedor" required>
+                                <input type="text" id="pagarFornecedorBusca" placeholder="Buscar..." style="flex: 1; min-width: 0;" oninput="filtrarSelectPorBusca('pagarFornecedor','pagarFornecedorBusca')">
+                                <select id="pagarFornecedor" required style="flex: 2; min-width: 0;">
                                     <option value="">Selecione um fornecedor</option>
                                 </select>
                                 <button type="button" onclick="abrirCadastroFornecedorFinanceiro()" class="btn-primary btn-small field-action-btn" title="Novo Fornecedor">
@@ -1779,9 +1784,12 @@
                     </div>
                     <div class="form-group fg-fornecedor">
                         <label for="filtroPagarFornecedor">Fornecedor:</label>
-                        <select id="filtroPagarFornecedor">
-                            <option value="">Todos os fornecedores</option>
-                        </select>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="filtroPagarFornecedorBusca" placeholder="Buscar..." style="flex: 1; min-width: 0;" oninput="filtrarSelectPorBusca('filtroPagarFornecedor','filtroPagarFornecedorBusca')">
+                            <select id="filtroPagarFornecedor" style="flex: 2; min-width: 0;">
+                                <option value="">Todos os fornecedores</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group fg-categoria">
                         <label for="filtroPagarCategoria">Categoria:</label>

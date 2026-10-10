@@ -51,7 +51,18 @@
   `openNewFornecedorModal` do documento (virou o botão do cabeçalho); escopo
   ajustado p/ o rodapé do modal (footer segue `btn-adicionar`, intacto).
 
-## File list
-- `romaneio-comum.css`, `romaneiopct.html`, `romaneiotl.html`, `romaneiopes.html`,
-  `romaneiotora.html`, `preromaneio.html`, `estoque.html`, `estoque.js`
-- `tests/padrao-campos-cadastros.test.mjs`, `docs/stories/2026-10-09-padrao-botoes-busca-cadastros.md`
+## Execução 09/10 — Buscar em todas as páginas (concluída)
+- Helper global `filtrarSelectPorBusca(selectId, buscaId)` em `menu-component.js`
+  (label + `dataset.documento`, `hidden` + `display`, defensivo).
+- 11 selects: vendas (`produtoSelect`, `relFiltroCliente`, `relFiltroEspecie`),
+  compras (`produtoSelect`, `relFornecedor`), finanças (`receberCliente`,
+  `pagarFornecedor`, `filtroReceberCliente`, `filtroPagarFornecedor`), estoque
+  (`baixaProdutoSelectInline`, `entradaProdutoSelect`, `baixaProdutoSelect`) —
+  Buscar flex:1 + select flex:2 na mesma linha, `onchange` preservados.
+- Fora do escopo (documentado): filtros dos modais de lista (já têm `searchPedidos`),
+  `field-with-action` mantido nas finanças, selects fiscais/UF/cidade, folha e MDF-e
+  (sem selects de entidade).
+- Trava: 13 novos testes (helper + 11 pares + referências). Smoke autenticado:
+  15/15 mesma-linha + filtro + restore, zero pageerrors.
+- Gates: lint/typecheck OK, 882 testes 881/0/1.
+- Publish: SW `2026-10-09-busca-todas` + `?v=` ressincronizado.
