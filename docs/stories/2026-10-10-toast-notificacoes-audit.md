@@ -143,7 +143,6 @@ Onda F: remover override T1, lint `no-alert`, validação final + traces.
       lint `no-alert`, validação final + traces.
 
 ## 11. Onda C — redirect global (2026-10-10)
-
 Decisão arquitetural: em vez de 131 edições manuais (alto risco de typo em
 código fiscal/estoque), o `NotificationService` instala redirect único
 `window.alert` → `show()` com classificador (`__classifyAlertMessage`, ordem
@@ -163,10 +162,21 @@ CSS** (`.toast.success`), não chamadas JS — únicos consumidores da API toast
 ## 9. Checklist implementação
 
 - [ ] `js/notification-service.js` + CSS tokens + include global
-- [ ] T5/T4/T6/T2 delegando (zero fallback `alert`)
-- [ ] Ondas C/D migradas por categoria (amostra §4 como gabarito)
+- [x] T5/T4/T6/T2 delegando (zero fallback `alert`)
+- [x] Teste trava + `npm run lint/typecheck/test` verdes
+- [x] `?v=` + SW bump + commit por onda + deploy + Ctrl+F5
 - [ ] Onda E: `confirmDialog` (destrutivo = botão vermelho + menção reversão)
 - [ ] Reescritas amigáveis §6.2 (§6.4 multilinha)
-- [ ] Teste trava + `npm run lint/typecheck/test` verdes
-- [ ] `?v=` + SW bump + commit por onda + deploy + Ctrl+F5
 - [ ] Registrar não-conformidades novas como débito arquitetural
+
+## 12. Onda D — folha + admin (2026-10-10)
+
+- `FolhaUtils.showToast` delega (assinatura preservada) — toast da folha sai do
+  bottom-right próprio e assume o padrão top-right do sistema.
+- `AdminUI.toast` e `AdminUI.confirm` delegam ao serviço (`confirmDialog`,
+  mesma API `Promise<boolean>`; modal legado congelado como fallback).
+- Constatado: helpers de romaneio (`__preModalNotify`, `__almNotify`,
+  `showSuccess/showError`, notify de `preromaneio.js`) já caem no serviço via
+  `__toast`/T4 — nenhum edit necessário (fallbacks `alert` terminais só disparam
+  sem menu, onde o redirect também estaria ausente).
+- Smoke: folha unificada no topo + admin toast/confirm OK, zero erros.

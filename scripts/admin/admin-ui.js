@@ -89,6 +89,12 @@ window.AdminUI = (function() {
         },
 
         confirm: function(message, title = 'Confirmação') {
+            // Onda D: padrao unico via confirmDialog (modal legado como fallback).
+            try {
+                if (typeof window !== 'undefined' && typeof window.confirmDialog === 'function') {
+                    return window.confirmDialog({ title: title, message: message });
+                }
+            } catch (_) {}
             return new Promise((resolve) => {
                 const overlay = createOverlay();
                 const container = createContainer();
@@ -173,6 +179,14 @@ window.AdminUI = (function() {
         },
 
         toast: function(message, type = 'info') {
+            // Onda D: via NotificationService (padrao unico do sistema).
+            try {
+                if (typeof window !== 'undefined' && window.NotificationService
+                    && typeof window.NotificationService.show === 'function') {
+                    window.NotificationService.show(message, type);
+                    return;
+                }
+            } catch (_) {}
             let container = document.getElementById('admin-toast-container');
             if (!container) {
                 container = document.createElement('div');

@@ -287,6 +287,14 @@ class FolhaUtils {
 
     static showToast(message, type = 'info', duration = 3000) {
         console.log(`🍞 Toast [${type}]: ${message}`);
+        // Onda D: via NotificationService (posicao/cores padrao do sistema).
+        try {
+            if (typeof window !== 'undefined' && window.NotificationService
+                && typeof window.NotificationService.show === 'function') {
+                window.NotificationService.show(message, type, { duration });
+                return;
+            }
+        } catch (_) {}
         
         // Criar container de toast se não existir
         let toastContainer = document.getElementById('toast-container-folha');

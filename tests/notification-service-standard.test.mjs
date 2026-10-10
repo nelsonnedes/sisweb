@@ -108,6 +108,29 @@ test('Onda C: classificador alert()->toast acerta as categorias', async (t) => {
     });
   }
 });
+test('Onda D: folha e admin delegam ao servico', async (t) => {
+  await t.test('FolhaUtils.showToast delega (adeus bottom-right proprio)', () => {
+    const src = fs.readFileSync('folha_pagamento/folha-utils.js', 'utf8');
+    assert.ok(src.includes('window.NotificationService.show'),
+      'FolhaUtils deve delegar ao NotificationService');
+    const delegaEm = src.indexOf('window.NotificationService.show');
+    const legadoEm = src.indexOf('toast-container-folha');
+    assert.ok(delegaEm !== -1 && delegaEm < legadoEm,
+      'delegacao deve vir antes da criacao do container proprio');
+  });
+
+  await t.test('AdminUI.toast delega ao servico', () => {
+    const src = fs.readFileSync('scripts/admin/admin-ui.js', 'utf8');
+    assert.ok(src.includes('window.NotificationService.show'),
+      'AdminUI.toast deve delegar ao NotificationService');
+  });
+
+  await t.test('AdminUI.confirm delega ao confirmDialog (mesma API Promise)', () => {
+    const src = fs.readFileSync('scripts/admin/admin-ui.js', 'utf8');
+    assert.ok(src.includes('window.confirmDialog({ title: title, message: message })'),
+      'AdminUI.confirm deve delegar ao confirmDialog');
+  });
+});
 test('Onda B: ToastManager unificado e familia legada removida', async (t) => {
   await t.test('compras.js e vendas.js delegam show ao servico', () => {
     for (const f of ['compras.js', 'vendas.js']) {
