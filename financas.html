@@ -532,11 +532,6 @@
             .form-row-main > .form-group:has(#pagarFornecedor) {
                 grid-column: span 2;
             }
-            /* UX 09/10: Observações colado e proporcional ao Anexo (span 2). */
-            .form-row:has(#receberObservacoes) > .form-group:has(#receberObservacoes),
-            .form-row:has(#pagarObservacoes) > .form-group:has(#pagarObservacoes) {
-                grid-column: span 2;
-            }
             .filters-row .fg-status select,
             .filters-row .fg-tipo select {
                 max-width: 180px;
@@ -1516,7 +1511,9 @@
                                 <option value="permuta">Permuta</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div class="form-group" style="flex: 0 0 auto; margin-bottom: 0;">
                             <label for="receberAnexoManual">Anexo:</label>
                             <div class="field-with-action">
                                 <input type="file" id="receberAnexoManual" accept="image/*,application/pdf" style="display:none;" onchange="onManualAttachmentSelected('receber')">
@@ -1525,7 +1522,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="flex: 1 1 220px; min-width: 0; margin-bottom: 0;">
                             <label for="receberObservacoes">Observações:</label>
                             <textarea id="receberObservacoes"></textarea>
                         </div>
@@ -1745,7 +1742,9 @@
                                 <option value="permuta">Permuta</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div class="form-group" style="flex: 0 0 auto; margin-bottom: 0;">
                             <label for="pagarAnexoManual">Anexo:</label>
                             <div class="field-with-action">
                                 <input type="file" id="pagarAnexoManual" accept="image/*,application/pdf" style="display:none;" onchange="onManualAttachmentSelected('pagar')">
@@ -1754,7 +1753,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="flex: 1 1 220px; min-width: 0; margin-bottom: 0;">
                             <label for="pagarObservacoes">Observações:</label>
                             <textarea id="pagarObservacoes"></textarea>
                         </div>
