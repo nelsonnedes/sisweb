@@ -196,8 +196,8 @@ test('vendas e compras têm botão Limpar ao lado de Carregar Itens', () => {
   assert.match(vendasHtml, /romaneio-clear-btn/);
   assert.match(comprasHtml, /onclick="limparCarrinhoItens\(\)"/);
   assert.match(comprasHtml, /romaneio-clear-btn/);
-  assert.match(vendas, /function limparCarrinhoItens\(\)/);
-  assert.match(compras, /window\.limparCarrinhoItens = function\(\)/);
+  assert.match(vendas, /async function limparCarrinhoItens\(\)/);
+  assert.match(compras, /window\.limparCarrinhoItens = async function\(\)/);
   assert.match(vendas, /Limpar todos os itens do carrinho\? Esta ação não pode ser desfeita/);
   assert.match(compras, /Limpar todos os itens do pedido\? Esta ação não pode ser desfeita/);
 });

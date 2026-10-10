@@ -542,7 +542,7 @@ window.deleteItem = async (id) => {
         showToast('ID do cliente inválido para exclusão', 'error');
         return;
     }
-    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+    if (!await confirmDialog({ title: 'Excluir cliente', message: 'Tem certeza que deseja excluir este cliente?', danger: true, confirmLabel: 'Excluir' })) return;
 
     showLoading(true);
     try {

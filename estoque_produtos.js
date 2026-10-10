@@ -1847,7 +1847,7 @@ async function registrarSaidaProduto({ prodId, qtd, motivo, data, responsavel, t
     }
 
     const tipoLabel = obterLabelTipoMovimentacaoProduto(tipoSaida, direcaoEstoque);
-    if (!confirm(`Confirma ${tipoLabel.toLowerCase()} de ${formatNumber(qtd, 2)} ${prod.unidade || 'un'} de ${prod.nome}?`)) return false;
+    if (!await confirmDialog({ title: 'Confirmar baixa', message: `Confirma ${tipoLabel.toLowerCase()} de ${formatNumber(qtd, 2)} ${prod.unidade || 'un'} de ${prod.nome}?`, confirmLabel: 'Confirmar' })) return false;
     const __opSaidaProd = __almBegin('saida-prod', null, 'Registrando baixa...');
     if (!__opSaidaProd) return false;
 
@@ -2638,7 +2638,7 @@ async function estornarMovimentacaoProduto(movId) {
         if (!(qtd > 0)) { alert('Quantidade inválida.'); return; }
         const prodId = String(mov.produtoId || '').trim();
         if (!prodId) { alert('Produto inválido.'); return; }
-        if (!confirm('Confirma estornar esta movimentação? Isso irá gerar uma movimentação inversa e ajustar o estoque.')) return;
+        if (!await confirmDialog({ title: 'Estornar movimentação', message: 'Confirma estornar esta movimentação? Isso irá gerar uma movimentação inversa e ajustar o estoque.', danger: true, confirmLabel: 'Estornar' })) return;
         const __opEstornoProd = __almBegin('estorno-prod', null, 'Estornando...');
         if (!__opEstornoProd) return;
 

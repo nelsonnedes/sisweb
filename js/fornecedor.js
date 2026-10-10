@@ -635,7 +635,7 @@ window.deleteItem = async (id) => {
         showToast('ID do fornecedor inválido para exclusão', 'error');
         return;
     }
-    if (!confirm('Tem certeza que deseja excluir este fornecedor?')) return;
+    if (!await confirmDialog({ title: 'Excluir fornecedor', message: 'Tem certeza que deseja excluir este fornecedor?', danger: true, confirmLabel: 'Excluir' })) return;
 
     showLoading(true);
     try {

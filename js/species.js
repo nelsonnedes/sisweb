@@ -388,7 +388,7 @@ window.deleteSpecies = async (id) => {
         showToast('ID da espécie inválido para exclusão', 'error');
         return;
     }
-    if (!confirm('Tem certeza que deseja excluir esta espécie?')) return;
+    if (!await confirmDialog({ title: 'Excluir espécie', message: 'Tem certeza que deseja excluir esta espécie?', danger: true, confirmLabel: 'Excluir' })) return;
 
     showLoading(true);
     // Remoção otimista: a linha some na hora (a cascata remota de

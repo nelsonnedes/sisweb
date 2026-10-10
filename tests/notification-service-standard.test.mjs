@@ -131,6 +131,37 @@ test('Onda D: folha e admin delegam ao servico', async (t) => {
       'AdminUI.confirm deve delegar ao confirmDialog');
   });
 });
+test('Onda E1: nucleo destrutivo usa confirmDialog (zero confirm nativo)', async (t) => {
+  const migrados = ['financas.js', 'estoque.js', 'estoque_produtos.js', 'vendas.js',
+    'compras.js', 'js/client.js', 'js/fornecedor.js', 'js/species.js',
+    'standardized-client-modal.js'];
+  for (const f of migrados) {
+    await t.test(`${f} sem confirm() nativo`, () => {
+      const src = fs.readFileSync(f, 'utf8');
+      assert.ok(!/\bconfirm\s*\(/.test(src), `${f} nao pode conter confirm() nativo`);
+      assert.ok(src.includes('confirmDialog'), `${f} deve usar confirmDialog`);
+    });
+  }
+
+  await t.test('funcoes convertidas sao async e destrutivos usam danger', () => {
+    const fin = fs.readFileSync('financas.js', 'utf8');
+    for (const fn of ['async function gerarParcelas', 'async function restaurarBackup',
+      'async function limparTodosDados', 'async function excluirConta',
+      'async function excluirPagamento']) {
+      assert.ok(fin.includes(fn), `financas deve ter ${fn}`);
+    }
+    assert.ok(fin.includes("danger: true, confirmLabel: 'Excluir'"), 'exclusoes com danger+Excluir');
+    assert.ok(fin.includes("confirmLabel: 'Apagar tudo'"), 'wipe com Apagar tudo');
+    const est = fs.readFileSync('estoque.js', 'utf8');
+    assert.ok(est.includes('async function limparTabelaEntrada'), 'limparTabelaEntrada async');
+    const ven = fs.readFileSync('vendas.js', 'utf8');
+    assert.ok(ven.includes('async function limparCarrinhoItens'), 'limparCarrinhoItens async');
+    const com = fs.readFileSync('compras.js', 'utf8');
+    assert.ok(com.includes('async function cancelarPedido'), 'cancelarPedido async');
+    assert.ok(com.includes('window.limparCarrinhoItens = async function'),
+      'limparCarrinhoItens (compras) async');
+  });
+});
 test('Onda B: ToastManager unificado e familia legada removida', async (t) => {
   await t.test('compras.js e vendas.js delegam show ao servico', () => {
     for (const f of ['compras.js', 'vendas.js']) {

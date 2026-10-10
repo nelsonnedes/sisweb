@@ -165,7 +165,7 @@ CSS** (`.toast.success`), não chamadas JS — únicos consumidores da API toast
 - [x] T5/T4/T6/T2 delegando (zero fallback `alert`)
 - [x] Teste trava + `npm run lint/typecheck/test` verdes
 - [x] `?v=` + SW bump + commit por onda + deploy + Ctrl+F5
-- [ ] Onda E: `confirmDialog` (destrutivo = botão vermelho + menção reversão)
+- [ ] Onda E: `confirmDialog` — E1 núcleo concluído (§13); falta E2.
 - [ ] Reescritas amigáveis §6.2 (§6.4 multilinha)
 - [ ] Registrar não-conformidades novas como débito arquitetural
 
@@ -180,3 +180,20 @@ CSS** (`.toast.success`), não chamadas JS — únicos consumidores da API toast
   `__toast`/T4 — nenhum edit necessário (fallbacks `alert` terminais só disparam
   sem menu, onde o redirect também estaria ausente).
 - Smoke: folha unificada no topo + admin toast/confirm OK, zero erros.
+
+## 13. Onda E1 — núcleo destrutivo (2026-10-10, 29 sites)
+
+Convertidos `confirm()` → `await confirmDialog({title,message,danger,
+confirmLabel})` em `financas.js` (8: anexos, comprovante, pagamento, conta,
+restore, wipe duplo + `prompt(CONFIRMAR)` mantido com flag follow-up),
+`estoque.js` (4: limpar entrada, estorno fail-closed, exclusão lote e
+movimentações), `estoque_produtos.js` (2: baixa e estorno),
+`vendas.js` (5), `compras.js` (6), cadastros (4). Funções sincronizadas
+viraram `async` só onde o chamador é `onclick` sem `return`
+(`gerarParcelas`, `restaurarBackup`, `limparTodosDados`, `limparTabelaEntrada`,
+`limparCarrinhoItens` ×2, `cancelarPedido`) — verificado chamador a chamador.
+`confirm()` em `new Promise` sem DOM virou `resolve(false)` (fail-closed).
+Padrão E1: destrutivo = `danger:true` + verbo no botão (Excluir/Estornar/
+Limpar/Remover/Apagar). Falta E2: folha, romaneios, modais, fiscal inline,
+menu, cadastros auxiliares (~40 sites) + `prompt()` do wipe (candidato a
+`AdminUI.prompt`/confirmDialog).

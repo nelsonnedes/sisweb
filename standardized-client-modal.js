@@ -2919,7 +2919,7 @@ async function deleteStandardizedClient(clientId) {
         return;
     }
     
-    if (!confirm(`Tem certeza que deseja excluir o cliente "${client.nome}"?`)) {
+    if (!await confirmDialog({ title: 'Excluir cliente', message: `Tem certeza que deseja excluir o cliente "${client.nome}"?`, danger: true, confirmLabel: 'Excluir' })) {
         return;
     }
     

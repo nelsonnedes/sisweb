@@ -3500,8 +3500,8 @@ function removerItemEntrada(index) {
     renderizarTabelaEntrada();
 }
 
-function limparTabelaEntrada() {
-    if (confirm('Deseja limpar todos os itens da lista de entrada?')) {
+async function limparTabelaEntrada() {
+    if (await confirmDialog({ title: 'Limpar lista de entrada', message: 'Deseja limpar todos os itens da lista de entrada?', danger: true, confirmLabel: 'Limpar tudo' })) {
         itensEntrada = [];
         renderizarTabelaEntrada();
     }
@@ -4539,7 +4539,7 @@ function cancelarSaida() {
 function confirmarEstornoBaixaDetalhado(candidatos = [], remessa = '') {
     return new Promise((resolve) => {
         if (!document || !document.body) {
-            resolve(confirm('Confirma o estorno das movimentações selecionadas?'));
+            resolve(false);
             return;
         }
         let modal = document.getElementById('confirmEstornoBaixaModal');
@@ -5467,7 +5467,7 @@ async function excluirTorasDoEstoqueEmLote(ids, options = {}) {
     const mensagem = toras.length === 1
         ? 'Excluir permanentemente esta tora do estoque? Esta ação não pode ser desfeita.'
         : `Excluir permanentemente ${toras.length} toras do estoque? Esta ação não pode ser desfeita.`;
-    if (!confirm(mensagem)) return { success: false, count: 0 };
+    if (!await confirmDialog({ title: 'Excluir toras', message: mensagem, danger: true, confirmLabel: 'Excluir' })) return { success: false, count: 0 };
 
     exclusaoTorasEmLoteEmAndamento = true;
     atualizarAcoesExclusaoToras();
@@ -6287,7 +6287,7 @@ async function excluirMovimentacoesSelecionadas() {
         alert('Selecione ao menos uma movimentação para excluir.');
         return;
     }
-    if (!confirm(`Excluir ${ids.length} movimentação(ões) selecionada(s)? Esta ação não pode ser desfeita. (Não devolve toras ao estoque — use Estornar para isso.)`)) return;
+    if (!await confirmDialog({ title: 'Excluir movimentações', message: `Excluir ${ids.length} movimentação(ões) selecionada(s)? Esta ação não pode ser desfeita. (Não devolve toras ao estoque — use Estornar para isso.)`, danger: true, confirmLabel: 'Excluir' })) return;
     if (__excluirMovEmAndamento) return;
     __excluirMovEmAndamento = true;
     try {

@@ -1680,7 +1680,7 @@ async function vendasClientesExcluir(id) {
     if (!clientId) return;
     const cliente = (Array.isArray(window.clientes) ? window.clientes : []).find((item) => String(item.id || '') === clientId);
     const nome = vendasClientesNome(cliente) || 'este cliente';
-    if (!window.confirm(`Excluir ${nome}?`)) return;
+    if (!await confirmDialog({ title: 'Excluir cliente', message: `Excluir ${nome}?`, danger: true, confirmLabel: 'Excluir' })) return;
     try {
         const service = vendasClientesGetService();
         await service.deleteClient(clientId);
@@ -4073,7 +4073,7 @@ async function clonarPedido(pedidoId) {
 }
 
 async function excluirPedido(pedidoId) {
-    if (!confirm('Deseja excluir este pedido? Esta ação não pode ser desfeita.')) {
+    if (!await confirmDialog({ title: 'Excluir pedido', message: 'Deseja excluir este pedido? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' })) {
         return;
     }
     // Trava anti-duplo-clique (auto-expira em 10s: sem estado preso).
@@ -5832,7 +5832,7 @@ async function excluirProdutosSelecionados() {
         ToastManager.warning('Selecione ao menos um produto para excluir.', 'Atenção');
         return;
     }
-    if (!confirm(`Excluir ${ids.length} produto(s) selecionado(s)? Esta ação não pode ser desfeita.`)) return;
+    if (!await confirmDialog({ title: 'Excluir produtos', message: `Excluir ${ids.length} produto(s) selecionado(s)? Esta ação não pode ser desfeita.`, danger: true, confirmLabel: 'Excluir' })) return;
     try {
         LoadingManager.show('Excluindo produtos...');
         const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
@@ -6174,7 +6174,7 @@ function editarProduto(produtoId) {
 }
 
 async function excluirProduto(produtoId) {
-    if (!confirm('Deseja excluir este produto? Esta ação não pode ser desfeita.')) {
+    if (!await confirmDialog({ title: 'Excluir produto', message: 'Deseja excluir este produto? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' })) {
         return;
     }
     
@@ -9335,13 +9335,13 @@ async function adicionarItensRomaneio() {
 }
 
 // Limpar todos os itens do carrinho (botão Limpar ao lado de Carregar Itens)
-function limparCarrinhoItens() {
+async function limparCarrinhoItens() {
     try {
         if (!Array.isArray(itensCarrinho) || itensCarrinho.length === 0) {
             ToastManager.info('O carrinho já está vazio', 'Nada a limpar', 2500);
             return;
         }
-        if (typeof confirm === 'function' && !confirm('Limpar todos os itens do carrinho? Esta ação não pode ser desfeita.')) {
+        if (!await confirmDialog({ title: 'Limpar carrinho', message: 'Limpar todos os itens do carrinho? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Limpar tudo' })) {
             return;
         }
         itensCarrinho = [];

@@ -1256,7 +1256,7 @@ async function excluirProdutosSelecionadosCompra() {
         ToastManager.warning('Selecione ao menos um produto para excluir.', 'Atenção');
         return;
     }
-    if (!confirm(`Excluir ${ids.length} produto(s) selecionado(s)? Esta ação não pode ser desfeita.`)) return;
+    if (!await confirmDialog({ title: 'Excluir produtos', message: `Excluir ${ids.length} produto(s) selecionado(s)? Esta ação não pode ser desfeita.`, danger: true, confirmLabel: 'Excluir' })) return;
     try {
         LoadingManager.show('Excluindo produtos...');
         const idSet = new Set(ids.map(String));
@@ -1295,7 +1295,7 @@ window.editarProdutoCadastro = function(produtoId) {
 window.excluirProdutoCadastro = async function(produtoId) {
     const produto = (window.produtos || []).find(p => String(p?.id || '') === String(produtoId || ''));
     if (!produto) return;
-    if (!confirm(`Excluir produto "${getProdutoNomeCadastro(produto)}"?`)) return;
+    if (!await confirmDialog({ title: 'Excluir produto', message: `Excluir produto "${getProdutoNomeCadastro(produto)}"?`, danger: true, confirmLabel: 'Excluir' })) return;
     const novaLista = (window.produtos || []).filter(p => String(p?.id || '') !== String(produtoId || ''));
     const okCatalogo = await persistProdutosCatalog(novaLista);
     if (!okCatalogo) {
@@ -1356,8 +1356,8 @@ async function salvarProdutoCadastro(event) {
     ToastManager.success(index >= 0 ? 'Produto atualizado com sucesso!' : 'Produto cadastrado com sucesso!');
 }
 
-function cancelarPedido() {
-    if (confirm('Tem certeza que deseja cancelar? Dados não salvos serão perdidos.')) {
+async function cancelarPedido() {
+    if (await confirmDialog({ title: 'Cancelar pedido', message: 'Tem certeza que deseja cancelar? Dados não salvos serão perdidos.', danger: true, confirmLabel: 'Cancelar pedido' })) {
         document.getElementById('pedidoForm').style.display = 'none';
         itensPedido = [];
         itemEmEdicaoIndex = null;
@@ -4764,7 +4764,7 @@ async function clonarPedido(id) {
 }
 
 async function excluirPedido(id) {
-    if (!confirm('Excluir este pedido? Ação irreversível.')) return;
+    if (!await confirmDialog({ title: 'Excluir pedido', message: 'Excluir este pedido? Ação irreversível.', danger: true, confirmLabel: 'Excluir' })) return;
     
     LoadingManager.show('Excluindo pedido...');
     
@@ -5467,7 +5467,7 @@ async function comprasFornecedoresExcluir(id) {
     const fornecedor = (Array.isArray(window.fornecedores) ? window.fornecedores : [])
         .find((item) => String(item.id || '') === fornecedorId);
     const nome = comprasFornecedoresNome(fornecedor) || 'este fornecedor';
-    if (!window.confirm(`Excluir ${nome}?`)) return;
+    if (!await confirmDialog({ title: 'Excluir fornecedor', message: `Excluir ${nome}?`, danger: true, confirmLabel: 'Excluir' })) return;
     try {
         const service = comprasFornecedoresGetService();
         await service.deleteFornecedor(fornecedorId);
@@ -6720,13 +6720,13 @@ window.adicionarItensRomaneio = async function() {
 };
 
 // Limpar todos os itens do pedido (botão Limpar ao lado de Carregar Itens)
-window.limparCarrinhoItens = function() {
+window.limparCarrinhoItens = async function() {
     try {
         if (!Array.isArray(itensPedido) || itensPedido.length === 0) {
             ToastManager.info('O pedido já está sem itens.');
             return;
         }
-        if (typeof confirm === 'function' && !confirm('Limpar todos os itens do pedido? Esta ação não pode ser desfeita.')) {
+        if (!await confirmDialog({ title: 'Limpar pedido', message: 'Limpar todos os itens do pedido? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Limpar tudo' })) {
             return;
         }
         itensPedido = [];

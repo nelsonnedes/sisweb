@@ -1873,7 +1873,7 @@ async function removerAnexoContaInternal(contaId, tipo, index) {
             return;
         }
 
-        if (!confirm('Remover este anexo?')) return;
+        if (!await confirmDialog({ title: 'Remover anexo', message: 'Remover este anexo?', danger: true, confirmLabel: 'Remover' })) return;
 
         const original = cloneContaSnapshotForEdit(conta);
         const isTopLevelReceipt = !original.anexos.some((item) => String(item && item.url) === String(target.url))
@@ -4319,7 +4319,7 @@ async function salvarContaPagar(event) {
         try { if (typeof mostrarLoading === 'function') mostrarLoading(false); } catch (_) {}
     }
 }
-function gerarParcelas(tipo) {
+async function gerarParcelas(tipo) {
     if (window.contaEmEdicao && window.contaEmEdicao.tipo === tipo) { return; }
     const numeroParcelas = parseInt(document.getElementById(`${tipo}Parcelas`).value);
     const valorTotal = parseCurrencyValue(document.getElementById(`${tipo}ValorTotal`).value);
@@ -4340,7 +4340,7 @@ function gerarParcelas(tipo) {
 
     const existingState = captureGeneratedParcelState(tipo);
     if (existingState.length > 0) {
-        const confirmar = confirm('As parcelas serão geradas novamente. Deseja manter anexos e ajustes já informados quando possível?');
+        const confirmar = await confirmDialog({ title: 'Regenerar parcelas', message: 'As parcelas serão geradas novamente. Deseja manter anexos e ajustes já informados quando possível?', confirmLabel: 'Manter e regenerar' });
         if (!confirmar) return;
     }
 
@@ -5942,7 +5942,7 @@ async function excluirComprovanteHistorico(contaId, tipo = 'receber', registroRe
             mostrarNotificacao('Comprovante não encontrado.', 'warning');
             return;
         }
-        if (!confirm('Remover comprovante deste registro?')) return;
+        if (!await confirmDialog({ title: 'Remover comprovante', message: 'Remover comprovante deste registro?', danger: true, confirmLabel: 'Remover' })) return;
 
         await updateFinancePaymentReceiptAuthoritative(
             tipo,
@@ -6966,7 +6966,7 @@ async function excluirPagamento(contaId, tipo = 'receber', registroRef, triggerB
     const deleteKey = `${String(tipo)}:${String(contaId)}:${String(registroRef)}`;
     window.__financeDeleteInFlight = window.__financeDeleteInFlight || new Set();
     if (window.__financeDeleteInFlight.has(deleteKey)) return;
-    const confirmed = window.confirm('Excluir este pagamento? O saldo da conta será recalculado.');
+    const confirmed = await confirmDialog({ title: 'Excluir pagamento', message: 'Excluir este pagamento? O saldo da conta será recalculado.', danger: true, confirmLabel: 'Excluir' });
     if (!confirmed) return;
     window.__financeDeleteInFlight.add(deleteKey);
     if (triggerButton) triggerButton.disabled = true;
@@ -7357,7 +7357,7 @@ async function excluirConta(id, tipo) {
             mostrarNotificacao('Conta não encontrada para exclusão.', 'warning');
             return;
         }
-        if (!confirm('Tem certeza que deseja excluir esta conta?')) return;
+        if (!await confirmDialog({ title: 'Excluir conta', message: 'Tem certeza que deseja excluir esta conta?', danger: true, confirmLabel: 'Excluir' })) return;
         window.__financeAccountDeleteInFlight.add(lockKey);
         const contaExcluida = target[index];
         const month = getMonthKeyFromDateVal(contaExcluida.dataVencimento || contaExcluida.vencimento);
@@ -8257,7 +8257,7 @@ function fazerBackup() {
     }
 }
 
-function restaurarBackup(event) {
+async function restaurarBackup(event) {
     const arquivo = event.target.files[0];
     
     if (!arquivo) {
@@ -8269,7 +8269,7 @@ function restaurarBackup(event) {
         return;
     }
     
-    if (!confirm('⚠️ ATENÇÃO: Esta operação irá substituir todos os dados atuais. Deseja continuar?')) {
+    if (!await confirmDialog({ title: 'Restaurar backup', message: 'ATENÇÃO: Esta operação irá substituir todos os dados atuais. Deseja continuar?', danger: true, confirmLabel: 'Substituir dados' })) {
         event.target.value = ''; // Limpar input
         return;
     }
@@ -8330,14 +8330,14 @@ function restaurarBackup(event) {
     reader.readAsText(arquivo);
 }
 
-function limparTodosDados() {
-    const confirmacao1 = confirm('⚠️ ATENÇÃO: Esta operação irá REMOVER PERMANENTEMENTE todos os dados financeiros!');
-    
+async function limparTodosDados() {
+    const confirmacao1 = await confirmDialog({ title: 'Apagar todos os dados', message: 'ATENÇÃO: Esta operação irá REMOVER PERMANENTEMENTE todos os dados financeiros!', danger: true, confirmLabel: 'Continuar' });
+
     if (!confirmacao1) {
         return;
     }
-    
-    const confirmacao2 = confirm('🚨 ÚLTIMA CONFIRMAÇÃO: Tem certeza absoluta que deseja apagar TODOS os dados? Esta ação NÃO PODE ser desfeita!');
+
+    const confirmacao2 = await confirmDialog({ title: 'Confirmação final', message: 'ÚLTIMA CONFIRMAÇÃO: Tem certeza absoluta que deseja apagar TODOS os dados? Esta ação NÃO PODE ser desfeita!', danger: true, confirmLabel: 'Apagar tudo' });
     
     if (!confirmacao2) {
         return;

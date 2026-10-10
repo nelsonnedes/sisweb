@@ -338,7 +338,7 @@ test('modal financeiro bloqueia corrida de estado e oferece navegação acessív
   assert.match(source, /isPaymentModalBusy\(\)[\s\S]*Aguarde a conclusão da operação financeira/);
   assert.match(source, /event\.key === 'Escape'/);
   assert.match(source, /event\.key !== 'Tab'/);
-  assert.match(source, /window\.confirm\('Excluir este pagamento\?/);
+  assert.match(source, /confirmDialog\(\{ title: 'Excluir pagamento'[^}]*danger: true/);
 });
 
 test('logout, troca de tenant e bfcache removem estado financeiro privado', () => {
