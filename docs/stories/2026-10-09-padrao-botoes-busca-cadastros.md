@@ -81,4 +81,4 @@
   1100px 253 vs 126; 390px sem overflow. Zero pageerrors.
 - Trava: +1 teste (regras de grid/flex/áreas). Gates: lint/typecheck OK,
   883 testes 882/0/1.
-- Publish: SW `2026-10-09-fin-grid` + `?v=` ressincronizado.
+- Deploy 09/10: produção serve SW `2026-10-09-fin-grid` com flex-2x e span-2.
