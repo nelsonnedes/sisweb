@@ -1128,9 +1128,16 @@ class FirebaseServiceTL {
         } catch (error) {
             console.error('❌ Erro ao salvar dados:', error && error.code ? error.code : 'unknown');
             if (window.SentryMonitor && window.SentryMonitor.reportDataIssue) {
+                var __sentryCtx2 = {};
+                try {
+                    var __m2 = String(key || '').match(/^companies\/([^/]+)\//);
+                    __sentryCtx2.companyId = __m2 ? __m2[1] : '';
+                    try { __sentryCtx2.page = (location && location.pathname) || ''; } catch (_) {}
+                } catch (_) {}
                 window.SentryMonitor.reportDataIssue('gravacao_falhou', {
                     path: key, op: 'saveData',
-                    errorCode: error && error.code, errorMessage: (error && error.message || '').slice(0, 300)
+                    errorCode: error && error.code, errorMessage: (error && error.message || '').slice(0, 300),
+                    companyId: __sentryCtx2.companyId, page: __sentryCtx2.page
                 });
             }
             const fallbackData = { ...dataWithMeta, _metadata: { ...dataWithMeta._metadata, source: 'localStorage' } };

@@ -255,7 +255,7 @@
         if (details.collection) scope.setTag('data_collection', String(details.collection).slice(0, 100));
         if (details.companyId || ctx.companyId) scope.setTag('company_id', String(details.companyId || ctx.companyId).slice(0, 64));
         var extra = {};
-        ['path', 'op', 'collection', 'detail', 'errorMessage', 'errorCode'].forEach(function (k) {
+        ['path', 'op', 'collection', 'detail', 'errorMessage', 'errorCode', 'uid', 'page'].forEach(function (k) {
           if (details[k] !== undefined && details[k] !== null) extra[k] = details[k];
         });
         sanitizeObject(extra);

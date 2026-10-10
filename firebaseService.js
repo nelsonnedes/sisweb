@@ -2439,9 +2439,17 @@ async function saveToFirebase(path, key, data, options) {
         try { dropCachedWritePath(path); } catch (_) {}
         console.error('❌ Erro ao salvar dados no Firebase:', error && error.code ? error.code : 'unknown');
         if (window.SentryMonitor && window.SentryMonitor.reportDataIssue) {
+            var __sentryCtx = {};
+            try {
+                var __m = String(path || '').match(/^companies\/([^/]+)\//);
+                __sentryCtx.companyId = __m ? __m[1] : ((typeof getTenantId === 'function' && getTenantId()) || '');
+                try { __sentryCtx.uid = (auth && auth.currentUser && auth.currentUser.uid) || ''; } catch (_) {}
+                try { __sentryCtx.page = (location && location.pathname) || ''; } catch (_) {}
+            } catch (_) {}
             window.SentryMonitor.reportDataIssue('gravacao_falhou', {
                 path: path, op: 'saveData',
-                errorCode: error && error.code, errorMessage: (error && error.message || '').slice(0, 300)
+                errorCode: error && error.code, errorMessage: (error && error.message || '').slice(0, 300),
+                companyId: __sentryCtx.companyId, uid: __sentryCtx.uid, page: __sentryCtx.page
             });
         }
         
