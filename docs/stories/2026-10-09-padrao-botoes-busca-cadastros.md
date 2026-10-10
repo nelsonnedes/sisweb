@@ -66,3 +66,5 @@
   15/15 mesma-linha + filtro + restore, zero pageerrors.
 - Gates: lint/typecheck OK, 882 testes 881/0/1.
 - Publish: SW `2026-10-09-busca-todas` + `?v=` ressincronizado.
+- Deploy 09/10: produção serve SW novo, Buscar nas 3 páginas e helper global
+  (`menu-component.js?v=82aa4b755035`).
