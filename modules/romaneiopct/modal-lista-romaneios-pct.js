@@ -472,6 +472,8 @@ window.ModalListaRomaneiosPCT = (function() {
 
     async function loadRomaneios(preferFirebase = false) {
         console.log("🔄 PCT: Carregando romaneios...");
+        state.isLoading = true;
+        updateLoadingState();
         try {
             let romaneios = [];
             const activeTenant = resolveCompanyId();
@@ -579,6 +581,9 @@ window.ModalListaRomaneiosPCT = (function() {
             console.log("🎨 PCT: Lista e paginação renderizadas");
         } catch (error) {
             console.error(" PCT: Erro ao carregar romaneios:", error);
+        } finally {
+            state.isLoading = false;
+            updateLoadingState();
         }
     }
 
@@ -672,6 +677,10 @@ window.ModalListaRomaneiosPCT = (function() {
         return new Date();
     }
     
+    function updateLoadingState() {
+        renderRomaneiosList();
+    }
+
     function renderRomaneiosList() {
         console.log("🎨 PCT: Renderizando lista de romaneios...");
         console.log("🎨 PCT: Estado atual:", state);
@@ -706,6 +715,19 @@ window.ModalListaRomaneiosPCT = (function() {
         const romaneiosToShow = state.filteredRomaneios.slice(startIndex, endIndex);
 
         tableBody.innerHTML = "";
+
+        if (state.isLoading) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Carregando romaneios...
+                    </td>
+                </tr>
+            `;
+            updateModalInfo();
+            renderPagination();
+            return;
+        }
 
         if (romaneiosToShow.length === 0) {
             const emptyRow = document.createElement("tr");

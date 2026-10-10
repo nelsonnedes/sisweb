@@ -584,6 +584,7 @@ function adicionarItem() {
             // ✅ RESTAURAR BOTÃO APÓS ATUALIZAÇÃO
             restaurarBotaoNormal();
             window.itemEmEdicao = false;
+            notifyUser('Item atualizado com sucesso!', 'success');
         } else {
             console.log('➕ Adicionando novo item');
             
@@ -599,6 +600,7 @@ function adicionarItem() {
                 console.log('📌 Adicionando novo item como primeiro');
                 window.romaneioItems.unshift(item);
                 console.log('✅ Novo item adicionado na primeira posição');
+                notifyUser('Item adicionado ao romaneio.', 'success');
             }
         }
         
@@ -702,6 +704,7 @@ async function editarItem(index) {
         }
         
         console.log(`✅ Item ${index} carregado para edição`);
+        notifyUser('Item carregado para edição', 'info');
         
         // Focar no primeiro campo
         if (campos.espessura) {
