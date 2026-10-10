@@ -126,6 +126,26 @@ Onda D: romaneios HTML/modais + admin + folha (T6 posição).
 Onda E: 100 `confirm(` → `confirmDialog` (destrutivos primeiro).
 Onda F: remover override T1, lint `no-alert`, validação final + traces.
 
+## 10. Andamento das ondas
+
+- [x] **Onda A** (`06d5ec4` + `d792c00`): `js/notification-service.js` global via
+      `menu-component.js`; T5/T4 delegam sem fallback nativo; trava 13/13; deploy OK.
+- [x] **Onda B** (`85ba045` + remoção): `ToastManager` de `compras.js`/`vendas.js`
+      delega `show` ao serviço (assinaturas, `window.ToastManager`,
+      `window.mostrarToast` e `close()` preservados); 7ª família
+      `src/components/ui/notifications.js` **removida** (código morto: só
+      `src/app.js` importava, nenhum HTML carrega `src/app.js`; teste
+      `global-first-wave` agora cobre o serviço); smoke vendas+compras OK.
+- [ ] Onda C: `estoque.js` (59) + fiscal (72) por categoria §4.
+- [ ] Onda D: romaneios HTML/modais + admin + folha (T6 posição).
+- [ ] Onda E: 100 `confirm(` → `confirmDialog` (destrutivos primeiro).
+- [ ] Onda F: remover override T1, lint `no-alert`, validação final + traces.
+
+Correção de levantamento: os matches `toast.success|error` em `client.html`,
+`fornecedor.html`, `species.html`, `compras.html`, `vendas.html` eram **seletores
+CSS** (`.toast.success`), não chamadas JS — únicos consumidores da API toast são
+`ToastManager`, `showToast`/`Utils`/`FolhaUtils`/`AdminUI` e `__toast`.
+
 ## 9. Checklist implementação
 
 - [ ] `js/notification-service.js` + CSS tokens + include global
