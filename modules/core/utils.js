@@ -379,6 +379,14 @@ class UtilsTL {
      * 🚨 Mostrar notificação toast
      */
     static showToast(message, type = 'info', duration = 3000) {
+        // Onda A: delega ao NotificationService global (cores padronizadas).
+        try {
+            if (typeof window !== 'undefined' && window.NotificationService
+                && typeof window.NotificationService.show === 'function') {
+                window.NotificationService.show(message, type, { duration });
+                return;
+            }
+        } catch (_) {}
         // Criar elemento toast se não existir
         let toastContainer = document.getElementById('toast-container');
         if (!toastContainer) {

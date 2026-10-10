@@ -810,8 +810,15 @@ function showLoading(show) {
 }
 
 function showToast(message, type = 'info') {
+    // Onda A: delega ao NotificationService global (sem fallback alert).
+    try {
+        if (window.NotificationService && typeof window.NotificationService.show === 'function') {
+            window.NotificationService.show(message, type);
+            return;
+        }
+    } catch (_) {}
     const container = document.getElementById('toast-container');
-    if (!container) return alert(message);
+    if (!container) return;
     
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;

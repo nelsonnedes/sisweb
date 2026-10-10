@@ -6,6 +6,21 @@
     if (typeof window === 'undefined' || window.__siswebPWAInitialized) return;
     window.__siswebPWAInitialized = true;
 
+    // Onda A (2026-10-10): NotificationService global em todas as páginas do menu.
+    var NOTIFY_VERSION = '2026-10-10-onda-a';
+    function ensureNotificationService() {
+        try {
+            if (window.NotificationService && typeof window.NotificationService.show === 'function') return;
+            if (document.querySelector('script[data-sw-notify]')) return;
+            var s = document.createElement('script');
+            s.src = resolveRootAsset('js/notification-service.js') + '?v=' + NOTIFY_VERSION;
+            s.defer = true;
+            s.setAttribute('data-sw-notify', '1');
+            document.head.appendChild(s);
+        } catch (e) {}
+    }
+    ensureNotificationService();
+
     const PWA_VERSION = '2026-10-09-fin-grid';
     const state = {
         deferredPrompt: null,

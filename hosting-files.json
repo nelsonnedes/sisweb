@@ -363,6 +363,7 @@
   "js/commerce-boleto-pix.js",
   "js/deep-clean.js",
   "js/fornecedor.js",
+  "js/notification-service.js",
   "js/pix-brcode.js",
   "js/sisweb-theme.js",
   "js/sisweb-loading.js",
