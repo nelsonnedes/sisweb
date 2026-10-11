@@ -57,3 +57,19 @@ test('certificado espelhado na config do validador', async (t) => {
     assert.ok(nf.includes("tipo: null, titular: ''"), 'remoção limpa espelho');
   });
 });
+
+test('numeração única e aguardando com saída', async (t) => {
+  await t.test('config sincroniza contador sem retroceder', () => {
+    assert.ok(nf.includes('cfg.numeros = {'), 'contador na config salva');
+    assert.ok(nf.includes('Math.max(desejado, atual'), 'nunca retrocede');
+    assert.ok(nf.includes('para não duplicar número fiscal'), 'avisa ao manter');
+  });
+
+  await t.test('aguardando/erro_envio têm Consultar SEFAZ', () => {
+    assert.ok(nf.includes("onclick=\"consultarStatusSefazNF('${n.id}')\""), 'botão na lista');
+    assert.ok(nf.includes('window.consultarStatusSefazNF'), 'exposição global');
+    assert.ok(nf.includes('nf_consultarNFe'), 'usa function deployada');
+    assert.ok(nf.includes('solicitarSenhaA1NF'), 'senha via modal próprio');
+    assert.ok(nf.includes("status: 'autorizada'"), 'promove com protocolo');
+  });
+});

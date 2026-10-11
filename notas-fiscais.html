@@ -2747,6 +2747,19 @@
 
       try {
         // ── 1. Salvar config fiscal no Firebase (companies/{tenantId}/fiscal/config)
+        // Sincronizar contador oficial (numeros/nfe): fonte única da emissão.
+        // Nunca retrocede (duplicar número fiscal é irregular): usa o maior.
+        try {
+          const desejado = parseInt(g('cfgProximoNumero')) || 1;
+          const atual = await window.NFStorage.getProximoNumero(tid, 55).catch(() => 1);
+          const alvo = Math.max(desejado, atual || 1);
+          if (alvo !== desejado) {
+            notifyUser(`⚠️ Numeração já consumida até ${atual}. Mantido ${atual} para não duplicar número fiscal.`);
+            const campoNum = document.getElementById('cfgProximoNumero');
+            if (campoNum) campoNum.value = String(alvo);
+          }
+          cfg.numeros = { ...(cfg.numeros || {}), nfe: { proximoNumero: alvo } };
+        } catch (_) {}
         let salvo;
         if (window.NFService?.salvarConfig) {
           salvo = await window.NFService.salvarConfig(cfg);
@@ -4048,6 +4061,7 @@
             ${n.status==='autorizada' ? `<button class="btn btn-danger btn-small" onclick="iniciarCancelamento('${n.id}','${n.chave}','${n.nProt||''}')" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
             ${n.status==='rascunho' ? `<button class="btn btn-warning btn-small" onclick="editarRascunho('${n.id}')" title="Editar"><i class="fas fa-edit"></i></button>` : ''}
             ${n.status==='rascunho' ? `<button class="btn btn-danger btn-small" onclick="excluirRascunhoNF('${n.id}')" title="Excluir rascunho"><i class="fas fa-trash"></i></button>` : ''}
+            ${(n.status==='aguardando' || n.status==='erro_envio') ? `<button class="btn btn-primary btn-small" onclick="consultarStatusSefazNF('${n.id}')" title="Consultar status na SEFAZ"><i class="fas fa-sync-alt"></i></button>` : ''}
           </td>
         </tr>`;
       }).join('');
@@ -4492,6 +4506,84 @@
       }
     }
 
+    // ─── Consultar status na SEFAZ (aguardando/erro_envio) ───
+    // Padrão grandes sistemas: registro intermediário tem ação de refresh,
+    // nunca beco sem saída. Requer senha A1 (assinatura da consulta).
+    function solicitarSenhaA1NF(titulo = 'Senha do certificado A1') {
+      return new Promise((resolve) => {
+        try {
+          const overlay = document.createElement('div');
+          overlay.id = 'sw-confirm-overlay';
+          const box = document.createElement('div');
+          box.id = 'sw-confirm-box';
+          box.setAttribute('role', 'alertdialog');
+          const h = document.createElement('h3');
+          h.textContent = titulo;
+          const p = document.createElement('p');
+          p.textContent = 'Informe a senha do certificado A1 para consultar a SEFAZ.';
+          const inp = document.createElement('input');
+          inp.type = 'password';
+          inp.autocomplete = 'current-password';
+          inp.placeholder = 'Senha do certificado A1';
+          inp.style.cssText = 'width:100%;padding:9px 12px;border:1px solid var(--sw-border);border-radius:8px;margin-bottom:16px;box-sizing:border-box;background:var(--sw-surface-2);color:var(--sw-text-1);';
+          const actions = document.createElement('div');
+          actions.id = 'sw-confirm-actions';
+          const btnCancel = document.createElement('button');
+          btnCancel.id = 'sw-confirm-cancel';
+          btnCancel.type = 'button';
+          btnCancel.textContent = 'Cancelar';
+          const btnOk = document.createElement('button');
+          btnOk.id = 'sw-confirm-ok';
+          btnOk.type = 'button';
+          btnOk.textContent = 'Consultar';
+          const done = (v) => { try { overlay.remove(); } catch (_) {} resolve(v); };
+          btnCancel.onclick = () => done(null);
+          btnOk.onclick = () => done(inp.value || null);
+          inp.onkeydown = (ev) => { if (ev.key === 'Enter') done(inp.value || null); };
+          overlay.addEventListener('click', (ev) => { if (ev.target === overlay) done(null); });
+          actions.appendChild(btnCancel);
+          actions.appendChild(btnOk);
+          box.appendChild(h);
+          box.appendChild(p);
+          box.appendChild(inp);
+          box.appendChild(actions);
+          overlay.appendChild(box);
+          document.body.appendChild(overlay);
+          try { inp.focus(); } catch (_) {}
+        } catch (_) { resolve(null); }
+      });
+    }
+
+    async function consultarStatusSefazNF(nfId) {
+      try {
+        const tid = obterTenantIdNF();
+        if (!tid) return notifyUser('Tenant não identificado');
+        const nf = await window.NFStorage.carregarNF(tid, 55, nfId);
+        if (!nf) return notifyUser('NF-e não encontrada');
+        if (!nf.chave) return notifyUser('Sem chave de acesso para consultar.');
+        const senha = await solicitarSenhaA1NF();
+        if (!senha) return;
+        try { if (window.SiswebLoading?.show) window.SiswebLoading.show('Consultando SEFAZ...'); } catch (_) {}
+        const ambiente = (nf?.ide?.tpAmb === 1 || nf?.tpAmb === 1) ? 'producao' : 'homologacao';
+        const res = await window.firebaseService.callFunction('nf_consultarNFe',
+          { tenantId: tid, chave: nf.chave, senhaA1: senha, ambiente });
+        if (res && res.autorizada) {
+          await window.NFStorage.salvarNF(tid, { ...nf, id: nfId, status: 'autorizada',
+            nProt: res.nProt || nf.nProt || '', xMotivo: res.xMotivo || '' });
+          notifyUser(`✅ NF-e autorizada! Protocolo: ${res.nProt || '—'}`);
+        } else {
+          await window.NFStorage.salvarNF(tid, { ...nf, id: nfId,
+            ultimaConsultaSefaz: { cStat: res?.cStat || '', xMotivo: res?.xMotivo || '', em: new Date().toISOString() } });
+          notifyUser(`⏳ SEFAZ: ${res?.cStat || '?'} — ${res?.xMotivo || 'sem retorno definitivo. Tente novamente.'}`, 'warning');
+        }
+        await consultarNotas();
+      } catch (e) {
+        notifyUser('Erro na consulta SEFAZ: ' + (e?.message || e));
+      } finally {
+        try { if (window.SiswebLoading?.hide) window.SiswebLoading.hide(); } catch (_) {}
+      }
+    }
+
     // ─── Excluir rascunho ─────────────────────────────
     async function excluirRascunhoNF(nfId) {
       try {
@@ -4833,6 +4925,7 @@
     window.iniciarCancelamento    = iniciarCancelamento;
     window.editarRascunho         = editarRascunho;
     window.excluirRascunhoNF       = excluirRascunhoNF;
+    window.consultarStatusSefazNF  = consultarStatusSefazNF;
     // compat antigo
     window.adicionarItem          = adicionarItemNFManual;
     window.salvarRascunho         = salvarRascunhoNF;
