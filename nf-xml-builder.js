@@ -276,17 +276,37 @@ const NFXmlBuilder = (() => {
     }
     const vBCn = parseFiscalNumber(g.vBC != null ? g.vBC : (item.vProd || item.total));
     const pIBSUF = parseFiscalNumber(g.pIBSUF), pIBSMun = parseFiscalNumber(g.pIBSMun), pCBS = parseFiscalNumber(g.pCBS);
+    const pRed = parseFiscalNumber(g.pRedAliq);
+    const pDif = parseFiscalNumber(g.pDif);
+    const efet = (p) => p * (1 - pRed / 100);
+    const gRedTag = (pAliq) => pRed > 0
+      ? `<gRed><pRedAliq>${num(pRed, 4)}</pRedAliq><pAliqEfet>${num(efet(pAliq), 4)}</pAliqEfet></gRed>` : '';
+    const gDifTag = () => pDif > 0
+      ? `<gDif><pDif>${num(pDif, 4)}</pDif><vDif>${num(vBCn * pDif / 100)}</vDif></gDif>` : '';
     const vIBSUFn = g.vIBSUF != null ? parseFiscalNumber(g.vIBSUF) : vBCn * pIBSUF / 100;
     const vIBSMunn = g.vIBSMun != null ? parseFiscalNumber(g.vIBSMun) : vBCn * pIBSMun / 100;
     const vIBSn = vIBSUFn + vIBSMunn;
     const vCBSn = g.vCBS != null ? parseFiscalNumber(g.vCBS) : vBCn * pCBS / 100;
+    // Crédito Presumido da Operação (opcional)
+    let cred = '';
+    const cp = g.credPresOper;
+    if (cp && cp.cCredPres) {
+      const bcCP = cp.vBCCredPres != null ? parseFiscalNumber(cp.vBCCredPres) : vBCn;
+      const pCP = parseFiscalNumber(cp.pCredPres);
+      const vCP = cp.vCredPres != null ? parseFiscalNumber(cp.vCredPres) : (bcCP * pCP / 100);
+      const gIBS = cp.gIBSCredPres !== false
+        ? `<gIBSCredPres><pCredPres>${num(pCP, 4)}</pCredPres><vCredPres>${num(vCP)}</vCredPres></gIBSCredPres>` : '';
+      const gCbs = cp.gCBSCredPres !== false
+        ? `<gCBSCredPres><pCredPres>${num(pCP, 4)}</pCredPres><vCredPres>${num(vCP)}</vCredPres></gCBSCredPres>` : '';
+      cred = `<gCredPresOper><vBCCredPres>${num(bcCP)}</vBCCredPres><cCredPres>${esc(cp.cCredPres)}</cCredPres>${gIBS}${gCbs}</gCredPresOper>`;
+    }
     return `\n        <IBSCBS><CST>${esc(g.cst)}</CST><cClassTrib>${esc(g.cClassTrib)}</cClassTrib>`
       + `<gIBSCBS><vBC>${num(vBCn)}</vBC>`
-      + `<gIBSUF><pIBSUF>${num(pIBSUF, 4)}</pIBSUF><vIBSUF>${num(vIBSUFn)}</vIBSUF></gIBSUF>`
-      + `<gIBSMun><pIBSMun>${num(pIBSMun, 4)}</pIBSMun><vIBSMun>${num(vIBSMunn)}</vIBSMun></gIBSMun>`
+      + `<gIBSUF><pIBSUF>${num(pIBSUF, 4)}</pIBSUF>${gDifTag()}${gRedTag(pIBSUF)}<vIBSUF>${num(vIBSUFn)}</vIBSUF></gIBSUF>`
+      + `<gIBSMun><pIBSMun>${num(pIBSMun, 4)}</pIBSMun>${gDifTag()}${gRedTag(pIBSMun)}<vIBSMun>${num(vIBSMunn)}</vIBSMun></gIBSMun>`
       + `<vIBS>${num(vIBSn)}</vIBS>`
-      + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS><vCBS>${num(vCBSn)}</vCBS></gCBS>`
-      + `</gIBSCBS></IBSCBS>`;
+      + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS>${gDifTag()}${gRedTag(pCBS)}<vCBS>${num(vCBSn)}</vCBS></gCBS>`
+      + `</gIBSCBS>${cred}</IBSCBS>`;
   }
 
   // ─── Imposto Seletivo (<IS>, TIS) — Reforma Tributária ────────────────────
@@ -377,7 +397,7 @@ const NFXmlBuilder = (() => {
         <vOutro>0.00</vOutro>
         <vNF>${num(t.vNF)}</vNF>
         <vTotTrib>${num(t.vTotTrib != null && t.vTotTrib !== '' ? t.vTotTrib : ((Number(t.vICMS)||0) + (Number(t.vIPI)||0) + (Number(t.vPIS)||0) + (Number(t.vCOFINS)||0)))}</vTotTrib>
-      </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${(Number(t.vBCIBSCBS) > 0) ? `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>0.00</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>0.00</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>0.00</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>0.00</vDif><vDevTrib>0.00</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>0.00</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS></IBSCBSTot>` : ''}
+      </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${(Number(t.vBCIBSCBS) > 0) ? `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>${num(t.vDifIBSUF)}</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>${num(t.vDifIBSMun)}</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>${num(t.vDifCBS)}</vDif><vDevTrib>0.00</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS></IBSCBSTot>` : ''}
     </total>`;
   }
 
@@ -465,6 +485,7 @@ const NFXmlBuilder = (() => {
   function calcularTotais(itens, desconto, frete) {
     let vProd = 0, vBC = 0, vICMS = 0, vIPI = 0, vPIS = 0, vCOFINS = 0;
     let vBCIBSCBS = 0, vIBSUF = 0, vIBSMun = 0, vCBS = 0, vIS = 0;
+    let vDifIBSUF = 0, vDifIBSMun = 0, vDifCBS = 0, vCredPres = 0;
     itens.forEach(it => {
       vProd   += parseFloat(it.vProd || it.total) || 0;
       vBC     += parseFloat(it.imposto?.icms?.vBC) || 0;
@@ -481,6 +502,14 @@ const NFXmlBuilder = (() => {
         vIBSUF    += gi.vIBSUF  != null ? parseFiscalNumber(gi.vIBSUF)  : bc * puf / 100;
         vIBSMun   += gi.vIBSMun != null ? parseFiscalNumber(gi.vIBSMun) : bc * pmu / 100;
         vCBS      += gi.vCBS    != null ? parseFiscalNumber(gi.vCBS)    : bc * pcb / 100;
+        const pdif = parseFiscalNumber(gi.pDif);
+        if (pdif > 0) { vDifIBSUF += bc * pdif / 100; vDifIBSMun += bc * pdif / 100; vDifCBS += bc * pdif / 100; }
+        const cp = gi.credPresOper;
+        if (cp && cp.cCredPres) {
+          const bcCP = cp.vBCCredPres != null ? parseFiscalNumber(cp.vBCCredPres) : bc;
+          const pCP = parseFiscalNumber(cp.pCredPres);
+          vCredPres += cp.vCredPres != null ? parseFiscalNumber(cp.vCredPres) : bcCP * pCP / 100;
+        }
       }
       // Imposto Seletivo
       const gs = it.imposto?.is;
@@ -495,7 +524,8 @@ const NFXmlBuilder = (() => {
     const vIBS   = vIBSUF + vIBSMun;
     return { vProd, vBC, vICMS, vIPI, vPIS, vCOFINS, vDesc, vFrete, vNF,
       vTotTrib: vICMS + vIPI + vPIS + vCOFINS,
-      vBCIBSCBS, vIBSUF, vIBSMun, vIBS, vCBS, vIS };
+      vBCIBSCBS, vIBSUF, vIBSMun, vIBS, vCBS, vIS,
+      vDifIBSUF, vDifIBSMun, vDifCBS, vCredPres };
   }
 
   // ─── Montar XML NF-e completo (sem assinatura) ────────────────────────────

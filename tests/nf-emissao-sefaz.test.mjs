@@ -96,3 +96,11 @@ test('Reforma Tributária: grupos IBSCBS/IS e totais implementados (schema PL_01
   assert.match(cfg, /cstIS/);
 });
 
+test('Reforma Tributária avançada: gRed/gDif/gCredPresOper', () => {
+  assert.match(xml, /<gRed><pRedAliq>/);
+  assert.match(xml, /<gDif><pDif>/);
+  assert.match(xml, /<gCredPresOper>/);
+  assert.match(cfg, /pRedAliq/);
+  assert.match(cfg, /credPresOper/);
+});
+

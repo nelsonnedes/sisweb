@@ -1068,6 +1068,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `notas-fiscais.html`, `nf-config.js`, `nf-xml-builder.js`, `tests/nfe-xsd-validation.test.mjs`, `tests/schemas/nfe/*.xsd`, `package.json` (+ script/ devDep), story, este cerebro.
 - **Gates:** `npm test` 1127/0/1 (XSD 5/5); lint + typecheck limpos; sintaxe inline HTML 0 erros; hosting publicado.
 
+## Sessao 2026-10-11 — Reforma Tributaria: grupos avancados (gRed/gDif/gCredPresOper)
+
+- **Builder** (`nf-xml-builder.js:buildIBSCBS`): `gRed` (pRedAliq + pAliqEfet calculado por componente), `gDif` (pDif + vDif por componente) e `gCredPresOper` (vBCCredPres + cCredPres + gIBSCredPres/gCBSCredPres) — todos opcionais (minOccurs=0). `calcularTotais`/`buildTotal` agregam `vDif` por competencia (IBSUF/IBSMun/CBS) e `vCredPres`.
+- **Config** (`nf-config.js`): `impostos.ibscbs` ganhou `pRedAliq`, `pDif`, `credPresOper { cCredPres, pCredPres, vBCCredPres }`; `calcularIBSCBS` propaga quando >0.
+- **UI** (`notas-fiscais.html`, Impostos): `cfgIbsRedAliq`, `cfgIbsDif`, `cfgCredPres`, `cfgCredPresAliq` (carga + salvar).
+- **Validacao**: 3º caso no `tests/nfe-xsd-validation.test.mjs` (avancado) — **valido contra o XSD oficial PL_010f**. Trava em `tests/nf-emissao-sefaz.test.mjs`.
+- **Pendente:** gMono (CST 620), gTransfCred (800), gAjusteCompet (811), gEstornoCred, gTribRegular/gTribCompraGov, gCredPresIBSZFM, e os Eventos_RTC.
+- **Gates:** `npm test` 1129/0/1; lint+typecheck limpos; HTML 0 erros; XSD 6/6; hosting publicado.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

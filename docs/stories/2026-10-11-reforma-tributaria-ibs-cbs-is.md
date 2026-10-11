@@ -18,7 +18,7 @@ O usuário forneceu os **esquemas oficiais em uso** (`C:\Sisweb\Esquemas XML`), 
 - `nf-config.js`: `impostos.ibscbs` e `impostos.is` (defaults desabilitados).
 - Travas: `tests/nf-emissao-sefaz.test.mjs`. Verificação funcional: XML balanceado, grupos presentes, `vCBS` total correto.
 
-**Pendente:** validação automática contra o XSD no pipeline foi implementada (ver §0.2); grupos avançados (`gCredPres`/`gMono`/`gDif`/`gRed`) conforme regra do contribuinte; eventos `Eventos_RTC`.
+**Pendente:** `gMono` (monofásico CST 620), `gTransfCred` (CST 800), `gAjusteCompet` (CST 811), `gEstornoCred`, `gTribRegular`/`gTribCompraGov`, `gCredPresIBSZFM` e os **eventos `Eventos_RTC`** (e112110, e112120, …).
 
 ## 0.2 UI de configuração + validação XSD no pipeline (2026-10-11)
 
@@ -27,6 +27,14 @@ O usuário forneceu os **esquemas oficiais em uso** (`C:\Sisweb\Esquemas XML`), 
 - **Validação XSD no pipeline**: `tests/nfe-xsd-validation.test.mjs` gera a NF-e pelo builder real e valida contra o **XSD oficial** `tests/schemas/nfe/nfe_v4.00.xsd` (PL_010f_v1.04) via `xsd-schema-validator` (Java). Cobre XML **sem** e **com** grupos RTC. Script: `npm run validate:nfe-xsd`.
 - **Bugs reais encontrados pelo XSD e corrigidos**: `dhEmi` emitia **milissegundos** (violava `TDateTimeUTC`) — removidos; confirmado que `<indPag>` não pertence a `<ide>`.
 - **Schemas vendorizados** no repo (`tests/schemas/nfe/`): `nfe_v4.00.xsd`, `leiauteNFe_v4.00.xsd`, `tiposBasico_v4.00.xsd`, `DFeTiposBasicos_v1.00.xsd`, `xmldsig-core-schema_v1.01.xsd`.
+
+## 0.3 Grupos avançados (2026-10-11)
+
+- **`gRed`** (redução de alíquota): `pRedAliq` + `pAliqEfet` calculado por componente (IBSUF/IBSMun/CBS).
+- **`gDif`** (diferimento): `pDif` + `vDif` por componente; totais agregam `vDif` por competência.
+- **`gCredPresOper`** (crédito presumido): `vBCCredPres` + `cCredPres` + `gIBSCredPres`/`gCBSCredPres` (`pCredPres`,`vCredPres`); totais agregam `vCredPres`.
+- **UI** (Impostos): `Redução alíquota (%)`, `Diferimento (%)`, `cCredPres`, `Crédito presumido (%)`.
+- **Validação**: caso avançado adicionado ao `tests/nfe-xsd-validation.test.mjs` — **válido contra o XSD oficial**.
 
 ## 1. Fontes oficiais consultadas
 

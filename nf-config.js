@@ -87,6 +87,9 @@ const NFConfigService = (() => {
         pIBSUF: 0,      // % alíquota IBS UF
         pIBSMun: 0,     // % alíquota IBS Município
         pCBS: 0,        // % alíquota CBS
+        pRedAliq: 0,    // % redução de alíquota (gRed)
+        pDif: 0,        // % diferimento (gDif)
+        credPresOper: { cCredPres: '', pCredPres: 0, vBCCredPres: 0 },
       },
       is: {
         habilitado: false,
@@ -321,7 +324,7 @@ const NFConfigService = (() => {
   function calcularIBSCBS(config, valorProduto) {
     const g = (config.impostos && config.impostos.ibscbs) || {};
     if (!g.habilitado) return null;
-    return {
+    const out = {
       habilitado: true,
       cst: g.cst || '',
       cClassTrib: g.cClassTrib || '',
@@ -330,6 +333,10 @@ const NFConfigService = (() => {
       pCBS: Number(g.pCBS) || 0,
       vBC: round2(valorProduto),
     };
+    if (Number(g.pRedAliq) > 0) out.pRedAliq = Number(g.pRedAliq);
+    if (Number(g.pDif) > 0) out.pDif = Number(g.pDif);
+    if (g.credPresOper && g.credPresOper.cCredPres) out.credPresOper = { ...g.credPresOper };
+    return out;
   }
 
   // ─── Reforma Tributária: Imposto Seletivo ────────────────────────────────

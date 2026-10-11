@@ -2114,6 +2114,24 @@
             </div>
             <div class="form-row">
               <div class="form-group">
+                <label for="cfgIbsRedAliq">Redução alíquota IBS/CBS (%):</label>
+                <input type="number" id="cfgIbsRedAliq" step="0.0001" min="0" max="100" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label for="cfgIbsDif">Diferimento IBS/CBS (%):</label>
+                <input type="number" id="cfgIbsDif" step="0.0001" min="0" max="100" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label for="cfgCredPres">cCredPres (crédito presumido):</label>
+                <input type="text" id="cfgCredPres" maxlength="2" placeholder="" inputmode="numeric">
+              </div>
+              <div class="form-group">
+                <label for="cfgCredPresAliq">Crédito presumido (%):</label>
+                <input type="number" id="cfgCredPresAliq" step="0.0001" min="0" placeholder="0">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
                 <label><input type="checkbox" id="cfgIsHabilitado"> Habilitar Imposto Seletivo (IS)</label>
               </div>
               <div class="form-group">
@@ -2425,6 +2443,10 @@
       set('cfgIsCClassTrib', isCfg.cClassTribIS || '');
       set('cfgIsAliq', isCfg.pIS || 0);
       { const el = document.getElementById('cfgIsHabilitado'); if (el) el.checked = !!isCfg.habilitado; }
+      set('cfgIbsRedAliq', ibscbs.pRedAliq || 0);
+      set('cfgIbsDif', ibscbs.pDif || 0);
+      set('cfgCredPres', ibscbs.credPresOper?.cCredPres || '');
+      set('cfgCredPresAliq', ibscbs.credPresOper?.pCredPres || 0);
 
       // ── Marcar que config real foi carregada do Firebase — impede sobrescrita by company.html data
       if (e.cnpj || e.razaoSocial) {
@@ -2789,6 +2811,12 @@
             pIBSUF: parseFloat(g('cfgIbsAliqUF')) || 0,
             pIBSMun: parseFloat(g('cfgIbsAliqMun')) || 0,
             pCBS: parseFloat(g('cfgCbsAliq')) || 0,
+            pRedAliq: parseFloat(g('cfgIbsRedAliq')) || 0,
+            pDif: parseFloat(g('cfgIbsDif')) || 0,
+            credPresOper: {
+              cCredPres: g('cfgCredPres').replace(/\D/g, '').slice(0, 2),
+              pCredPres: parseFloat(g('cfgCredPresAliq')) || 0,
+            },
           },
           is: {
             habilitado: !!document.getElementById('cfgIsHabilitado')?.checked,

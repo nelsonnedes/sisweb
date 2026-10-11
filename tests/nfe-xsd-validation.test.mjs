@@ -30,14 +30,21 @@ const SIGNATURE = `<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">`
   + `<SignatureValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</SignatureValue>`
   + `<KeyInfo><X509Data><X509Certificate>AAAA</X509Certificate></X509Data></KeyInfo></Signature>`;
 
-function buildXml(rtc) {
+function buildXml(opts = {}) {
+  const rtc = !!opts.rtc;
+  const adv = !!opts.adv;
   const det = [{
     cProd: '1', xProd: 'PRODUTO TESTE', ncm: '94036000', cfop: '5102', uCom: 'UN',
     qCom: 1, vUnCom: 100, vProd: 100,
     imposto: { icms: { cst: '00', vBC: 100, pICMS: 18, vICMS: 18 }, pis: { cST: '07' }, cofins: { cST: '07' } },
   }];
-  if (rtc) {
+  if (rtc || adv) {
     det[0].imposto.ibscbs = { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 10, pIBSMun: 0, pCBS: 9 };
+    if (adv) {
+      det[0].imposto.ibscbs.pRedAliq = 25;
+      det[0].imposto.ibscbs.pDif = 10;
+      det[0].imposto.ibscbs.credPresOper = { cCredPres: '01', pCredPres: 5, vBCCredPres: 100 };
+    }
     det[0].imposto.is = { habilitado: true, cstIS: '000', cClassTribIS: '000001', pIS: 0.1 };
   }
   const nfe = {
@@ -54,15 +61,18 @@ function buildXml(rtc) {
 
 test('NF-e gerada é válida contra o XSD oficial (nfe_v4.00.xsd)', { skip: !validator ? 'xsd-schema-validator ausente' : false }, async (t) => {
   await t.test('sem grupos RTC', async () => {
-    await assert.doesNotReject(() => validator.validateXML(buildXml(false), XSD));
+    await assert.doesNotReject(() => validator.validateXML(buildXml({}), XSD));
   });
-  await t.test('com grupos IBS/CBS e IS (Reforma Tributária)', async () => {
-    await assert.doesNotReject(() => validator.validateXML(buildXml(true), XSD));
+  await t.test('com grupos IBS/CBS e IS', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ rtc: true }), XSD));
+  });
+  await t.test('com gRed/gDif/gCredPresOper (avançados)', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ adv: true }), XSD));
   });
 });
 
 test('dhEmi sem milissegundos (TDateTimeUTC)', () => {
-  const xml = buildXml(false);
+  const xml = buildXml({});
   const m = xml.match(/<dhEmi>([^<]+)<\/dhEmi>/);
   assert.ok(m, 'dhEmi presente');
   assert.doesNotMatch(m[1], /\.\d{3}/, 'dhEmi não pode conter milissegundos');
@@ -70,5 +80,5 @@ test('dhEmi sem milissegundos (TDateTimeUTC)', () => {
 });
 
 test('<indPag> não é emitido em <ide>', () => {
-  assert.doesNotMatch(buildXml(false), /<indPag>/);
+  assert.doesNotMatch(buildXml({}), /<indPag>/);
 });
