@@ -1101,6 +1101,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`, `notas-fiscais.html`.
 - **Gates:** `npm test` 1136/0/1; HTML 0 erros; functions+hosting publicados.
 
+## Sessao 2026-10-11 — mTLS SEFAZ: key values mismatch (folha primeiro em cert)
+
+- **Sequencia de erros do handshake SEFAZ** (nf_consultarNFe/nf_enviarSEFAZ, `postSefaz`): (1) `unable to get local issuer certificate` → faltava confiar na raiz ICP-Brasil do SERVIDOR; (2) apos enviar a cadeia inteira em `cert` (array), veio `x509 ... key values mismatch` → o OpenSSL exige que o **1o certificado em `cert` seja a FOLHA que casa com a chave privada**.
+- **Fix final:** ordenar a cadeia com a folha primeiro (comparando `publicKey.n` com `privateKey.n` em hex; fallback p/ keyBag simples) e enviar **`cert` = folha (string)** + **`ca` = [cadeia do PFX + `tls.rootCertificates`]** → valida o servidor e o cliente sem desabilitar `rejectUnauthorized`.
+- **Armadilha:** em Node `https`, `cert` array = cadeia do cliente (folha primeiro); passar cadeia fora de ordem OU usar `rejectUnauthorized:false` sao as duas armadilhas comuns no mTLS SEFAZ.
+- **Arquivos:** `functions/nf-functions.js`.
+- **Gates:** deploy nf_consultarNFe+nf_enviarSEFAZ OK; testes 1136/0/1.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

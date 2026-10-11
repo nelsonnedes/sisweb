@@ -782,14 +782,21 @@ async function postSefaz(url, soapBody, pfxBuffer, pfxSenha) {
   const p12    = forge.pkcs12.pkcs12FromAsn1(asn1, pfxSenha);
 
   const keyBags  = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+  const plainKeyBags = p12.getBags({ bagType: forge.pki.oids.keyBag });
   const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-  const keyBagArr  = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || [];
+  const keyBagArr  = (keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || plainKeyBags[forge.pki.oids.keyBag] || []);
   const certBagArr = certBags[forge.pki.oids.certBag] || [];
   if (!keyBagArr.length)  throw new Error('Chave privada não encontrada no certificado A1.');
   if (!certBagArr.length) throw new Error('Certificado não encontrado no arquivo A1.');
-  const privKeyPem = forge.pki.privateKeyToPem(keyBagArr[0].key);
-  // Cadeia do cliente: folha + intermediários + raiz (conforme presente no PFX)
-  const clientCertPems = certBagArr.map((b) => forge.pki.certificateToPem(b.cert));
+  const privKey = keyBagArr[0].key;
+  const privKeyPem = forge.pki.privateKeyToPem(privKey);
+  // ORDENAR a cadeia: o certificado-FOLHA (que casa com a chave privada) PRIMEIRO.
+  // Caso contrário o OpenSSL falha com "x509 ... key values mismatch" no handshake.
+  const privModHex = privKey && privKey.n ? privKey.n.toString(16) : '';
+  const certs = certBagArr.map((b) => b.cert);
+  const leafIdx = certs.findIndex((c) => c && c.publicKey && c.publicKey.n && c.publicKey.n.toString(16) === privModHex);
+  const orderedCerts = leafIdx > 0 ? [certs[leafIdx], ...certs.filter((_, i) => i !== leafIdx)] : certs;
+  const clientCertPems = orderedCerts.map((c) => forge.pki.certificateToPem(c));
   // CA para VALIDAR o certificado do SERVIDOR SEFAZ: a raiz ICP-Brasil não está no
   // trust store do Node, então usamos a cadeia do próprio PFX + as raízes padrão do Node.
   // (Corrige "unable to get local issuer certificate" no handshake mTLS.)
@@ -810,7 +817,8 @@ async function postSefaz(url, soapBody, pfxBuffer, pfxSenha) {
         'Content-Length': Buffer.byteLength(soapBody, 'utf8'),
       },
       key:  privKeyPem,
-      cert: clientCertPems.length > 1 ? clientCertPems : clientCertPems[0],
+      // Só a folha em `cert` (casa com a chave privada); a cadeia vai em `ca`.
+      cert: clientCertPems[0],
       ca:   caList,
     };
 
