@@ -1049,6 +1049,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`, `nf-xml-builder.js` (comentario M1), `tests/nf-emissao-sefaz.test.mjs` (+4 travas), `docs/stories/2026-10-11-reforma-tributaria-ibs-cbs-is.md` (novo).
 - **Gates:** `npm test` 1122/0/1; lint + typecheck limpos; deploy functions (14) + hosting OK; preflight 204.
 
+## Sessao 2026-10-11 — Schemas oficiais PL_010f: M1 validado + Reforma Tributaria (IBS/CBS/IS) implementada
+
+- **Schemas oficiais em uso recebidos** em `C:\Sisweb\Esquemas XML`: pacote **`PL_010f_v1.04`** (leiaute NFe 4.00 vigente) + `Eventos_RTC`. Extraidos para `%TEMP%\opencode\esquemas`.
+- **M1 VALIDADO e CORRIGIDO**: no `leiauteNFe_v4.00.xsd` do PL_010f, `indPag` existe **apenas em `<detPag>`** (L5971/5977), `minOccurs=0` — **nao** pertence a `<ide>`. Removido `<indPag>0</indPag>` de `nf-xml-builder.js:buildIde`. (Antes estava "pendente por falta de schema".)
+- **Reforma Tributaria IMPLEMENTADA (nivel schema/XML)**: grupos presentes no PL_010f — `<IBSCBS type="TTribNFe">` e `<IS type="TIS">` dentro de `<imposto>`; `<ISTot>`/`<IBSCBSTot type="TIBSCBSMonoTot">` dentro de `<total>` (DFeTiposBasicos_v1.00.xsd). Implementado `buildIBSCBS()` (CST+cClassTrib+gIBSCBS{vBC,gIBSUF{pIBSUF,vIBSUF},gIBSMun{pIBSMun,vIBSMun},vIBS,gCBS{pCBS,vCBS}}) e `buildIS()` (CSTIS+cClassTribIS+vBCIS+pIS+[adRemIS]+vIS); totais calculados em `calcularTotais` e emitidos em `buildTotal`. **Config-driven** (`nf-config.js: impostos.ibscbs`, `impostos.is`, defaults `habilitado:false`) → sem mudar comportamento quando ausente. Validacao funcional: XML balanceado (153/153), grupos e totais corretos.
+- **Pendente:** UI da Configuracao para CST/cClassTrib; validacao automatica por XSD; gCredPres/gMono/gDif/gRed.
+- **Arquivos:** `nf-xml-builder.js`, `nf-config.js`, `tests/nf-emissao-sefaz.test.mjs`, `docs/stories/2026-10-11-reforma-tributaria-ibs-cbs-is.md`.
+- **Gates:** `npm test` 1122/0/1; lint + typecheck limpos; verificado XML balanceado.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

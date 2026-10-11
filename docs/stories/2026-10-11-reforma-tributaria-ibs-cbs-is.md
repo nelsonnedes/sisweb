@@ -2,7 +2,23 @@
 
 **Data:** 2026-10-11
 **Módulo:** `notas-fiscais.html` + `nf-*.js` + `functions/nf-functions.js`
-**Natureza:** análise de lacuna (gap analysis) + plano. **Nenhuma implementação** — depende do leiaute/XSD oficial da NT vigente.
+**Status:** ✅ **implementado em nível de schema/XML** (validado contra os XSDs oficiais). UI de configuração e validação por XSD: pendentes.
+
+## 0. Validação contra schema oficial (atualização)
+
+O usuário forneceu os **esquemas oficiais em uso** (`C:\Sisweb\Esquemas XML`), pacote **`PL_010f_v1.04`** (leiaute NF-e 4.00 vigente). Confirmações:
+
+- `leiauteNFe_v4.00.xsd`: `<IS type="TIS">` (L5181) e `<IBSCBS type="TTribNFe">` (L5186) dentro de `<imposto>`; `<ISTot>` (L5617) e `<IBSCBSTot>` (L5622) dentro de `<total>`.
+- `DFeTiposBasicos_v1.00.xsd`: tipos `TTribNFe` (L323), `TIS` (L376), `TISTot` (L429), `TIBSCBSMonoTot` (L558), `TCIBS_NFe` (L875).
+- **M1**: `indPag` aparece **somente** em `<detPag>` (L5971/5977) — **não** em `<ide>`. Confirmado: `<indPag>` deve ser **removido** de `<ide>`.
+
+## 0.1 Implementado (2026-10-11)
+
+- `nf-xml-builder.js`: `buildIBSCBS()` (grupo `<IBSCBS>`: `CST` + `cClassTrib` + `gIBSCBS`{`vBC`,`gIBSUF`,`gIBSMun`,`vIBS`,`gCBS`}) e `buildIS()` (`<IS>`: `CSTIS`+`cClassTribIS`+`vBCIS`+`pIS`+`vIS`), emitidos **apenas quando habilitados** (minOccurs=0). Totais `<ISTot>`/`<IBSCBSTot>` em `buildTotal` (calculados em `calcularTotais`). `indPag` removido de `<ide>`.
+- `nf-config.js`: `impostos.ibscbs` e `impostos.is` (defaults desabilitados).
+- Travas: `tests/nf-emissao-sefaz.test.mjs`. Verificação funcional: XML balanceado, grupos presentes, `vCBS` total correto.
+
+**Pendente:** UI na Configuração para habilitar/preencher CST e `cClassTrib`; validação automática contra o XSD (instalar validador); `gCredPres`/`gMono`/`gDif`/`gRed` (reduções/crédito presumido/diferimento) conforme regras do contribuinte.
 
 ## 1. Fontes oficiais consultadas
 

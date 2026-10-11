@@ -79,13 +79,20 @@ test('M4: superadmin por claim exige allowlist de UID', () => {
   assert.match(nfFn, /token\.superadmin === true && isSuperAdminUidAllowed\(uid\)/);
 });
 
-test('M1: indPag mantido aguardando validação do schema 4.00', () => {
-  assert.match(xml, /<indPag>0<\/indPag>/);
-  assert.match(xml, /M1 \(auditoria/);
+test('M1: <indPag> removido de <ide> (validado no schema oficial PL_010f)', () => {
+  assert.doesNotMatch(xml, /<indPag>/);
+  assert.match(xml, /M1 \(validado/);
 });
 
-test('Reforma Tributária: IBS/CBS/IS ausentes (lacuna conhecida — NT 2024.002)', () => {
-  assert.doesNotMatch(xml, /<IBSCBS|IBSCBS|<CBS|Imposto Seletivo/);
-  assert.doesNotMatch(cfg, /<IBSCBS|<CBS/);
+test('Reforma Tributária: grupos IBSCBS/IS e totais implementados (schema PL_010f)', () => {
+  assert.match(xml, /function buildIBSCBS/);
+  assert.match(xml, /function buildIS/);
+  assert.match(xml, /<IBSCBS><CST>/);
+  assert.match(xml, /cClassTrib/);
+  assert.match(xml, /<gIBSCBS>/);
+  assert.match(xml, /<ISTot>/);
+  assert.match(xml, /<IBSCBSTot>/);
+  assert.match(cfg, /ibscbs: \{/);
+  assert.match(cfg, /cstIS/);
 });
 

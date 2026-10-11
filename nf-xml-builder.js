@@ -80,10 +80,10 @@ const NFXmlBuilder = (() => {
   }
 
   // ─── Bloco <ide> ──────────────────────────────────────────────────────────
-  // M1 (auditoria 2026-10-11): <indPag> no <ide> — a presença no leiaute 4.00
-  // NÃO foi validada (Portal NF-e/XSD inacessível no momento da auditoria).
-  // NÃO remover sem validar contra o schema oficial (PL_008j / NT vigente),
-  // sob risco de rejeição por schema. Pende de validação adicional.
+  // M1 (validado em 2026-10-11 contra o schema oficial PL_010f_v1.04 —
+  // leiauteNFe_v4.00.xsd): `indPag` NÃO faz parte do grupo <ide> no leiaute
+  // 4.00 (existe apenas em <detPag>, minOccurs=0). Portanto NÃO deve ser
+  // emitido em <ide>.
   function buildIde(ide, chaveInfo) {
     const dhEmi = ide.dhEmi ? new Date(ide.dhEmi).toISOString().replace('Z', '-03:00') : '';
     return `
@@ -105,7 +105,6 @@ const NFXmlBuilder = (() => {
       <finNFe>${ide.finNFe || 1}</finNFe>
       <indFinal>${ide.indFinal || 0}</indFinal>
       <indPres>${ide.indPres || 0}</indPres>
-      <indPag>0</indPag>
       <procEmi>0</procEmi>
       <verProc>Sisweb 1.0</verProc>
     </ide>`;
@@ -264,6 +263,46 @@ const NFXmlBuilder = (() => {
     return `<COFINSNT><CST>${cst}</CST></COFINSNT>`;
   }
 
+  // ─── IBS/CBS (Reforma Tributária — grupo <IBSCBS>, TTribNFe) ──────────────
+  // Validado contra o schema oficial PL_010f_v1.04 (DFeTiposBasicos TTribNFe /
+  // TCIBS_NFe). Emitido apenas quando habilitado na config/item (minOccurs=0),
+  // preservando o comportamento atual quando ausente.
+  function buildIBSCBS(item) {
+    const g = item?.imposto?.ibscbs;
+    if (!g || !g.habilitado) return '';
+    if (!g.cst || !g.cClassTrib) {
+      throw new Error('IBS/CBS: CST e cClassTrib são obrigatórios quando o grupo está habilitado');
+    }
+    const vBCn = parseFiscalNumber(g.vBC != null ? g.vBC : (item.vProd || item.total));
+    const pIBSUF = parseFiscalNumber(g.pIBSUF), pIBSMun = parseFiscalNumber(g.pIBSMun), pCBS = parseFiscalNumber(g.pCBS);
+    const vIBSUFn = g.vIBSUF != null ? parseFiscalNumber(g.vIBSUF) : vBCn * pIBSUF / 100;
+    const vIBSMunn = g.vIBSMun != null ? parseFiscalNumber(g.vIBSMun) : vBCn * pIBSMun / 100;
+    const vIBSn = vIBSUFn + vIBSMunn;
+    const vCBSn = g.vCBS != null ? parseFiscalNumber(g.vCBS) : vBCn * pCBS / 100;
+    return `\n        <IBSCBS><CST>${esc(g.cst)}</CST><cClassTrib>${esc(g.cClassTrib)}</cClassTrib>`
+      + `<gIBSCBS><vBC>${num(vBCn)}</vBC>`
+      + `<gIBSUF><pIBSUF>${num(pIBSUF, 4)}</pIBSUF><vIBSUF>${num(vIBSUFn)}</vIBSUF></gIBSUF>`
+      + `<gIBSMun><pIBSMun>${num(pIBSMun, 4)}</pIBSMun><vIBSMun>${num(vIBSMunn)}</vIBSMun></gIBSMun>`
+      + `<vIBS>${num(vIBSn)}</vIBS>`
+      + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS><vCBS>${num(vCBSn)}</vCBS></gCBS>`
+      + `</gIBSCBS></IBSCBS>`;
+  }
+
+  // ─── Imposto Seletivo (<IS>, TIS) — Reforma Tributária ────────────────────
+  function buildIS(item) {
+    const g = item?.imposto?.is;
+    if (!g || !g.habilitado) return '';
+    if (!g.cstIS || !g.cClassTribIS) {
+      throw new Error('IS: CSTIS e cClassTribIS são obrigatórios quando o grupo está habilitado');
+    }
+    const vBCISn = parseFiscalNumber(g.vBCIS != null ? g.vBCIS : (item.vProd || item.total));
+    const pIS = parseFiscalNumber(g.pIS);
+    const vISn = g.vIS != null ? parseFiscalNumber(g.vIS) : vBCISn * pIS / 100;
+    const adRem = g.adRemIS != null ? `<adRemIS>${num(g.adRemIS, 4)}</adRemIS>` : '';
+    return `\n        <IS><CSTIS>${esc(g.cstIS)}</CSTIS><cClassTribIS>${esc(g.cClassTribIS)}</cClassTribIS>`
+      + `<vBCIS>${num(vBCISn)}</vBCIS><pIS>${num(pIS, 4)}</pIS>${adRem}<vIS>${num(vISn)}</vIS></IS>`;
+  }
+
   // ─── IPI (opcional por configuracao fiscal) ───────────────────────────────
   function buildIPI(ipi) {
     if (!ipi) return '';
@@ -306,7 +345,7 @@ const NFXmlBuilder = (() => {
         <ICMS>${icmsXml}</ICMS>
         ${buildIPI(imp.ipi)}
         <PIS>${buildPIS(imp.pis)}</PIS>
-        <COFINS>${buildCOFINS(imp.cofins)}</COFINS>
+        <COFINS>${buildCOFINS(imp.cofins)}</COFINS>${buildIS(item)}${buildIBSCBS(item)}
       </imposto>
     </det>`;
   }
@@ -337,7 +376,7 @@ const NFXmlBuilder = (() => {
         <vOutro>0.00</vOutro>
         <vNF>${num(t.vNF)}</vNF>
         <vTotTrib>${num(t.vTotTrib != null && t.vTotTrib !== '' ? t.vTotTrib : ((Number(t.vICMS)||0) + (Number(t.vIPI)||0) + (Number(t.vPIS)||0) + (Number(t.vCOFINS)||0)))}</vTotTrib>
-      </ICMSTot>
+      </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${(Number(t.vBCIBSCBS) > 0) ? `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>0.00</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>0.00</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>0.00</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>0.00</vDif><vDevTrib>0.00</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>0.00</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS></IBSCBSTot>` : ''}
     </total>`;
   }
 
@@ -424,6 +463,7 @@ const NFXmlBuilder = (() => {
   // ─── Calcular totais a partir dos itens ───────────────────────────────────
   function calcularTotais(itens, desconto, frete) {
     let vProd = 0, vBC = 0, vICMS = 0, vIPI = 0, vPIS = 0, vCOFINS = 0;
+    let vBCIBSCBS = 0, vIBSUF = 0, vIBSMun = 0, vCBS = 0, vIS = 0;
     itens.forEach(it => {
       vProd   += parseFloat(it.vProd || it.total) || 0;
       vBC     += parseFloat(it.imposto?.icms?.vBC) || 0;
@@ -431,11 +471,30 @@ const NFXmlBuilder = (() => {
       vIPI    += parseFloat(it.imposto?.ipi?.vIPI) || 0;
       vPIS    += parseFloat(it.imposto?.pis?.vPIS) || 0;
       vCOFINS += parseFloat(it.imposto?.cofins?.vCOFINS) || 0;
+      // Reforma Tributária: IBSCBS
+      const gi = it.imposto?.ibscbs;
+      if (gi && gi.habilitado) {
+        const bc = parseFiscalNumber(gi.vBC != null ? gi.vBC : (it.vProd || it.total));
+        const puf = parseFiscalNumber(gi.pIBSUF), pmu = parseFiscalNumber(gi.pIBSMun), pcb = parseFiscalNumber(gi.pCBS);
+        vBCIBSCBS += bc;
+        vIBSUF    += gi.vIBSUF  != null ? parseFiscalNumber(gi.vIBSUF)  : bc * puf / 100;
+        vIBSMun   += gi.vIBSMun != null ? parseFiscalNumber(gi.vIBSMun) : bc * pmu / 100;
+        vCBS      += gi.vCBS    != null ? parseFiscalNumber(gi.vCBS)    : bc * pcb / 100;
+      }
+      // Imposto Seletivo
+      const gs = it.imposto?.is;
+      if (gs && gs.habilitado) {
+        const bcis = parseFiscalNumber(gs.vBCIS != null ? gs.vBCIS : (it.vProd || it.total));
+        vIS += gs.vIS != null ? parseFiscalNumber(gs.vIS) : bcis * parseFiscalNumber(gs.pIS) / 100;
+      }
     });
     const vDesc  = parseFloat(desconto) || 0;
     const vFrete = parseFloat(frete)    || 0;
     const vNF    = vProd + vIPI - vDesc + vFrete;
-    return { vProd, vBC, vICMS, vIPI, vPIS, vCOFINS, vDesc, vFrete, vNF, vTotTrib: vICMS + vIPI + vPIS + vCOFINS };
+    const vIBS   = vIBSUF + vIBSMun;
+    return { vProd, vBC, vICMS, vIPI, vPIS, vCOFINS, vDesc, vFrete, vNF,
+      vTotTrib: vICMS + vIPI + vPIS + vCOFINS,
+      vBCIBSCBS, vIBSUF, vIBSMun, vIBS, vCBS, vIS };
   }
 
   // ─── Montar XML NF-e completo (sem assinatura) ────────────────────────────

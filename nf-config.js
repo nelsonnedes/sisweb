@@ -79,6 +79,22 @@ const NFConfigService = (() => {
         aliquotaFCP: 0,
         partilhaUF: 60, // % UF destino (2024: 100%)
       },
+      // Reforma Tributária (LC 214/2025 — NT 2024.002 / schema PL_010f)
+      ibscbs: {
+        habilitado: false,
+        cst: '',        // CST do IBS/CBS (ex.: 000)
+        cClassTrib: '', // Classificação Tributária do IBS/CBS
+        pIBSUF: 0,      // % alíquota IBS UF
+        pIBSMun: 0,     // % alíquota IBS Município
+        pCBS: 0,        // % alíquota CBS
+      },
+      is: {
+        habilitado: false,
+        cstIS: '',        // CST do Imposto Seletivo
+        cClassTribIS: '', // Classificação Tributária do IS
+        pIS: 0,           // % alíquota IS
+        adRemIS: 0,       // alíquota IS por valor (opcional)
+      },
     },
     certificado: {
       tipo: null,      // 'A1' | 'A3' | 'nuvem'
