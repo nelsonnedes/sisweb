@@ -1157,6 +1157,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`. Deploy nf_enviarSEFAZ OK.
 - **Gates:** sintaxe OK; suite 1137/0/1.
 
+## Sessao 2026-10-11 — AÇÃO SOAP da consulta (fonte oficial MOC) + esclarecimento stripXmlDecl
+
+- **FATO (MOC Online oficial, moc.sped.fazenda.pr.gov.br, atualizado ate NT 2026.007):** a `action` do WS e namespace `http://www.portalfiscal.inf.br/nfe/wsdl/<Servico>` + `/` + **Metodo**. Metodos: NfeConsultaProtocolo = **`nfeConsulta`** (NAO `nfeConsultaNF`); NFeAutorizacao = `nfeAutorizacaoLote`; NFeInutilizacao = `nfeInutilizacaoNF`; NFeRecepcaoEvento = `nfeRecepcaoEvento`. A consulta falhava com SOAP Fault "The action '.../nfeConsultaNF' was not recognized" → corrigido para `.../nfeConsulta`.
+- **Esclarecimento (transparencia):** o `stripXmlDecl()` nao e gambiarra — e uma funcao nomeada de 1 linha (regex) e **e aplicada exatamente no ponto onde o lote `<enviNFe>` e montado** (`${stripXmlDecl(xmlAssinado)}`). Ou seja, a correcao ESTA na origem. Extrair um helper pequeno e boa pratica (evita repetir o regex em evento/inutilizacao), sem alterar o comportamento.
+- **Endpoints oficiais SVRS** (confirmados no dfe-portal.svrs.rs.gov.br/Nfe/Servicos): NfeConsulta = `/ws/NfeConsulta/NfeConsulta4.asmx`; NFeAutorizacao = `/ws/NfeAutorizacao/NFeAutorizacao4.asmx` (batem com o codigo).
+- **Armadilha:** nao adivinhar `action`; consultar o MOC oficial. Cada servico tem seu metodo.
+- **Arquivos:** `functions/nf-functions.js`. Deploy nf_consultarNFe + nf_enviarSEFAZ OK.
+- **Gates:** sintaxe OK.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

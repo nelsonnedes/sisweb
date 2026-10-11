@@ -764,7 +764,7 @@ ${signedInfo}\
 // SOAP 1.2 exige a "action" no Content-Type; a SEFAZ rejeita sem ela
 // ("Unable to handle request without a valid action parameter").
 const SOAP_ACTION_METHOD = {
-  NfeConsultaProtocolo4: 'nfeConsultaNF',
+  NfeConsultaProtocolo4: 'nfeConsulta',
   NFeAutorizacao4:       'nfeAutorizacaoLote',
   NfeAutorizacao4:       'nfeAutorizacaoLote',
   NFeRetAutorizacao4:    'nfeRetAutorizacaoLote',
