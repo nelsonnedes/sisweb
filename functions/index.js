@@ -6897,6 +6897,7 @@ const nfFunctions = require('./nf-functions');
 exports.nf_assinarXML        = nfFunctions.nf_assinarXML;
 exports.nf_enviarSEFAZ       = nfFunctions.nf_enviarSEFAZ;
 exports.nf_consultarNFe      = nfFunctions.nf_consultarNFe;
+exports.nf_reservarNumero    = nfFunctions.nf_reservarNumero;
 exports.nf_cancelarNFe       = nfFunctions.nf_cancelarNFe;
 exports.nf_cartaCorrecaoNFe  = nfFunctions.nf_cartaCorrecaoNFe;
 exports.nf_inutilizarNumeracao = nfFunctions.nf_inutilizarNumeracao;

@@ -167,30 +167,79 @@ const NFXmlBuilder = (() => {
   }
 
   // ─── ICMS por CSOSN (Simples Nacional) ───────────────────────────────────
+  // Cobertura completa do leiaute 4.00:
+  //  101→ICMSSN101 | 102/103/300/400→ICMSSN102 | 201→ICMSSN201
+  //  202/203→ICMSSN202 | 500→ICMSSN500 | 900→ICMSSN900
   function buildICMSSN(icms) {
-    const csosn = icms.csosn || '102';
+    const orig = icms.orig || 0;
+    const csosn = String(icms.csosn || '102');
+    const st = () => {
+      const parts = [];
+      if (icms.modBCST) parts.push(`<modBCST>${icms.modBCST}</modBCST>`);
+      if (icms.pMVAST != null) parts.push(`<pMVAST>${num(icms.pMVAST)}</pMVAST>`);
+      if (icms.pRedBCST != null) parts.push(`<pRedBCST>${num(icms.pRedBCST)}</pRedBCST>`);
+      parts.push(`<vBCST>${num(icms.vBCST)}</vBCST><pICMSST>${num(icms.pICMSST)}</pICMSST><vICMSST>${num(icms.vICMSST)}</vICMSST>`);
+      return parts.join('');
+    };
     switch (csosn) {
-      case '101': return `<ICMSSN101><orig>${icms.orig||0}</orig><CSOSN>101</CSOSN><pCredSN>${num(icms.pCredSN,2)}</pCredSN><vCredICMSSN>${num(icms.vCredICMSSN,2)}</vCredICMSSN></ICMSSN101>`;
-      case '400': return `<ICMSSN400><orig>${icms.orig||0}</orig><CSOSN>400</CSOSN></ICMSSN400>`;
-      case '500': return `<ICMSSN500><orig>${icms.orig||0}</orig><CSOSN>500</CSOSN><vBCSTRet>${num(0)}</vBCSTRet><pST>${num(0)}</pST><vICMSSTRet>${num(0)}</vICMSSTRet></ICMSSN500>`;
-      default:    return `<ICMSSN102><orig>${icms.orig||0}</orig><CSOSN>102</CSOSN></ICMSSN102>`;
+      case '101':
+        return `<ICMSSN101><orig>${orig}</orig><CSOSN>101</CSOSN><pCredSN>${num(icms.pCredSN)}</pCredSN><vCredICMSSN>${num(icms.vCredICMSSN)}</vCredICMSSN></ICMSSN101>`;
+      case '201':
+        return `<ICMSSN201><orig>${orig}</orig><CSOSN>201</CSOSN><pCredSN>${num(icms.pCredSN)}</pCredSN><vCredICMSSN>${num(icms.vCredICMSSN)}</vCredICMSSN>${st()}</ICMSSN201>`;
+      case '202':
+      case '203':
+        return `<ICMSSN202><orig>${orig}</orig><CSOSN>${csosn}</CSOSN>${st()}</ICMSSN202>`;
+      case '500':
+        return `<ICMSSN500><orig>${orig}</orig><CSOSN>500</CSOSN><vBCSTRet>${num(icms.vBCSTRet)}</vBCSTRet>${icms.pST != null ? `<pST>${num(icms.pST)}</pST>` : ''}<vICMSSTRet>${num(icms.vICMSSTRet)}</vICMSSTRet></ICMSSN500>`;
+      case '900':
+        return `<ICMSSN900><orig>${orig}</orig><CSOSN>900</CSOSN>${icms.modBC ? `<modBC>${icms.modBC}</modBC>` : ''}<vBC>${num(icms.vBC)}</vBC>${icms.pICMS != null ? `<pICMS>${num(icms.pICMS)}</pICMS>` : ''}<vICMS>${num(icms.vICMS)}</vICMS>${st()}</ICMSSN900>`;
+      default: {
+        const code = ['102', '103', '300', '400'].includes(csosn) ? csosn : '102';
+        return `<ICMSSN102><orig>${orig}</orig><CSOSN>${code}</CSOSN></ICMSSN102>`;
+      }
     }
   }
 
-  // ─── ICMS por CST (Regime Normal) ────────────────────────────────────────
+  // ─── ICMS por CST (Regime Normal) — tags corretas do leiaute 4.00 ─────────
+  //  00→ICMS00 | 10→ICMS10 | 20→ICMS20 | 30→ICMS30 | 40/41/50→ICMS40
+  //  51→ICMS51 | 60→ICMS60 | 70→ICMS70 | 90→ICMS90 (demais)
   function buildICMSNormal(icms) {
-    const cst = icms.cst || '00';
-    if (cst === '00' || cst === '20') {
-      return `<ICMS00>
-        <orig>${icms.orig||0}</orig><CST>${cst}</CST>
-        <modBC>${icms.modBC||3}</modBC><vBC>${num(icms.vBC)}</vBC>
-        <pICMS>${num(icms.pICMS)}</pICMS><vICMS>${num(icms.vICMS)}</vICMS>
-      </ICMS00>`;
+    const orig = icms.orig || 0;
+    const cst = String(icms.cst || '00').replace(/\D/g, '').padStart(2, '0').slice(-2);
+    const st = () => {
+      const parts = [];
+      if (icms.modBCST) parts.push(`<modBCST>${icms.modBCST}</modBCST>`);
+      if (icms.pMVAST != null) parts.push(`<pMVAST>${num(icms.pMVAST)}</pMVAST>`);
+      if (icms.pRedBCST != null) parts.push(`<pRedBCST>${num(icms.pRedBCST)}</pRedBCST>`);
+      parts.push(`<vBCST>${num(icms.vBCST)}</vBCST><pICMSST>${num(icms.pICMSST)}</pICMSST><vICMSST>${num(icms.vICMSST)}</vICMSST>`);
+      return parts.join('');
+    };
+    switch (cst) {
+      case '00':
+        return `<ICMS00><orig>${orig}</orig><CST>00</CST><modBC>${icms.modBC || 3}</modBC><vBC>${num(icms.vBC)}</vBC><pICMS>${num(icms.pICMS)}</pICMS><vICMS>${num(icms.vICMS)}</vICMS></ICMS00>`;
+      case '10':
+        return `<ICMS10><orig>${orig}</orig><CST>10</CST><modBC>${icms.modBC || 3}</modBC><vBC>${num(icms.vBC)}</vBC><pICMS>${num(icms.pICMS)}</pICMS><vICMS>${num(icms.vICMS)}</vICMS>${st()}</ICMS10>`;
+      case '20':
+        return `<ICMS20><orig>${orig}</orig><CST>20</CST><modBC>${icms.modBC || 3}</modBC><pRedBC>${num(icms.pRedBC)}</pRedBC><vBC>${num(icms.vBC)}</vBC><pICMS>${num(icms.pICMS)}</pICMS><vICMS>${num(icms.vICMS)}</vICMS></ICMS20>`;
+      case '30':
+        return `<ICMS30><orig>${orig}</orig><CST>30</CST>${st()}</ICMS30>`;
+      case '40':
+      case '41':
+      case '50': {
+        const deson = Number(icms.vICMSDeson) > 0
+          ? `<vICMSDeson>${num(icms.vICMSDeson)}</vICMSDeson><motDesICMS>${icms.motDesICMS || 9}</motDesICMS>`
+          : '';
+        return `<ICMS40><orig>${orig}</orig><CST>${cst}</CST>${deson}</ICMS40>`;
+      }
+      case '51':
+        return `<ICMS51><orig>${orig}</orig><CST>51</CST><modBC>${icms.modBC || 3}</modBC>${icms.pRedBC != null ? `<pRedBC>${num(icms.pRedBC)}</pRedBC>` : ''}<vBC>${num(icms.vBC)}</vBC><pICMS>${num(icms.pICMS)}</pICMS><vICMSOp>${num(icms.vICMSOp)}</vICMSOp><pDif>${num(icms.pDif)}</pDif><vICMSDif>${num(icms.vICMSDif)}</vICMSDif><vICMS>${num(icms.vICMS)}</vICMS></ICMS51>`;
+      case '60':
+        return `<ICMS60><orig>${orig}</orig><CST>60</CST><vBCSTRet>${num(icms.vBCSTRet)}</vBCSTRet>${icms.pST != null ? `<pST>${num(icms.pST)}</pST>` : ''}<vICMSSTRet>${num(icms.vICMSSTRet)}</vICMSSTRet></ICMS60>`;
+      case '70':
+        return `<ICMS70><orig>${orig}</orig><CST>70</CST><modBC>${icms.modBC || 3}</modBC><pRedBC>${num(icms.pRedBC)}</pRedBC><vBC>${num(icms.vBC)}</vBC><pICMS>${num(icms.pICMS)}</pICMS><vICMS>${num(icms.vICMS)}</vICMS>${st()}</ICMS70>`;
+      default:
+        return `<ICMS90><orig>${orig}</orig><CST>90</CST>${icms.modBC ? `<modBC>${icms.modBC}</modBC>` : ''}<vBC>${num(icms.vBC)}</vBC>${icms.pICMS != null ? `<pICMS>${num(icms.pICMS)}</pICMS>` : ''}<vICMS>${num(icms.vICMS)}</vICMS>${st()}</ICMS90>`;
     }
-    if (cst === '40' || cst === '41') {
-      return `<ICMS40><orig>${icms.orig||0}</orig><CST>${cst}</CST></ICMS40>`;
-    }
-    return `<ICMS90><orig>${icms.orig||0}</orig><CST>90</CST></ICMS90>`;
   }
 
   // ─── PIS ─────────────────────────────────────────────────────────────────
@@ -283,7 +332,7 @@ const NFXmlBuilder = (() => {
         <vCOFINS>${num(t.vCOFINS)}</vCOFINS>
         <vOutro>0.00</vOutro>
         <vNF>${num(t.vNF)}</vNF>
-        <vTotTrib>0.00</vTotTrib>
+        <vTotTrib>${num(t.vTotTrib != null && t.vTotTrib !== '' ? t.vTotTrib : ((Number(t.vICMS)||0) + (Number(t.vIPI)||0) + (Number(t.vPIS)||0) + (Number(t.vCOFINS)||0)))}</vTotTrib>
       </ICMSTot>
     </total>`;
   }
@@ -382,7 +431,7 @@ const NFXmlBuilder = (() => {
     const vDesc  = parseFloat(desconto) || 0;
     const vFrete = parseFloat(frete)    || 0;
     const vNF    = vProd + vIPI - vDesc + vFrete;
-    return { vProd, vBC, vICMS, vIPI, vPIS, vCOFINS, vDesc, vFrete, vNF };
+    return { vProd, vBC, vICMS, vIPI, vPIS, vCOFINS, vDesc, vFrete, vNF, vTotTrib: vICMS + vIPI + vPIS + vCOFINS };
   }
 
   // ─── Montar XML NF-e completo (sem assinatura) ────────────────────────────
@@ -421,33 +470,8 @@ const NFXmlBuilder = (() => {
     return { xml, chave: chaveInfo.chave, total };
   }
 
-  // ─── Montar nfeProc (pós-autorização, para armazenamento/DANFE) ───────────
-  function buildNFeProc(xmlAssinadoComProtocolo, nProt, dhRecbto, versao = '4.00') {
-    // Extrair o bloco <NFe>...</NFe> do XML assinado
-    const nfeMatch = xmlAssinadoComProtocolo.match(/<NFe[\s\S]*?<\/NFe>/);
-    const nfeXml = nfeMatch ? nfeMatch[0] : xmlAssinadoComProtocolo;
-    const dhFmt = dhRecbto || new Date().toISOString().replace('Z', '-03:00');
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<nfeProc versao="${versao}" xmlns="${NS}">
-${nfeXml}
-<protNFe versao="${versao}">
-  <infProt>
-    <tpAmb>2</tpAmb>
-    <verAplic>SVRS${versao}</verAplic>
-    <chNFe></chNFe>
-    <dhRecbto>${dhFmt}</dhRecbto>
-    <nProt>${nProt}</nProt>
-    <digVal></digVal>
-    <cStat>100</cStat>
-    <xMotivo>Autorizado o uso da NF-e</xMotivo>
-  </infProt>
-</protNFe>
-</nfeProc>`;
-  }
-
   return {
     buildNFeXML,
-    buildNFeProc,
     calcularTotais,
     gerarChave,
     calcDV,

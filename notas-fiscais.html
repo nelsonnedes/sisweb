@@ -3947,7 +3947,7 @@
 
       try {
         const result = await window.NFService.emitirNFe(_notaEmCurso, senha);
-        const danfeData = _notaEmCurso ? { ..._notaEmCurso } : null;
+        const danfeData = _notaEmCurso ? { ..._notaEmCurso, status: result.status, nProt: result.nProt || '', chave: result.chave || _notaEmCurso.chave } : null;
         mostrarAlertaEmissao(`✅ NF-e ${result.numero} gerada! Status: ${result.status} — ${result.msg}`, 'ok');
         document.getElementById('certSenhaBox').style.display = 'none';
         _notaEmCurso = null;
@@ -4067,12 +4067,12 @@ renderizarVolumesNF();
       tbody.innerHTML = notas.map(n => {
         const [label, tok] = statusMap[n.status] || ['❓ '+n.status, 'info'];
         const val = n.total?.vNF || n.valorTotal || 0;
-        const chave = n.chave ? n.chave.replace(/(\d{4})/g,'$1 ').trim().slice(0,24)+'...' : '—';
-        const prot  = n.nProt ? ` | Prot: ${n.nProt}` : '';
+        const chave = n.chave ? String(n.chave).replace(/(\d{4})/g,'$1 ').trim().slice(0,24)+'...' : '—';
+        const prot  = n.nProt ? ` | Prot: ${escapeHtmlNF(String(n.nProt))}` : '';
         return `<tr>
           <td data-label="Número" style="font-family:monospace;font-weight:600">${String(n.numero||'').padStart(9,'0')}</td>
           <td data-label="Data">${(n.dataEmissao||'').slice(0,10).split('-').reverse().join('/')}</td>
-          <td data-label="Destinatário">${n.dest?.nome || '—'}</td>
+          <td data-label="Destinatário">${escapeHtmlNF(n.dest?.nome || '—')}</td>
           <td data-label="Valor Total" style="text-align:right;font-weight:600">${fmtMoedaForm(val)}</td>
           <td data-label="Chave / Protocolo" style="font-family:monospace;font-size:11px">${chave}${prot}</td>
           <td data-label="Status"><span style="padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:var(--sw-text-1);background:color-mix(in srgb, var(--sw-${tok}) 25%, transparent);border:1px solid var(--sw-${tok});">${label}</span></td>
@@ -4393,10 +4393,18 @@ renderizarVolumesNF();
 
     // ─── Cancelamento de NF-e ─────────────────────────────
     async function iniciarCancelamento(nfId, chave, nProt) {
-      const just = prompt('Justificativa do cancelamento (mínimo 15 caracteres):');
+      return _iniciarCancelamentoComDados(nfId, chave, nProt);
+    }
+
+    async function _iniciarCancelamentoComDados(nfId, chave, nProt) {
+      const just = (typeof window.promptDialog === 'function')
+        ? await window.promptDialog({ title: 'Cancelar NF-e', message: 'Justificativa do cancelamento (mínimo 15 caracteres):', inputType: 'text', autoComplete: 'off', placeholder: 'Justificativa', confirmLabel: 'Continuar', cancelLabel: 'Cancelar', icon: 'fas fa-ban' })
+        : null;
       if (!just) return;
       if (just.trim().length < 15) return notifyUser('Justificativa deve ter pelo menos 15 caracteres');
-      const senha = prompt('Senha do certificado A1 para assinar o evento:');
+      const senha = (typeof window.promptDialog === 'function')
+        ? await window.promptDialog({ title: 'Senha do certificado A1', message: 'Informe a senha do certificado A1 para assinar o evento de cancelamento.', placeholder: 'Senha do certificado A1', confirmLabel: 'Cancelar NF-e', cancelLabel: 'Voltar', inputType: 'password', autoComplete: 'current-password', icon: 'fas fa-lock' })
+        : null;
       if (!senha) return;
       try {
         const tid = obterTenantIdNF();
@@ -4885,7 +4893,6 @@ renderizarVolumesNF();
               <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">CFOP</th>
               <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">Tipo</th>
               <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">CSOSN</th>
-              <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">CFOP</th>
               <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">Ativo</th>
               <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">Ações</th>
             </tr>
@@ -4893,16 +4900,16 @@ renderizarVolumesNF();
           <tbody>
             ${naturezas.map(n => `
               <tr style="border-bottom:1px solid var(--sw-border);">
-                <td data-label="Descrição" style="padding:8px;">${n.descricao}</td>
-                <td data-label="CFOP" style="padding:8px;text-align:center;font-family:monospace;">${n.cfopPadrao || '—'}</td>
+                <td data-label="Descrição" style="padding:8px;">${escapeHtmlNF(n.descricao)}</td>
+                <td data-label="CFOP" style="padding:8px;text-align:center;font-family:monospace;">${escapeHtmlNF(n.cfopPadrao || '—')}</td>
                 <td data-label="Tipo" style="padding:8px;text-align:center;">${n.tipo === 'saida' ? 'Saída' : 'Entrada'}</td>
-                <td data-label="CSOSN" style="padding:8px;text-align:center;font-family:monospace;">${n.csosn || '—'}</td>
+                <td data-label="CSOSN" style="padding:8px;text-align:center;font-family:monospace;">${escapeHtmlNF(n.csosn || '—')}</td>
                 <td data-label="Ativo" style="padding:8px;text-align:center;">${n.ativo !== false ? '✅' : '❌'}</td>
                 <td data-label="Ações" class="nf-actions-cell" style="padding:8px;text-align:center;display:flex;gap:6px;justify-content:center;">
-                  <button class="btn btn-warning btn-small" onclick="nfEditarNatureza('${n.id}')" title="Editar">
+                  <button class="btn btn-warning btn-small" onclick="nfEditarNatureza('${escapeHtmlNF(n.id)}')" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button class="btn btn-danger btn-small" onclick="nfRemoverNatureza('${n.id}','${n.descricao.replace(/'/g,'')}')" title="Remover">
+                  <button class="btn btn-danger btn-small" onclick="nfRemoverNatureza('${escapeHtmlNF(n.id)}')" title="Remover">
                     <i class="fas fa-trash"></i>
                   </button>
                 </td>
@@ -4917,7 +4924,11 @@ renderizarVolumesNF();
       if (nat) window.NFNaturezas?.abrirModal?.({ natureza: nat });
     }
     async function nfRemoverNatureza(id, desc) {
-      if (!await confirmDialog({ title: 'Remover natureza', message: `Remover a natureza "${desc}"?`, danger: true, confirmLabel: 'Remover' })) return;
+      let label = (desc != null && desc !== '') ? String(desc) : '';
+      if (!label) {
+        try { label = window.NFNaturezas?.getById?.(id)?.descricao || ''; } catch (_) {}
+      }
+      if (!await confirmDialog({ title: 'Remover natureza', message: `Remover a natureza "${label}"?`, danger: true, confirmLabel: 'Remover' })) return;
       const tid = obterTenantIdNF();
       if (!tid) return notifyUser('Tenant não identificado');
       // Trava anti-duplo-clique por registro (F-13).

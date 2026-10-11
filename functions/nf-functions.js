@@ -915,6 +915,33 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// CLOUD FUNCTION 2b: nf_reservarNumero
+// Reserva o próximo número NF-e em transação atômica (evita duplicidade)
+// ═══════════════════════════════════════════════════════════════════════════
+exports.nf_reservarNumero = onFiscalCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação obrigatória');
+  }
+  const { tenantId: rawTenantId, modelo } = data || {};
+  const tenantId = sanitizePathSegment(rawTenantId, 'tenantId');
+  await assertTenantAccess(context, tenantId);
+
+  const modKey = String(modelo) === '65' ? 'nfce' : (String(modelo) === 'nfse' ? 'nfse' : 'nfe');
+  const ref = admin.database().ref(`companies/${tenantId}/fiscal/config/numeros/${modKey}`);
+
+  const tx = await ref.transaction((current) => {
+    const cur = current && typeof current === 'object' ? current : {};
+    const atual = Number(cur.proximoNumero) || 1;
+    return { ...cur, proximoNumero: atual + 1, updatedAt: new Date().toISOString() };
+  });
+  if (!tx.committed) {
+    throw new functions.https.HttpsError('aborted', 'Não foi possível reservar a numeração da NF-e.');
+  }
+  const value = tx.snapshot.val() || {};
+  return { numero: (Number(value.proximoNumero) || 1) - 1 };
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // CLOUD FUNCTION 3: nf_consultarNFe
 // Consulta protocolo de autorização na SEFAZ
 // ═══════════════════════════════════════════════════════════════════════════

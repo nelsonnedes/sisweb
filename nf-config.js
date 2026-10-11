@@ -211,6 +211,20 @@ const NFConfigService = (() => {
     console.log(`[NFConfig] Seção "${section}" salva via callable segura: ${path}`);
   }
 
+  // ─── Alíquota interestadual (Resolução do Senado 22/1989, alt. 13/2012) ───
+  //  4%  → mercadoria importada (conteúdo de importação > 40%)
+  //  7%  → origem Sul/Sudeste (exceto ES) para destino N/NE/CO/ES
+  //  12% → demais operações interestaduais
+  const UF_ORIGEM_7 = ['SP', 'RJ', 'MG', 'PR', 'SC', 'RS'];
+  const UF_DESTINO_7 = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'PA', 'PB', 'PE', 'PI', 'RN', 'RO', 'RR', 'SE', 'TO'];
+  function aliquotaInterestadual(ufOrigem, ufDestino, importado) {
+    if (importado === true) return 4;
+    const orig = String(ufOrigem || '').toUpperCase();
+    const dest = String(ufDestino || '').toUpperCase();
+    if (UF_ORIGEM_7.includes(orig) && UF_DESTINO_7.includes(dest)) return 7;
+    return 12;
+  }
+
   // ─── Obter alíquota ICMS para operação ───────────────────────────────────
   function calcularICMS(config, ufOrigem, ufDestino, valorProduto) {
     const imp = config.impostos || {};
@@ -218,7 +232,7 @@ const NFConfigService = (() => {
     const regime = config.empresa.regime;
     const isInterestadual = ufOrigem !== ufDestino;
     const aliquota = isInterestadual
-      ? (window.NFeTables?.ICMS_INTERESTADUAL?.[ufDestino] ?? 12)
+      ? aliquotaInterestadual(ufOrigem, ufDestino, icms.importado === true)
       : (icms.aliquotaInterna || 0);
 
     if (regime === 'simplesNacional') {
@@ -383,6 +397,7 @@ const NFConfigService = (() => {
     calcularICMS,
     calcularPISCOFINS,
     calcularIPI,
+    aliquotaInterestadual,
     validarCNPJ,
     validarCPF,
     formatarCNPJ,

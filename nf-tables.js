@@ -242,7 +242,7 @@ function sugerirCFOP(tipoOperacao, destinatario, regime) {
 // ─── Helper: CRT por regime ────────────────────────────────────────────────
 function getCRT(regime) {
   if (regime === 'simplesNacional') return 1;
-  if (regime === 'simplесExcesso') return 2;
+  if (regime === 'simplesExcesso') return 2;
   return 3; // Lucro Presumido / Lucro Real
 }
 

@@ -215,9 +215,10 @@ const NFService = (() => {
     return result;
   }
 
-  // ─── Emitir NF-e (fluxo completo) ─────────────────────────────────────────
+  // ─── Emitir NF-e (validar → assinar → salvar → transmitir SEFAZ) ──────────
   async function emitirNFe(nfeData, senhaA1 = null) {
     if (!_tenantId) throw new Error('Serviço não inicializado');
+    if (!senhaA1) throw new Error('Senha do certificado A1 é obrigatória para emitir a NF-e.');
 
     // 1. Validar configuração
     const cfgVal = window.NFValidator.validarConfigParaEmissao(_config);
@@ -231,52 +232,80 @@ const NFService = (() => {
     const nfeVal = window.NFValidator.validarNFe(nfeData);
     if (!nfeVal.valid) throw new Error('Erros na NF-e:\n• ' + nfeVal.errors.join('\n• '));
 
-    // 4. Obter número definitivo
+    // 4. Obter número definitivo (reserva atômica no backend)
     const numero = await window.NFStorage.incrementarNumero(_tenantId, 55);
     nfeData.numero = String(numero).padStart(9, '0');
     nfeData.ide.nNF = numero;
+    nfeData.id = nfeData.id || `nf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     // 5. Gerar XML
     const { xml, chave } = window.NFXmlBuilder.buildNFeXML(nfeData);
     nfeData.chave = chave;
 
-    // 6. Assinar XML (via Cloud Function)
-    let xmlAssinado = xml;
+    // 6. Assinar XML (Cloud Function) — falha aqui BLOQUEIA a emissão (fail-closed)
+    let xmlAssinado;
     try {
       xmlAssinado = await window.NFCertService.assinarXML(_tenantId, xml, senhaA1);
     } catch (e) {
-      console.warn('[NFService] Assinatura falhou, continuando em modo local:', e.message);
-      // Em desenvolvimento/homologação pode continuar sem assinatura para testar
+      throw new Error('Falha na assinatura digital da NF-e: ' + (e?.message || e) + '. Emissão bloqueada — nenhum documento sem assinatura é emitido.');
+    }
+    if (!xmlAssinado || !/<\/?NFe[\s>]/.test(xmlAssinado) || !/Signature/i.test(xmlAssinado)) {
+      throw new Error('XML assinado inválido (assinatura digital ausente). Emissão bloqueada.');
     }
 
-    // 7. Salvar NF como "aguardando"
-    nfeData.status = 'aguardando';
-    nfeData.xmlGerado = true;
-    const saved = await window.NFStorage.salvarNF(_tenantId, nfeData);
-
-    // 8. Salvar XML no Storage (erro não bloqueia emissão)
+    // 7. Guardar XML assinado no Storage (não bloqueia a emissão)
     let xmlStoragePath = '';
     try {
-      xmlStoragePath = await window.NFStorage.salvarXML(_tenantId, saved.id, xmlAssinado);
+      xmlStoragePath = await window.NFStorage.salvarXML(_tenantId, nfeData.id, xmlAssinado);
     } catch (e) {
       console.warn('[NFService] XML não pôde ser salvo no Storage — emissão continua:', e.message);
     }
+
+    // 8. Salvar NF uma única vez (status "aguardando")
+    nfeData.status = 'aguardando';
+    nfeData.xmlGerado = true;
     nfeData.xmlStoragePath = xmlStoragePath;
+    const saved = await window.NFStorage.salvarNF(_tenantId, nfeData);
+
+    // 9. Transmitir à SEFAZ (nf_enviarSEFAZ persiste status/protocolo no backend)
+    const ambiente = (nfeData.ide?.tpAmb === 1 || nfeData.tpAmb === 1) ? 'producao' : 'homologacao';
+    let envio = null;
     try {
-      await window.NFStorage.salvarNF(_tenantId, { ...nfeData, id: saved.id });
+      envio = await window.firebaseService.callFunction('nf_enviarSEFAZ', {
+        tenantId: _tenantId,
+        nfId: saved.id,
+        modelo: 55,
+        xmlAssinado,
+        senhaA1,
+        ambiente,
+      });
     } catch (e) {
-      console.warn('[NFService] NF salva mas referência XML no Storage falhou:', e.message);
+      return {
+        id: saved.id,
+        numero: nfeData.numero,
+        chave,
+        status: 'aguardando',
+        nProt: '',
+        xml: xmlAssinado,
+        xmlStoragePath,
+        msg: 'NF-e assinada e salva, mas o envio à SEFAZ falhou: ' + (e?.message || e) + '. Use "Consultar SEFAZ" para tentar novamente.',
+      };
     }
 
-    // 9. Retornar dados para UI mostrar status
+    const autorizada = !!(envio && envio.autorizada);
     return {
-      id:     saved.id,
+      id: saved.id,
       numero: nfeData.numero,
       chave,
-      status: 'aguardando',
-      xml:    xmlAssinado,
+      status: autorizada ? 'autorizada' : 'rejeitada',
+      nProt: envio?.nProt || '',
+      cStat: envio?.cStat || '',
+      xMotivo: envio?.xMotivo || '',
+      xml: xmlAssinado,
       xmlStoragePath,
-      msg:    'NF-e gerada. Envio à SEFAZ via Cloud Function em processamento.',
+      msg: autorizada
+        ? `NF-e autorizada pela SEFAZ. Protocolo: ${envio?.nProt || '—'}`
+        : `SEFAZ não autorizou (cStat ${envio?.cStat || '?'}): ${envio?.xMotivo || 'sem detalhe'}`,
     };
   }
 

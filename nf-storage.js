@@ -58,16 +58,13 @@ const NFStorage = (() => {
     return { id, path: `${modeloPath(tenantId, modelo)}/${id}`, payload };
   }
 
-  // ─── Atualizar status da NF ───────────────────────────────────────────────
+  // ─── Atualizar status da NF (merge preservando o restante do nó) ─────────
   async function atualizarStatus(tenantId, modelo, nfId, status, extras = {}) {
-    const path = `${modeloPath(tenantId, modelo)}/${nfId}`;
-    // key=null — merge sobre o nó existente (substitui completamente)
     try {
-      await fb().saveToFirebase(path, null, {
-        status,
-        ...extras,
-        updatedAt: new Date().toISOString(),
-      });
+      const atual = await carregarNF(tenantId, modelo, nfId) || {};
+      const merged = { ...atual, ...extras, status, id: nfId, updatedAt: new Date().toISOString() };
+      // key=nfId → set em colecao/nfId com o objeto completo (não apaga campos)
+      await fb().saveToFirebase(modeloPath(tenantId, modelo), nfId, merged);
     } catch (e) { throw mapWriteError(e, 'atualizar a NF-e'); }
   }
 
@@ -143,9 +140,19 @@ const NFStorage = (() => {
     });
   }
 
-  // ─── Incrementar próximo número ──────────────────────────────────────────
+  // ─── Incrementar próximo número (atômico via backend, fallback local) ────
   async function incrementarNumero(tenantId, modelo = 55) {
     const modKey = modelo == 65 ? 'nfce' : modelo == 'nfse' ? 'nfse' : 'nfe';
+    // Numeração oficial reservada em transação no servidor (evita duplicidade).
+    try {
+      if (window.firebaseService?.callFunction) {
+        const res = await window.firebaseService.callFunction('nf_reservarNumero', { tenantId, modelo });
+        const numero = parseInt(res?.numero, 10);
+        if (Number.isFinite(numero) && numero > 0) return numero;
+      }
+    } catch (e) {
+      console.warn('[NFStorage] Reserva atômica indisponível, usando contador local:', e?.message || e);
+    }
     const atual  = await getProximoNumero(tenantId, modelo);
     const proximo = atual + 1;
     const path = configPath(tenantId, `numeros/${modKey}`);
