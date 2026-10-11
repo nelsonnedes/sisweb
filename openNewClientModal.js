@@ -75,6 +75,21 @@ async function populateClientFormModal(client = null) {
     setClientModalValue('newClientState', state);
     await loadClientModalCities(state, city);
     setClientModalValue('newClientMunicipalityCode', clientModalText(client, 'codigoMunicipio', 'municipioCodigo', 'municipalityCode', 'cMun', 'codigoIBGE', 'ibge', 'ibgeCode'));
+    // Backfill: registro legado sem código IBGE — resolve sem sobrescrever edição
+    try {
+        if (isEdit && window.MunicipiosIBGE && typeof window.MunicipiosIBGE.resolverCodigo === 'function' && city && state) {
+            const codeEl = document.getElementById('newClientMunicipalityCode');
+            if (codeEl && !String(codeEl.value || '').trim()) {
+                window.MunicipiosIBGE.resolverCodigo(state, city).then((cod) => {
+                    const el = document.getElementById('newClientMunicipalityCode');
+                    if (cod && el && !String(el.value || '').trim()
+                        && clientFormModalContext.mode === 'edit') {
+                        el.value = cod;
+                    }
+                }).catch(() => {});
+            }
+        }
+    } catch (_) {}
     setClientModalValue('newClientCountryCode', clientModalText(client, 'paisCodigo', 'countryCode', 'cPais') || '1058');
     setClientModalValue('newClientCountryName', clientModalText(client, 'pais', 'country', 'countryName', 'xPais') || 'Brasil');
     setClientModalValue('newClientObs', clientModalText(client, 'obs', 'observacoes', 'observations'));

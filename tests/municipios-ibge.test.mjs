@@ -67,8 +67,7 @@ test('delegação preserva assinaturas', async (t) => {  const pontos = ['js/cli
   });
 });
 
-test('backfill: edição resolve código de registro legado sem sobrescrever', async (t) => {
-  for (const f of ['js/client.js', 'js/fornecedor.js']) {
+test('backfill: edição resolve código de registro legado sem sobrescrever', async (t) => {  for (const f of ['js/client.js', 'js/fornecedor.js']) {
     await t.test(`${f} preenche somente se vazio e mesma edição`, () => {
       const src = fs.readFileSync(f, 'utf8');
       assert.ok(src.includes('Backfill: registro legado sem código IBGE'), `${f} documenta`);
@@ -76,4 +75,11 @@ test('backfill: edição resolve código de registro legado sem sobrescrever', a
       assert.ok(src.includes('!elements.municipalityCodeInput.value.trim()'), `${f} nunca sobrescreve`);
     });
   }
+
+  await t.test('modal NF-e (openNewClientModal) com backfill', () => {
+    const src = fs.readFileSync('openNewClientModal.js', 'utf8');
+    assert.ok(src.includes('Backfill: registro legado sem código IBGE'), 'modal documenta');
+    assert.ok(src.includes("resolverCodigo(state, city)"), 'modal resolve via serviço');
+    assert.ok(src.includes("clientFormModalContext.mode === 'edit'"), 'só na edição');
+  });
 });
