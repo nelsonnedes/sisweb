@@ -783,8 +783,19 @@ async function postSefaz(url, soapBody, pfxBuffer, pfxSenha) {
 
   const keyBags  = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
   const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-  const privKeyPem = forge.pki.privateKeyToPem(keyBags[forge.pki.oids.pkcs8ShroudedKeyBag][0].key);
-  const certPem    = forge.pki.certificateToPem(certBags[forge.pki.oids.certBag][0].cert);
+  const keyBagArr  = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || [];
+  const certBagArr = certBags[forge.pki.oids.certBag] || [];
+  if (!keyBagArr.length)  throw new Error('Chave privada não encontrada no certificado A1.');
+  if (!certBagArr.length) throw new Error('Certificado não encontrado no arquivo A1.');
+  const privKeyPem = forge.pki.privateKeyToPem(keyBagArr[0].key);
+  // Cadeia do cliente: folha + intermediários + raiz (conforme presente no PFX)
+  const clientCertPems = certBagArr.map((b) => forge.pki.certificateToPem(b.cert));
+  // CA para VALIDAR o certificado do SERVIDOR SEFAZ: a raiz ICP-Brasil não está no
+  // trust store do Node, então usamos a cadeia do próprio PFX + as raízes padrão do Node.
+  // (Corrige "unable to get local issuer certificate" no handshake mTLS.)
+  let nodeRootCerts = [];
+  try { nodeRootCerts = require('tls').rootCertificates || []; } catch (_) { nodeRootCerts = []; }
+  const caList = Array.from(new Set([...clientCertPems, ...nodeRootCerts]));
 
   const parsed = new URL(url);
 
@@ -799,7 +810,8 @@ async function postSefaz(url, soapBody, pfxBuffer, pfxSenha) {
         'Content-Length': Buffer.byteLength(soapBody, 'utf8'),
       },
       key:  privKeyPem,
-      cert: certPem,
+      cert: clientCertPems.length > 1 ? clientCertPems : clientCertPems[0],
+      ca:   caList,
     };
 
     const req = https.request(options, (res) => {

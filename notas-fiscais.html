@@ -184,13 +184,16 @@
             box-sizing: border-box;
         }
 
-        /* Checkboxes não herdam width/padding de input (senão esticam) */
+        /* Checkboxes não herdam width/padding/borda de input (senão esticam e ganham retângulo) */
         .form-group input[type="checkbox"] {
             width: 18px;
             height: 18px;
             min-width: 18px;
             padding: 0;
             margin: 0;
+            border: none;
+            box-shadow: none;
+            background: none;
             accent-color: var(--sw-brand);
             cursor: pointer;
             flex: 0 0 auto;

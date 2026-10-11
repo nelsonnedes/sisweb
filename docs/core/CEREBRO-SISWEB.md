@@ -1093,6 +1093,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `nf-config.js`, `functions/nf-functions.js`, `notas-fiscais.html`, `tests/nfe-xsd-validation.test.mjs`.
 - **Gates:** `npm test` 1136/0/1; XSD 10/10; HTML 0 erros; functions+hosting publicados.
 
+## Sessao 2026-10-11 — SEFAZ TLS (unable to get local issuer certificate) + checkbox sem borda
+
+- **CAUSA-RAIZ do 500 da consulta SEFAZ** (achada via log novo `[nf_consultarNFe] Erro:`): `unable to get local issuer certificate` — erro de **TLS handshake**: a raiz **ICP-Brasil** do certificado do SERVIDOR SEFAZ não está no trust store do Node, então a verificação falha. Fix em `postSefaz` (`functions/nf-functions.js`): extrair a **cadeia completa do PFX** (folha+intermediários+raiz) e passar em `cert` (array) + `ca` = `[...cadeia do PFX, ...tls.rootCertificates]` → valida o servidor sem desabilitar verificação. Deploy nf_consultarNFe + nf_enviarSEFAZ OK.
+- **Checkbox com "retângulo"** (Reforma Tributária): o checkbox herdava `border:1px solid var(--sw-border)` de `.form-group input` → caixa dupla. Fix: `.form-group input[type="checkbox"]{border:none;box-shadow:none;background:none;}` em `notas-fiscais.html`.
+- **Armadilha:** erros de handler em callable v2 não aparecem no console do cliente além do 500 — sempre logar `functions.logger.error` no catch para diagnostico.
+- **Arquivos:** `functions/nf-functions.js`, `notas-fiscais.html`.
+- **Gates:** `npm test` 1136/0/1; HTML 0 erros; functions+hosting publicados.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").
