@@ -1139,6 +1139,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Armadilha:** `nf-xml-builder.buildVolume` usa `onlyDigits(qVol)` → valores com virgula viravam "0010". Por isso o auto-preenchimento usa inteiro.
 - **Gates:** `npm test` 1137/0/1; hosting publicado.
 
+## Sessao 2026-10-11 — Detalhe de status da NF-e, rejeitada vs erro de comunicacao, DANFE sem valor fiscal
+
+- **Status clicavel**: a pill de status na aba Consulta abre `nfMostrarDetalheStatus(id)` → modal com Status, cStat, Motivo (SEFAZ), Descricao, Erro de comunicacao, Protocolo, Chave, ultima atualizacao.
+- **Rejeitada vs erro_envio**: `nf_enviarSEFAZ` agora so marca `rejeitada` quando o cStat e numerico (rejeicao fiscal real); cStat 999/sem cStat → `erro_envio` (+`erroMsg`) com `descricao`. `nf-service.emitirNFe` propaga `status`/`descricao` do backend.
+- **DANFE de NF-e nao autorizada**: nao e mais oferecido apos emissao (so quando `autorizada`); marca d'agua "SEM VALOR FISCAL / NAO AUTORIZADA PELA SEFAZ" e o box de protocolo mostra "NAO AUTORIZADA (cStat X)".
+- **Log do corpo bruto do envio**: `nf_enviarSEFAZ` loga HTTP+body quando cStat 999 (o envio em producao ainda retornou 999 — a investigar via log; consulta ja ok).
+- **Arquivos:** `functions/nf-functions.js`, `nf-service.js`, `notas-fiscais.html`, `nf-danfe.js`.
+- **Gates:** `npm test` 1137/0/1; HTML 0 erros; deploy nf_enviarSEFAZ + hosting OK.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

@@ -4144,7 +4144,8 @@
       try {
         const result = await window.NFService.emitirNFe(_notaEmCurso, senha);
         const danfeData = _notaEmCurso ? { ..._notaEmCurso, status: result.status, nProt: result.nProt || '', chave: result.chave || _notaEmCurso.chave } : null;
-        mostrarAlertaEmissao(`✅ NF-e ${result.numero} gerada! Status: ${result.status} — ${result.msg}`, 'ok');
+        const autorizada = result.status === 'autorizada';
+        mostrarAlertaEmissao(`${autorizada ? '✅' : '⚠️'} NF-e ${result.numero} — ${String(result.status).toUpperCase()}: ${result.msg}`, autorizada ? 'ok' : 'erro');
         document.getElementById('certSenhaBox').style.display = 'none';
         _notaEmCurso = null;
         _itensNF = [];
@@ -4160,11 +4161,16 @@ renderizarVolumesNF();
         // Ir para aba Consultar e recarregar lista (emissão concluída)
         if (typeof showTab === 'function') showTab('consulta');
         if (typeof consultarNotas === 'function') setTimeout(() => consultarNotas(), 500);
-        // Oferecer DANFE
-        if (danfeData && window.NFDanfe) {
-          if (await confirmDialog({ title: 'Baixar DANFE', message: 'NF-e gerada com sucesso! Deseja baixar o DANFE agora?', confirmLabel: 'Baixar DANFE' })) {
-            window.NFDanfe.downloadDANFE(danfeData);
+        if (autorizada) {
+          // Oferecer DANFE SOMENTE quando autorizada pela SEFAZ
+          if (danfeData && window.NFDanfe) {
+            if (await confirmDialog({ title: 'Baixar DANFE', message: 'NF-e autorizada pela SEFAZ! Deseja baixar o DANFE agora?', confirmLabel: 'Baixar DANFE' })) {
+              window.NFDanfe.downloadDANFE(danfeData);
+            }
           }
+        } else {
+          // Rejeitada / erro de comunicação: NÃO emitir DANFE; mostrar o motivo detalhado
+          nfMostrarDetalheStatus(result.id, { cStat: result.cStat, xMotivo: result.xMotivo, descricao: result.descricao, status: result.status });
         }
       } catch(e) {
         mostrarAlertaEmissao('❌ ' + e.message, 'erro');
@@ -4271,7 +4277,7 @@ renderizarVolumesNF();
           <td data-label="Destinatário">${escapeHtmlNF(n.dest?.nome || '—')}</td>
           <td data-label="Valor Total" style="text-align:right;font-weight:600">${fmtMoedaForm(val)}</td>
           <td data-label="Chave / Protocolo" style="font-family:monospace;font-size:11px">${chave}${prot}</td>
-          <td data-label="Status"><span style="padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:var(--sw-text-1);background:color-mix(in srgb, var(--sw-${tok}) 25%, transparent);border:1px solid var(--sw-${tok});">${label}</span></td>
+          <td data-label="Status"><span onclick="nfMostrarDetalheStatus('${n.id}')" title="Ver detalhes do status" style="cursor:pointer;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:var(--sw-text-1);background:color-mix(in srgb, var(--sw-${tok}) 25%, transparent);border:1px solid var(--sw-${tok});">${label}</span></td>
           <td data-label="Ações" class="nf-actions-cell">
             ${window.NFDanfe ? `<button class="btn btn-primary btn-small" onclick="abrirDANFENota('${n.id}')" title="DANFE"><i class="fas fa-file-pdf"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-warning btn-small" onclick="abrirModalCartaCorrecaoNF('${n.id}','${n.chave || ''}')" title="Carta de Correção"><i class="fas fa-file-signature"></i></button>` : ''}
@@ -4283,6 +4289,69 @@ renderizarVolumesNF();
         </tr>`;
       }).join('');
     }
+
+    function nfInfoDetalheModal(titulo, linhas) {
+      try { document.getElementById('nfStatusDetalheModal')?.remove(); } catch (_) {}
+      const ov = document.createElement('div');
+      ov.id = 'nfStatusDetalheModal';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:10000002;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+      const box = document.createElement('div');
+      box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
+      box.style.cssText = 'background:var(--sw-surface,#fff);color:var(--sw-text-1,#0f172a);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:560px;width:100%;padding:20px;max-height:80vh;overflow:auto;';
+      const h = document.createElement('h3');
+      h.textContent = titulo;
+      h.style.cssText = 'margin:0 0 12px;font-size:16px;';
+      box.appendChild(h);
+      const dl = document.createElement('div');
+      dl.style.cssText = 'font-size:13px;line-height:1.6;';
+      linhas.forEach(([k, v]) => {
+        if (v == null || String(v).trim() === '') return;
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:8px;border-bottom:1px solid var(--sw-border,#e5e7eb);padding:6px 0;';
+        const kk = document.createElement('strong');
+        kk.textContent = k; kk.style.cssText = 'flex:0 0 150px;color:var(--sw-text-2,#475569);';
+        const vv = document.createElement('span');
+        vv.textContent = String(v); vv.style.cssText = 'flex:1;word-break:break-word;white-space:pre-wrap;';
+        row.appendChild(kk); row.appendChild(vv); dl.appendChild(row);
+      });
+      box.appendChild(dl);
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.textContent = 'Fechar';
+      btn.style.cssText = 'margin-top:16px;padding:9px 16px;border:0;border-radius:8px;background:var(--sw-brand,#2563eb);color:#fff;font-weight:600;cursor:pointer;';
+      btn.onclick = () => ov.remove();
+      box.appendChild(btn);
+      ov.appendChild(box);
+      ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+      document.addEventListener('keydown', function _esc(e) { if (e.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', _esc, true); } }, true);
+      document.body.appendChild(ov);
+      try { btn.focus(); } catch (_) {}
+    }
+
+    // Detalhes do status/erro de uma NF-e (clique no status)
+    async function nfMostrarDetalheStatus(nfId, override = null) {
+      try {
+        const tid = obterTenantIdNF();
+        let nf = null;
+        if (tid && nfId) nf = await window.NFStorage.carregarNF(tid, 55, nfId).catch(() => null);
+        nf = nf || {};
+        const o = override || {};
+        const cStat    = o.cStat || nf.cStat || nf.ultimaConsultaSefaz?.cStat || '';
+        const xMotivo  = o.xMotivo || nf.xMotivo || nf.ultimaConsultaSefaz?.xMotivo || '';
+        const descricao= o.descricao || nf.descricao || '';
+        const erroMsg  = nf.erroMsg || '';
+        nfInfoDetalheModal(`Detalhes da NF-e ${nf.numero || ''}`.trim(), [
+          ['Status', String(o.status || nf.status || '').toUpperCase()],
+          ['cStat', cStat],
+          ['Motivo (SEFAZ)', xMotivo],
+          ['Descrição', descricao],
+          ['Erro de comunicação', erroMsg],
+          ['Protocolo', nf.nProt || ''],
+          ['Chave de acesso', nf.chave || ''],
+          ['Última atualização', nf.dhAutorizacao || nf.updatedAt || nf.ultimaConsultaSefaz?.em || ''],
+        ]);
+      } catch (e) { notifyUser('Erro ao abrir detalhes: ' + (e?.message || e)); }
+    }
+    window.nfMostrarDetalheStatus = nfMostrarDetalheStatus;
 
     function nfPickLogoFieldsForDanfe(source = {}) {
       const candidates = [

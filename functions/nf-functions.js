@@ -990,6 +990,9 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
     const ret  = parseSefazResponse(resp.body);
 
     functions.logger.info(`[nf_enviarSEFAZ] Retorno cStat=${ret.cStat} — ${ret.xMotivo}`);
+    if (ret.cStat === '999') {
+      functions.logger.warn(`[nf_enviarSEFAZ] Resposta não parseada | HTTP ${resp.status} | nfId=${nfId} | body: ${String(resp.body || '').slice(0, 900)}`);
+    }
 
     // Persistir o XML ASSINADO no Storage (Admin SDK) — centraliza e evita 403 no cliente.
     let xmlStoragePath = '';
@@ -1027,13 +1030,18 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
     }
 
     // Persistir resultado no Firebase
+    // Distinguir rejeição fiscal (cStat numérico) de erro de comunicação (999/sem cStat)
+    const falhaComunicacao = !ret.autorizada && (!/^\d{3}$/.test(String(ret.cStat)) || ret.cStat === '999');
+    const statusFinal = ret.autorizada ? 'autorizada' : (falhaComunicacao ? 'erro_envio' : 'rejeitada');
     const patch = {
-      status:        ret.autorizada ? 'autorizada' : 'rejeitada',
+      status:        statusFinal,
       cStat:         ret.cStat,
       xMotivo:       ret.xMotivo,
+      descricao:     descreverCStat(ret.cStat) || ret.xMotivo || '',
       nProt:         ret.nProt,
       dhAutorizacao: ret.dhRecbto || new Date().toISOString(),
       updatedAt:     new Date().toISOString(),
+      ...(falhaComunicacao ? { erroMsg: `Sem retorno válido da SEFAZ (cStat ${ret.cStat}). Tente reenviar/consultar.` } : {}),
       ...(xmlStoragePath ? { xmlStoragePath } : {}),
       ...(xmlProcStoragePath ? { xmlProcStoragePath } : {}),
     };
@@ -1041,8 +1049,10 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
 
     return {
       autorizada: ret.autorizada,
+      status:     statusFinal,
       cStat:      ret.cStat,
       xMotivo:    ret.xMotivo,
+      descricao:  descreverCStat(ret.cStat) || ret.xMotivo || '',
       nProt:      ret.nProt,
       dhRecbto:   ret.dhRecbto,
       xmlProcStoragePath,

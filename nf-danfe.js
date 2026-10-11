@@ -726,7 +726,7 @@ const NFDanfe = (() => {
     y += headerH + 2;
 
     fiscalBox(ML, y, 82, 9, 'NATUREZA DA OPERAÇÃO', ide.natOp || '');
-    fiscalBox(ML + 82, y, 68, 9, 'PROTOCOLO DE AUTORIZAÇÃO DE USO', nProt || (status === 'rascunho' ? 'RASCUNHO - NÃO AUTORIZADA' : status.toUpperCase()), { valueSize: 5.8, maxLines: 1 });
+    fiscalBox(ML + 82, y, 68, 9, 'PROTOCOLO DE AUTORIZAÇÃO DE USO', nProt || (nfeData.cStat ? `NÃO AUTORIZADA (cStat ${nfeData.cStat})` : 'NÃO AUTORIZADA'), { valueSize: 5.8, maxLines: 1 });
     fiscalBox(ML + 150, y, 40, 9, 'INSCRIÇÃO ESTADUAL', emit.ie || emit.IE || '');
     y += 9;
     fiscalBox(ML, y, 45, 8, 'INSCRIÇÃO ESTADUAL DO SUBST. TRIB.', emit.ieST || emit.IEST || '');
@@ -993,8 +993,21 @@ const NFDanfe = (() => {
     y += dadosH + 2;
 
     const totalPages = doc.internal.getNumberOfPages();
+    const naoAutorizada = !(status === 'autorizada' && nProt);
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
+      if (naoAutorizada) {
+        // Marca d'água: DANFE de NF-e não autorizada NÃO tem valor fiscal.
+        try { if (typeof doc.setGState === 'function' && typeof doc.GState === 'function') doc.setGState(new doc.GState({ opacity: 0.16 })); } catch (_) {}
+        doc.setTextColor(200, 40, 40);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(40);
+        doc.text('SEM VALOR FISCAL', PW / 2, 135, { align: 'center', angle: 28 });
+        doc.setFontSize(15);
+        doc.text('NÃO AUTORIZADA PELA SEFAZ', PW / 2, 152, { align: 'center', angle: 28 });
+        try { if (typeof doc.setGState === 'function' && typeof doc.GState === 'function') doc.setGState(new doc.GState({ opacity: 1 })); } catch (_) {}
+        doc.setTextColor(...COR_PRETO);
+      }
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(5);
       doc.setTextColor(...COR_CINZA);

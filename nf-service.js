@@ -294,19 +294,22 @@ const NFService = (() => {
     }
 
     const autorizada = !!(envio && envio.autorizada);
+    const status = envio?.status || (autorizada ? 'autorizada' : 'rejeitada');
+    const motivo = envio?.descricao || envio?.xMotivo || 'sem detalhe';
     return {
       id: saved.id,
       numero: nfeData.numero,
       chave,
-      status: autorizada ? 'autorizada' : 'rejeitada',
+      status,
       nProt: envio?.nProt || '',
       cStat: envio?.cStat || '',
       xMotivo: envio?.xMotivo || '',
+      descricao: envio?.descricao || '',
       xml: xmlAssinado,
       xmlStoragePath,
       msg: autorizada
         ? `NF-e autorizada pela SEFAZ. Protocolo: ${envio?.nProt || '—'}`
-        : `SEFAZ não autorizou (cStat ${envio?.cStat || '?'}): ${envio?.xMotivo || 'sem detalhe'}`,
+        : `${status === 'erro_envio' ? 'Falha de comunicação com a SEFAZ' : 'SEFAZ não autorizou'} (cStat ${envio?.cStat || '?'}): ${motivo}`,
     };
   }
 
