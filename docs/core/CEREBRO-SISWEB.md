@@ -1182,6 +1182,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `notas-fiscais.html`, `nf-service.js`, `nf-xml-builder.js`, `nf-validator.js`. Hosting publicado.
 - **Gates:** `npm test` 1138/0/1; HTML 0 erros.
 
+## Sessao 2026-10-11 — Prox. Numero NF-e dessincronizado do contador
+
+- **Sintoma:** apos emitir (ex.: 1671), o campo "Prox. Numero NF-e" e o rascunho continuavam com o numero inicial.
+- **Causa:** o contador oficial fica em `fiscal/config/numeros/nfe.proximoNumero` (nf-storage.getProximoNumero/salvarNumeroInicial/nf_reservarNumero), mas o campo da UI le `config.nfe.proximoNumero` — dois campos diferentes.
+- **Fix:** `nf-config.js` -> `aplicarContadorNaConfig(cfg)` aplicado em `loadConfig` (copia `numeros.nfe/nfce.proximoNumero` para `nfe/nfce.proximoNumero`); `confirmarEmissao` chama `NFService.recarregarConfig()` + `NFStorage.getProximoNumero` e atualiza `#cfgProximoNumero` apos emitir.
+- **Arquivos:** `nf-config.js`, `notas-fiscais.html`. Hosting publicado.
+- **Gates:** `npm test` 1138/0/1; HTML 0 erros.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

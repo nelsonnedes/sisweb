@@ -4162,6 +4162,14 @@ renderizarVolumesNF();
         // Ir para aba Consultar e recarregar lista (emissão concluída)
         if (typeof showTab === 'function') showTab('consulta');
         if (typeof consultarNotas === 'function') setTimeout(() => consultarNotas(), 500);
+        // Atualizar o contador exibido ("Próx. Número") e o cache do serviço após emitir
+        try {
+          await window.NFService?.recarregarConfig?.();
+          const tidNum = obterTenantIdNF();
+          const prox = await window.NFStorage?.getProximoNumero?.(tidNum, 55);
+          const elNum = document.getElementById('cfgProximoNumero');
+          if (elNum && prox) elNum.value = prox;
+        } catch (_) {}
         if (autorizada) {
           // Oferecer DANFE SOMENTE quando autorizada pela SEFAZ
           if (danfeData && window.NFDanfe) {

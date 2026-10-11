@@ -152,20 +152,38 @@ const NFConfigService = (() => {
     }
   }
 
+  // ─── Sincronizar o contador oficial (numeros/{modKey}) com nfe/nfce.proximoNumero ──
+  // O contador real fica em fiscal/config/numeros/{nfe|nfce}.proximoNumero; o campo
+  // "Próx. Número" da UI lê nfe.proximoNumero. Sem isto ficam dessincronizados após emitir.
+  function aplicarContadorNaConfig(cfg) {
+    try {
+      const nums = cfg && cfg.numeros;
+      if (nums && nums.nfe && Number.isFinite(Number(nums.nfe.proximoNumero))) {
+        cfg.nfe = cfg.nfe || {};
+        cfg.nfe.proximoNumero = Number(nums.nfe.proximoNumero);
+      }
+      if (nums && nums.nfce && Number.isFinite(Number(nums.nfce.proximoNumero))) {
+        cfg.nfce = cfg.nfce || {};
+        cfg.nfce.proximoNumero = Number(nums.nfce.proximoNumero);
+      }
+    } catch (_) {}
+    return cfg;
+  }
+
   // ─── Carregar configuração do tenant ──────────────────────────────────────
   async function loadConfig(tenantId) {
     try {
       if (!window.firebaseService) throw new Error('Firebase não inicializado');
       const directConfig = await loadConfigFromRealtime(tenantId);
       if (directConfig) {
-        const merged = deepMerge(structuredClone(DEFAULT_CONFIG), directConfig);
+        const merged = aplicarContadorNaConfig(deepMerge(structuredClone(DEFAULT_CONFIG), directConfig));
         try { localStorage.setItem(localKey(tenantId), JSON.stringify(merged)); } catch (_) {}
         return merged;
       }
       if (typeof window.firebaseService.callFunction === 'function') {
         const result = await window.firebaseService.callFunction('nf_obterConfiguracaoFiscal', { tenantId });
         if (result && result.config && typeof result.config === 'object') {
-          const merged = deepMerge(structuredClone(DEFAULT_CONFIG), result.config);
+          const merged = aplicarContadorNaConfig(deepMerge(structuredClone(DEFAULT_CONFIG), result.config));
           // Atualizar cache local
           try { localStorage.setItem(localKey(tenantId), JSON.stringify(merged)); } catch (_) {}
           return merged;
