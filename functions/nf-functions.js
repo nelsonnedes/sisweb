@@ -47,7 +47,7 @@ const SEFAZ_EP = {
   homologacao: {
     NfeAutorizacao4:    'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeAutorizacao/NFeAutorizacao4.asmx',
     NfeRetAutorizacao4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeRetAutorizacao/NFeRetAutorizacao4.asmx',
-    NfeConsultaProtocolo4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeConsulta2/NfeConsulta2.asmx',
+    NfeConsultaProtocolo4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeConsulta/NfeConsulta4.asmx',
     NFeRecepcaoEvento4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/recepcaoevento/recepcaoevento4.asmx',
     NfeRecepcaoEvento4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/recepcaoevento/recepcaoevento4.asmx',
     NFeInutilizacao4:   'https://nfe-homologacao.svrs.rs.gov.br/ws/nfeinutilizacao/nfeinutilizacao4.asmx',
@@ -56,7 +56,7 @@ const SEFAZ_EP = {
   producao: {
     NfeAutorizacao4:    'https://nfe.svrs.rs.gov.br/ws/NfeAutorizacao/NFeAutorizacao4.asmx',
     NfeRetAutorizacao4: 'https://nfe.svrs.rs.gov.br/ws/NfeRetAutorizacao/NFeRetAutorizacao4.asmx',
-    NfeConsultaProtocolo4: 'https://nfe.svrs.rs.gov.br/ws/NfeConsulta2/NfeConsulta2.asmx',
+    NfeConsultaProtocolo4: 'https://nfe.svrs.rs.gov.br/ws/NfeConsulta/NfeConsulta4.asmx',
     NFeRecepcaoEvento4: 'https://nfe.svrs.rs.gov.br/ws/recepcaoevento/recepcaoevento4.asmx',
     NfeRecepcaoEvento4: 'https://nfe.svrs.rs.gov.br/ws/recepcaoevento/recepcaoevento4.asmx',
     NFeInutilizacao4:   'https://nfe.svrs.rs.gov.br/ws/nfeinutilizacao/nfeinutilizacao4.asmx',
@@ -665,7 +665,9 @@ async function descriptografarPFXdoStorage(tenantId, uid, senha) {
   if (!encBuffer) {
     // Fallback: ler do Realtime DB (base64)
     const snap = await db.ref(`tenants/${tenantId}/config-fiscal/certificado/pfxEnc`).get();
-    if (!snap.exists()) throw new Error('Certificado A1 não encontrado no sistema');
+    if (!snap.exists()) {
+      throw new Error('Certificado A1 não encontrado para esta empresa. Acesse Configuração > Certificado Digital e faça o upload do .pfx (A1).');
+    }
     const b64 = snap.val();
     encBuffer = Buffer.from(b64, 'base64');
   }
@@ -684,7 +686,12 @@ async function descriptografarPFXdoStorage(tenantId, uid, senha) {
   const tag        = ciphertext.slice(-16);
   const ct         = ciphertext.slice(0, -16);
   decipher.setAuthTag(tag);
-  const pfx = Buffer.concat([decipher.update(ct), decipher.final()]);
+  let pfx;
+  try {
+    pfx = Buffer.concat([decipher.update(ct), decipher.final()]);
+  } catch (e) {
+    throw new Error('Falha ao descriptografar o certificado A1 — senha do certificado incorreta. Verifique a senha informada e tente novamente.');
+  }
   return pfx;
 }
 
@@ -941,7 +948,7 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
       xmlProcStoragePath,
     };
   } catch (e) {
-    console.error('[nf_enviarSEFAZ] Erro:', e.message);
+    functions.logger.error('[nf_enviarSEFAZ] Erro:', (e && e.message) || e, (e && e.stack) || '');
     // Registrar erro no Firebase
     try {
       await updateFiscalNote(db, tenantId, modKey, nfId, {
@@ -1017,6 +1024,7 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
       autorizada: ret.autorizada,
     };
   } catch (e) {
+    functions.logger.error('[nf_consultarNFe] Erro:', (e && e.message) || e, (e && e.stack) || '');
     throw new functions.https.HttpsError('internal', `Falha na consulta: ${e.message}`);
   }
 });

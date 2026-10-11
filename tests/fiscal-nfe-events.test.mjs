@@ -43,5 +43,5 @@ test('endpoints SEFAZ homologacao usam o host correto (nfe-homologacao)', () => 
   assert.doesNotMatch(nfFunctions, /homologacao\.nfe\.svrs\.rs\.gov\.br/, 'host inexistente derruba a consulta (getaddrinfo ENOTFOUND)');
   assert.match(nfFunctions, /https:\/\/nfe-homologacao\.svrs\.rs\.gov\.br\/ws\/NfeAutorizacao\/NFeAutorizacao4\.asmx/);
   assert.match(nfFunctions, /https:\/\/nfe-homologacao\.svrs\.rs\.gov\.br\/ws\/NfeRetAutorizacao\/NFeRetAutorizacao4\.asmx/);
-  assert.match(nfFunctions, /https:\/\/nfe-homologacao\.svrs\.rs\.gov\.br\/ws\/NfeConsulta2\/NfeConsulta2\.asmx/);
+  assert.match(nfFunctions, /https:\/\/nfe-homologacao\.svrs\.rs\.gov\.br\/ws\/NfeConsulta\/NfeConsulta4\.asmx/);
 });

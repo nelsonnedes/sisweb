@@ -1077,6 +1077,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Pendente:** gMono (CST 620), gTransfCred (800), gAjusteCompet (811), gEstornoCred, gTribRegular/gTribCompraGov, gCredPresIBSZFM, e os Eventos_RTC.
 - **Gates:** `npm test` 1129/0/1; lint+typecheck limpos; HTML 0 erros; XSD 6/6; hosting publicado.
 
+## Sessao 2026-10-11 — Fix UI Reforma (checkbox), Unidade Padrao persistente e Consulta SEFAZ 4.00
+
+- **UI Reforma Tributaria (Configuracoes > Impostos)**: causa do desalinhamento era `.form-group input{width:100%;padding:8px}` aplicado ao checkbox (estica). Fix: `.form-group input[type="checkbox"]{width:18px;height:18px;padding:0;accent-color:var(--sw-brand)}` + `.cfg-check-wrap{display:flex;align-items:center;min-height:38px}`; checkboxes reestruturados para `label` acima + `.cfg-check-wrap` (harmonizado com os demais campos, tematico claro/escuro).
+- **Unidade Padrao da Empresa**: `nf-preferencias.js:renderizarPainelConfig` agora persiste **ao selecionar** (`prefUnidadePadrao`/`prefCasasDecimais` `change` → `salvar()` + `aplicarNaFormulario()`), refletindo como padrao na emissao; painel migrado de cores fixas (#2c3e50/#ddd/#e5e7eb) para tokens `--sw-*` (bitematico). Removido `popularSelectUnidade('itemUNM')` (id inexistente).
+- **Consulta SEFAZ 500**: causa provavel = throw no handler (`descriptografarPFXdoStorage`/TLS); diagnosticado que o path usava o servico **2.00** `NfeConsulta2/NfeConsulta2.asmx`. Corrigido para **4.00** `ws/NfeConsulta/NfeConsulta4.asmx` (homolog+prod). `descriptografarPFXdoStorage` com mensagens claras ("Certificado A1 nao encontrado..." / "senha incorreta"); `nf_consultarNFe`/`nf_enviarSEFAZ` agora logam o erro real (`functions.logger.error` + stack). Deploy nf_consultarNFe+nf_enviarSEFAZ OK.
+- **Arquivos:** `notas-fiscais.html`, `nf-preferencias.js`, `functions/nf-functions.js`, `tests/nf-preferencias-unidade.test.mjs` (novo), `tests/fiscal-nfe-events.test.mjs` (path).
+- **Gates:** `npm test` 1132/0/1; HTML 0 erros; hosting publicado.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

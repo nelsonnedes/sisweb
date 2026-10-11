@@ -191,10 +191,10 @@ const NFPreferencias = (() => {
     const escAttr = (v) => String(v || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     container.innerHTML = `
       <div style="margin-bottom:14px;">
-        <label style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:6px;">
+        <label style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:6px;">
           Casas Decimais do Campo Qtd:
         </label>
-        <select id="prefCasasDecimais" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+        <select id="prefCasasDecimais" style="padding:8px;border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);color:var(--sw-text-1);font-size:14px;">
           <option value="0" ${prefs.casasDecimaisQtd===0?'selected':''}>0 — Somente inteiros (ex: 5)</option>
           <option value="2" ${prefs.casasDecimaisQtd===2?'selected':''}>2 — Ex: 5,00</option>
           <option value="3" ${prefs.casasDecimaisQtd===3?'selected':''}>3 — Ex: 5,000</option>
@@ -202,25 +202,25 @@ const NFPreferencias = (() => {
         </select>
       </div>
       <div style="margin-bottom:14px;">
-        <label style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:6px;">
+        <label style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:6px;">
           Unidade Padrão da Empresa:
         </label>
-        <select id="prefUnidadePadrao" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+        <select id="prefUnidadePadrao" style="padding:8px;border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);color:var(--sw-text-1);font-size:14px;">
           ${(prefs.unidades || DEFAULT_PREFS.unidades).map(u => `<option value="${u}" ${u===prefs.unidadePadrao?'selected':''}>${u}</option>`).join('')}
         </select>
       </div>
       <div style="margin-bottom:14px;">
-        <label style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:6px;">
+        <label style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:6px;">
           Unidades de Medida Disponíveis: <span style="font-weight:normal;font-size:12px;">(uma por linha)</span>
         </label>
-        <textarea id="prefUnidades" rows="5" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;font-family:monospace;">${(prefs.unidades || DEFAULT_PREFS.unidades).join('\n')}</textarea>
+        <textarea id="prefUnidades" rows="5" style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);color:var(--sw-text-1);font-size:13px;box-sizing:border-box;font-family:monospace;">${(prefs.unidades || DEFAULT_PREFS.unidades).join('\n')}</textarea>
       </div>
-      <div style="border-top:1px solid #e5e7eb;padding-top:14px;margin-top:14px;margin-bottom:14px;">
-        <h4 style="margin:0 0 10px;font-size:14px;color:#2c3e50;">Transporte padrão</h4>
+      <div style="border-top:1px solid var(--sw-border);padding-top:14px;margin-top:14px;margin-bottom:14px;">
+        <h4 style="margin:0 0 10px;font-size:14px;color:var(--sw-text-1);">Transporte padrão</h4>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
           <div>
-            <label for="prefModFretePadrao" style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:6px;">Modalidade padrão:</label>
-            <select id="prefModFretePadrao" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+            <label for="prefModFretePadrao" style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:6px;">Modalidade padrão:</label>
+            <select id="prefModFretePadrao" style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);color:var(--sw-text-1);font-size:14px;">
               <option value="9" ${String(prefs.transportePadrao?.modFrete ?? 9)==='9'?'selected':''}>9 - Sem transporte</option>
               <option value="0" ${String(prefs.transportePadrao?.modFrete)==='0'?'selected':''}>0 - CIF (Emitente)</option>
               <option value="1" ${String(prefs.transportePadrao?.modFrete)==='1'?'selected':''}>1 - FOB (Destinatário)</option>
@@ -230,12 +230,12 @@ const NFPreferencias = (() => {
             </select>
           </div>
           <div>
-            <label for="prefVolEspeciePadrao" style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:6px;">Espécie padrão:</label>
-            <input id="prefVolEspeciePadrao" type="text" maxlength="60" value="${escAttr(prefs.transportePadrao?.especie)}" placeholder="Ex.: caixa, fardo, outro" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+            <label for="prefVolEspeciePadrao" style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:6px;">Espécie padrão:</label>
+            <input id="prefVolEspeciePadrao" type="text" maxlength="60" value="${escAttr(prefs.transportePadrao?.especie)}" placeholder="Ex.: caixa, fardo, outro" style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);color:var(--sw-text-1);font-size:14px;box-sizing:border-box;">
           </div>
           <div>
-            <label for="prefVolMarcaPadrao" style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:6px;">Marca padrão:</label>
-            <input id="prefVolMarcaPadrao" type="text" maxlength="60" value="${escAttr(prefs.transportePadrao?.marca)}" placeholder="Marca dos volumes" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+            <label for="prefVolMarcaPadrao" style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:6px;">Marca padrão:</label>
+            <input id="prefVolMarcaPadrao" type="text" maxlength="60" value="${escAttr(prefs.transportePadrao?.marca)}" placeholder="Marca dos volumes" style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);color:var(--sw-text-1);font-size:14px;box-sizing:border-box;">
           </div>
         </div>
       </div>
@@ -264,6 +264,19 @@ const NFPreferencias = (() => {
       } catch (e) {
         notifyUser('Erro ao salvar preferências: ' + e.message);
       }
+    });
+    // Persistência imediata ao alterar (unidade padrão / casas decimais) —
+    // salva e já aplica como padrão na emissão, sem exigir o botão Salvar.
+    const _persistirParcial = async (patch, msg) => {
+      const tenantId = _tenantId || (() => { try { return JSON.parse(localStorage.getItem('company_info') || '{}').companyId || ''; } catch(_) { return ''; } })();
+      try { await salvar(tenantId, patch); aplicarNaFormulario(); if (msg) notifyUser(msg); }
+      catch (e) { notifyUser('Erro ao salvar preferências: ' + e.message); }
+    };
+    document.getElementById('prefUnidadePadrao')?.addEventListener('change', (ev) => {
+      _persistirParcial({ unidadePadrao: ev.target.value || 'UN' }, '✅ Unidade padrão: ' + (ev.target.value || 'UN'));
+    });
+    document.getElementById('prefCasasDecimais')?.addEventListener('change', (ev) => {
+      _persistirParcial({ casasDecimaisQtd: parseInt(ev.target.value, 10) || 3 });
     });
   }
 
