@@ -1275,9 +1275,9 @@
                       <label for="nfReboqueUF">UF:</label>
                       <input type="text" id="nfReboqueUF" maxlength="2" placeholder="UF" oninput="this.value=this.value.toUpperCase()">
                     </div>
-                    <div class="form-group" style="max-width:200px;justify-content:end;">
+                    <div class="form-group" style="flex:0 0 auto;justify-content:end;min-width:0;">
                       <label>&nbsp;</label>
-                      <button type="button" id="btnAddReboqueNF" class="btn btn-primary btn-small" onclick="adicionarReboqueNF()">
+                      <button type="button" id="btnAddReboqueNF" class="btn btn-primary btn-small" style="white-space:nowrap;" onclick="adicionarReboqueNF()">
                         <i class="fas fa-plus"></i> Adicionar reboque
                       </button>
                     </div>
@@ -3196,7 +3196,13 @@
         return;
       }
       box.innerHTML = `
-        <table class="nf-card-table nf-volumes-table">
+        <table class="nf-card-table nf-volumes-table" style="table-layout:fixed;width:100%;">
+          <colgroup>
+            <col style="width:64px;">
+            <col>
+            <col style="width:84px;">
+            <col style="width:64px;">
+          </colgroup>
           <thead>
             <tr>
               <th>Reboque</th>
