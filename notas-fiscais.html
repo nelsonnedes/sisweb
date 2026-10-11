@@ -88,7 +88,7 @@
         .tabs {
             display: flex;
             margin-bottom: 20px;
-            border-bottom: 2px solid #ddd;
+            border-bottom: 2px solid var(--sw-border);
             background-color: var(--sw-surface-2) ;
             border-radius: 4px 4px 0 0;
         }
@@ -100,7 +100,7 @@
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
-            color: #6c757d;
+            color: var(--sw-text-2);
             border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
             display: flex;
@@ -115,7 +115,7 @@
         }
 
         .tab:hover {
-            background-color: #e9ecef;
+            background-color: var(--sw-surface-2);
             color: var(--primary-color);
         }
 
@@ -133,7 +133,7 @@
 
         .form-section {
             margin-bottom: 25px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
             padding: 20px;
             background-color: var(--sw-surface-2) ;
@@ -220,14 +220,14 @@
             margin: 0 0 18px;
             padding: 10px;
             background: var(--sw-surface-2) ;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             border-radius: 6px;
         }
 
         .nf-step {
             min-height: 44px;
             padding: 8px 10px;
-            border: 1px solid #d8dee4;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
             background: var(--sw-surface);
             color: var(--primary-color);
@@ -282,7 +282,7 @@
 
         .nf-summary-item span {
             display: block;
-            color: #6c757d;
+            color: var(--sw-text-2);
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
@@ -298,15 +298,15 @@
         }
 
         .nf-summary-status strong {
-            color: #856404;
+            color: var(--sw-warning);
         }
 
         .nf-summary-status.ok strong {
-            color: #155724;
+            color: var(--sw-success);
         }
 
         .nf-summary-status.erro strong {
-            color: #721c24;
+            color: var(--sw-danger);
         }
 
         .nf-step-panel[hidden] {
@@ -335,9 +335,9 @@
 
         .nf-subsection {
             padding: 14px;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             border-radius: 6px;
-            background: #fbfcfd;
+            background: var(--sw-surface);
         }
 
         .nf-subsection h4 {
@@ -351,7 +351,7 @@
 
         .nf-help-text {
             margin: -4px 0 12px;
-            color: #6c757d;
+            color: var(--sw-text-2);
             font-size: 12px;
             line-height: 1.35;
         }
@@ -386,7 +386,7 @@
         }
 
         .nf-volume-list th {
-            color: #495057;
+            color: var(--sw-text-1);
             background: var(--sw-surface-2) ;
             font-weight: 700;
         }
@@ -399,7 +399,7 @@
 
         .nf-volume-empty {
             padding: 10px;
-            color: #6c757d;
+            color: var(--sw-text-2);
             font-size: 12px;
             font-style: italic;
         }
@@ -412,7 +412,7 @@
         }
 
         .nf-review-card {
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             border-radius: 6px;
             background: var(--sw-surface);
             padding: 12px;
@@ -429,7 +429,7 @@
             justify-content: space-between;
             gap: 12px;
             padding: 4px 0;
-            border-bottom: 1px solid #f0f2f4;
+            border-bottom: 1px solid var(--sw-border);
             font-size: 13px;
         }
 
@@ -438,7 +438,7 @@
         }
 
         .nf-review-line strong {
-            color: #495057;
+            color: var(--sw-text-1);
         }
 
         .nf-review-alert {
@@ -450,21 +450,21 @@
         }
 
         .nf-review-alert.warn {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            color: #856404;
+            background: color-mix(in srgb, var(--sw-warning) 18%, transparent);
+            border: 1px solid var(--sw-warning);
+            color: inherit;
         }
 
         .nf-review-alert.erro {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
+            background: color-mix(in srgb, var(--sw-danger) 18%, transparent);
+            border: 1px solid var(--sw-danger);
+            color: inherit;
         }
 
         .nf-review-alert.ok {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
+            background: color-mix(in srgb, var(--sw-success) 18%, transparent);
+            border: 1px solid var(--sw-success);
+            color: inherit;
         }
 
         .nf-form-actions {
@@ -475,7 +475,7 @@
             flex-wrap: wrap;
             padding: 12px 0 0;
             background: var(--sw-surface);
-            border-top: 1px solid #e9ecef;
+            border-top: 1px solid var(--sw-border);
         }
 
         .nf-step-actions {
@@ -540,7 +540,7 @@
         .table-container {
             overflow-x: auto;
             margin-top: 15px;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
         }
 
@@ -554,7 +554,7 @@
         .data-table td {
             padding: 8px 12px;
             text-align: left;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid var(--sw-border);
             font-size: 13px;
         }
 
@@ -585,18 +585,18 @@
         }
 
         .status-emitida {
-            background-color: #d4edda;
-            color: #155724;
+            background: color-mix(in srgb, var(--sw-success) 22%, transparent);
+            color: var(--sw-text-1);
         }
 
         .status-cancelada {
-            background-color: #f8d7da;
-            color: #721c24;
+            background: color-mix(in srgb, var(--sw-danger) 22%, transparent);
+            color: var(--sw-text-1);
         }
 
         .status-rascunho {
-            background-color: #fff3cd;
-            color: #856404;
+            background: color-mix(in srgb, var(--sw-warning) 25%, transparent);
+            color: var(--sw-text-1);
         }
 
         .search-box {
@@ -646,7 +646,7 @@
             padding: 8px;
             background-color: var(--sw-surface-2) ;
             border-radius: 4px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--sw-border);
         }
 
         .item-row:first-child {
@@ -836,7 +836,7 @@
                 max-width: none !important;
                 padding: 0 !important;
                 transform: none !important;
-                color: #5d6d7e !important;
+                color: var(--sw-text-2) !important;
                 font-size: 11px !important;
                 font-weight: 700 !important;
                 line-height: 1.25 !important;
@@ -1339,7 +1339,7 @@
               </div>
 
               <!-- Seção: Produto Cadastrado (fica oculta por padrão) -->
-              <div id="nfSecaoProdutoCadastrado" class="nf-produto-section" style="display:none;background:#f0f4f8;border:1px solid #d0d8e4;border-radius:6px;padding:12px;margin-bottom:12px;">
+              <div id="nfSecaoProdutoCadastrado" class="nf-produto-section" style="display:none;background:var(--sw-surface);border:1px solid var(--sw-border);border-radius:6px;padding:12px;margin-bottom:12px;">
                  <div class="form-row nf-product-entry-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px;">
                   <div class="form-group" style="min-width:220px">
                     <label for="nfProdCadSelect">Produto:</label>
@@ -1388,7 +1388,7 @@
               </div>
 
               <!-- Seção: Produto Manual (visível por padrão) -->
-              <div id="nfSecaoProdutoManual" class="nf-produto-section" style="background:#f0f4f8;border:1px solid #d0d8e4;border-radius:6px;padding:12px;margin-bottom:12px;">
+              <div id="nfSecaoProdutoManual" class="nf-produto-section" style="background:var(--sw-surface);border:1px solid var(--sw-border);border-radius:6px;padding:12px;margin-bottom:12px;">
                  <div class="form-row nf-product-entry-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px;">
                   <div class="form-group" style="min-width:160px">
                     <label for="itemNomeManual">Nome do Produto:</label>
@@ -1477,7 +1477,7 @@
                 </div>
                 <div class="form-group">
                   <label for="nfTotal"><strong>Total NF-e:</strong></label>
-                  <input type="text" id="nfTotal" readonly style="font-weight:700;font-size:16px;color:#155724;">
+                  <input type="text" id="nfTotal" readonly style="font-weight:700;font-size:16px;color:var(--sw-success);">
                 </div>
               </div>
               <div class="form-row">
@@ -1520,7 +1520,7 @@
             </div>
 
             <!-- Senha do certificado (só aparece após a revisão) -->
-            <div id="certSenhaBox" class="form-section nf-step-panel" data-nf-step="revisao" style="display:none;border-color:#ffc107;background:#fffbf0;">
+            <div id="certSenhaBox" class="form-section nf-step-panel" data-nf-step="revisao" style="display:none;border-color:var(--sw-warning);background:color-mix(in srgb, var(--sw-warning) 12%, transparent);">
               <h3><i class="fas fa-lock"></i> Autenticação do Certificado Digital</h3>
               <div class="form-row">
                 <div class="form-group">
@@ -1676,43 +1676,43 @@
           align-items: center;
           justify-content: space-between;
           padding: 14px 18px;
-          background: #f7f9fc;
+          background: var(--sw-surface-2);
           cursor: pointer;
           user-select: none;
           border-bottom: 1px solid transparent;
           transition: background .15s;
           gap: 10px;
         }
-        .cfg-panel-header:hover { background: #eef2f9; }
+        .cfg-panel-header:hover { background: var(--sw-surface); }
         .cfg-panel.open .cfg-panel-header {
-          background: #e8f0fe;
-          border-bottom-color: #c9d9f8;
+          background: var(--sw-surface-2);
+          border-bottom-color: var(--sw-border);
         }
         .cfg-panel-header h3 {
           margin: 0;
           font-size: 14px;
           font-weight: 600;
-          color: #2d3748;
+          color: var(--sw-text-1);
           display: flex;
           align-items: center;
           gap: 8px;
           flex: 1;
         }
-        .cfg-panel-header h3 i { color: #4a6fa5; min-width: 16px; }
+        .cfg-panel-header h3 i { color: var(--sw-info); min-width: 16px; }
         .cfg-panel-badge {
           font-size: 11px;
           padding: 2px 8px;
           border-radius: 20px;
-          background: #dbeafe;
-          color: #1e40af;
+          background: color-mix(in srgb, var(--sw-info) 20%, transparent);
+          color: var(--sw-text-1);
           font-weight: 600;
           white-space: nowrap;
         }
-        .cfg-panel-badge.ok { background: #d1fae5; color: #065f46; }
-        .cfg-panel-badge.warn { background: #fef3c7; color: #92400e; }
+        .cfg-panel-badge.ok { background: color-mix(in srgb, var(--sw-success) 22%, transparent); color: var(--sw-text-1); }
+        .cfg-panel-badge.warn { background: color-mix(in srgb, var(--sw-warning) 25%, transparent); color: var(--sw-text-1); }
         .cfg-panel-chevron {
           font-size: 13px;
-          color: #718096;
+          color: var(--sw-text-2);
           transition: transform .25s;
           flex-shrink: 0;
         }
@@ -1939,11 +1939,11 @@
             </div>
 
             <!-- Token A3 fields -->
-            <div id="certTokenFields" style="display:none;background:#f0f7ff;border:1px solid #b3d7ff;border-radius:6px;padding:14px;margin-bottom:12px;">
+            <div id="certTokenFields" style="display:none;background:color-mix(in srgb, var(--sw-info) 10%, transparent);border:1px solid var(--sw-border);border-radius:6px;padding:14px;margin-bottom:12px;">
               <div style="display:flex;align-items:flex-start;gap:10px;">
-                <i class="fas fa-usb" style="color:#1a73e8;font-size:22px;margin-top:2px;"></i>
+                <i class="fas fa-usb" style="color:var(--sw-info);font-size:22px;margin-top:2px;"></i>
                 <div style="flex:1">
-                  <p style="margin:0 0 8px;font-weight:600;color:#1a73e8;">A3 Token / Cartão — Ponte local necessária</p>
+                  <p style="margin:0 0 8px;font-weight:600;color:var(--sw-info);">A3 Token / Cartão — Ponte local necessária</p>
                   <p style="margin:0 0 12px;font-size:13px;color: var(--sw-text-1) ;">O navegador não acessa a chave privada do token/cartão diretamente.
                   Para emitir NF-e com A3 físico é preciso um aplicativo local homologado, extensão com Native Messaging, PKCS#11/CNG/CAPI ou assinatura remota do fornecedor.</p>
                   <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -2143,7 +2143,7 @@
     <script src="nf-storage.js?v=bafffe512ea4"></script>
     <script src="nf-service.js?v=ab492888118c"></script>
     <!-- Novos módulos Fase 0 -->
-    <script src="nf-naturezas.js?v=633a98d41e77"></script>
+    <script src="nf-naturezas.js?v=05fd0ab378b6"></script>
     <script src="nf-preferencias.js?v=e5580c53ca86"></script>
     <script src="nf-produtos-nf.js?v=1c8f0b89d73f"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2202,7 +2202,7 @@
         panel.className = 'sisweb-operational-state';
         panel.setAttribute('role', 'status');
         panel.setAttribute('aria-live', 'polite');
-        panel.style.cssText = 'margin:16px 0;padding:16px;border:1px solid #dbe4ef;border-left:4px solid #2563eb;border-radius:8px;background:#f8fafc;color:#1f2937;';
+        panel.style.cssText = 'margin:16px 0;padding:16px;border:1px solid var(--sw-border);border-left:4px solid var(--sw-info);border-radius:8px;background:var(--sw-surface);color:var(--sw-text-1);';
         const target = document.querySelector('.container') || document.querySelector('main') || document.body;
         target.prepend(panel);
       }
@@ -2420,21 +2420,21 @@
         if (!el) return;
         if (st.status === 'nao_configurado') {
           el.innerHTML = '⚠️ Nenhum certificado digital configurado';
-          if(al){ al.style.cssText='display:block;background:#fff3cd;color:#856404;border:1px solid #ffc107;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;'; al.textContent='⚠️ Configure o certificado digital para emitir NF-e'; }
+          if(al){ al.style.cssText='display:block;background:color-mix(in srgb, var(--sw-warning) 18%, transparent);color:inherit;border:1px solid var(--sw-warning);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;'; al.textContent='⚠️ Configure o certificado digital para emitir NF-e'; }
           if (badge) { badge.textContent = '⚠️ Não config.'; badge.className = 'cfg-panel-badge warn'; }
         } else if (st.status === 'ponte_local_requerida' || st.status === 'nuvem_nao_integrada') {
           el.innerHTML = `⚠️ ${st.msg}`;
-          if(al){ al.style.cssText='display:block;background:#fff3cd;color:#856404;border:1px solid #ffc107;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;'; al.textContent=`⚠️ ${st.msg}`; }
+          if(al){ al.style.cssText='display:block;background:color-mix(in srgb, var(--sw-warning) 18%, transparent);color:inherit;border:1px solid var(--sw-warning);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;'; al.textContent=`⚠️ ${st.msg}`; }
           if(btnRem) btnRem.style.display='inline-flex';
           if (badge) { badge.textContent = '⚠️ Requer integração'; badge.className = 'cfg-panel-badge warn'; }
         } else if (!st.ok) {
           el.innerHTML = `❌ ${st.msg}`;
-          if(al){ al.style.cssText='display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;'; al.textContent=`❌ ${st.msg}`; }
+          if(al){ al.style.cssText='display:block;background:color-mix(in srgb, var(--sw-danger) 18%, transparent);color:inherit;border:1px solid var(--sw-danger);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;'; al.textContent=`❌ ${st.msg}`; }
           if(btnRem) btnRem.style.display='inline-flex';
           if (badge) { badge.textContent = '❌ Inválido'; badge.className = 'cfg-panel-badge warn'; }
         } else {
           el.innerHTML = `✅ ${st.msg}${st.alerta ? ' ⚠️' : ''}`;
-          if(al && st.alerta){ al.style.cssText='display:block;background:#fff3cd;color:#856404;border:1px solid #ffc107;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;'; al.textContent=`⚠️ ${st.msg}`; }
+          if(al && st.alerta){ al.style.cssText='display:block;background:color-mix(in srgb, var(--sw-warning) 18%, transparent);color:inherit;border:1px solid var(--sw-warning);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;'; al.textContent=`⚠️ ${st.msg}`; }
           if(btnRem) btnRem.style.display='inline-flex';
           if (badge) { badge.textContent = st.alerta ? '⚠️ Atenção' : '✅ Configurado'; badge.className = st.alerta ? 'cfg-panel-badge warn' : 'cfg-panel-badge ok'; }
         }
@@ -2458,21 +2458,21 @@
       const btn = document.getElementById('btnDetectarToken');
       const bridgeUrl = document.getElementById('certTokenBridgeUrl')?.value?.trim() || 'http://127.0.0.1:37773';
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...'; }
-      if (statusEl) statusEl.innerHTML = '<span style="color:#1a73e8;"><i class="fas fa-spinner fa-spin"></i> Verificando ponte local de assinatura...</span>';
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--sw-info);"><i class="fas fa-spinner fa-spin"></i> Verificando ponte local de assinatura...</span>';
 
       try {
         const result = await window.NFCertService.verificarPonteA3Local(bridgeUrl);
         if (result && result.ok) {
           if (statusEl) statusEl.innerHTML = `
-            <div style="background:#d4edda;color:#155724;padding:10px;border-radius:4px;border:1px solid #c3e6cb;">
+            <div style="background:color-mix(in srgb, var(--sw-success) 18%, transparent);color:inherit;padding:10px;border-radius:4px;border:1px solid var(--sw-success);">
               ✅ Ponte local respondeu em <strong>${bridgeUrl}</strong>. O próximo passo é homologar a assinatura XML A3 por esta ponte.
             </div>`;
         } else {
-          if (statusEl) statusEl.innerHTML = `<div style="background:#fff3cd;color:#856404;padding:10px;border-radius:4px;border:1px solid #ffc107;">&#9888;&#65039; Nenhuma ponte local respondeu em ${bridgeUrl}. Confirme se o aplicativo local do Sisweb/fornecedor está instalado, se o token ou cartão está conectado e se o middleware do certificado está funcionando.</div>`;
+          if (statusEl) statusEl.innerHTML = `<div style="background:color-mix(in srgb, var(--sw-warning) 18%, transparent);color:inherit;padding:10px;border-radius:4px;border:1px solid var(--sw-warning);">&#9888;&#65039; Nenhuma ponte local respondeu em ${bridgeUrl}. Confirme se o aplicativo local do Sisweb/fornecedor está instalado, se o token ou cartão está conectado e se o middleware do certificado está funcionando.</div>`;
           document.getElementById('certTokenManualFields').style.display = '';
         }
       } catch(e) {
-        if (statusEl) statusEl.innerHTML = `<div style="background:#f8d7da;color:#721c24;padding:10px;border-radius:4px;">&#10060; Erro na detecção: ${e.message}</div>`;
+        if (statusEl) statusEl.innerHTML = `<div style="background:color-mix(in srgb, var(--sw-danger) 18%, transparent);color:inherit;padding:10px;border-radius:4px;">&#10060; Erro na detecção: ${e.message}</div>`;
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plug"></i> Verificar Ponte Local'; }
       }
@@ -2499,7 +2499,7 @@
         localStorage.setItem(`nf_a3_bridge_${tid}`, JSON.stringify({ bridgeUrl, middleware, updatedAt: new Date().toISOString() }));
         await window.NFCertService.salvarReferenciaA3Token(tid, uid, { bridgeUrl, middleware });
         const statusEl = document.getElementById('certTokenStatus');
-        if (statusEl) statusEl.innerHTML = '<div style="background:#fff3cd;color:#856404;padding:8px;border-radius:4px;border:1px solid #ffc107;">⚠️ Tipo A3 físico salvo. A emissão ficará bloqueada até existir ponte local homologada para assinatura XML.</div>';
+        if (statusEl) statusEl.innerHTML = '<div style="background:color-mix(in srgb, var(--sw-warning) 18%, transparent);color:inherit;padding:8px;border-radius:4px;border:1px solid var(--sw-warning);">⚠️ Tipo A3 físico salvo. A emissão ficará bloqueada até existir ponte local homologada para assinatura XML.</div>';
         verificarStatusCert();
         window.__nfTokenSaving = false;
       } catch(e) { notifyUser('Erro ao salvar: ' + e.message); window.__nfTokenSaving = false; }
@@ -2582,13 +2582,13 @@
       try {
         const meta = await window.NFCertService.configurarA3Nuvem(tid, uid, provedor, { clientId });
         if (al) {
-          al.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;';
+          al.style.cssText = 'display:block;background:color-mix(in srgb, var(--sw-success) 18%, transparent);color:inherit;border:1px solid var(--sw-success);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;';
           al.textContent = `✅ ${PROVEDOR_INFO[provedor].nome} conectado! Titular: ${meta.titular || 'OK'}`;
         }
         verificarStatusCert();
       } catch(e) {
         if (al) {
-          al.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;';
+          al.style.cssText = 'display:block;background:color-mix(in srgb, var(--sw-danger) 18%, transparent);color:inherit;border:1px solid var(--sw-danger);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;';
           al.textContent = '❌ Erro ao conectar: ' + e.message;
         }
         notifyUser('Erro ao conectar A3 Nuvem: ' + e.message);
@@ -2722,7 +2722,7 @@
         // Feedback visual na aba
         const certAlerta = document.getElementById('certAlerta');
         if (certAlerta) {
-          certAlerta.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;';
+          certAlerta.style.cssText = 'display:block;background:color-mix(in srgb, var(--sw-success) 18%, transparent);color:inherit;border:1px solid var(--sw-success);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-weight:600;';
           certAlerta.textContent = '✅ Configurações salvas com sucesso! Dados sincronizados — disponíveis em qualquer PC/dispositivo.';
           setTimeout(() => { if(certAlerta) certAlerta.style.display='none'; }, 7000);
         }
@@ -2920,7 +2920,7 @@
         modal.className = 'modal';
         modal.innerHTML = `
           <div class="modal-content" style="max-width:760px">
-            <div class="modal-header" style="background:var(--sw-text-1);color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;">
+            <div class="modal-header" style="background:#2c3e50;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;">
               <h3 style="margin:0;color:#fff"><i class="fas fa-edit"></i> Editar item da NF-e</h3>
               <button type="button" class="close-modal" onclick="fecharModalEditarItemNF()">&times;</button>
             </div>
@@ -3011,9 +3011,9 @@
       const el = document.getElementById('emissaoAlerta');
       if (!el) return;
       const estilos = {
-        erro: 'background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;',
-        warn: 'background:#fff3cd;color:#856404;border:1px solid #ffc107;',
-        ok:   'background:#d4edda;color:#155724;border:1px solid #c3e6cb;',
+        erro: 'background:color-mix(in srgb, var(--sw-danger) 18%, transparent);color:inherit;border:1px solid var(--sw-danger);',
+        warn: 'background:color-mix(in srgb, var(--sw-warning) 18%, transparent);color:inherit;border:1px solid var(--sw-warning);',
+        ok:   'background:color-mix(in srgb, var(--sw-success) 18%, transparent);color:inherit;border:1px solid var(--sw-success);',
       };
       el.style.cssText = `display:block;padding:10px 14px;border-radius:6px;margin-bottom:14px;font-weight:600;${estilos[tipo]||estilos.erro}`;
       el.textContent = msg;
@@ -3808,15 +3808,15 @@
         return;
       }
       const statusMap = {
-        rascunho:   ['🟡 Rascunho',   '#856404','#fff3cd'],
-        aguardando: ['⏳ Aguardando', '#0c5460','#d1ecf1'],
-        autorizada: ['✅ Autorizada', '#155724','#d4edda'],
-        rejeitada:  ['❌ Rejeitada',  '#721c24','#f8d7da'],
-        cancelada:  ['🚫 Cancelada',  '#721c24','#f8d7da'],
-        erro_envio: ['⚠️ Erro',       '#856404','#fff3cd'],
+        rascunho:   ['🟡 Rascunho', 'warning'],
+        aguardando: ['⏳ Aguardando', 'info'],
+        autorizada: ['✅ Autorizada', 'success'],
+        rejeitada:  ['❌ Rejeitada',  'danger'],
+        cancelada:  ['🚫 Cancelada',  'danger'],
+        erro_envio: ['⚠️ Erro',       'warning'],
       };
       tbody.innerHTML = notas.map(n => {
-        const [label, cor, bg] = statusMap[n.status] || ['❓ '+n.status,'#333','#eee'];
+        const [label, tok] = statusMap[n.status] || ['❓ '+n.status, 'info'];
         const val = n.total?.vNF || n.valorTotal || 0;
         const chave = n.chave ? n.chave.replace(/(\d{4})/g,'$1 ').trim().slice(0,24)+'...' : '—';
         const prot  = n.nProt ? ` | Prot: ${n.nProt}` : '';
@@ -3826,7 +3826,7 @@
           <td data-label="Destinatário">${n.dest?.nome || '—'}</td>
           <td data-label="Valor Total" style="text-align:right;font-weight:600">${fmtMoedaForm(val)}</td>
           <td data-label="Chave / Protocolo" style="font-family:monospace;font-size:11px">${chave}${prot}</td>
-          <td data-label="Status"><span style="padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:${cor};background:${bg};">${label}</span></td>
+          <td data-label="Status"><span style="padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:var(--sw-text-1);background:color-mix(in srgb, var(--sw-${tok}) 25%, transparent);border:1px solid var(--sw-${tok});">${label}</span></td>
           <td data-label="Ações" class="nf-actions-cell">
             ${window.NFDanfe ? `<button class="btn btn-primary btn-small" onclick="abrirDANFENota('${n.id}')" title="DANFE"><i class="fas fa-file-pdf"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-warning btn-small" onclick="abrirModalCartaCorrecaoNF('${n.id}','${n.chave || ''}')" title="Carta de Correção"><i class="fas fa-file-signature"></i></button>` : ''}
@@ -3955,13 +3955,13 @@
       const el = document.getElementById('nfFiscalEventMsg');
       if (!el) return;
       const cores = {
-        ok: ['#155724', '#d4edda'],
-        warn: ['#856404', '#fff3cd'],
-        erro: ['#721c24', '#f8d7da'],
+        ok: ['success', 'ok'],
+        warn: ['warning', 'warn'],
+        erro: ['danger', 'erro'],
       };
-      const [cor, bg] = cores[tipo] || cores.warn;
+      const [tok, cls] = cores[tipo] || cores.warn;
       el.textContent = msg;
-      el.style.cssText = `display:block;margin-top:10px;padding:10px;border-radius:6px;color:${cor};background:${bg};font-size:13px;`;
+      el.style.cssText = `display:block;margin-top:10px;padding:10px;border-radius:6px;color:var(--sw-text-1);background:color-mix(in srgb, var(--sw-${tok}) 18%, transparent);border:1px solid var(--sw-${tok});font-size:13px;`;
     }
 
     function ensureEventoFiscalModal() {
@@ -3972,7 +3972,7 @@
       modal.className = 'modal';
       modal.innerHTML = `
         <div class="modal-content" style="max-width:760px">
-          <div class="modal-header" style="background:var(--sw-text-1);color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;">
+          <div class="modal-header" style="background:#2c3e50;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;">
             <h3 id="nfFiscalEventTitle" style="margin:0;color:#fff"></h3>
             <button type="button" class="close-modal" onclick="fecharModalEventoFiscalNF()">&times;</button>
           </div>
@@ -4466,18 +4466,19 @@
       container.innerHTML = `
         <table class="nf-card-table nf-naturezas-table" style="width:100%;border-collapse:collapse;font-size:13px;">
           <thead>
-            <tr style="background:#f0f4f8;">
-              <th style="padding:8px;text-align:left;border-bottom:2px solid #ddd;">Descrição</th>
-              <th style="padding:8px;text-align:center;border-bottom:2px solid #ddd;">CFOP</th>
-              <th style="padding:8px;text-align:center;border-bottom:2px solid #ddd;">Tipo</th>
-              <th style="padding:8px;text-align:center;border-bottom:2px solid #ddd;">CSOSN</th>
-              <th style="padding:8px;text-align:center;border-bottom:2px solid #ddd;">Ativo</th>
-              <th style="padding:8px;text-align:center;border-bottom:2px solid #ddd;">Ações</th>
+            <tr style="background:var(--sw-surface-2);">
+              <th style="padding:8px;text-align:left;border-bottom:2px solid var(--sw-border);">Descrição</th>
+              <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">CFOP</th>
+              <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">Tipo</th>
+              <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">CSOSN</th>
+              <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">CFOP</th>
+              <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">Ativo</th>
+              <th style="padding:8px;text-align:center;border-bottom:2px solid var(--sw-border);">Ações</th>
             </tr>
           </thead>
           <tbody>
             ${naturezas.map(n => `
-              <tr style="border-bottom:1px solid #eee;">
+              <tr style="border-bottom:1px solid var(--sw-border);">
                 <td data-label="Descrição" style="padding:8px;">${n.descricao}</td>
                 <td data-label="CFOP" style="padding:8px;text-align:center;font-family:monospace;">${n.cfopPadrao || '—'}</td>
                 <td data-label="Tipo" style="padding:8px;text-align:center;">${n.tipo === 'saida' ? 'Saída' : 'Entrada'}</td>
@@ -4724,7 +4725,7 @@
             }});
             const alerta = document.getElementById('certAlerta');
             if (alerta) {
-              alerta.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:10px 14px;border-radius:6px;margin-bottom:16px;font-weight:600;';
+              alerta.style.cssText = 'display:block;background:color-mix(in srgb, var(--sw-success) 18%, transparent);color:inherit;border:1px solid var(--sw-success);padding:10px 14px;border-radius:6px;margin-bottom:16px;font-weight:600;';
               alerta.textContent = `✅ Dados carregados de company.html: ${companyData.razaoSocial || companyData.name || cnpjRaw}. Clique em Salvar para persistir.`;
               setTimeout(() => { alerta.style.display = 'none'; }, 7000);
             }

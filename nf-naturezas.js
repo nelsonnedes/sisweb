@@ -171,7 +171,7 @@ const NFNaturezas = (() => {
       'background:rgba(0,0,0,0.55);align-items:center;justify-content:center;',
     ].join('');
     el.innerHTML = `
-      <div style="background:#fff;border-radius:8px;width:90%;max-width:560px;box-shadow:0 8px 32px rgba(0,0,0,0.25);overflow:hidden;">
+      <div style="background:var(--sw-surface);border-radius:8px;width:90%;max-width:560px;box-shadow:0 8px 32px rgba(0,0,0,0.25);overflow:hidden;border:1px solid var(--sw-border);">
         <div style="background:linear-gradient(135deg,#2c3e50,#34495e);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
           <h3 style="margin:0;color:#fff;font-size:16px;display:flex;align-items:center;gap:8px;">
             <i class="fas fa-file-alt"></i> Natureza da Operação
@@ -181,26 +181,26 @@ const NFNaturezas = (() => {
         <div style="padding:24px;">
           <input type="hidden" id="natOpId">
           <div style="margin-bottom:14px;">
-            <label style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:4px;">Descrição: *</label>
+            <label style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:4px;">Descrição: *</label>
             <input type="text" id="natOpDescricao" placeholder="Ex: Venda de Mercadoria" maxlength="60"
-              style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+              style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;font-size:14px;box-sizing:border-box;background:var(--sw-surface-2);color:var(--sw-text-1);">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
-              <label style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:4px;">CFOP Padrão:</label>
+              <label style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:4px;">CFOP Padrão:</label>
               <input type="text" id="natOpCFOP" placeholder="5102" maxlength="4"
-                style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+                style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;font-size:14px;box-sizing:border-box;background:var(--sw-surface-2);color:var(--sw-text-1);">
             </div>
             <div>
-              <label style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:4px;">Tipo:</label>
-              <select id="natOpTipo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+              <label style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:4px;">Tipo:</label>
+              <select id="natOpTipo" style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;font-size:14px;box-sizing:border-box;background:var(--sw-surface-2);color:var(--sw-text-1);">
                 <option value="saida">Saída</option>
                 <option value="entrada">Entrada</option>
               </select>
             </div>
             <div>
-              <label style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:4px;">CSOSN/CST:</label>
-              <select id="natOpCSOSN" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+              <label style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:4px;">CSOSN/CST:</label>
+              <select id="natOpCSOSN" style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;font-size:14px;box-sizing:border-box;background:var(--sw-surface-2);color:var(--sw-text-1);">
                 <option value="102">102 – SN sem crédito</option>
                 <option value="101">101 – SN com crédito</option>
                 <option value="400">400 – Não tributada SN</option>
@@ -213,9 +213,9 @@ const NFNaturezas = (() => {
             </div>
           </div>
           <div style="margin-bottom:6px;">
-            <label style="font-weight:600;font-size:13px;color:#2c3e50;display:block;margin-bottom:4px;">Observações:</label>
+            <label style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:4px;">Observações:</label>
             <textarea id="natOpNotas" rows="2" maxlength="200" placeholder="Observações opcionais..."
-              style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;"></textarea>
+              style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;background:var(--sw-surface-2);color:var(--sw-text-1);"></textarea>
           </div>
         </div>
         <div style="padding:0 24px 20px;display:flex;gap:10px;justify-content:flex-end;">
