@@ -224,7 +224,7 @@ const NFValidator = (() => {
     if (!ide.serie) erros.push('Série da NF-e obrigatória');
     if (!ide.dhEmi) erros.push('Data/hora de emissão obrigatória');
     if (![55, 65].includes(parseInt(ide.mod))) erros.push('Modelo inválido (deve ser 55 ou 65)');
-    if (![1, 2].includes(parseInt(ide.tpNF)))  erros.push('Tipo de operação inválido (1=Entrada, 2=Saída)');
+    if (![0, 1].includes(parseInt(ide.tpNF)))  erros.push('Tipo de operação inválido (0=Entrada, 1=Saída)');
     if (![1, 2].includes(parseInt(ide.tpAmb))) erros.push('Ambiente inválido (1=Produção, 2=Homologação)');
     if (!validarCodigoMunicipio(ide.cMunFG)) erros.push('Código IBGE do município de ocorrência obrigatório/inválido');
     return erros.length ? fail(erros) : ok();

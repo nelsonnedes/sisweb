@@ -1172,8 +1172,8 @@
                   <label for="nfTipo">Tipo de Operação:</label>
                   <select id="nfTipo" required>
                     <option value="">Selecione...</option>
-                    <option value="2" selected>2 — Saída</option>
-                    <option value="1">1 — Entrada</option>
+                    <option value="1" selected>1 — Saída</option>
+                    <option value="0">0 — Entrada</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -3769,8 +3769,9 @@
       const total = calcularTotalFormNF();
       const tPag = options.rascunho ? '90' : (document.getElementById('nfFormaPag')?.value || '01');
       const vPag = options.rascunho ? 0 : total.total;
+      const tpNFRaw = parseInt(document.getElementById('nfTipo')?.value, 10);
       return {
-        tpNF: parseInt(document.getElementById('nfTipo')?.value, 10) || 2,
+        tpNF: Number.isFinite(tpNFRaw) ? tpNFRaw : 1,
         serie: document.getElementById('nfSerie')?.value || nfeCfg.serie || '1',
         dhEmi,
         natOp: document.getElementById('nfNatOp')?.value || nfeCfg.naturezaOperacao || 'Venda de Mercadoria',
@@ -4724,7 +4725,7 @@ renderizarVolumesNF();
         set('nfNumero',    nf.numero || ide.nNF || '');
         set('nfSerie',     ide.serie || '1');
         set('nfDataEmissao', (nf.dataEmissao || ide.dhEmi || '').slice(0,10));
-        set('nfTipo',      ide.tpNF || '2');
+        set('nfTipo',      ide.tpNF != null ? String(ide.tpNF) : '1');
         set('nfNatOp',     ide.natOp || 'Venda de Mercadoria');
         // Sincronizar select visível de Natureza (era ignorado na edição)
         try {

@@ -1174,6 +1174,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`, `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`.
 - **Gates:** `npm test` 1137/0/1; deploy 6 functions + hosting OK.
 
+## Sessao 2026-10-11 — cStat 225: tpNF 0/1 (leiaute 4.00)
+
+- **cStat 225** "Falha no Schema XML (Elemento: infNFe/ide/tpNF)": no leiaute **4.00**, `tpNF` e **0=Entrada / 1=Saida** (a convencao antiga 1/2 foi descontinuada). Confirmado no XSD oficial (`tiposBasico`/`leiauteNFe` do PL_010f).
+- **Fix (padronizacao 0/1)**: select `nfTipo` (0=Entrada/1=Saida, default 1), `coletarFormDataNF`, `nf-service.buildNFeFromForm` (`?? 1`), `nf-xml-builder` (`?? 1`), `nf-validator.validarIde` (`[0,1]`). DANFE ja usava 0/1.
+- **Armadilha:** usar `|| 1` mascara o valor 0 (Entrada) — usar `?? 1` para preservar 0.
+- **Arquivos:** `notas-fiscais.html`, `nf-service.js`, `nf-xml-builder.js`, `nf-validator.js`. Hosting publicado.
+- **Gates:** `npm test` 1138/0/1; HTML 0 erros.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

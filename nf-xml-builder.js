@@ -96,7 +96,7 @@ const NFXmlBuilder = (() => {
       <serie>${ide.serie || 1}</serie>
       <nNF>${ide.nNF || 1}</nNF>
       <dhEmi>${dhEmi}</dhEmi>
-      <tpNF>${ide.tpNF || 1}</tpNF>
+      <tpNF>${ide.tpNF ?? 1}</tpNF>
       <idDest>${ide.idDest || 1}</idDest>
       <cMunFG>${requireCodigoMunicipio(ide.cMunFG, 'Código IBGE do município de ocorrência')}</cMunFG>
       <tpImp>${ide.tpImp || 1}</tpImp>
@@ -557,7 +557,7 @@ const NFXmlBuilder = (() => {
     ide.ufEmit = emit?.endereco?.uf || 'SP';
     ide.mod    = ide.mod    || 55;
     ide.tpAmb  = ide.tpAmb  || 2; // homologação por padrão
-    ide.tpNF   = ide.tpNF   || 1; // saída
+    ide.tpNF   = ide.tpNF   ?? 1; // 4.00: 0=Entrada, 1=Saída
 
     const chaveInfo = gerarChave(emit, ide);
     ide.cMunFG = requireCodigoMunicipio(

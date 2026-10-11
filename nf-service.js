@@ -148,7 +148,7 @@ const NFService = (() => {
         serie,
         nNF:        numero,
         dhEmi,
-        tpNF:       formData.tpNF   || 1, // 1=saída
+        tpNF:       formData.tpNF ?? 1, // 4.00: 0=Entrada, 1=Saída
         idDest:     formData.idDest || 1,
         cMunFG:     emp.endereco?.codigoMunicipio || '',
         tpImp:      nfeCfg.tpImp   || '1',
