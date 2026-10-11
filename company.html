@@ -42,7 +42,7 @@
         })();
     </script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=f7f27d3a98fa"></script>
+<script src="menu-component.js?v=1148ebbe47e4"></script>
     <!-- Firebase via módulo compartilhado (singleton) -->
 
     <script type="module">
@@ -910,7 +910,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     </div>
 
     <script src="auth.js?v=4173d8da9343"></script>
-    <script src="cities-loader.js?v=6daa9ba1b097"></script>
+    <script src="cities-loader.js?v=b537d6225e16"></script>
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
     <script type="module" src="database-utils.js?v=0ed433ed439a"></script>
@@ -1840,6 +1840,12 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 return [];
             }
             try {
+                // Fase A IBGE: serviço único (cache → API → snapshot offline)
+                if (window.MunicipiosIBGE && typeof window.MunicipiosIBGE.listar === 'function') {
+                    const items = await window.MunicipiosIBGE.listar(uf);
+                    console.log(`[loadCitiesFromIBGE] Cidades carregadas para ${uf}:`, items.length);
+                    return items.map(c => c.nome);
+                }
                 const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
                 if (!response.ok) {
                     const errorText = await response.text();

@@ -334,11 +334,13 @@ async function loadCities(uf, selectedCity = null) {
     }
     
     elements.citySelect.innerHTML = '<option value="">Carregando...</option>';
-    
+
     try {
-        const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
-        const cities = await response.json();
-        
+        // Fase A IBGE: serviço único (cache → API → snapshot offline)
+        const cities = (window.MunicipiosIBGE && typeof window.MunicipiosIBGE.listar === 'function')
+            ? await window.MunicipiosIBGE.listar(uf)
+            : await (await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`)).json();
+
         elements.citySelect.innerHTML = '<option value="">Selecione a cidade</option>';
         cities.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(city => {
             const option = document.createElement('option');

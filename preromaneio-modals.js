@@ -466,10 +466,11 @@ async function updateClientCities() {
     citySelect.innerHTML = '<option value="">Carregando cidades...</option>';
 
     try {
-        const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const cities = await response.json();
-        const cityNames = cities.map(city => city.nome).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        // Fase A IBGE: serviço único (cache → API → snapshot offline)
+        const cities = (window.MunicipiosIBGE && typeof window.MunicipiosIBGE.listar === 'function')
+            ? await window.MunicipiosIBGE.listar(selectedState)
+            : await (await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedState}/municipios`)).json();
+        const cityNames = cities.map(city => city.nome || city).sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
         citySelect.innerHTML = '<option value="">Selecione a cidade</option>';
         cityNames.forEach(city => {
             const option = document.createElement('option');

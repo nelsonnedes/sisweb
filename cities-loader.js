@@ -103,6 +103,12 @@ async function obterCodigoMunicipioIBGE(uf, nome) {
     const municipio = String(nome || '').trim();
     if (!estado || !municipio) return '';
 
+    // Fase A IBGE: serviço único (cache → API → snapshot offline)
+    try {
+        if (window.MunicipiosIBGE && typeof window.MunicipiosIBGE.resolverCodigo === 'function') {
+            return await window.MunicipiosIBGE.resolverCodigo(estado, municipio);
+        }
+    } catch (_) {}
     try {
         const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estado}/municipios`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

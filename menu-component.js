@@ -21,6 +21,21 @@
     }
     ensureNotificationService();
 
+    // Fase A IBGE (2026-10-11): serviço único de municípios em todas as páginas.
+    var MUNICIPIOS_VERSION = '2026-10-11-fase-a';
+    function ensureMunicipiosIBGE() {
+        try {
+            if (window.MunicipiosIBGE && typeof window.MunicipiosIBGE.listar === 'function') return;
+            if (document.querySelector('script[data-sw-municipios]')) return;
+            var s = document.createElement('script');
+            s.src = resolveRootAsset('js/municipios-ibge.js') + '?v=' + MUNICIPIOS_VERSION;
+            s.defer = true;
+            s.setAttribute('data-sw-municipios', '1');
+            document.head.appendChild(s);
+        } catch (e) {}
+    }
+    ensureMunicipiosIBGE();
+
     // Defesa Brave/Shields (2026-10-10): se o Firebase não sinalizar prontidão,
     // avisa uma vez em vez de deixar a página em "offline" silencioso.
     function watchFirebaseReadiness() {
