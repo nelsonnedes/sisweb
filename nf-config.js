@@ -98,6 +98,10 @@ const NFConfigService = (() => {
         pIS: 0,           // % alíquota IS
         adRemIS: 0,       // alíquota IS por valor (opcional)
       },
+      // Lei da Transparência (12.741/2012) — aproximação de tributos (IBPT)
+      ibpt: {
+        federal: 0, estadual: 0, municipal: 0, fonte: 'IBPT',
+      },
     },
     certificado: {
       tipo: null,      // 'A1' | 'A3' | 'nuvem'

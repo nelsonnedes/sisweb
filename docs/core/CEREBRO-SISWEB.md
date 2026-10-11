@@ -1124,6 +1124,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Pendente**: o 999 indica que a resposta da consulta nao esta sendo parseada (endpoint/envelope) — aguardando o body do proximo log para corrigir o path/SOAP definitivo.
 - **Gates:** `npm test` 1136/0/1; deploy nf_consultarNFe + hosting OK.
 
+## Sessao 2026-10-11 — SEFAZ SOAP action (999), IE destinatario, reboques idempotente, IBPT
+
+- **cStat 999 = SOAP Fault** da SEFAZ: *"Unable to handle request without a valid action parameter"* → faltava a `action` no Content-Type (SOAP 1.2). Fix: `SOAP_ACTION_METHOD` + `soapActionFor(servico)` em `functions/nf-functions.js`; `postSefaz(..., action)` agora envia `Content-Type: application/soap+xml; charset=utf-8; action="http://www.portalfiscal.inf.br/nfe/wsdl/<servico>/<metodo>"`. Aplicado em consulta/autorizacao/evento/inutilizacao. (MDF-e pode ter o mesmo problema.)
+- **IE do destinatario no DANFE**: `nfFiltrarClientesSelect` nao colocava a IE no dataset da `<option>` → `montarDestFromForm` lia vazio. Fix: `opt.dataset.ie = c.ie|inscricaoEstadual|...`. Com IE + CNPJ, `indIEDest=1` e o XML emite `<IE>`.
+- **Reboques duplicados em infCpl**: ao reeditar rascunho, `nfInputAdic` ja continha o bloco gerado → duplicava. Fix: `montarInfoAdicionalNF` remove blocos gerados (Reboques e texto IBPT) antes de reconstruir (idempotente).
+- **IBPT / Lei da Transparencia**: config `impostos.ibpt {federal,estadual,municipal,fonte}` + UI na Configuracao; `montarIBPTTextoNF()` gera "Total aproximado de tributos: ... Fonte: IBPT." no infCpl; `nf-service` usa o % IBPT como `<vTotTrib>` quando configurado. DANFE passa a nao exibir "Pagamento:" quando `tPag 90` (sem pagamento).
+- **Pendente de decisao:** volume `qVol` (DANFE "TRANSPORTADOR/VOLUMES :: QUANTIDADE") — usuario espera refletir a quantidade total dos itens; hoje e o numero de volumes digitado.
+- **Gates:** `npm test` 1136/0/1; HTML 0 erros; deploy 5 functions + hosting OK.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

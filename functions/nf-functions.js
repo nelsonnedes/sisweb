@@ -761,6 +761,23 @@ ${signedInfo}\
 }
 
 // ─── Wrapper SOAP para webservices SEFAZ ─────────────────────────────────
+// SOAP 1.2 exige a "action" no Content-Type; a SEFAZ rejeita sem ela
+// ("Unable to handle request without a valid action parameter").
+const SOAP_ACTION_METHOD = {
+  NfeConsultaProtocolo4: 'nfeConsultaNF',
+  NFeAutorizacao4:       'nfeAutorizacaoLote',
+  NfeAutorizacao4:       'nfeAutorizacaoLote',
+  NFeRetAutorizacao4:    'nfeRetAutorizacaoLote',
+  NFeRecepcaoEvento4:    'nfeRecepcaoEvento',
+  NfeRecepcaoEvento4:    'nfeRecepcaoEvento',
+  NFeInutilizacao4:      'nfeInutilizacaoNF',
+  NfeInutilizacao4:      'nfeInutilizacaoNF',
+};
+function soapActionFor(servico) {
+  const method = SOAP_ACTION_METHOD[servico];
+  return method ? `http://www.portalfiscal.inf.br/nfe/wsdl/${servico}/${method}` : '';
+}
+
 function buildSoapEnvelope(servico, xmlNFe, versaoQrNfe = '4.00', cUF = '35') {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:nfe="http://www.portalfiscal.inf.br/nfe/wsdl/${servico}">
@@ -772,7 +789,7 @@ function buildSoapEnvelope(servico, xmlNFe, versaoQrNfe = '4.00', cUF = '35') {
 }
 
 // ─── HTTP SOAP POST para SEFAZ ────────────────────────────────────────────
-async function postSefaz(url, soapBody, pfxBuffer, pfxSenha) {
+async function postSefaz(url, soapBody, pfxBuffer, pfxSenha, action = '') {
   const https = require('https');
   const { URL } = require('url');
 
@@ -814,7 +831,7 @@ async function postSefaz(url, soapBody, pfxBuffer, pfxSenha) {
         path: parsed.pathname,
         method: 'POST',
         headers: {
-          'Content-Type': 'application/soap+xml; charset=utf-8',
+          'Content-Type': action ? `application/soap+xml; charset=utf-8; action="${action}"` : 'application/soap+xml; charset=utf-8',
           'Content-Length': Buffer.byteLength(soapBody, 'utf8'),
         },
         key:  privKeyPem,
@@ -969,7 +986,7 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
     const soap = buildSoapEnvelope('NFeAutorizacao4', loteXml, '4.00', cUF);
 
     functions.logger.info(`[nf_enviarSEFAZ] Enviando NF ${nfId} | UF=${ufEmit} | Amb=${env} | URL=${url}`);
-    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1);
+    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeAutorizacao4'));
     const ret  = parseSefazResponse(resp.body);
 
     functions.logger.info(`[nf_enviarSEFAZ] Retorno cStat=${ret.cStat} — ${ret.xMotivo}`);
@@ -1097,7 +1114,7 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
     const cUF = resolveCUF({ chave });
     const url  = getEndpoint('NfeConsultaProtocolo4', env);
     const soap = buildSoapEnvelope('NfeConsultaProtocolo4', consultaXml, '4.00', cUF);
-    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1);
+    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NfeConsultaProtocolo4'));
     const ret  = parseSefazResponse(resp.body);
 
     if (ret.cStat === '999') {
@@ -1173,7 +1190,7 @@ exports.nf_cancelarNFe = onFiscalCall(async (data, context) => {
     const eventoAssinado = assinarXMLcomForge(eventoXml, pfxBuffer, senhaA1, { tagName: 'infEvento', idPrefix: 'ID' });
     const url  = getEndpoint('NFeRecepcaoEvento4', env);
     const soap = buildSoapEnvelope('NFeRecepcaoEvento4', eventoAssinado, '1.00', cUF);
-    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1);
+    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeRecepcaoEvento4'));
     const ret  = parseSefazResponse(resp.body, ['135', '136', '155']);
 
     // Atualizar status no Firebase
@@ -1273,7 +1290,7 @@ exports.nf_cartaCorrecaoNFe = onFiscalCall(async (data, context) => {
     const eventoAssinado = assinarXMLcomForge(eventoXml, pfxBuffer, senhaA1, { tagName: 'infEvento', idPrefix: 'ID' });
     const url  = getEndpoint('NFeRecepcaoEvento4', env);
     const soap = buildSoapEnvelope('NFeRecepcaoEvento4', eventoAssinado, '1.00', cUF);
-    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1);
+    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeRecepcaoEvento4'));
     const ret  = parseSefazResponse(resp.body, ['135', '136']);
     const nowIso = new Date().toISOString();
     const eventPayload = {
@@ -1389,7 +1406,7 @@ exports.nf_inutilizarNumeracao = onFiscalCall(async (data, context) => {
     const inutAssinado = assinarXMLcomForge(inutXml, pfxBuffer, senhaA1, { tagName: 'infInut', idPrefix: 'ID' });
     const url  = getEndpoint('NFeInutilizacao4', env);
     const soap = buildSoapEnvelope('NFeInutilizacao4', inutAssinado, '4.00', cUF);
-    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1);
+    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeInutilizacao4'));
     const ret  = parseSefazResponse(resp.body, ['102']);
     const nowIso = new Date().toISOString();
     const recordId = `${modKey}_${ano2}_${String(serie).padStart(3, '0')}_${String(numeroInicial).padStart(9, '0')}_${String(numeroFinal).padStart(9, '0')}`;

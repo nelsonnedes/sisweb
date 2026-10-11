@@ -982,8 +982,9 @@ const NFDanfe = (() => {
     y += 10;
 
     sectionHeader('DADOS ADICIONAIS');
-    const infoPag = pag.length
-      ? `Pagamento: ${pag.map((p) => `${p.tPag || ''} ${fmtFiscalMaybe(p.vPag)}`).join(' | ')}`
+    const pagReais = pag.filter((p) => String(p.tPag || '') !== '90' && Number(p.vPag) > 0);
+    const infoPag = pagReais.length
+      ? `Pagamento: ${pagReais.map((p) => `${p.tPag || ''} ${fmtFiscalMaybe(p.vPag)}`).join(' | ')}`
       : '';
     const infoAdic = [nfeData.infAdic || '', infoPag].filter(Boolean).join('\n');
     const dadosH = Math.min(30, Math.max(15, splitTextForWidth(doc, infoAdic || 'Sem informações complementares.', 130).length * 3 + 6));
