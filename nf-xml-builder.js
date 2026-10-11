@@ -80,6 +80,10 @@ const NFXmlBuilder = (() => {
   }
 
   // ─── Bloco <ide> ──────────────────────────────────────────────────────────
+  // M1 (auditoria 2026-10-11): <indPag> no <ide> — a presença no leiaute 4.00
+  // NÃO foi validada (Portal NF-e/XSD inacessível no momento da auditoria).
+  // NÃO remover sem validar contra o schema oficial (PL_008j / NT vigente),
+  // sob risco de rejeição por schema. Pende de validação adicional.
   function buildIde(ide, chaveInfo) {
     const dhEmi = ide.dhEmi ? new Date(ide.dhEmi).toISOString().replace('Z', '-03:00') : '';
     return `

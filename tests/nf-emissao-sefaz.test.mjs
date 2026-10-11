@@ -66,3 +66,26 @@ test('atualizarStatus não substitui o nó (merge preservando campos)', () => {
   assert.doesNotMatch(sto, /substitui completamente/);
   assert.match(sto, /const atual = await carregarNF/);
 });
+
+test('A7: nfeProc/XML autorizado persistido no backend (protNFe real)', () => {
+  assert.match(nfFn, /nfeProc versao="4\.00"/);
+  assert.match(nfFn, /xmlProcStoragePath/);
+  assert.match(nfFn, /<protNFe/);
+  assert.doesNotMatch(nfFn, /<cStat>100<\/cStat>\s*<xMotivo>Autorizado/);
+});
+
+test('M4: superadmin por claim exige allowlist de UID', () => {
+  assert.match(nfFn, /function isSuperAdminUidAllowed/);
+  assert.match(nfFn, /token\.superadmin === true && isSuperAdminUidAllowed\(uid\)/);
+});
+
+test('M1: indPag mantido aguardando validação do schema 4.00', () => {
+  assert.match(xml, /<indPag>0<\/indPag>/);
+  assert.match(xml, /M1 \(auditoria/);
+});
+
+test('Reforma Tributária: IBS/CBS/IS ausentes (lacuna conhecida — NT 2024.002)', () => {
+  assert.doesNotMatch(xml, /<IBSCBS|IBSCBS|<CBS|Imposto Seletivo/);
+  assert.doesNotMatch(cfg, /<IBSCBS|<CBS/);
+});
+

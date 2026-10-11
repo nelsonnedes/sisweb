@@ -1040,6 +1040,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-service.js`, `nf-storage.js`, `nf-config.js`, `nf-xml-builder.js`, `nf-tables.js`, `notas-fiscais.html`, `functions/nf-functions.js`, `functions/index.js`, `tests/nf-emissao-sefaz.test.mjs` (novo, 8 travas).
 - **Gates:** `npm test` 1118/0/1; lint + typecheck limpos; sintaxe inline do HTML OK; deploy functions (`nf_reservarNumero`) + hosting OK.
 
+## Sessao 2026-10-11 — Auditoria: A7 (nfeProc), M1 (indPag), M4 (superadmin) e Reforma Tributaria
+
+- **A7 — nfeProc/XML autorizado persistido no backend** (`functions/nf-functions.js:nf_enviarSEFAZ`): apos autorizacao, monta `nfeProc` = NFe assinada (do `xmlAssinado`) + `<protNFe>` **extraido da resposta real da SEFAZ** (nunca fabricado) e salva em `companies/{tid}/fiscal/xmls/nfe/{nfId}-proc.xml` (Admin SDK); grava `xmlProcStoragePath` na nota e retorna ao cliente. Antes o backend so guardava status/cStat/xMotivo/nProt.
+- **M4 — superadmin por claim exige allowlist de UID**: `assertTenantAccess` so concede bypass quando `token.superadmin === true && isSuperAdminUidAllowed(uid)` (mesma allowlist/`SUPERADMIN_UIDS` do core em `index.js`). Claim `superadmin` forjado/inesperado nao bypassa mais o tenant. Vale para TODAS as callables fiscais — **redeployadas as 14** (`nf_*`), preflight 204 confirmado em todas.
+- **M1 — `indPag` em `<ide>` NAO removido**: tentativa de validar contra o schema 4.00 oficial falhou (Portal NF-e `nfe.fazenda.gov.br` com erro de transporte; sem XSD local). Regra da auditoria: nao remover sem validar. Mantido `<indPag>0</indPag>` + comentario de pendencia em `nf-xml-builder.js:buildIde`. **Necessita validacao adicional** (PL_008j / NT vigente).
+- **Reforma Tributaria (IBS/CBS/IS) — analise de lacuna, sem implementacao**: fontes oficiais consultadas — Receita Federal (piloto CBS; opcao de regime 2027) e CGIBS (Ato Tecnico Conjunto 6/2026 / DeRE 1.3.0; CBS 2027, IBS 2029). Portal NF-e inacessivel para baixar a NT 2024.002/XSD, logo **nao foi implementado** (seria "inventar" sem leiaute). Documentado em `docs/stories/2026-10-11-reforma-tributaria-ibs-cbs-is.md` (lacunas L1-L5 + plano condicionado ao XSD). Trava de teste sinaliza a lacuna.
+- **Arquivos:** `functions/nf-functions.js`, `nf-xml-builder.js` (comentario M1), `tests/nf-emissao-sefaz.test.mjs` (+4 travas), `docs/stories/2026-10-11-reforma-tributaria-ibs-cbs-is.md` (novo).
+- **Gates:** `npm test` 1122/0/1; lint + typecheck limpos; deploy functions (14) + hosting OK; preflight 204.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

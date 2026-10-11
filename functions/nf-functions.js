@@ -106,13 +106,27 @@ function hasTenantCandidate(source, tenantId) {
   return values.includes(tenantId);
 }
 
+// M4: allowlist de UID superadmin (mesmo padrao do core em index.js).
+// Impede bypass de tenant via claim 'superadmin' forjado/inesperado.
+const SUPER_ADMIN_UIDS = new Set(
+  String(process.env.SUPERADMIN_UIDS || 'HfrQ6ObQq2aSEoeEE4Ng9jpAolB3')
+    .split(/[,\s;]+/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+);
+function isSuperAdminUidAllowed(uid) {
+  return !!uid && SUPER_ADMIN_UIDS.has(String(uid).trim());
+}
+
 async function assertTenantAccess(context, tenantId) {
   const uid = context && context.auth ? String(context.auth.uid || '') : '';
   const token = context && context.auth ? (context.auth.token || {}) : {};
   if (!uid) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação obrigatória');
   }
-  if (token.superadmin === true) return { uid, tenantId, superadmin: true, userData: {}, memberData: {} };
+  if (token.superadmin === true && isSuperAdminUidAllowed(uid)) {
+    return { uid, tenantId, superadmin: true, userData: {}, memberData: {} };
+  }
 
   const db = admin.database();
   const [userSnap, memberSnap] = await Promise.all([
@@ -884,6 +898,28 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
 
     functions.logger.info(`[nf_enviarSEFAZ] Retorno cStat=${ret.cStat} — ${ret.xMotivo}`);
 
+    // A7: persistir o XML autorizado (nfeProc = NFe assinada + protNFe da SEFAZ)
+    // no Storage. O protNFe vem da resposta real da SEFAZ (nunca fabricado).
+    let xmlProcStoragePath = '';
+    if (ret.autorizada && ret.nProt) {
+      try {
+        const nfeMatch  = String(xmlAssinado || '').match(/<NFe[\s\S]*?<\/NFe>/);
+        const protMatch = String(resp.body || '').match(/<protNFe[\s\S]*?<\/protNFe>/);
+        if (nfeMatch && protMatch) {
+          const nfeProc = `<?xml version="1.0" encoding="UTF-8"?>\n<nfeProc versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">\n${nfeMatch[0]}\n${protMatch[0]}\n</nfeProc>`;
+          const storagePath = `companies/${tenantId}/fiscal/xmls/nfe/${nfId}-proc.xml`;
+          await admin.storage().bucket().file(storagePath).save(Buffer.from(nfeProc, 'utf8'), {
+            resumable: false,
+            contentType: 'application/xml',
+            metadata: { contentType: 'application/xml', metadata: { tenantId, nfId, tipo: 'nfeProc' } },
+          });
+          xmlProcStoragePath = storagePath;
+        }
+      } catch (e) {
+        functions.logger.warn(`[nf_enviarSEFAZ] Falha ao persistir nfeProc: ${e.message}`);
+      }
+    }
+
     // Persistir resultado no Firebase
     const patch = {
       status:        ret.autorizada ? 'autorizada' : 'rejeitada',
@@ -892,6 +928,7 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
       nProt:         ret.nProt,
       dhAutorizacao: ret.dhRecbto || new Date().toISOString(),
       updatedAt:     new Date().toISOString(),
+      ...(xmlProcStoragePath ? { xmlProcStoragePath } : {}),
     };
     await updateFiscalNote(db, tenantId, modKey, nfId, patch);
 
@@ -901,6 +938,7 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
       xMotivo:    ret.xMotivo,
       nProt:      ret.nProt,
       dhRecbto:   ret.dhRecbto,
+      xmlProcStoragePath,
     };
   } catch (e) {
     console.error('[nf_enviarSEFAZ] Erro:', e.message);
