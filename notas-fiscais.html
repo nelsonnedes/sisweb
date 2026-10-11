@@ -546,7 +546,17 @@
             box-sizing: border-box;
         }
 
-        /* UX: botoes seguem o sistema global (36 acao / 30 pequeno). */
+        /* UX: botoes seguem o sistema global (36 acao / 30 pequeno);
+           small uniforme em todas as cores + icones quadrados. */
+        #nfForm .btn.btn-small {
+            height: 30px !important;
+            padding: 4px 10px !important;
+        }
+        #nfForm .nf-actions-cell .btn {
+            width: 30px !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
 
         .table-container {
             overflow-x: auto;

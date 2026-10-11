@@ -68,6 +68,12 @@ test('botoes: sistema global 36 + campo 38, cores via tokens', async (t) => {
     assert.ok(n >= 4, `2 cliente + 1 natureza + CSS (achado ${n})`);
   });
 
+  await t.test('small uniforme 30px em todas as cores + icones quadrados', () => {
+    assert.ok(nf.includes('#nfForm .btn.btn-small {'), 'small uniforme escopado');
+    assert.ok(nf.includes('height: 30px !important;'), 'altura 30 do sistema');
+    assert.ok(nf.includes('#nfForm .nf-actions-cell .btn {'), 'acoes quadradas');
+  });
+
   await t.test('cinzas funcionais via classe do sistema', () => {
     assert.ok(!nf.includes("style=\"background:#6c757d"), 'sem cinza inline');
     assert.ok(nf.includes('btn-secondary'), 'usa btn-secondary');
