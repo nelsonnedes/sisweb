@@ -1010,6 +1010,18 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
   - **Causa 3 (potencial):** Service Worker `sw.js` com `APP_VERSION` antiga + `localStorage` (`sisweb:theme:custom`) com customs antigos mascarando a nova marca.
   - **Fix aplicado:** `node tools/inject-cachebusters.mjs` (27 HTMLs, hashes JS renovados) + bump manual dos 3 CSS de tema `?v=1` → `?v=20260926-fase25-1` em 27 HTMLs (raiz + folha), `?v` adicionado aos CSS do dashboard no `index.html`, `folha.css` e `commerce-pdf-share.js` da folha atualizados. Testes de tema 27/27 verdes após o bump.
 
+## Sessao 2026-10-11 — Consulta SEFAZ: 403 mascarado de CORS + modal de senha A1 no rodape
+
+- **Sintoma 1 (funcional):** botão "Consultar status na SEFAZ" (aba Consulta) falhava com `Access to fetch ... blocked by CORS policy: No 'Access-Control-Allow-Origin'` ao chamar `nf_consultarNFe`. Investigacao com `curl OPTIONS` provou que o preflight retornava **HTTP 403** (sem headers CORS) — **nao era CORS, era permissao de invocacao gen2**: 5 callables v2 estavam sem `allUsers`/`roles/run.invoker` (o browser mascara o 403 do preflight como erro de CORS).
+- **Diagnostico reprodutivel:** `curl.exe -s -i -X OPTIONS "https://us-central1-sisweb-7ce82.cloudfunctions.net/<fn>" -H "Origin: https://sisweb-7ce82.web.app" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,x-firebase-gmpid"`. 403 = invoker quebrado; 204 + `access-control-allow-origin` = OK.
+- **Funcoes corrigidas (5):** `nf_enviarSEFAZ`, `nf_consultarNFe`, `nf_cancelarNFe`, `nf_removerCertificado`, `nf_configurarCertNuvem` (as demais nf_/mdfe_ ja respondiam 204).
+- **Fix (infra, nao e codigo):** `gcloud run services add-iam-policy-binding <svc> --region=us-central1 --member=allUsers --role=roles/run.invoker --project=sisweb-7ce82 --quiet`, com `<svc>` = nome da funcao em lowercase com hifens (`nf-consultarnfe`, `nf-enviarsefaz`, `nf-cancelarnfe`, `nf-removercertificado`, `nf-configurarcertnuvem`). Revalidado: 5/5 → 204 + ACAO.
+- **Armadilha registrada:** deploy de functions que falha por quota/parcial pode deixar a callable sem invoker publico; o sintoma no console e sempre "CORS policy ... No 'Access-Control-Allow-Origin'", nunca "403". Sempre testar o preflight com curl ANTES de mexer em CORS de codigo.
+- **Sintoma 2 (UX):** 1º clique em "Consultar SEFAZ" mostrava o modal de senha "solto no rodape"; 2º clique mostrava centralizado. Causa: `solicitarSenhaA1NF` (notas-fiscais.html) criava o proprio overlay, mas o CSS de `#sw-confirm-overlay`/`#sw-confirm-box` so e injetado por `js/notification-service.js:ensureStyles()`, que so rodava no 1º toast/confirmDialog. No 1º clique nao havia toast (sem CSS → div no fim do body); o fetch falhava (403) → toast de erro → `ensureStyles` → 2º clique ja centralizado.
+- **Fix (codigo):** novo `promptDialog()` em `js/notification-service.js` (reusa `ensureStyles`, envolve o input em `<form>` → elimina o aviso `[DOM] Password field is not contained in a form`), exposto como `window.promptDialog` e `NotificationService.{prompt,ensureStyles}`; `solicitarSenhaA1NF` agora delega ao `promptDialog` com fallback autossuficiente (estilos inline no overlay, nunca cai no rodape).
+- **Arquivos:** `js/notification-service.js`, `notas-fiscais.html`, `tests/notification-service-standard.test.mjs`, `tests/nf-rascunhos-destinatario.test.mjs`.
+- **Gates:** `npm test` 1108/0/1; `npm run lint` + `npm run typecheck` limpos.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

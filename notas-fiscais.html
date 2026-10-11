@@ -4531,43 +4531,67 @@ renderizarVolumesNF();
     // Padrão grandes sistemas: registro intermediário tem ação de refresh,
     // nunca beco sem saída. Requer senha A1 (assinatura da consulta).
     function solicitarSenhaA1NF(titulo = 'Senha do certificado A1') {
+      // Preferência: promptDialog central (CSS garantido + input dentro de <form>).
+      if (typeof window.promptDialog === 'function') {
+        return window.promptDialog({
+          title: titulo,
+          message: 'Informe a senha do certificado A1 para consultar a SEFAZ.',
+          placeholder: 'Senha do certificado A1',
+          confirmLabel: 'Consultar',
+          cancelLabel: 'Cancelar',
+          icon: 'fas fa-lock'
+        });
+      }
+      // Fallback autossuficiente: aplica estilos inline no overlay para nunca
+      // renderizar sem centralização (bug do modal "solto" no rodapé).
       return new Promise((resolve) => {
         try {
+          try { window.NotificationService?.ensureStyles?.(); } catch (_) {}
           const overlay = document.createElement('div');
           overlay.id = 'sw-confirm-overlay';
+          overlay.style.cssText = 'position:fixed;inset:0;z-index:10000001;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
           const box = document.createElement('div');
           box.id = 'sw-confirm-box';
-          box.setAttribute('role', 'alertdialog');
+          box.setAttribute('role', 'dialog');
+          box.setAttribute('aria-modal', 'true');
+          box.style.cssText = 'background:var(--sw-surface,#fff);color:inherit;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:440px;width:100%;padding:20px;';
           const h = document.createElement('h3');
+          h.style.cssText = 'margin:0 0 8px;font-size:16px;';
           h.textContent = titulo;
           const p = document.createElement('p');
+          p.style.cssText = 'margin:0 0 18px;font-size:14px;line-height:1.5;';
           p.textContent = 'Informe a senha do certificado A1 para consultar a SEFAZ.';
+          const form = document.createElement('form');
+          form.setAttribute('autocomplete', 'off');
           const inp = document.createElement('input');
           inp.type = 'password';
           inp.autocomplete = 'current-password';
           inp.placeholder = 'Senha do certificado A1';
-          inp.style.cssText = 'width:100%;padding:9px 12px;border:1px solid var(--sw-border);border-radius:8px;margin-bottom:16px;box-sizing:border-box;background:var(--sw-surface-2);color:var(--sw-text-1);';
+          inp.style.cssText = 'width:100%;padding:9px 12px;border:1px solid var(--sw-border,#cbd5e1);border-radius:8px;margin-bottom:16px;box-sizing:border-box;background:var(--sw-surface-2,#fff);color:var(--sw-text-1,#0f172a);';
           const actions = document.createElement('div');
-          actions.id = 'sw-confirm-actions';
-          const btnCancel = document.createElement('button');
-          btnCancel.id = 'sw-confirm-cancel';
-          btnCancel.type = 'button';
-          btnCancel.textContent = 'Cancelar';
-          const btnOk = document.createElement('button');
-          btnOk.id = 'sw-confirm-ok';
-          btnOk.type = 'button';
-          btnOk.textContent = 'Consultar';
+          actions.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;';
+          const mkBtn = (label, primary) => {
+            const b = document.createElement('button');
+            b.type = primary ? 'submit' : 'button';
+            b.textContent = label;
+            b.style.cssText = primary
+              ? 'border:0;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;background:var(--sw-info,#2563eb);color:#fff;'
+              : 'border:1px solid #cbd5e1;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;';
+            return b;
+          };
+          const btnCancel = mkBtn('Cancelar', false);
+          const btnOk = mkBtn('Consultar', true);
           const done = (v) => { try { overlay.remove(); } catch (_) {} resolve(v); };
           btnCancel.onclick = () => done(null);
-          btnOk.onclick = () => done(inp.value || null);
-          inp.onkeydown = (ev) => { if (ev.key === 'Enter') done(inp.value || null); };
+          form.addEventListener('submit', (ev) => { ev.preventDefault(); done(inp.value || null); });
           overlay.addEventListener('click', (ev) => { if (ev.target === overlay) done(null); });
           actions.appendChild(btnCancel);
           actions.appendChild(btnOk);
+          form.appendChild(inp);
+          form.appendChild(actions);
           box.appendChild(h);
           box.appendChild(p);
-          box.appendChild(inp);
-          box.appendChild(actions);
+          box.appendChild(form);
           overlay.appendChild(box);
           document.body.appendChild(overlay);
           try { inp.focus(); } catch (_) {}

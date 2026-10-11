@@ -71,7 +71,8 @@ test('numeração única e aguardando com saída', async (t) => {
     assert.ok(nf.includes('window.consultarStatusSefazNF'), 'exposição global');
     assert.ok(nf.includes('nf_consultarNFe'), 'usa function deployada');
     assert.ok(nf.includes('solicitarSenhaA1NF'), 'senha via modal próprio');
-    assert.ok(nf.includes("status: 'autorizada'"), 'promove com protocolo');
+    assert.ok(nf.includes('window.promptDialog'), 'delega ao promptDialog central');
+    assert.ok(nf.includes('status: \'autorizada\''), 'promove com protocolo');
   });
 });
 

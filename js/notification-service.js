@@ -198,16 +198,106 @@
         });
     }
 
+    // Prompt modal com campo de texto/senha. Reutiliza o CSS do confirmDialog
+    // (ensureStyles) e envolve o input em <form> para nao disparar o aviso
+    // "[DOM] Password field is not contained in a form" do navegador.
+    // Resolve com a string digitada ou null se cancelar.
+    function promptDialog(options) {
+        var o = options || {};
+        return new Promise(function (resolve) {
+            try {
+                ensureStyles();
+                var settled = false;
+                function done(value) {
+                    if (settled) return;
+                    settled = true;
+                    try { document.removeEventListener('keydown', onKey, true); } catch (e) {}
+                    try { overlay.remove(); } catch (e) {}
+                    resolve(value);
+                }
+                function onKey(ev) {
+                    if (ev && ev.key === 'Escape') done(null);
+                }
+
+                var overlay = document.createElement('div');
+                overlay.id = 'sw-confirm-overlay';
+                var box = document.createElement('div');
+                box.id = 'sw-confirm-box';
+                box.setAttribute('role', 'dialog');
+                box.setAttribute('aria-modal', 'true');
+
+                var h = document.createElement('h3');
+                var hi = document.createElement('i');
+                hi.className = String(o.icon || 'fas fa-lock');
+                hi.setAttribute('aria-hidden', 'true');
+                h.appendChild(hi);
+                h.appendChild(document.createTextNode(String(o.title || 'Confirmação')));
+
+                var form = document.createElement('form');
+                form.setAttribute('autocomplete', 'off');
+
+                var inp = document.createElement('input');
+                inp.type = String(o.inputType || 'password');
+                inp.autocomplete = String(o.autoComplete || 'current-password');
+                inp.placeholder = String(o.placeholder || '');
+                inp.value = String(o.value || '');
+                inp.style.cssText = 'width:100%;padding:9px 12px;border:1px solid var(--sw-border,#cbd5e1);border-radius:8px;margin-bottom:16px;box-sizing:border-box;background:var(--sw-surface-2,#fff);color:var(--sw-text-1,#0f172a);';
+
+                var actions = document.createElement('div');
+                actions.id = 'sw-confirm-actions';
+                var btnCancel = document.createElement('button');
+                btnCancel.id = 'sw-confirm-cancel';
+                btnCancel.type = 'button';
+                btnCancel.textContent = String(o.cancelLabel || 'Cancelar');
+                btnCancel.onclick = function () { done(null); };
+                var btnOk = document.createElement('button');
+                btnOk.id = 'sw-confirm-ok';
+                btnOk.type = 'submit';
+                btnOk.textContent = String(o.confirmLabel || 'Confirmar');
+
+                form.addEventListener('submit', function (ev) {
+                    ev.preventDefault();
+                    done(inp.value == null ? null : String(inp.value));
+                });
+
+                actions.appendChild(btnCancel);
+                actions.appendChild(btnOk);
+                box.appendChild(h);
+                if (o.message) {
+                    var p = document.createElement('p');
+                    p.textContent = String(o.message);
+                    box.appendChild(p);
+                }
+                box.appendChild(form);
+                form.appendChild(inp);
+                form.appendChild(actions);
+                overlay.appendChild(box);
+                overlay.addEventListener('click', function (ev) {
+                    if (ev.target === overlay) done(null);
+                });
+                document.addEventListener('keydown', onKey, true);
+                document.body.appendChild(overlay);
+                try { inp.focus(); } catch (e) {}
+            } catch (e) {
+                resolve(null);
+            }
+        });
+    }
+
     var NotificationService = {
         show: show,
         success: function (msg, opts) { show(msg, 'success', opts); },
         warning: function (msg, opts) { show(msg, 'warning', opts); },
         error: function (msg, opts) { show(msg, 'error', opts); },
-        info: function (msg, opts) { show(msg, 'info', opts); }
+        info: function (msg, opts) { show(msg, 'info', opts); },
+        confirm: confirmDialog,
+        prompt: promptDialog,
+        ensureStyles: ensureStyles
     };
 
     window.NotificationService = NotificationService;
     window.confirmDialog = window.confirmDialog || confirmDialog;
+    window.promptDialog = window.promptDialog || promptDialog;
     // Compat: menu-component e páginas que esperam window.__toast passam a funcionar
     // mesmo onde modules/core/toast.js não foi importado.
     if (typeof window.__toast !== 'function' || String(window.__toast).indexOf('[native code]') !== -1) {

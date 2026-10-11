@@ -23,6 +23,14 @@ test('NotificationService global existe com API completa', async (t) => {
     assert.ok(!/\balert\s*\(/.test(svc), 'servico nao pode conter alert() nativo');
   });
 
+  await t.test('expoe promptDialog com input dentro de <form> (sem aviso de DOM)', () => {
+    assert.ok(svc.includes('function promptDialog'), 'deve definir promptDialog');
+    assert.ok(svc.includes('window.promptDialog'), 'deve expor window.promptDialog');
+    assert.ok(svc.includes('prompt: promptDialog'), 'NotificationService.prompt deve existir');
+    assert.ok(svc.includes('ensureStyles: ensureStyles'), 'NotificationService.ensureStyles deve existir');
+    assert.ok(svc.includes("createElement('form')"), 'input deve estar contido em <form>');
+  });
+
   await t.test('usa container unico, aria-live, tokens --sw-* e suporte multilinha', () => {
     assert.ok(svc.includes('sw-toast-container'), 'container unico #sw-toast-container');
     assert.ok(svc.includes('aria-live'), 'deve ter aria-live');
