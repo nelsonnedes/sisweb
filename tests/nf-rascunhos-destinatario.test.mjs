@@ -63,6 +63,7 @@ test('numeração única e aguardando com saída', async (t) => {
     assert.ok(nf.includes('cfg.numeros = {'), 'contador na config salva');
     assert.ok(nf.includes('Math.max(desejado, atual'), 'nunca retrocede');
     assert.ok(nf.includes('para não duplicar número fiscal'), 'avisa ao manter');
+    assert.ok(nf.includes('salvarNumeroInicial(tid, 55, alvo)'), 'grava direto no contador');
   });
 
   await t.test('aguardando/erro_envio têm Consultar SEFAZ', () => {
@@ -71,5 +72,15 @@ test('numeração única e aguardando com saída', async (t) => {
     assert.ok(nf.includes('nf_consultarNFe'), 'usa function deployada');
     assert.ok(nf.includes('solicitarSenhaA1NF'), 'senha via modal próprio');
     assert.ok(nf.includes("status: 'autorizada'"), 'promove com protocolo');
+  });
+});
+
+test('numeração: contador escrito direto e exportado', async (t) => {
+  const sto = fs.readFileSync('nf-storage.js', 'utf8');
+  await t.test('salvarNumeroInicial escreve no mesmo path que a emissão lê', () => {
+    assert.ok(sto.includes('function salvarNumeroInicial'), 'definida');
+    assert.ok(sto.includes('proximoNumero: Number(numero)'), 'aceita número');
+    assert.ok(sto.includes("configPath(tenantId, `numeros/${modKey}`)"), 'mesmo path do contador');
+    assert.ok(sto.includes('salvarNumeroInicial,'), 'exportada');
   });
 });

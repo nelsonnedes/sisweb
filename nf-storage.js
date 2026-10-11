@@ -133,6 +133,16 @@ const NFStorage = (() => {
     return parseInt(result?.data?.proximoNumero || result?.data) || 1;
   }
 
+  // ─── Salvar número inicial direto no contador (sem Cloud Function) ────
+  async function salvarNumeroInicial(tenantId, modelo, numero) {
+    const modKey = modelo == 65 ? 'nfce' : modelo == 'nfse' ? 'nfse' : 'nfe';
+    const path   = configPath(tenantId, `numeros/${modKey}`);
+    await fb().saveToFirebase(path, null, {
+      proximoNumero: Number(numero) || 1,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
   // ─── Incrementar próximo número ──────────────────────────────────────────
   async function incrementarNumero(tenantId, modelo = 55) {
     const modKey = modelo == 65 ? 'nfce' : modelo == 'nfse' ? 'nfse' : 'nfe';
@@ -192,6 +202,7 @@ const NFStorage = (() => {
     carregarXML,
     getProximoNumero,
     incrementarNumero,
+    salvarNumeroInicial,
     getEstatisticas,
     removerNF,
     modeloPath,

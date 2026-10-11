@@ -2186,8 +2186,8 @@
     <script src="nf-cert.js?v=b522cff21ec4"></script>
     <script src="nf-validator.js?v=f5434c6237c4"></script>
     <script src="nf-xml-builder.js?v=bcd43e0f4abc"></script>
-    <script src="nf-storage.js?v=bafffe512ea4"></script>
-    <script src="nf-service.js?v=ab492888118c"></script>
+    <script src="nf-storage.js?v=0ffeb7a55341"></script>
+    <script src="nf-service.js?v=cc90c406b09e"></script>
     <!-- Novos módulos Fase 0 -->
     <script src="nf-naturezas.js?v=05fd0ab378b6"></script>
     <script src="nf-preferencias.js?v=e5580c53ca86"></script>
@@ -2759,6 +2759,13 @@
             if (campoNum) campoNum.value = String(alvo);
           }
           cfg.numeros = { ...(cfg.numeros || {}), nfe: { proximoNumero: alvo } };
+          // Grava o contador NO PATH QUE A EMISSÃO LÊ (numeros/nfe), independente
+          // do que a Cloud Function fizer com o cfg.numeros no save completo.
+          try {
+            if (window.NFStorage?.salvarNumeroInicial) {
+              await window.NFStorage.salvarNumeroInicial(tid, 55, alvo);
+            }
+          } catch (_) {}
         } catch (_) {}
         let salvo;
         if (window.NFService?.salvarConfig) {
