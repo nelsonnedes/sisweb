@@ -2929,11 +2929,10 @@
               updatedAt:     new Date().toISOString(),
               updatedByNF:   true,
             };
-            // Salvar em companies/{tenantId}/profile (path absoluto, sem duplo namespace)
-            await window.firebaseService.saveToFirebase(
-              `companies/${tid}/profile`, null, profileData
-            );
-            console.log('[NFConfig] Empresa sincronizada em companies/' + tid + '/profile');
+            // O espelhamento em companies/{tenantId}/profile é feito no backend
+            // (callable nf_salvarConfiguracaoFiscal) — a regra é superadmin-only,
+            // então o cliente não pode escrever direto.
+            console.log('[NFConfig] Empresa sincronizada (via backend) em companies/' + tid + '/profile');
 
             // Atualizar localStorage company_info para refletir imediatamente
             const rawInfo = localStorage.getItem('company_info');

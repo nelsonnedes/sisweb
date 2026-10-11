@@ -287,26 +287,42 @@ const NFXmlBuilder = (() => {
     const vIBSMunn = g.vIBSMun != null ? parseFiscalNumber(g.vIBSMun) : vBCn * pIBSMun / 100;
     const vIBSn = vIBSUFn + vIBSMunn;
     const vCBSn = g.vCBS != null ? parseFiscalNumber(g.vCBS) : vBCn * pCBS / 100;
-    // Crédito Presumido da Operação (opcional)
-    let cred = '';
-    const cp = g.credPresOper;
-    if (cp && cp.cCredPres) {
-      const bcCP = cp.vBCCredPres != null ? parseFiscalNumber(cp.vBCCredPres) : vBCn;
-      const pCP = parseFiscalNumber(cp.pCredPres);
-      const vCP = cp.vCredPres != null ? parseFiscalNumber(cp.vCredPres) : (bcCP * pCP / 100);
-      const gIBS = cp.gIBSCredPres !== false
-        ? `<gIBSCredPres><pCredPres>${num(pCP, 4)}</pCredPres><vCredPres>${num(vCP)}</vCredPres></gIBSCredPres>` : '';
-      const gCbs = cp.gCBSCredPres !== false
-        ? `<gCBSCredPres><pCredPres>${num(pCP, 4)}</pCredPres><vCredPres>${num(vCP)}</vCredPres></gCBSCredPres>` : '';
-      cred = `<gCredPresOper><vBCCredPres>${num(bcCP)}</vBCCredPres><cCredPres>${esc(cp.cCredPres)}</cCredPres>${gIBS}${gCbs}</gCredPresOper>`;
+    // Grupo base — choice do TTribNFe: gIBSCBS | gTransfCred (CST 800) | gAjusteCompet (CST 811)
+    let baseGroup;
+    if (g.transfCred) {
+      baseGroup = `<gTransfCred><vIBS>${num(g.transfCred.vIBS)}</vIBS><vCBS>${num(g.transfCred.vCBS)}</vCBS></gTransfCred>`;
+    } else if (g.ajusteCompet) {
+      baseGroup = `<gAjusteCompet><competApur>${esc(g.ajusteCompet.competApur)}</competApur><vIBS>${num(g.ajusteCompet.vIBS)}</vIBS><vCBS>${num(g.ajusteCompet.vCBS)}</vCBS></gAjusteCompet>`;
+    } else {
+      baseGroup = `<gIBSCBS><vBC>${num(vBCn)}</vBC>`
+        + `<gIBSUF><pIBSUF>${num(pIBSUF, 4)}</pIBSUF>${gDifTag()}${gRedTag(pIBSUF)}<vIBSUF>${num(vIBSUFn)}</vIBSUF></gIBSUF>`
+        + `<gIBSMun><pIBSMun>${num(pIBSMun, 4)}</pIBSMun>${gDifTag()}${gRedTag(pIBSMun)}<vIBSMun>${num(vIBSMunn)}</vIBSMun></gIBSMun>`
+        + `<vIBS>${num(vIBSn)}</vIBS>`
+        + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS>${gDifTag()}${gRedTag(pCBS)}<vCBS>${num(vCBSn)}</vCBS></gCBS>`
+        + `</gIBSCBS>`;
     }
-    return `\n        <IBSCBS><CST>${esc(g.cst)}</CST><cClassTrib>${esc(g.cClassTrib)}</cClassTrib>`
-      + `<gIBSCBS><vBC>${num(vBCn)}</vBC>`
-      + `<gIBSUF><pIBSUF>${num(pIBSUF, 4)}</pIBSUF>${gDifTag()}${gRedTag(pIBSUF)}<vIBSUF>${num(vIBSUFn)}</vIBSUF></gIBSUF>`
-      + `<gIBSMun><pIBSMun>${num(pIBSMun, 4)}</pIBSMun>${gDifTag()}${gRedTag(pIBSMun)}<vIBSMun>${num(vIBSMunn)}</vIBSMun></gIBSMun>`
-      + `<vIBS>${num(vIBSn)}</vIBS>`
-      + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS>${gDifTag()}${gRedTag(pCBS)}<vCBS>${num(vCBSn)}</vCBS></gCBS>`
-      + `</gIBSCBS>${cred}</IBSCBS>`;
+    // Estorno de crédito (opcional)
+    const estorno = g.estornoCred
+      ? `<gEstornoCred><vIBSEstCred>${num(g.estornoCred.vIBSEstCred)}</vIBSEstCred><vCBSEstCred>${num(g.estornoCred.vCBSEstCred)}</vCBSEstCred></gEstornoCred>` : '';
+    // Crédito presumido — choice: gCredPresOper | gCredPresIBSZFM (opcional)
+    let cred = '';
+    if (g.credPresIBSZFM) {
+      const z = g.credPresIBSZFM;
+      cred = `<gCredPresIBSZFM><competApur>${esc(z.competApur)}</competApur><tpCredPresIBSZFM>${esc(z.tpCredPresIBSZFM)}</tpCredPresIBSZFM><vCredPresIBSZFM>${num(z.vCredPresIBSZFM)}</vCredPresIBSZFM></gCredPresIBSZFM>`;
+    } else {
+      const cp = g.credPresOper;
+      if (cp && cp.cCredPres) {
+        const bcCP = cp.vBCCredPres != null ? parseFiscalNumber(cp.vBCCredPres) : vBCn;
+        const pCP = parseFiscalNumber(cp.pCredPres);
+        const vCP = cp.vCredPres != null ? parseFiscalNumber(cp.vCredPres) : (bcCP * pCP / 100);
+        const gIBS = cp.gIBSCredPres !== false
+          ? `<gIBSCredPres><pCredPres>${num(pCP, 4)}</pCredPres><vCredPres>${num(vCP)}</vCredPres></gIBSCredPres>` : '';
+        const gCbs = cp.gCBSCredPres !== false
+          ? `<gCBSCredPres><pCredPres>${num(pCP, 4)}</pCredPres><vCredPres>${num(vCP)}</vCredPres></gCBSCredPres>` : '';
+        cred = `<gCredPresOper><vBCCredPres>${num(bcCP)}</vBCCredPres><cCredPres>${esc(cp.cCredPres)}</cCredPres>${gIBS}${gCbs}</gCredPresOper>`;
+      }
+    }
+    return `\n        <IBSCBS><CST>${esc(g.cst)}</CST><cClassTrib>${esc(g.cClassTrib)}</cClassTrib>${baseGroup}${estorno}${cred}</IBSCBS>`;
   }
 
   // ─── Imposto Seletivo (<IS>, TIS) — Reforma Tributária ────────────────────
@@ -397,7 +413,7 @@ const NFXmlBuilder = (() => {
         <vOutro>0.00</vOutro>
         <vNF>${num(t.vNF)}</vNF>
         <vTotTrib>${num(t.vTotTrib != null && t.vTotTrib !== '' ? t.vTotTrib : ((Number(t.vICMS)||0) + (Number(t.vIPI)||0) + (Number(t.vPIS)||0) + (Number(t.vCOFINS)||0)))}</vTotTrib>
-      </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${(Number(t.vBCIBSCBS) > 0) ? `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>${num(t.vDifIBSUF)}</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>${num(t.vDifIBSMun)}</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>${num(t.vDifCBS)}</vDif><vDevTrib>0.00</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS></IBSCBSTot>` : ''}
+      </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${(Number(t.vBCIBSCBS) > 0) ? `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>${num(t.vDifIBSUF)}</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>${num(t.vDifIBSMun)}</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>${num(t.vDifCBS)}</vDif><vDevTrib>0.00</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS>${(Number(t.vIBSEstCred) > 0 || Number(t.vCBSEstCred) > 0) ? `<gEstornoCred><vIBSEstCred>${num(t.vIBSEstCred)}</vIBSEstCred><vCBSEstCred>${num(t.vCBSEstCred)}</vCBSEstCred></gEstornoCred>` : ''}</IBSCBSTot>` : ''}
     </total>`;
   }
 
@@ -485,7 +501,7 @@ const NFXmlBuilder = (() => {
   function calcularTotais(itens, desconto, frete) {
     let vProd = 0, vBC = 0, vICMS = 0, vIPI = 0, vPIS = 0, vCOFINS = 0;
     let vBCIBSCBS = 0, vIBSUF = 0, vIBSMun = 0, vCBS = 0, vIS = 0;
-    let vDifIBSUF = 0, vDifIBSMun = 0, vDifCBS = 0, vCredPres = 0;
+    let vDifIBSUF = 0, vDifIBSMun = 0, vDifCBS = 0, vCredPres = 0, vIBSEstCred = 0, vCBSEstCred = 0;
     itens.forEach(it => {
       vProd   += parseFloat(it.vProd || it.total) || 0;
       vBC     += parseFloat(it.imposto?.icms?.vBC) || 0;
@@ -510,6 +526,10 @@ const NFXmlBuilder = (() => {
           const pCP = parseFiscalNumber(cp.pCredPres);
           vCredPres += cp.vCredPres != null ? parseFiscalNumber(cp.vCredPres) : bcCP * pCP / 100;
         }
+        if (gi.estornoCred) {
+          vIBSEstCred += parseFiscalNumber(gi.estornoCred.vIBSEstCred);
+          vCBSEstCred += parseFiscalNumber(gi.estornoCred.vCBSEstCred);
+        }
       }
       // Imposto Seletivo
       const gs = it.imposto?.is;
@@ -525,7 +545,7 @@ const NFXmlBuilder = (() => {
     return { vProd, vBC, vICMS, vIPI, vPIS, vCOFINS, vDesc, vFrete, vNF,
       vTotTrib: vICMS + vIPI + vPIS + vCOFINS,
       vBCIBSCBS, vIBSUF, vIBSMun, vIBS, vCBS, vIS,
-      vDifIBSUF, vDifIBSMun, vDifCBS, vCredPres };
+      vDifIBSUF, vDifIBSMun, vDifCBS, vCredPres, vIBSEstCred, vCBSEstCred };
   }
 
   // ─── Montar XML NF-e completo (sem assinatura) ────────────────────────────

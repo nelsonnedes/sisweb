@@ -1473,6 +1473,28 @@ exports.nf_salvarConfiguracaoFiscal = onFiscalCall(async (data, context) => {
   }
 
   await db.ref(`companies/${tenantId}/fiscal/config`).set(nextConfig);
+
+  // Espelhar dados da empresa em companies/{tenantId}/profile via Admin SDK.
+  // (Antes o cliente escrevia direto e era negado: profile .write = superadmin.)
+  try {
+    const emp = (nextConfig && nextConfig.empresa) || {};
+    if (emp.cnpj || emp.razaoSocial) {
+      const end = emp.endereco || {};
+      await db.ref(`companies/${tenantId}/profile`).update({
+        cnpj: emp.cnpj || '', razaoSocial: emp.razaoSocial || '', nomeFantasia: emp.nomeFantasia || '',
+        ie: emp.ie || '', im: emp.im || '', regime: emp.regime || '',
+        telefone: emp.telefone || '', email: emp.email || '',
+        logradouro: end.logradouro || '', numero: end.numero || '', complemento: end.complemento || '',
+        bairro: end.bairro || '', municipio: end.municipio || '', uf: end.uf || '', cep: end.cep || '',
+        name: emp.razaoSocial || '', fantasia: emp.nomeFantasia || '', phone: emp.telefone || '',
+        state: end.uf || '', city: end.municipio || '',
+        updatedAt: new Date().toISOString(), updatedByNF: true,
+      });
+    }
+  } catch (e) {
+    functions.logger.warn('[nf_salvarConfiguracaoFiscal] Falha ao espelhar profile:', (e && e.message) || e);
+  }
+
   return {
     success: true,
     tenantId,

@@ -1085,6 +1085,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `notas-fiscais.html`, `nf-preferencias.js`, `functions/nf-functions.js`, `tests/nf-preferencias-unidade.test.mjs` (novo), `tests/fiscal-nfe-events.test.mjs` (path).
 - **Gates:** `npm test` 1132/0/1; HTML 0 erros; hosting publicado.
 
+## Sessao 2026-10-11 — RTC: grupos alternativos (CST 800/811) + profile mirror server-side
+
+- **RTC grupos do TTribNFe implementados** (`nf-xml-builder.js:buildIBSCBS`): choice `gIBSCBS` | `gTransfCred` (CST 800: vIBS/vCBS) | `gAjusteCompet` (CST 811: competApur/vIBS/vCBS); `gEstornoCred` (vIBSEstCred/vCBSEstCred, + totais); credit choice `gCredPresOper` | `gCredPresIBSZFM` (competApur/tpCredPresIBSZFM/vCredPresIBSZFM). Config-driven (`nf-config.js:calcularIBSCBS` passthrough). **Deferido:** `gMono` (TMonofasia CST 620 — ad rem/ad valorem/retenção/biocombustível, muito complexo), `gTribRegular`, `gTribCompraGov`, eventos `Eventos_RTC`.
+- **Validacao XSD**: `tests/nfe-xsd-validation.test.mjs` agora 10/10 (sem RTC, RTC, avancado gRed/gDif/gCredPresOper, gTransfCred, gAjusteCompet, gEstornoCred, gCredPresIBSZFM) — todos validos contra o XSD oficial PL_010f.
+- **profile permission_denied (FIX)**: causa = `database.rules.json:14` (`companies/$companyId/profile .write` = superadmin-only) e o cliente escrevia direto. Fix: espelhamento movido para o backend em `nf_salvarConfiguracaoFiscal` (Admin SDK `.update()`, ignora rules); escrita direta do cliente removida (`notas-fiscais.html`). Deploy da function OK.
+- **Arquivos:** `nf-xml-builder.js`, `nf-config.js`, `functions/nf-functions.js`, `notas-fiscais.html`, `tests/nfe-xsd-validation.test.mjs`.
+- **Gates:** `npm test` 1136/0/1; XSD 10/10; HTML 0 erros; functions+hosting publicados.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

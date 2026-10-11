@@ -38,7 +38,10 @@ function buildXml(opts = {}) {
     qCom: 1, vUnCom: 100, vProd: 100,
     imposto: { icms: { cst: '00', vBC: 100, pICMS: 18, vICMS: 18 }, pis: { cST: '07' }, cofins: { cST: '07' } },
   }];
-  if (rtc || adv) {
+  if (opts.ibscbs) {
+    det[0].imposto.ibscbs = opts.ibscbs;
+    det[0].imposto.is = { habilitado: true, cstIS: '000', cClassTribIS: '000001', pIS: 0.1 };
+  } else if (rtc || adv) {
     det[0].imposto.ibscbs = { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 10, pIBSMun: 0, pCBS: 9 };
     if (adv) {
       det[0].imposto.ibscbs.pRedAliq = 25;
@@ -68,6 +71,18 @@ test('NF-e gerada é válida contra o XSD oficial (nfe_v4.00.xsd)', { skip: !val
   });
   await t.test('com gRed/gDif/gCredPresOper (avançados)', async () => {
     await assert.doesNotReject(() => validator.validateXML(buildXml({ adv: true }), XSD));
+  });
+  await t.test('gTransfCred (CST 800)', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs: { habilitado: true, cst: '800', cClassTrib: '800001', transfCred: { vIBS: 10, vCBS: 5 } } }), XSD));
+  });
+  await t.test('gAjusteCompet (CST 811)', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs: { habilitado: true, cst: '811', cClassTrib: '811001', ajusteCompet: { competApur: '2026-01', vIBS: 10, vCBS: 5 } } }), XSD));
+  });
+  await t.test('gEstornoCred', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 10, pIBSMun: 0, pCBS: 9, estornoCred: { vIBSEstCred: 1, vCBSEstCred: 2 } } }), XSD));
+  });
+  await t.test('gCredPresIBSZFM', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 10, pIBSMun: 0, pCBS: 9, credPresIBSZFM: { competApur: '2026-01', tpCredPresIBSZFM: '1', vCredPresIBSZFM: 5 } } }), XSD));
   });
 });
 
