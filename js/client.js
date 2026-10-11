@@ -531,6 +531,24 @@ window.editItem = async (id) => {
     } else {
         elements.citySelect.innerHTML = '<option value="">Selecione primeiro o estado</option>';
     }
+
+    // Backfill: registro legado sem código IBGE — resolve sem sobrescrever edição
+    try {
+        const editId = id;
+        if (elements.municipalityCodeInput && !elements.municipalityCodeInput.value.trim()
+            && window.MunicipiosIBGE && typeof window.MunicipiosIBGE.resolverCodigo === 'function') {
+            const cid = item.city || item.cidade || '';
+            const est = item.state || item.estado || '';
+            if (cid && est) {
+                window.MunicipiosIBGE.resolverCodigo(est, cid).then((cod) => {
+                    if (cod && editingId === editId && elements.municipalityCodeInput
+                        && !elements.municipalityCodeInput.value.trim()) {
+                        elements.municipalityCodeInput.value = cod;
+                    }
+                }).catch(() => {});
+            }
+        }
+    } catch (_) {}
     
     elements.modalTitle.textContent = 'Editar Cliente';
     elements.saveBtn.textContent = 'Atualizar';

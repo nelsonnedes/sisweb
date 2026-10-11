@@ -42,8 +42,7 @@ test('snapshot oficial completo', async (t) => {
   });
 });
 
-test('delegação preserva assinaturas', async (t) => {
-  const pontos = ['js/client.js', 'js/fornecedor.js', 'fornecedor-modals.js',
+test('delegação preserva assinaturas', async (t) => {  const pontos = ['js/client.js', 'js/fornecedor.js', 'fornecedor-modals.js',
     'company.html', 'cities-loader.js', 'preromaneio-modals.js'];
   for (const f of pontos) {
     await t.test(`${f} usa o serviço com fallback`, () => {
@@ -66,4 +65,15 @@ test('delegação preserva assinaturas', async (t) => {
     const menu = fs.readFileSync('menu-component.js', 'utf8');
     assert.ok(menu.includes('js/municipios-ibge.js'), 'menu carrega global');
   });
+});
+
+test('backfill: edição resolve código de registro legado sem sobrescrever', async (t) => {
+  for (const f of ['js/client.js', 'js/fornecedor.js']) {
+    await t.test(`${f} preenche somente se vazio e mesma edição`, () => {
+      const src = fs.readFileSync(f, 'utf8');
+      assert.ok(src.includes('Backfill: registro legado sem código IBGE'), `${f} documenta`);
+      assert.ok(src.includes('resolverCodigo(est, cid)'), `${f} resolve via serviço`);
+      assert.ok(src.includes('!elements.municipalityCodeInput.value.trim()'), `${f} nunca sobrescreve`);
+    });
+  }
 });
