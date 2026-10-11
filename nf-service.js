@@ -254,13 +254,18 @@ const NFService = (() => {
     nfeData.xmlGerado = true;
     const saved = await window.NFStorage.salvarNF(_tenantId, nfeData);
 
-    // 8. Salvar XML no Storage
-    const xmlStoragePath = await window.NFStorage.salvarXML(_tenantId, saved.id, xmlAssinado);
+    // 8. Salvar XML no Storage (erro não bloqueia emissão)
+    let xmlStoragePath = '';
+    try {
+      xmlStoragePath = await window.NFStorage.salvarXML(_tenantId, saved.id, xmlAssinado);
+    } catch (e) {
+      console.warn('[NFService] XML não pôde ser salvo no Storage — emissão continua:', e.message);
+    }
     nfeData.xmlStoragePath = xmlStoragePath;
     try {
       await window.NFStorage.salvarNF(_tenantId, { ...nfeData, id: saved.id });
     } catch (e) {
-      console.warn('[NFService] XML salvo no Storage, mas a referência não pôde ser atualizada na NF:', e.message);
+      console.warn('[NFService] NF salva mas referência XML no Storage falhou:', e.message);
     }
 
     // 9. Retornar dados para UI mostrar status
