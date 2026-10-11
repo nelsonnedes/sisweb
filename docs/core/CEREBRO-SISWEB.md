@@ -1190,6 +1190,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-config.js`, `notas-fiscais.html`. Hosting publicado.
 - **Gates:** `npm test` 1138/0/1; HTML 0 erros.
 
+## Sessao 2026-10-11 — Editar rascunho mostra o proximo numero + remove rascunho antigo
+
+- **Sintoma:** ao editar um rascunho, o campo "Numero" mostrava o numero do rascunho, nao o proximo disponivel.
+- **Fix:** `editarRascunho` seta `nfNumero` = `NFStorage.getProximoNumero(tid,55)` (proximo do contador). Ao emitir um rascunho editado, `confirmarEmissao` **remove o rascunho antigo** (a emissao gera a nota oficial com id/numero novos) — evita rascunho orfao.
+- **Nota:** o rascunho nao consome o contador; so a emissao consome.
+- **Arquivos:** `notas-fiscais.html`. Hosting publicado.
+- **Gates:** `npm test` 1138/0/1; HTML 0 erros.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

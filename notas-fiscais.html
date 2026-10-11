@@ -4143,6 +4143,7 @@
       try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Emitindo NF-e...'); } catch (_) {}
 
       try {
+        const rascunhoOrigemId = _rascunhoEditandoId;
         const result = await window.NFService.emitirNFe(_notaEmCurso, senha);
         const danfeData = _notaEmCurso ? { ..._notaEmCurso, status: result.status, nProt: result.nProt || '', chave: result.chave || _notaEmCurso.chave } : null;
         const autorizada = result.status === 'autorizada';
@@ -4170,6 +4171,10 @@ renderizarVolumesNF();
           const elNum = document.getElementById('cfgProximoNumero');
           if (elNum && prox) elNum.value = prox;
         } catch (_) {}
+        // Editando rascunho: remover o rascunho antigo (a emissão gerou a nota oficial nova)
+        if (rascunhoOrigemId && rascunhoOrigemId !== result.id) {
+          try { await window.NFStorage.removerNF(obterTenantIdNF(), 55, rascunhoOrigemId); } catch (_) {}
+        }
         if (autorizada) {
           // Oferecer DANFE SOMENTE quando autorizada pela SEFAZ
           if (danfeData && window.NFDanfe) {
@@ -4730,7 +4735,9 @@ renderizarVolumesNF();
         const dest = nf.dest || {};
         const set  = (id, v) => { const el = document.getElementById(id); if(el && v != null) el.value = v; };
 
-        set('nfNumero',    nf.numero || ide.nNF || '');
+        // Número exibido ao editar = PRÓXIMO disponível no contador (a emissão reserva o número oficial)
+        const proxNumEdicao = await window.NFStorage?.getProximoNumero?.(tid, 55).catch(() => null);
+        set('nfNumero',    proxNumEdicao || nf.numero || ide.nNF || '');
         set('nfSerie',     ide.serie || '1');
         set('nfDataEmissao', (nf.dataEmissao || ide.dhEmi || '').slice(0,10));
         set('nfTipo',      ide.tpNF != null ? String(ide.tpNF) : '1');
