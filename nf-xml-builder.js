@@ -161,6 +161,7 @@ const NFXmlBuilder = (() => {
         ${dest.telefone ? `<fone>${String(dest.telefone).replace(/\D/g, '')}</fone>` : ''}
       </enderDest>
       <indIEDest>${dest.indIEDest || 9}</indIEDest>
+      ${dest.ie && dest.indIEDest !== '9' ? `<IE>${esc(dest.ie)}</IE>` : ''}
       ${dest.email ? `<email>${esc(dest.email)}</email>` : ''}
     </dest>`;
   }

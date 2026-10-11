@@ -3146,11 +3146,14 @@
       if (!opt || !opt.value) return null;
       const cnpjCpf = document.getElementById('nfClienteCnpj')?.value.replace(/\D/g,'') || '';
       const isCNPJ  = cnpjCpf.length === 14;
+      const ie = document.getElementById('nfClienteIE')?.value
+        || opt.dataset?.ie || opt.dataset?.inscricaoEstadual || '';
       return {
         nome:    opt.text,
         cnpj:    isCNPJ ? cnpjCpf : '',
         cpf:     !isCNPJ ? cnpjCpf : '',
-        indIEDest: 9,
+        ie,
+        indIEDest: ie ? (isCNPJ ? 1 : 9) : 9,
         endereco: {
           logradouro: document.getElementById('nfClienteEndereco')?.value.split(',')[0]?.trim() || 'N/A',
           numero:     document.getElementById('nfClienteEndereco')?.value.split(',')[1]?.trim() || 'S/N',
@@ -3552,6 +3555,15 @@
       return { subtotal, desconto, frete, total: subtotal - desconto + frete };
     }
 
+    function montarInfoAdicionalNF(textoUsuario = '') {
+      const reboques = _reboquesNF || [];
+      if (!reboques.length) return textoUsuario;
+      const linhas = ['Reboques:']
+        .concat(reboques.map((rb, i) => `  ${i+1}) ${rb.placa || ''}${rb.UF ? '/' + rb.UF : ''}`))
+        .concat([textoUsuario].filter(Boolean));
+      return linhas.join(' / ');
+    }
+
     function coletarFormDataNF(dest, options = {}) {
       const cfg = window.NFService?.getConfig?.() || {};
       const nfeCfg = cfg.nfe || {};
@@ -3568,7 +3580,7 @@
         natOp: document.getElementById('nfNatOp')?.value || nfeCfg.naturezaOperacao || 'Venda de Mercadoria',
         modFrete: obterModFreteFromForm(),
         transp: montarTransporteFromForm(),
-        infAdic: document.getElementById('nfInfoAdic')?.value || '',
+        infAdic: montarInfoAdicionalNF(document.getElementById('nfInfoAdic')?.value || ''),
         desconto: total.desconto,
         frete: total.frete,
         pag: [{ tPag, vPag }],
@@ -3944,12 +3956,14 @@
         _reboquesNF = [];
         _rascunhoEditandoId = null;
         renderizarItensNF();
-        renderizarVolumesNF();
-        renderizarReboquesNF();
+renderizarVolumesNF();
         renderizarReboquesNF();
         atualizarTotaisNF();
         invalidarRevisaoNF();
         irParaEtapaNF('operacao');
+        // Ir para aba Consultar e recarregar lista (emissão concluída)
+        if (typeof showTab === 'function') showTab('consulta');
+        if (typeof consultarNotas === 'function') setTimeout(() => consultarNotas(), 500);
         // Oferecer DANFE
         if (danfeData && window.NFDanfe) {
           if (await confirmDialog({ title: 'Baixar DANFE', message: 'NF-e gerada com sucesso! Deseja baixar o DANFE agora?', confirmLabel: 'Baixar DANFE' })) {

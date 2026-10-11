@@ -83,4 +83,14 @@ test('numeração: contador escrito direto e exportado', async (t) => {
     assert.ok(sto.includes("configPath(tenantId, `numeros/${modKey}`)"), 'mesmo path do contador');
     assert.ok(sto.includes('salvarNumeroInicial,'), 'exportada');
   });
+
+  await t.test('IE do destinatário no XML e consulta pós-emissão', () => {
+    assert.ok(nf.includes("ie,"), 'montarDestFromForm retorna ie');
+    assert.ok(nf.includes('document.getElementById(\'nfClienteIE\')'), 'lê campo IE');
+    assert.ok(nf.includes('montarInfoAdicionalNF'), 'infAdic inclui reboques');
+    assert.ok(nf.includes("showTab('consulta')"), 'consulta após emissão');
+    assert.ok(nf.includes('consultarNotas()'), 'recarrega após emissão');
+    const xml = fs.readFileSync('nf-xml-builder.js', 'utf8');
+    assert.ok(xml.includes('<IE>${esc(dest.ie)}</IE>'), 'XML inclui IE');
+  });
 });
