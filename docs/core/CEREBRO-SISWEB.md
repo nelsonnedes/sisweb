@@ -1021,6 +1021,7 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Fix (codigo):** novo `promptDialog()` em `js/notification-service.js` (reusa `ensureStyles`, envolve o input em `<form>` → elimina o aviso `[DOM] Password field is not contained in a form`), exposto como `window.promptDialog` e `NotificationService.{prompt,ensureStyles}`; `solicitarSenhaA1NF` agora delega ao `promptDialog` com fallback autossuficiente (estilos inline no overlay, nunca cai no rodape).
 - **Arquivos:** `js/notification-service.js`, `notas-fiscais.html`, `tests/notification-service-standard.test.mjs`, `tests/nf-rascunhos-destinatario.test.mjs`.
 - **Gates:** `npm test` 1108/0/1; `npm run lint` + `npm run typecheck` limpos.
+- **Sintoma 3 (DNS):** consulta em homologacao retornava `Falha na consulta: getaddrinfo ENOTFOUND homologacao.nfe.svrs.rs.gov.br`. Causa: `SEFAZ_EP.homologacao` (functions/nf-functions.js) usava o host inexistente `homologacao.nfe.svrs.rs.gov.br` em 3 URLs (NfeAutorizacao4, NfeRetAutorizacao4, NfeConsultaProtocolo4); o host correto (usado pelo bloco de producao, pelo evento/inutilizacao e pelo mdfe) e `nfe-homologacao.svrs.rs.gov.br`. Fix: 3 URLs corrigidas; `firebase deploy --only functions:nf_consultarNFe,functions:nf_enviarSEFAZ` (sucesso, sem quota); preflight revalidado 204 + ACAO (invoker preservado). Trava: `tests/fiscal-nfe-events.test.mjs` ("endpoints SEFAZ homologacao usam o host correto"). Commit `7f1fd98`. Suite 1109/0/1.
 
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
