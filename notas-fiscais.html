@@ -2323,6 +2323,7 @@
           const cfg = await window.NFService.init(tid, uid);
           preencherCamposConfig(cfg);
           verificarStatusCert();
+          reconciliarCertificadoConfig(tid);
           return { success: true, tenantId: tid, config: cfg };
         }
         renderOperationalAccessStateNF(contexto);
@@ -2570,6 +2571,7 @@
           btn.disabled = true; btn.textContent = 'Enviando...';
           const meta = await window.NFCertService.uploadCertificadoA1(tid, uid, arquivo, senha);
           notifyUser(`✅ Certificado enviado!\nTitular: ${meta.titular}\nValidade: ${new Date(meta.validoAte).toLocaleDateString('pt-BR')}`);
+          await sincronizarCertificadoNaConfig(tid, { tipo: 'A1', ...meta });
           verificarStatusCert();
         } catch(e) {
           notifyUser('❌ Erro ao enviar certificado: ' + e.message);
@@ -2585,12 +2587,57 @@
     }
     window.uploadCertificado = uploadCertificado;
 
+    // Sincroniza o certificado no fiscal/config (fonte do validador de emissão).
+    // Sem isso, o painel mostra "Configurado" (lê fiscal/certificado) mas a
+    // emissão acusa "Certificado digital não configurado" (lê fiscal/config).
+    async function sincronizarCertificadoNaConfig(tid, dados = {}) {
+      try {
+        if (!tid || !window.NFConfigService?.saveConfigSection) return false;
+        const atual = window.NFService?.getConfig?.()?.certificado || {};
+        const payload = {
+          tipo: dados.tipo || atual.tipo || null,
+          titular: dados.titular ?? atual.titular ?? '',
+          validade: dados.validade ?? dados.validoAte ?? atual.validade ?? null,
+          validoAte: dados.validoAte ?? dados.validade ?? atual.validoAte ?? null,
+          cnpjCert: dados.cnpjCert ?? dados.cnpj ?? atual.cnpjCert ?? '',
+          sincronizadoEm: new Date().toISOString(),
+        };
+        if (!payload.tipo) return false;
+        await window.NFConfigService.saveConfigSection(tid, 'certificado', payload);
+        if (window.NFService?.recarregarConfig) await window.NFService.recarregarConfig();
+        return true;
+      } catch (e) {
+        console.warn('[cert-sync]', e.message);
+        return false;
+      }
+    }
+
+    // Reconciliação no boot: instalações antigas têm metadados sem espelho na config.
+    async function reconciliarCertificadoConfig(tid) {
+      try {
+        if (!tid || !window.NFCertService?.carregarMetadados) return;
+        const cfgTipo = window.NFService?.getConfig?.()?.certificado?.tipo || null;
+        if (cfgTipo) return;
+        const meta = await window.NFCertService.carregarMetadados(tid);
+        if (meta && meta.tipo) {
+          await sincronizarCertificadoNaConfig(tid, meta);
+        }
+      } catch (_) {}
+    }
+
     async function removerCertificado() {
       if (!await confirmDialog({ title: 'Remover certificado', message: 'Remover o certificado digital? A emissão ficará bloqueada.', danger: true, confirmLabel: 'Remover' })) return;
       const tid = obterTenantIdNF();
       if (!tid) return notifyUser('Empresa da sessão não identificada. Faça login novamente.');
       try {
         await window.NFCertService.removerCertificado(tid);
+        try {
+          if (window.NFConfigService?.saveConfigSection) {
+            await window.NFConfigService.saveConfigSection(tid, 'certificado',
+              { tipo: null, titular: '', validade: null, sincronizadoEm: new Date().toISOString() });
+          }
+          if (window.NFService?.recarregarConfig) await window.NFService.recarregarConfig();
+        } catch (_) {}
         notifyUser('Certificado removido.');
         verificarStatusCert();
       } catch(e) { notifyUser('Erro: ' + e.message); }

@@ -8,8 +8,7 @@ import fs from 'node:fs';
 
 const nf = fs.readFileSync('notas-fiscais.html', 'utf8');
 
-test('destinatário: botoes e editar funcionam', async (t) => {
-  await t.test('botoes Novo/Editar 38px no desktop', () => {
+test('destinatário: botoes e editar funcionam', async (t) => {  await t.test('botoes Novo/Editar 38px no desktop', () => {
     assert.ok(nf.includes('nf-cust-btn'), 'classe de padronização');
     assert.ok(nf.includes('height: 38px !important;'), 'altura 38px');
   });
@@ -43,5 +42,18 @@ test('rascunhos: sem duplicar, com excluir, natureza restaurada', async (t) => {
   await t.test('carregar tenta 65 e distingue permissão', () => {
     assert.ok(nf.includes('carregarNF(tid, 65, nfId)'), 'fallback NFC-e');
     assert.ok(nf.includes('Sem permissão para ler rascunhos'), 'mensagem de permissão');
+  });
+});
+
+test('certificado espelhado na config do validador', async (t) => {
+  await t.test('upload sincroniza fiscal/config', () => {
+    assert.ok(nf.includes('sincronizarCertificadoNaConfig(tid,'), 'upload sincroniza');
+    assert.ok(nf.includes("saveConfigSection(tid, 'certificado'"), 'via seção segura');
+    assert.ok(nf.includes('recarregarConfig'), 'config recarregada');
+  });
+
+  await t.test('boot reconcilia instalações antigas e remover limpa', () => {
+    assert.ok(nf.includes('reconciliarCertificadoConfig(tid)'), 'reconciliação no init');
+    assert.ok(nf.includes("tipo: null, titular: ''"), 'remoção limpa espelho');
   });
 });
