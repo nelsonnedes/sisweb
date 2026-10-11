@@ -202,6 +202,19 @@ CSS** (`.toast.success`), não chamadas JS — únicos consumidores da API toast
   (tela mostra "Modo Offline") + lentidão percebida como freeze. Defesa:
   watchdog no menu avisa 1× após 20s sem Firebase, orientando a desativar
   bloqueadores. Para confirmar: testar com Shields desativado e URL https.
+
+## 17. Composição veicular NF-e (2026-10-10)
+
+- Problema: só 1 placa; composições reais exigem tração + N reboques.
+- XML já suportava `transp.reboque[]` (nf-service, até 5 — teto SEFAZ);
+  faltava só a captura no formulário.
+- Implementado espelhando o padrão "Adicionar volume": tração rotulada
+  nos campos existentes (retrocompat total), lista `_reboquesNF` +
+  adicionar/remover, validação placa BR (AAA0000/ABC1D23) + UF + teto 5,
+  build filtra inválidos, restore preenche, resets limpam, frete 9
+  desabilita, revisão avisa (reboque sem UF / sem tração).
+- DANFE oficial só exibe placa/UF/RNTC da tração (correto pelo manual);
+  reboques viajam no XML. Trava `nf-reboques` (13/13) + smoke funcional.
 - [ ] Reescritas amigáveis §6.2 (§6.4 multilinha)
 - [ ] Registrar não-conformidades novas como débito arquitetural
 

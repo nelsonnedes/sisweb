@@ -1251,10 +1251,10 @@
 
                 <div class="nf-subsection">
                   <h4><i class="fas fa-truck-moving"></i> Veículo e ANTT/RNTC</h4>
-                  <p class="nf-help-text">Informe placa, UF e registro ANTT/RNTC quando o transporte exigir dados do veículo.</p>
+                  <p class="nf-help-text">Tração = placa principal (truck/bitruck). Informe placa, UF e registro ANTT/RNTC quando o transporte exigir dados do veículo; reboques abaixo (carreta/bitrem/rodotrem).</p>
                   <div class="form-row">
                     <div class="form-group" style="max-width:150px">
-                      <label for="nfVeiculoPlaca">Placa:</label>
+                      <label for="nfVeiculoPlaca">Placa (tração):</label>
                       <input type="text" id="nfVeiculoPlaca" maxlength="8" placeholder="ABC1D23" oninput="this.value=this.value.toUpperCase()">
                     </div>
                     <div class="form-group" style="max-width:90px">
@@ -1266,6 +1266,24 @@
                       <input type="text" id="nfVeiculoRNTC" maxlength="20" placeholder="Registro ANTT">
                     </div>
                   </div>
+                  <div class="form-row">
+                    <div class="form-group" style="max-width:150px">
+                      <label for="nfReboquePlaca">Reboque (placa):</label>
+                      <input type="text" id="nfReboquePlaca" maxlength="8" placeholder="ABC1D23" oninput="this.value=this.value.toUpperCase()">
+                    </div>
+                    <div class="form-group" style="max-width:90px">
+                      <label for="nfReboqueUF">UF:</label>
+                      <input type="text" id="nfReboqueUF" maxlength="2" placeholder="UF" oninput="this.value=this.value.toUpperCase()">
+                    </div>
+                    <div class="form-group" style="max-width:200px;justify-content:end;">
+                      <label>&nbsp;</label>
+                      <button type="button" id="btnAddReboqueNF" class="btn btn-primary btn-small" onclick="adicionarReboqueNF()">
+                        <i class="fas fa-plus"></i> Adicionar reboque
+                      </button>
+                    </div>
+                  </div>
+                  <div class="nf-volume-list" id="nfReboquesLista"></div>
+                  <p class="nf-help-text">Tração = placa principal acima. Adicione um reboque por semirreboque (carreta 1, bitrem 2, rodotrem até 5 no XML).</p>
                 </div>
 
                 <div class="nf-subsection">
@@ -2742,6 +2760,7 @@
     let _clientesNF = [];
     let _notaEmCurso = null; // dados montados antes de pedir senha
     let _volumesNF = [];
+    let _reboquesNF = []; // reboques (placa/UF) — tração fica nos campos nfVeiculo*
 
     // ─── Helpers de valor ─────────────────────────────────
     function parseMoeda(v) {
@@ -3162,6 +3181,73 @@
       invalidarRevisaoNF();
     }
 
+    // ─── Reboques (composição veicular: carreta/bitrem/rodotrem) ───
+    // Tração = nfVeiculoPlaca/nfVeiculoUF (→ transp.veicTransp).
+    // Cada reboque → transp.reboque[] (XML aceita até 5).
+    function validarPlacaNF(placa) {
+      return /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(String(placa || ''));
+    }
+
+    function renderizarReboquesNF() {
+      const box = document.getElementById('nfReboquesLista');
+      if (!box) return;
+      if (!_reboquesNF.length) {
+        box.innerHTML = '<div class="nf-volume-empty">Nenhum reboque informado (somente tração).</div>';
+        return;
+      }
+      box.innerHTML = `
+        <table class="nf-card-table nf-volumes-table">
+          <thead>
+            <tr>
+              <th>Reboque</th>
+              <th>Placa</th>
+              <th>UF</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${_reboquesNF.map((rb, idx) => `
+              <tr>
+                <td data-label="Reboque">${idx + 1}</td>
+                <td data-label="Placa" style="font-family:monospace;font-weight:600">${escapeHtmlNF(rb.placa || '')}</td>
+                <td data-label="UF">${escapeHtmlNF(rb.UF || '')}</td>
+                <td data-label="Ações" class="nf-actions-cell"><button type="button" class="btn btn-danger btn-small" onclick="removerReboqueNF(${idx})" title="Remover reboque"><i class="fas fa-trash"></i></button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function limparReboqueAtualNF() {
+      ['nfReboquePlaca', 'nfReboqueUF'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+    }
+
+    function adicionarReboqueNF() {
+      const placa = (document.getElementById('nfReboquePlaca')?.value || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      const UF = (document.getElementById('nfReboqueUF')?.value || '').trim().toUpperCase();
+      if (!validarPlacaNF(placa) || !/^[A-Z]{2}$/.test(UF)) {
+        registrarErroCampoNF(['nfReboquePlaca', 'nfReboqueUF'], 'Placa inválida (use AAA0000 ou ABC1D23) e UF com 2 letras.');
+        return mostrarAlertaEmissao('⚠️ Informe placa válida (AAA0000 ou ABC1D23) e UF antes de adicionar o reboque.', 'warn');
+      }
+      if (_reboquesNF.length >= 5) {
+        return mostrarAlertaEmissao('⚠️ Limite de 5 reboques por NF-e (leiaute SEFAZ).', 'warn');
+      }
+      _reboquesNF.push({ placa, UF });
+      renderizarReboquesNF();
+      limparReboqueAtualNF();
+      invalidarRevisaoNF();
+      mostrarAlertaEmissao(`✅ Reboque ${placa}/${UF} adicionado (${_reboquesNF.length}/5).`, 'ok');
+    }
+
+    function removerReboqueNF(index) {
+      _reboquesNF.splice(index, 1);
+      renderizarReboquesNF();
+      invalidarRevisaoNF();
+    }
+
     function montarTransporteFromForm() {
       const g = (id) => document.getElementById(id)?.value?.trim() || '';
       const modFreteRaw = obterModFreteFromForm();
@@ -3189,6 +3275,14 @@
       Object.keys(veicTransp).forEach(k => { if (!veicTransp[k]) delete veicTransp[k]; });
       if (Object.keys(veicTransp).length) transp.veicTransp = veicTransp;
 
+      const rbs = (_reboquesNF || [])
+        .map((rb) => ({
+          placa: String(rb.placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase(),
+          UF: String(rb.UF || rb.uf || '').trim().toUpperCase(),
+        }))
+        .filter((rb) => validarPlacaNF(rb.placa) && /^[A-Z]{2}$/.test(rb.UF));
+      if (rbs.length) transp.reboque = rbs;
+
       const volAtual = montarVolumeAtualNF();
       const vols = _volumesNF.length ? _volumesNF.slice() : (volumeTemDadosNF(volAtual) ? [volAtual] : []);
       if (vols.length) transp.vol = vols;
@@ -3212,6 +3306,11 @@
       set('nfVeiculoPlaca', veic.placa || '');
       set('nfVeiculoUF', veic.UF || veic.uf || '');
       set('nfVeiculoRNTC', veic.RNTC || veic.rntc || veic.antt || '');
+      _reboquesNF = Array.isArray(t.reboque) ? t.reboque.filter(Boolean).map((rb) => ({
+        placa: String(rb.placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase(),
+        UF: String(rb.UF || rb.uf || '').trim().toUpperCase(),
+      })).filter((rb) => rb.placa || rb.UF) : [];
+      renderizarReboquesNF();
       set('nfVolQVol', vol.qVol || '');
       set('nfVolEspecie', vol.esp || vol.especie || '');
       set('nfVolMarca', vol.marca || '');
@@ -3228,7 +3327,8 @@
       const semTransporte = !Number.isFinite(modFrete) || modFrete === 9;
       const ids = [
         'nfTranspNome','nfTranspDoc','nfTranspIE','nfTranspEndereco','nfTranspMunicipio','nfTranspUF',
-        'nfVeiculoPlaca','nfVeiculoUF','nfVeiculoRNTC','nfVolQVol','nfVolEspecie','nfVolMarca',
+        'nfVeiculoPlaca','nfVeiculoUF','nfVeiculoRNTC','nfReboquePlaca','nfReboqueUF','btnAddReboqueNF',
+        'nfVolQVol','nfVolEspecie','nfVolMarca',
         'nfVolNumeracao','nfPesoBruto','nfPesoLiquido','nfVolLacres','btnAddVolumeNF','btnLimparVolumeNF',
       ];
       ids.forEach(id => {
@@ -3529,6 +3629,11 @@
           alerts.warnings.push('Frete indica transporte, mas transportador, veículo e volumes estão vazios.');
         }
         if (veic.placa && !veic.UF && !veic.uf) alerts.warnings.push('Placa informada sem UF da placa.');
+        const rbsRev = Array.isArray(transp.reboque) ? transp.reboque.filter(Boolean) : [];
+        rbsRev.forEach((rb, idx) => {
+          if (rb.placa && !rb.UF && !rb.uf) alerts.warnings.push(`Reboque ${idx + 1}: placa sem UF.`);
+        });
+        if (rbsRev.length && !veic.placa) alerts.warnings.push('Reboque informado sem placa de tração.');
         vols.forEach((vol, idx) => {
           const qVol = parseInt(String(vol.qVol || '').replace(/\D/g, ''), 10);
           const pesoB = parseNumeroFiscal(vol.pesoB);
@@ -3716,8 +3821,10 @@
         _notaEmCurso = null;
         _itensNF = [];
         _volumesNF = [];
+        _reboquesNF = [];
         renderizarItensNF();
         renderizarVolumesNF();
+        renderizarReboquesNF();
         atualizarTotaisNF();
         invalidarRevisaoNF();
         irParaEtapaNF('operacao');
@@ -3761,9 +3868,11 @@
       _itensNF = [];
       _notaEmCurso = null;
       _volumesNF = [];
+      _reboquesNF = [];
       _revisaoFiscalStatus = { errors: [], warnings: [] };
       renderizarItensNF();
       renderizarVolumesNF();
+      renderizarReboquesNF();
       atualizarTotaisNF();
       atualizarEstadoTransporteNF();
       ocultarAlertaEmissao();
@@ -4544,6 +4653,8 @@
     window.adicionarVolumeNF      = adicionarVolumeNF;
     window.removerVolumeNF        = removerVolumeNF;
     window.limparVolumeAtualNF    = limparVolumeAtualNF;
+    window.adicionarReboqueNF     = adicionarReboqueNF;
+    window.removerReboqueNF       = removerReboqueNF;
     window.consultarNotas         = consultarNotas;
     window.abrirDANFENota         = abrirDANFENota;
     window.abrirModalCartaCorrecaoNF = abrirModalCartaCorrecaoNF;
