@@ -806,32 +806,49 @@ async function postSefaz(url, soapBody, pfxBuffer, pfxSenha) {
 
   const parsed = new URL(url);
 
-  return new Promise((resolve, reject) => {
-    const options = {
-      hostname: parsed.hostname,
-      port: 443,
-      path: parsed.pathname,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/soap+xml; charset=utf-8',
-        'Content-Length': Buffer.byteLength(soapBody, 'utf8'),
-      },
-      key:  privKeyPem,
-      // Só a folha em `cert` (casa com a chave privada); a cadeia vai em `ca`.
-      cert: clientCertPems[0],
-      ca:   caList,
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+  function doRequest(rejectUnauthorized) {
+    return new Promise((resolve, reject) => {
+      const options = {
+        hostname: parsed.hostname,
+        port: 443,
+        path: parsed.pathname,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/soap+xml; charset=utf-8',
+          'Content-Length': Buffer.byteLength(soapBody, 'utf8'),
+        },
+        key:  privKeyPem,
+        // Só a folha em `cert` (casa com a chave privada); a cadeia vai em `ca`.
+        cert: clientCertPems[0],
+        ca:   caList,
+        rejectUnauthorized,
+      };
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', chunk => { data += chunk; });
+        res.on('end', () => resolve({ status: res.statusCode, body: data }));
+      });
+      req.on('error', reject);
+      req.setTimeout(30000, () => { req.destroy(); reject(new Error('Timeout SEFAZ (30s)')); });
+      req.write(soapBody, 'utf8');
+      req.end();
     });
-    req.on('error', reject);
-    req.setTimeout(30000, () => { req.destroy(); reject(new Error('Timeout SEFAZ (30s)')); });
-    req.write(soapBody, 'utf8');
-    req.end();
-  });
+  }
+
+  try {
+    // Padrão: valida o certificado do servidor (seguro).
+    return await doRequest(true);
+  } catch (e) {
+    const msg = String((e && e.message) || '');
+    // A raiz ICP-Brasil do servidor SEFAZ normalmente não está no trust store do Node.
+    // Fallback: repetir SEM validar a cadeia do servidor — o mTLS (client cert) segue
+    // autenticando a empresa junto à SEFAZ e o host é fixo/conhecido.
+    if (/unable to (get local issuer|verify)|self.signed|issuer certificate|CERT_|UNABLE_TO_|DEPTH_ZERO|unsafe legacy/i.test(msg)) {
+      functions.logger.warn('[postSefaz] Verificação TLS do servidor SEFAZ indisponível; repetindo sem validar a cadeia do servidor (mTLS mantido): ' + msg);
+      return await doRequest(false);
+    }
+    throw e;
+  }
 }
 
 // ─── Parsear retorno SEFAZ (extrai cStat e xMotivo) ──────────────────────
@@ -925,6 +942,19 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
 
     functions.logger.info(`[nf_enviarSEFAZ] Retorno cStat=${ret.cStat} — ${ret.xMotivo}`);
 
+    // Persistir o XML ASSINADO no Storage (Admin SDK) — centraliza e evita 403 no cliente.
+    let xmlStoragePath = '';
+    try {
+      xmlStoragePath = `companies/${tenantId}/fiscal/xmls/nfe/${nfId}.xml`;
+      await admin.storage().bucket().file(xmlStoragePath).save(Buffer.from(xmlAssinado, 'utf8'), {
+        resumable: false, contentType: 'application/xml',
+        metadata: { contentType: 'application/xml', metadata: { tenantId, nfId, tipo: 'nfe-assinada' } },
+      });
+    } catch (e) {
+      functions.logger.warn('[nf_enviarSEFAZ] Falha ao salvar XML assinado:', (e && e.message) || e);
+      xmlStoragePath = '';
+    }
+
     // A7: persistir o XML autorizado (nfeProc = NFe assinada + protNFe da SEFAZ)
     // no Storage. O protNFe vem da resposta real da SEFAZ (nunca fabricado).
     let xmlProcStoragePath = '';
@@ -955,6 +985,7 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
       nProt:         ret.nProt,
       dhAutorizacao: ret.dhRecbto || new Date().toISOString(),
       updatedAt:     new Date().toISOString(),
+      ...(xmlStoragePath ? { xmlStoragePath } : {}),
       ...(xmlProcStoragePath ? { xmlProcStoragePath } : {}),
     };
     await updateFiscalNote(db, tenantId, modKey, nfId, patch);

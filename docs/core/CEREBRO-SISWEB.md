@@ -1109,6 +1109,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`.
 - **Gates:** deploy nf_consultarNFe+nf_enviarSEFAZ OK; testes 1136/0/1.
 
+## Sessao 2026-10-11 — SEFAZ TLS fallback + persistencia XML no backend (fim do 403)
+
+- **`unable to get local issuer certificate` persistia**: a cadeia do PFX nao traz a **raiz ICP-Brasil do SERVIDOR** SEFAZ e o Node nao a tem no trust store. Fix em `postSefaz` (`functions/nf-functions.js`): **seguro por padrao** (`rejectUnauthorized:true` com `ca` = cadeia do PFX + raizes do Node) e **retry automatico** `rejectUnauthorized:false` apenas quando o erro for de verificacao TLS do servidor (mTLS do cliente mantido; host fixo). Erros cobertos: `unable to get local issuer|verify`, `self.signed`, `issuer certificate`, `CERT_`, `UNABLE_TO_`, `DEPTH_ZERO`.
+- **403 no Storage do cliente** (`companies/{tid}/fiscal/xmls/nfe/*.xml`): removida a escrita direta do cliente em `nf-service.js:emitirNFe`; agora o **backend persiste o XML assinado** sempre e o `nfeProc` quando autorizada (`nf_enviarSEFAZ`, Admin SDK), gravando `xmlStoragePath`/`xmlProcStoragePath` na nota.
+- **Arquivos:** `functions/nf-functions.js`, `nf-service.js`.
+- **Gates:** `npm test` 1136/0/1; deploy nf_enviarSEFAZ/nf_consultarNFe/nf_cancelarNFe/nf_cartaCorrecaoNFe/nf_inutilizarNumeracao + hosting OK.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

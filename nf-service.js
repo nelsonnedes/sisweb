@@ -253,18 +253,13 @@ const NFService = (() => {
       throw new Error('XML assinado inválido (assinatura digital ausente). Emissão bloqueada.');
     }
 
-    // 7. Guardar XML assinado no Storage (não bloqueia a emissão)
+    // 7. O XML assinado é persistido no Storage pelo backend (nf_enviarSEFAZ, Admin SDK),
+    //    evitando a escrita direta do cliente (regras de Storage restritas → 403).
     let xmlStoragePath = '';
-    try {
-      xmlStoragePath = await window.NFStorage.salvarXML(_tenantId, nfeData.id, xmlAssinado);
-    } catch (e) {
-      console.warn('[NFService] XML não pôde ser salvo no Storage — emissão continua:', e.message);
-    }
 
     // 8. Salvar NF uma única vez (status "aguardando")
     nfeData.status = 'aguardando';
     nfeData.xmlGerado = true;
-    nfeData.xmlStoragePath = xmlStoragePath;
     const saved = await window.NFStorage.salvarNF(_tenantId, nfeData);
 
     // 9. Transmitir à SEFAZ (nf_enviarSEFAZ persiste status/protocolo no backend)
