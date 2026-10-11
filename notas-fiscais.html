@@ -3834,6 +3834,24 @@
       if (!meta) throw new Error('Configure o certificado digital antes de emitir NF-e.');
       if (st && st.bloqueiaEmissao) throw new Error(st.msg);
       if (meta.tipo && meta.tipo !== 'A1') throw new Error('Este tipo de certificado ainda não possui fluxo de assinatura homologado para emissão.');
+      // Pre-flight: vínculo + assinatura (evita falhar no meio da emissão)
+      try {
+        const usr = window.firebaseAuthUser || null;
+        if (usr && typeof usr.getIdTokenResult === 'function') {
+          const tok = await usr.getIdTokenResult(false);
+          const claims = (tok && tok.claims) || {};
+          const claimCid = String(claims.companyId || claims.companyID || claims.tenantId || '');
+          const sub = String(claims.subscriptionStatus || '').toLowerCase();
+          if (tid && claimCid && claimCid !== tid) {
+            throw new Error('Sessão vinculada a outra empresa. Troque de empresa ou refaça login.');
+          }
+          if (sub && sub !== 'active' && sub !== 'trial_active') {
+            throw new Error('Assinatura inativa: emissão e gravação fiscal bloqueadas. Regularize em Minha Assinatura.');
+          }
+        }
+      } catch (e) {
+        if (/Sessão vinculada|Assinatura inativa/.test(e.message)) throw e;
+      }
       return true;
     }
 

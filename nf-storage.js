@@ -35,7 +35,7 @@ const NFStorage = (() => {
   // Mapeia negacao de regra para texto acionavel (Sentry ja registrou o tecnico).
   function mapWriteError(e, acao) {
     const raw = String((e && e.message) || e || '');
-    if (/permission_denied|PERMISSION_DENIED/i.test(raw)) {
+    if (/permission_denied|PERMISSION_DENIED|storage\/unauthorized|User does not have permission|unauthorized/i.test(raw)) {
       return new Error('Sem permissão para ' + acao + ' (verifique vínculo com a empresa e assinatura ativa). Detalhe: ' + raw.slice(0, 160));
     }
     return e;
@@ -104,12 +104,14 @@ const NFStorage = (() => {
   // ─── Salvar XML assinado no Storage ──────────────────────────────────────
   async function salvarXML(tenantId, nfId, xmlString) {
     const ref = `companies/${tenantId}/fiscal/xmls/nfe/${nfId}.xml`;
-    if (window.storageService?.upload) {
-      const blob = new Blob([xmlString], { type: 'application/xml' });
-      await window.storageService.upload(ref, blob, 'application/xml');
-    } else {
-      throw new Error('StorageService indisponível. XML fiscal deve ser salvo no Firebase Storage.');
-    }
+    try {
+      if (window.storageService?.upload) {
+        const blob = new Blob([xmlString], { type: 'application/xml' });
+        await window.storageService.upload(ref, blob, 'application/xml');
+      } else {
+        throw new Error('StorageService indisponível. XML fiscal deve ser salvo no Firebase Storage.');
+      }
+    } catch (e) { throw mapWriteError(e, 'salvar o XML no Storage'); }
     return ref;
   }
 

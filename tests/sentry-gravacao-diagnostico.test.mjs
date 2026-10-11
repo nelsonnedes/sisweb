@@ -27,4 +27,16 @@ test('negacao de regra fiscal vira mensagem amigavel', async (t) => {
     assert.ok(src.includes('Sem permissão para '), 'texto acionavel em PT');
     assert.ok(src.includes('salvarNF') && src.includes('mapWriteError(e,'), 'salvarNF usa mapeador');
   });
+
+  await t.test('storage unauthorized mapeado (XML)', () => {
+    const src = fs.readFileSync('nf-storage.js', 'utf8');
+    assert.ok(src.includes('storage\\/unauthorized'), 'cobre Storage');
+    assert.ok(src.includes('salvar o XML no Storage'), 'salvarXML amigavel');
+  });
+
+  await t.test('pre-flight de vinculo/assinatura antes de emitir', () => {
+    const src = fs.readFileSync('notas-fiscais.html', 'utf8');
+    assert.ok(src.includes('Sessão vinculada a outra empresa'), 'troca de empresa detectada');
+    assert.ok(src.includes('Assinatura inativa'), 'assinatura checada cedo');
+  });
 });
