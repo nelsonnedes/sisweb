@@ -2832,7 +2832,7 @@
                                     const msg = String(error && (error.message || error.cause || error) || '').toLowerCase();
                                     const blocked = msg.includes('block') || msg.includes('network') || msg.includes('fetch') || msg.includes('err_blocked');
                                     helper.innerHTML = blocked
-                                        ? '<div class="payment-blocked-alert">⚠️ O navegador bloqueou o ambiente de pagamento.<br><small>Extensões como <strong>ad-blocker</strong>, uBlock Origin ou bloqueadores de privacidade podem estar interferindo. Desative-as para esta página ou use o <strong>envio manual</strong> abaixo.</small><br><br><button type="button" onclick="setPaymentFlowMode(\'manual\')" style="background:#2563eb;color:#fff;border:0;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;">Usar envio manual de comprovante</button></div>'
+                                        ? '<div class="payment-blocked-alert">⚠️ O navegador bloqueou o ambiente de pagamento.<br><small>Extensões como <strong>ad-blocker</strong>, uBlock Origin ou bloqueadores de privacidade podem estar interferindo. Desative-as para esta página ou use o <strong>envio manual</strong> abaixo.</small><br><br><button type="button" onclick="setPaymentFlowMode(\'manual\')" style="background:var(--sw-info);color:#fff;border:0;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;">Usar envio manual de comprovante</button></div>'
                                         : '<div class="payment-blocked-alert">Erro ao carregar módulo de pagamento. Tente novamente.</div>';
                                     helper.style.display = 'block';
                                 }
@@ -2846,7 +2846,7 @@
             // Timeout: se onReady não disparar em 12s, assume bloqueio
             brickTimeout = setTimeout(() => {
                 if (helper && helper.style.display !== 'none') {
-                    helper.innerHTML = '<div class="payment-blocked-alert">⚠️ O ambiente de pagamento não carregou.<br><small>Extensões de bloqueio (ad-blocker, privacidade) podem estar impedindo o carregamento. Tente desativá-las ou use o <strong>envio manual</strong>.</small><br><br><button type="button" onclick="setPaymentFlowMode(\'manual\')" style="background:#2563eb;color:#fff;border:0;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;">Usar envio manual de comprovante</button></div>';
+                    helper.innerHTML = '<div class="payment-blocked-alert">⚠️ O ambiente de pagamento não carregou.<br><small>Extensões de bloqueio (ad-blocker, privacidade) podem estar impedindo o carregamento. Tente desativá-las ou use o <strong>envio manual</strong>.</small><br><br><button type="button" onclick="setPaymentFlowMode(\'manual\')" style="background:var(--sw-info);color:#fff;border:0;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;">Usar envio manual de comprovante</button></div>';
                     helper.style.display = 'block';
                 }
             }, 12000);
@@ -2866,7 +2866,7 @@
                 const msg = String(error && (error.message || error.cause || error) || '').toLowerCase();
                 const blocked = msg.includes('block') || msg.includes('network') || msg.includes('fetch') || msg.includes('err_blocked');
                 helper.innerHTML = blocked
-                    ? '<div class="payment-blocked-alert">⚠️ Não foi possível conectar ao Mercado Pago.<br><small>Extensões de bloqueio podem estar impedindo o carregamento. Tente desativar ad-blockers ou use o <strong>envio manual</strong>.</small><br><br><button type="button" onclick="setPaymentFlowMode(\'manual\')" style="background:#2563eb;color:#fff;border:0;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;">Usar envio manual de comprovante</button></div>'
+                    ? '<div class="payment-blocked-alert">⚠️ Não foi possível conectar ao Mercado Pago.<br><small>Extensões de bloqueio podem estar impedindo o carregamento. Tente desativar ad-blockers ou use o <strong>envio manual</strong>.</small><br><br><button type="button" onclick="setPaymentFlowMode(\'manual\')" style="background:var(--sw-info);color:#fff;border:0;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;">Usar envio manual de comprovante</button></div>'
                     : `<div class="payment-blocked-alert">${error.message || 'Falha ao iniciar pagamento. Tente novamente.'}</div>`;
                 helper.style.display = 'block';
             }

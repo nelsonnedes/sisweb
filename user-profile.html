@@ -420,15 +420,15 @@
         }
 
         .message.success {
-            background-color: #ecfdf5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
+            background: color-mix(in srgb, var(--sw-success) 18%, transparent);
+            color: var(--sw-text-1);
+            border: 1px solid var(--sw-success);
         }
 
         .message.error {
-            background-color: #fef2f2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
+            background: color-mix(in srgb, var(--sw-danger) 18%, transparent);
+            color: var(--sw-text-1);
+            border: 1px solid var(--sw-danger);
         }
 
         /* Full Width Card for Password */
@@ -764,7 +764,7 @@
                         <button type="button" class="btn-primary" id="mfaEnableBtn" onclick="startMfaSetup()" style="display:none;">
                             <i class="fas fa-shield-alt"></i> Ativar 2FA
                         </button>
-                        <button type="button" class="btn-secondary" id="mfaDisableBtn" onclick="disableMfa()" style="display:none; background:#fef2f2; color:#991b1b;">
+                        <button type="button" class="btn-secondary" id="mfaDisableBtn" onclick="disableMfa()" style="display:none;background:color-mix(in srgb, var(--sw-danger) 15%, transparent);color:var(--sw-text-1);border:1px solid var(--sw-danger);">
                             <i class="fas fa-shield"></i> Desativar 2FA
                         </button>
                     </div>
@@ -816,7 +816,7 @@
                         <i class="fas fa-camera"></i>
                         Alterar Foto
                     </button>
-                    <button type="button" class="btn-secondary" style="margin-top: 5px; padding: 8px 16px; background: #fef2f2; color: #991b1b;" onclick="removeUserPhoto()">
+                    <button type="button" class="btn-secondary" style="margin-top: 5px; padding: 8px 16px; background:color-mix(in srgb, var(--sw-danger) 15%, transparent); color:var(--sw-text-1); border:1px solid var(--sw-danger);" onclick="removeUserPhoto()">
                         <i class="fas fa-trash"></i>
                         Remover Foto
                     </button>
@@ -1537,19 +1537,19 @@
                 document.body.appendChild(globalMessage);
             }
             
-            // Definir cores baseadas no tipo
+            // Definir cores baseadas no tipo (tokens: legível claro/escuro)
             if (type === 'success') {
-                globalMessage.style.backgroundColor = '#ecfdf5';
-                globalMessage.style.color = '#065f46';
-                globalMessage.style.border = '1px solid #a7f3d0';
+                globalMessage.style.background = 'color-mix(in srgb, var(--sw-success) 18%, transparent)';
+                globalMessage.style.color = 'var(--sw-text-1)';
+                globalMessage.style.border = '1px solid var(--sw-success)';
             } else if (type === 'info') {
-                globalMessage.style.backgroundColor = '#eff6ff';
-                globalMessage.style.color = '#1d4ed8';
-                globalMessage.style.border = '1px solid #bfdbfe';
+                globalMessage.style.background = 'color-mix(in srgb, var(--sw-info) 18%, transparent)';
+                globalMessage.style.color = 'var(--sw-text-1)';
+                globalMessage.style.border = '1px solid var(--sw-info)';
             } else if (type === 'error') {
-                globalMessage.style.backgroundColor = '#fef2f2';
-                globalMessage.style.color = '#991b1b';
-                globalMessage.style.border = '1px solid #fecaca';
+                globalMessage.style.background = 'color-mix(in srgb, var(--sw-danger) 18%, transparent)';
+                globalMessage.style.color = 'var(--sw-text-1)';
+                globalMessage.style.border = '1px solid var(--sw-danger)';
             }
             
             globalMessage.textContent = text;

@@ -546,15 +546,7 @@
             box-sizing: border-box;
         }
 
-        /* UX: botoes padronizados na NF (38 acao / 32 pequeno), acima do sistema global. */
-        #nfForm .btn {
-            height: 38px !important;
-            box-sizing: border-box;
-        }
-        #nfForm .btn.btn-small {
-            height: 32px !important;
-            min-width: 32px !important;
-        }
+        /* UX: botoes seguem o sistema global (36 acao / 30 pequeno). */
 
         .table-container {
             overflow-x: auto;
@@ -1994,7 +1986,7 @@
                     <button type="button" onclick="detectarTokenA3()" class="btn btn-primary" id="btnDetectarToken">
                       <i class="fas fa-plug"></i> Verificar Ponte Local
                     </button>
-                    <button type="button" onclick="configurarTokenManual()" class="btn" style="background:#6c757d;color:#fff;">
+                    <button type="button" onclick="configurarTokenManual()" class="btn btn-secondary">
                       <i class="fas fa-cog"></i> Configurar Ponte
                     </button>
                   </div>
@@ -2104,10 +2096,10 @@
             <button type="button" onclick="salvarConfiguracoes()" class="btn btn-success" id="btnSalvarCfg">
               <i class="fas fa-save"></i> Salvar Configurações da Empresa/NF-e/Impostos
             </button>
-            <button type="button" onclick="cfgExpandirTodos()" class="btn" style="background:#6c757d;color:#fff;">
+            <button type="button" onclick="cfgExpandirTodos()" class="btn btn-secondary">
               <i class="fas fa-expand-arrows-alt"></i> Expandir Todos
             </button>
-            <button type="button" onclick="cfgRecolherTodos()" class="btn" style="background:#6c757d;color:#fff;">
+            <button type="button" onclick="cfgRecolherTodos()" class="btn btn-secondary">
               <i class="fas fa-compress-arrows-alt"></i> Recolher Todos
             </button>
           </div>

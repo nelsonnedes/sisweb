@@ -35,8 +35,9 @@ test('textos usam tokens (contraste nos dois temas)', async (t) => {
     });
   }
 
-  await t.test('botoes cinza funcionais mantidos', () => {
-    assert.ok(nf.includes('background:#6c757d;color:#fff'), 'cinza funcional preservado');
+  await t.test('botoes cinza usam classe do sistema', () => {
+    assert.ok(!nf.includes('background:#6c757d'), 'sem cinza inline');
+    assert.ok(nf.includes('btn-secondary'), 'usa btn-secondary');
   });
 
   await t.test('cabecalhos de modal escuros intencionais', () => {
@@ -56,15 +57,26 @@ test('pills de status via tokens', async (t) => {  await t.test('statusMap usa t
   });
 });
 
-test('botoes padronizados: acao 38, campo 38, pequeno 32', async (t) => {
-  await t.test('regra de acao e pequena com especificidade', () => {
-    assert.ok(nf.includes('#nfForm .btn {'), 'acao 38 escopada');
-    assert.ok(nf.includes('#nfForm .btn.btn-small {'), 'pequeno 32 escopado');
-    assert.ok(nf.includes('#nfForm .btn.btn-small.nf-cust-btn'), 'campo 38 vence pequeno');
+test('botoes: sistema global 36 + campo 38, cores via tokens', async (t) => {
+  await t.test('sem override local de altura (vale o sistema)', () => {
+    assert.ok(!nf.includes('#nfForm .btn {'), 'sem dialeto local de altura');
+    assert.ok(nf.includes('#nfForm .btn.btn-small.nf-cust-btn'), 'excecao campo 38');
   });
 
   await t.test('botoes de campo marcados', () => {
     const n = (nf.match(/nf-cust-btn/g) || []).length;
     assert.ok(n >= 4, `2 cliente + 1 natureza + CSS (achado ${n})`);
+  });
+
+  await t.test('cinzas funcionais via classe do sistema', () => {
+    assert.ok(!nf.includes("style=\"background:#6c757d"), 'sem cinza inline');
+    assert.ok(nf.includes('btn-secondary'), 'usa btn-secondary');
+  });
+
+  await t.test('perigo MFA e info assinatura via tokens', () => {
+    const up = fs.readFileSync('user-profile.html', 'utf8');
+    assert.ok(!up.includes('#fef2f2'), 'sem tint fixa no perfil');
+    const sub = fs.readFileSync('subscription.html', 'utf8');
+    assert.ok(!sub.includes('background:#2563eb'), 'assinatura via token');
   });
 });
