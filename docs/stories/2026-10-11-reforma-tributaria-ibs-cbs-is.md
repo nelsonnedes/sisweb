@@ -18,7 +18,15 @@ O usuário forneceu os **esquemas oficiais em uso** (`C:\Sisweb\Esquemas XML`), 
 - `nf-config.js`: `impostos.ibscbs` e `impostos.is` (defaults desabilitados).
 - Travas: `tests/nf-emissao-sefaz.test.mjs`. Verificação funcional: XML balanceado, grupos presentes, `vCBS` total correto.
 
-**Pendente:** UI na Configuração para habilitar/preencher CST e `cClassTrib`; validação automática contra o XSD (instalar validador); `gCredPres`/`gMono`/`gDif`/`gRed` (reduções/crédito presumido/diferimento) conforme regras do contribuinte.
+**Pendente:** validação automática contra o XSD no pipeline foi implementada (ver §0.2); grupos avançados (`gCredPres`/`gMono`/`gDif`/`gRed`) conforme regra do contribuinte; eventos `Eventos_RTC`.
+
+## 0.2 UI de configuração + validação XSD no pipeline (2026-10-11)
+
+- **UI (Configuração > Impostos)**: novos campos IBS/CBS (`cfgIbsCbsHabilitado`, `cfgIbsCbsCst`, `cfgIbsCbsCClassTrib`, `cfgIbsAliqUF`, `cfgIbsAliqMun`, `cfgCbsAliq`) e IS (`cfgIsHabilitado`, `cfgIsCst`, `cfgIsCClassTrib`, `cfgIsAliq`), com carga (`preencherCamposConfig`) e salvamento (`salvarConfiguracoes` → `impostos.ibscbs`/`impostos.is`).
+- **Propagação ao item**: `NFConfigService.calcularIBSCBS()`/`calcularIS()` aplicados nos 4 fluxos de item (manual, cadastrado, edição e recálculo).
+- **Validação XSD no pipeline**: `tests/nfe-xsd-validation.test.mjs` gera a NF-e pelo builder real e valida contra o **XSD oficial** `tests/schemas/nfe/nfe_v4.00.xsd` (PL_010f_v1.04) via `xsd-schema-validator` (Java). Cobre XML **sem** e **com** grupos RTC. Script: `npm run validate:nfe-xsd`.
+- **Bugs reais encontrados pelo XSD e corrigidos**: `dhEmi` emitia **milissegundos** (violava `TDateTimeUTC`) — removidos; confirmado que `<indPag>` não pertence a `<ide>`.
+- **Schemas vendorizados** no repo (`tests/schemas/nfe/`): `nfe_v4.00.xsd`, `leiauteNFe_v4.00.xsd`, `tiposBasico_v4.00.xsd`, `DFeTiposBasicos_v1.00.xsd`, `xmldsig-core-schema_v1.01.xsd`.
 
 ## 1. Fontes oficiais consultadas
 

@@ -317,6 +317,35 @@ const NFConfigService = (() => {
     };
   }
 
+  // ─── Reforma Tributária: IBS/CBS ─────────────────────────────────────────
+  function calcularIBSCBS(config, valorProduto) {
+    const g = (config.impostos && config.impostos.ibscbs) || {};
+    if (!g.habilitado) return null;
+    return {
+      habilitado: true,
+      cst: g.cst || '',
+      cClassTrib: g.cClassTrib || '',
+      pIBSUF: Number(g.pIBSUF) || 0,
+      pIBSMun: Number(g.pIBSMun) || 0,
+      pCBS: Number(g.pCBS) || 0,
+      vBC: round2(valorProduto),
+    };
+  }
+
+  // ─── Reforma Tributária: Imposto Seletivo ────────────────────────────────
+  function calcularIS(config, valorProduto) {
+    const g = (config.impostos && config.impostos.is) || {};
+    if (!g.habilitado) return null;
+    return {
+      habilitado: true,
+      cstIS: g.cstIS || '',
+      cClassTribIS: g.cClassTribIS || '',
+      pIS: Number(g.pIS) || 0,
+      adRemIS: g.adRemIS != null && g.adRemIS !== '' ? Number(g.adRemIS) : null,
+      vBCIS: round2(valorProduto),
+    };
+  }
+
   // ─── Validar CNPJ ──────────────────────────────────────────────────────────
   function validarCNPJ(cnpj) {
     const n = String(cnpj || '').replace(/\D/g, '');
@@ -414,6 +443,8 @@ const NFConfigService = (() => {
     calcularPISCOFINS,
     calcularIPI,
     aliquotaInterestadual,
+    calcularIBSCBS,
+    calcularIS,
     validarCNPJ,
     validarCPF,
     formatarCNPJ,

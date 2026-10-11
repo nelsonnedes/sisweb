@@ -85,7 +85,8 @@ const NFXmlBuilder = (() => {
   // 4.00 (existe apenas em <detPag>, minOccurs=0). Portanto NÃO deve ser
   // emitido em <ide>.
   function buildIde(ide, chaveInfo) {
-    const dhEmi = ide.dhEmi ? new Date(ide.dhEmi).toISOString().replace('Z', '-03:00') : '';
+    // TDateTimeUTC: sem milissegundos, offset -03:00 (validado no schema oficial)
+    const dhEmi = ide.dhEmi ? new Date(ide.dhEmi).toISOString().replace(/\.\d{3}Z$/, '-03:00') : '';
     return `
     <ide>
       <cUF>${getCUF(ide.ufEmit)}</cUF>

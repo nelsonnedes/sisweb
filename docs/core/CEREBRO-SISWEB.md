@@ -1058,6 +1058,16 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `nf-config.js`, `tests/nf-emissao-sefaz.test.mjs`, `docs/stories/2026-10-11-reforma-tributaria-ibs-cbs-is.md`.
 - **Gates:** `npm test` 1122/0/1; lint + typecheck limpos; verificado XML balanceado.
 
+## Sessao 2026-10-11 — UI IBS/CBS/IS + validacao XSD no pipeline
+
+- **UI de configuracao IBS/CBS/IS** (`notas-fiscais.html`, painel Impostos): checkbox `cfgIbsCbsHabilitado`, `cfgIbsCbsCst`, `cfgIbsCbsCClassTrib`, `cfgIbsAliqUF`, `cfgIbsAliqMun`, `cfgCbsAliq`; `cfgIsHabilitado`, `cfgIsCst`, `cfgIsCClassTrib`, `cfgIsAliq`. Carga em `preencherCamposConfig`, salvamento em `salvarConfiguracoes` (impostos.ibscbs / impostos.is).
+- **Propagacao ao item**: `NFConfigService.calcularIBSCBS()`/`calcularIS()` (nf-config.js) chamados nos 4 fluxos de item (manual ~4757, cadastrado ~4813, edicao ~3094, recalculo ~3018). Cada item leva `imposto.ibscbs`/`imposto.is` quando a config estiver habilitada.
+- **Validacao XSD no pipeline**: `tests/nfe-xsd-validation.test.mjs` (novo) valida a NF-e gerada pelo builder REAL contra o **XSD oficial** `tests/schemas/nfe/nfe_v4.00.xsd` (PL_010f_v1.04) usando `xsd-schema-validator` (devDependency; requer Java, presente). Cobre sem/com grupos RTC. Script `npm run validate:nfe-xsd`. Schemas vendorizados em `tests/schemas/nfe/` (5 arquivos).
+- **Bugs reais achados pela validacao XSD e corrigidos**: `dhEmi` emitia **milissegundos** (`.166`) — invalido para `TDateTimeUTC`; agora `replace(/\.\d{3}Z$/,'-03:00')` em `buildIde`. Confirmado tambem que `<indPag>` nao pertence a `<ide>`.
+- **Armadilha**: assinatura de teste para o schema xmldsig exige `<Transforms>` com **2** `<Transform>` (enveloped-signature + C14N) — senao `cvc-complex-type.2.4.i`.
+- **Arquivos:** `notas-fiscais.html`, `nf-config.js`, `nf-xml-builder.js`, `tests/nfe-xsd-validation.test.mjs`, `tests/schemas/nfe/*.xsd`, `package.json` (+ script/ devDep), story, este cerebro.
+- **Gates:** `npm test` 1127/0/1 (XSD 5/5); lint + typecheck limpos; sintaxe inline HTML 0 erros; hosting publicado.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").
