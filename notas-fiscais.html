@@ -1031,6 +1031,12 @@
                 min-width: 0 !important;
             }
         }
+
+        /* UX: botoes Novo/Editar cliente 38px no desktop (padrao campos). */
+        #nfForm .nf-customer-picker .nf-cust-btn {
+            height: 38px !important;
+            min-width: 38px !important;
+        }
     </style>
 </head>
 <body>
@@ -1168,11 +1174,11 @@
                     <select id="nfCliente" required style="flex:2">
                       <option value="">Selecione um cliente...</option>
                     </select>
-                    <button type="button" onclick="openNewClientModal()" class="btn btn-primary btn-small"
+                    <button type="button" onclick="openNewClientModal()" class="btn btn-primary btn-small nf-cust-btn"
                       title="Novo Cliente" style="white-space:nowrap;padding:8px 10px;">
                       <i class="fas fa-plus"></i>
                     </button>
-                    <button type="button" onclick="editarClienteSelecionadoNF()" class="btn btn-warning btn-small"
+                    <button type="button" onclick="editarClienteSelecionadoNF()" class="btn btn-warning btn-small nf-cust-btn"
                       title="Editar cliente selecionado" style="white-space:nowrap;padding:8px 10px;">
                       <i class="fas fa-edit"></i>
                     </button>
@@ -1934,6 +1940,7 @@
                 <input type="password" id="certSenha" placeholder="Senha do certificado A1" autocomplete="current-password">
               </div>
             </div>
+            <p class="nf-help-text">Por segurança, arquivo e senha são pedidos a cada sessão — o navegador nunca os guarda. Os dados validados (titular, validade) permanecem salvos.</p>
             <!-- Nuvem fields -->
             <div id="certNuvemFields" style="display:none" class="form-row">
               <div class="form-group">
@@ -2761,6 +2768,7 @@
     let _notaEmCurso = null; // dados montados antes de pedir senha
     let _volumesNF = [];
     let _reboquesNF = []; // reboques (placa/UF) — tração fica nos campos nfVeiculo*
+    let _rascunhoEditandoId = null; // id do rascunho em edição (salvar atualiza em vez de duplicar)
 
     // ─── Helpers de valor ─────────────────────────────────
     function parseMoeda(v) {
@@ -3828,8 +3836,10 @@
         _itensNF = [];
         _volumesNF = [];
         _reboquesNF = [];
+        _rascunhoEditandoId = null;
         renderizarItensNF();
         renderizarVolumesNF();
+        renderizarReboquesNF();
         renderizarReboquesNF();
         atualizarTotaisNF();
         invalidarRevisaoNF();
@@ -3856,9 +3866,12 @@
       if (!dest) return mostrarAlertaEmissao('⚠️ Cliente inválido');
       const formData = coletarFormDataNF(dest, { rascunho: true });
       const nfeData = window.NFService?.buildNFeFromForm?.(formData, _itensNF) || { det: _itensNF, dest, status: 'rascunho' };
+      // Editando rascunho existente: preserva id (atualiza em vez de duplicar)
+      if (_rascunhoEditandoId) nfeData.id = _rascunhoEditandoId;
       try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Salvando rascunho...'); } catch (_) {}
       try {
         const saved = await window.NFService.salvarRascunho(nfeData);
+        if (saved && saved.id) _rascunhoEditandoId = saved.id;
         mostrarAlertaEmissao(`✅ Rascunho salvo! ID: ${saved.id}`, 'ok');
       } catch(e) {
         mostrarAlertaEmissao('❌ ' + e.message, 'erro');
@@ -3875,6 +3888,7 @@
       _notaEmCurso = null;
       _volumesNF = [];
       _reboquesNF = [];
+      _rascunhoEditandoId = null;
       _revisaoFiscalStatus = { errors: [], warnings: [] };
       renderizarItensNF();
       renderizarVolumesNF();
@@ -3947,6 +3961,7 @@
             ${n.status==='autorizada' ? `<button class="btn btn-warning btn-small" onclick="abrirModalCartaCorrecaoNF('${n.id}','${n.chave || ''}')" title="Carta de Correção"><i class="fas fa-file-signature"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-danger btn-small" onclick="iniciarCancelamento('${n.id}','${n.chave}','${n.nProt||''}')" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
             ${n.status==='rascunho' ? `<button class="btn btn-warning btn-small" onclick="editarRascunho('${n.id}')" title="Editar"><i class="fas fa-edit"></i></button>` : ''}
+            ${n.status==='rascunho' ? `<button class="btn btn-danger btn-small" onclick="excluirRascunhoNF('${n.id}')" title="Excluir rascunho"><i class="fas fa-trash"></i></button>` : ''}
           </td>
         </tr>`;
       }).join('');
@@ -4276,18 +4291,36 @@
       } catch(e) { notifyUser('Erro no cancelamento: ' + e.message); }
     }
 
-    async function editarRascunho(nfId) {
-      try {
+    async function editarRascunho(nfId) {      try {
         const tid = obterTenantIdNF();
         if (!tid) return notifyUser('Tenant não identificado');
 
-        // Carregar NF do Firebase
-        const nf = await window.NFStorage.carregarNF(tid, 55, nfId);
-        if (!nf) return notifyUser('Rascunho não encontrado');
+        // Carregar NF do Firebase (tenta NFe 55 e NFC-e 65)
+        let nf = await window.NFStorage.carregarNF(tid, 55, nfId);
+        if (!nf) {
+          try { nf = await window.NFStorage.carregarNF(tid, 65, nfId); } catch (_) {}
+        }
+        if (!nf) {
+          // Distinguir "sem permissão" de "não existe" antes de desistir
+          try {
+            const probe = window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function'
+              ? await window.firebaseService.loadFromFirebase(`companies/${tid}/fiscal/notas/nfe`)
+              : null;
+            if (probe && probe.success === false && /permission|negad|denied/i.test(String(probe.error || ''))) {
+              return notifyUser('Sem permissão para ler rascunhos (verifique vínculo com a empresa).');
+            }
+          } catch (e) {
+            if (/permission_denied|PERMISSION_DENIED/i.test(String((e && e.message) || e || ''))) {
+              return notifyUser('Sem permissão para ler rascunhos (verifique vínculo com a empresa).');
+            }
+          }
+          return notifyUser('Rascunho não encontrado');
+        }
 
         // Ir para aba emissão
         showTab('emissao');
         limparFormularioNF();
+        _rascunhoEditandoId = nfId;
 
         // Preencher dados da NF
         const ide  = nf.ide  || {};
@@ -4299,6 +4332,17 @@
         set('nfDataEmissao', (nf.dataEmissao || ide.dhEmi || '').slice(0,10));
         set('nfTipo',      ide.tpNF || '2');
         set('nfNatOp',     ide.natOp || 'Venda de Mercadoria');
+        // Sincronizar select visível de Natureza (era ignorado na edição)
+        try {
+          const natVal = ide.natOp || nf.natOp || '';
+          const natSel = document.getElementById('nfNatOpSelect');
+          if (natSel && natVal) {
+            let opt = Array.from(natSel.options).find(o => o.value === natVal || o.text === natVal);
+            if (!opt) { opt = new Option(natVal, natVal); natSel.appendChild(opt); }
+            natSel.value = opt.value;
+            if (typeof nfAplicarNatOp === 'function') nfAplicarNatOp(natSel);
+          }
+        } catch (_) {}
         set('nfModFrete',  nf.transp?.modFrete ?? 9);
         preencherTransporteForm(nf.transp || {});
         atualizarEstadoTransporteNF();
@@ -4331,6 +4375,7 @@
             }
           }
           set('nfClienteCnpj',     dest.cnpj || dest.cpf || '');
+          set('nfClienteBusca',    dest.nome || '');
           set('nfClienteEndereco', `${dest.endereco?.logradouro || ''}, ${dest.endereco?.numero || ''}`);
           set('nfClienteCidade',   dest.endereco?.municipio || '');
           const ufSel = document.getElementById('nfClienteUf');
@@ -4358,6 +4403,23 @@
         mostrarAlertaEmissao(`✅ Rascunho #${String(nf.numero||'').padStart(9,'0') || nfId.slice(-6)} carregado. Revise e clique em Emitir.`, 'ok');
       } catch(e) {
         notifyUser('Erro ao carregar rascunho: ' + e.message);
+      }
+    }
+
+    // ─── Excluir rascunho ─────────────────────────────
+    async function excluirRascunhoNF(nfId) {
+      try {
+        if (!await confirmDialog({ title: 'Excluir rascunho', message: 'Excluir este rascunho? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' })) return;
+        const tid = obterTenantIdNF();
+        if (!tid) return notifyUser('Tenant não identificado');
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Excluindo rascunho...'); } catch (_) {}
+        await window.NFStorage.removerNF(tid, 55, nfId);
+        notifyUser('Rascunho excluído.');
+        await consultarNotas();
+      } catch (e) {
+        notifyUser('Erro ao excluir rascunho: ' + (e?.message || e));
+      } finally {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
       }
     }
 
@@ -4527,7 +4589,21 @@
       const sel = document.getElementById('nfCliente');
       const id = sel?.value || '';
       if (!id) return null;
-      return _clientesNFTodos.find(c => String(c.id) === String(id)) || null;
+      const found = _clientesNFTodos.find(c => String(c.id) === String(id));
+      if (found) return found;
+      // Fallback: opção temporária de rascunho (value=CNPJ ou _rascunho) —
+      // permite editar/criar o cadastro a partir dos dados do rascunho.
+      const opt = sel.selectedOptions?.[0];
+      if (opt) {
+        return {
+          id,
+          nome: opt.text || '',
+          cnpj: opt.dataset.cnpj || '',
+          cpf: opt.dataset.cpf || '',
+          endereco: { uf: opt.dataset.uf || '', bairro: opt.dataset.bairro || '', cep: opt.dataset.cep || '' },
+        };
+      }
+      return null;
     }
 
     function editarClienteSelecionadoNF() {
@@ -4670,6 +4746,7 @@
     window.fecharModalEventoFiscalNF = fecharModalEventoFiscalNF;
     window.iniciarCancelamento    = iniciarCancelamento;
     window.editarRascunho         = editarRascunho;
+    window.excluirRascunhoNF       = excluirRascunhoNF;
     // compat antigo
     window.adicionarItem          = adicionarItemNFManual;
     window.salvarRascunho         = salvarRascunhoNF;
