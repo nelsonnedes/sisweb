@@ -365,7 +365,7 @@
 
         .nf-volume-list {
             overflow-x: auto;
-            border: 1px solid #e8ecef;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
             background: var(--sw-surface);
         }
@@ -377,10 +377,16 @@
             font-size: 12px;
         }
 
+        /* Reboques: 4 colunas cabem no card estreito (sem min-width de volumes). */
+        .nf-volume-list table.nf-reboques-table {
+            min-width: 0;
+            table-layout: fixed;
+        }
+
         .nf-volume-list th,
         .nf-volume-list td {
             padding: 7px 8px;
-            border-bottom: 1px solid #eef1f4;
+            border-bottom: 1px solid var(--sw-border);
             text-align: left;
             vertical-align: top;
         }
@@ -1284,7 +1290,7 @@
                     <div class="form-group" style="flex:0 0 auto;justify-content:end;min-width:0;">
                       <label>&nbsp;</label>
                       <button type="button" id="btnAddReboqueNF" class="btn btn-primary btn-small" style="white-space:nowrap;" onclick="adicionarReboqueNF()">
-                        <i class="fas fa-plus"></i> Adicionar reboque
+                        <i class="fas fa-plus"></i> Adicionar
                       </button>
                     </div>
                   </div>
@@ -3204,16 +3210,16 @@
         return;
       }
       box.innerHTML = `
-        <table class="nf-card-table nf-volumes-table" style="table-layout:fixed;width:100%;">
+        <table class="nf-card-table nf-volumes-table nf-reboques-table" style="table-layout:fixed;width:100%;">
           <colgroup>
-            <col style="width:64px;">
+            <col style="width:56px;">
             <col>
             <col style="width:56px;">
             <col style="width:64px;">
           </colgroup>
           <thead>
             <tr>
-              <th>Reboque</th>
+              <th>Nº</th>
               <th>Placa</th>
               <th>UF</th>
               <th></th>
