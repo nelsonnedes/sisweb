@@ -4756,9 +4756,11 @@ renderizarVolumesNF();
             nProt: res.nProt || nf.nProt || '', xMotivo: res.xMotivo || '' });
           notifyUser(`✅ NF-e autorizada! Protocolo: ${res.nProt || '—'}`);
         } else {
+          const cStat = res?.cStat || '';
+          const motivo = res?.descricao || res?.xMotivo || 'sem retorno definitivo da SEFAZ.';
           await window.NFStorage.salvarNF(tid, { ...nf, id: nfId,
-            ultimaConsultaSefaz: { cStat: res?.cStat || '', xMotivo: res?.xMotivo || '', em: new Date().toISOString() } });
-          notifyUser(`⏳ SEFAZ: ${res?.cStat || '?'} — ${res?.xMotivo || 'sem retorno definitivo. Tente novamente.'}`, 'warning');
+            ultimaConsultaSefaz: { cStat, xMotivo: motivo, em: new Date().toISOString() } });
+          notifyUser(`SEFAZ (cStat ${cStat || '?'}) — ${motivo}`, 'error');
         }
         await consultarNotas();
       } catch (e) {

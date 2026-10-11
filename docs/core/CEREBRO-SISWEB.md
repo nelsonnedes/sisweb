@@ -1116,6 +1116,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`, `nf-service.js`.
 - **Gates:** `npm test` 1136/0/1; deploy nf_enviarSEFAZ/nf_consultarNFe/nf_cancelarNFe/nf_cartaCorrecaoNFe/nf_inutilizarNumeracao + hosting OK.
 
+## Sessao 2026-10-11 — Mensagens de erro SEFAZ por cStat + duracao de toast
+
+- **cStat amigavel**: mapa `SEFAZ_CSTAT_DESC` em `functions/nf-functions.js` + `descreverCStat()`; `nf_consultarNFe` retorna `descricao`. Frontend `consultarStatusSefazNF` mostra `SEFAZ (cStat X) — <descricao|xMotivo>` como **erro**.
+- **Log da resposta bruta**: quando `cStat === '999'`, `nf_consultarNFe` loga HTTP status + primeiros 800 chars do body (para diagnosticar endpoint/envelope que ainda retornam "Resposta não parseada").
+- **Toasts mais duradouros**: `js/notification-service.js` DURATIONS → `error: 11000`, `warning: 7000`, `info: 4000` (teste atualizado).
+- **Pendente**: o 999 indica que a resposta da consulta nao esta sendo parseada (endpoint/envelope) — aguardando o body do proximo log para corrigir o path/SOAP definitivo.
+- **Gates:** `npm test` 1136/0/1; deploy nf_consultarNFe + hosting OK.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

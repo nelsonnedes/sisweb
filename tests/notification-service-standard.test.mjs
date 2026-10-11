@@ -43,7 +43,7 @@ test('NotificationService global existe com API completa', async (t) => {
   });
 
   await t.test('duracoes configuraveis e erro nao gruda para sempre', () => {
-    assert.ok(svc.includes('error: 6000') || svc.includes('error:6000'), 'erro com auto-dismiss (nao gruda)');
+    assert.ok(svc.includes('error: 11000') || svc.includes('error:11000'), 'erro com auto-dismiss (nao gruda)');
     assert.ok(svc.includes('opts.duration') || svc.includes('duration'), 'duracao configuravel via opts');
   });
 

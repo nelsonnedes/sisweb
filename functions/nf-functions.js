@@ -851,6 +851,38 @@ async function postSefaz(url, soapBody, pfxBuffer, pfxSenha) {
   }
 }
 
+// ─── Descrição amigável dos códigos de status (cStat) mais comuns ────────
+const SEFAZ_CSTAT_DESC = {
+  '100': 'NF-e autorizada',
+  '101': 'Cancelamento homologado',
+  '102': 'Inutilização homologada',
+  '110': 'NF-e denegada',
+  '135': 'Evento registrado e vinculado à NF-e',
+  '136': 'Evento registrado (não vinculado)',
+  '150': 'NF-e autorizada fora de prazo',
+  '155': 'Cancelamento homologado fora de prazo',
+  '204': 'Duplicidade de NF-e',
+  '208': 'Chave de acesso do emitente ausente',
+  '217': 'NF-e não consta na base de dados da SEFAZ',
+  '225': 'Falha no schema XML',
+  '226': 'Código da UF do emitente diverge do cadastro',
+  '233': 'IE do destinatário não cadastrada',
+  '236': 'Chave de acesso com dígito verificador inválido',
+  '252': 'Ambiente informado diverge do cadastro da empresa',
+  '539': 'Duplicidade de NF-e com diferença na chave de acesso',
+  '562': 'Chave de acesso não confere com a UF',
+  '580': 'Rejeição: parâmetro divergente',
+  '593': 'Chave de acesso com assinatura inválida',
+  '596': 'Chave de acesso não corresponde à UF do emitente',
+  '614': 'Chave de acesso não corresponde ao emitente',
+  '615': 'Chave de acesso divergente',
+  '656': 'Consumo indevido (excesso de consultas)',
+  '999': 'Erro de comunicação com a SEFAZ — resposta não interpretada',
+};
+function descreverCStat(cStat) {
+  return SEFAZ_CSTAT_DESC[String(cStat || '').trim()] || '';
+}
+
 // ─── Parsear retorno SEFAZ (extrai cStat e xMotivo) ──────────────────────
 function parseSefazResponse(xmlResp, successCodes = ['100', '150']) {
   const xml = String(xmlResp || '');
@@ -1068,9 +1100,14 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
     const resp = await postSefaz(url, soap, pfxBuffer, senhaA1);
     const ret  = parseSefazResponse(resp.body);
 
+    if (ret.cStat === '999') {
+      functions.logger.warn(`[nf_consultarNFe] Resposta não parseada | HTTP ${resp.status} | chave=${chave} | body: ${String(resp.body || '').slice(0, 800)}`);
+    }
+
     return {
       cStat:   ret.cStat,
       xMotivo: ret.xMotivo,
+      descricao: descreverCStat(ret.cStat) || ret.xMotivo || '',
       nProt:   ret.nProt,
       autorizada: ret.autorizada,
     };

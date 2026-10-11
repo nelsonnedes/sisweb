@@ -13,7 +13,7 @@
     if (window.NotificationService && typeof window.NotificationService.show === 'function') return;
 
     var TYPES = ['success', 'warning', 'error', 'info'];
-    var DURATIONS = { success: 3000, info: 3000, warning: 4000, error: 6000 };
+    var DURATIONS = { success: 3000, info: 4000, warning: 7000, error: 11000 };
     var TITLES = { success: 'Sucesso', warning: 'Atenção', error: 'Erro', info: 'Informação' };
     var ICONS = {
         success: 'fa-check-circle',
