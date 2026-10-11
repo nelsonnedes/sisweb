@@ -1148,6 +1148,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`, `nf-service.js`, `notas-fiscais.html`, `nf-danfe.js`.
 - **Gates:** `npm test` 1137/0/1; HTML 0 erros; deploy nf_enviarSEFAZ + hosting OK.
 
+## Sessao 2026-10-11 — 999 do ENVIO = HTTP 400 (declaracao XML embutida no lote)
+
+- **Causa-raiz do cStat 999 no envio** (log do corpo): `HTTP 400 Bad Request` — o `xmlAssinado` (que comeca com `<?xml version...?>`) era embutido **dentro** do `<enviNFe>`, gerando XML invalido (declaracao XML no meio do documento). A consulta funcionava porque nao embute XML.
+- **Fix**: `stripXmlDecl(xml)` em `functions/nf-functions.js`, aplicado ao montar o lote (`<enviNFe>`). Eventos/inutilizacao ja montam o envelope sem declaracao.
+- **Armadilha registrada:** nunca embutir uma string XML que contenha `<?xml ...?>` dentro de outro XML (lote/evento). Sempre remover a declaracao do filho.
+- **Pendente:** verificar se o MDF-e (`mdfe-functions.js`) tem o mesmo padrao.
+- **Arquivos:** `functions/nf-functions.js`. Deploy nf_enviarSEFAZ OK.
+- **Gates:** sintaxe OK; suite 1137/0/1.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

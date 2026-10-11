@@ -778,6 +778,11 @@ function soapActionFor(servico) {
   return method ? `http://www.portalfiscal.inf.br/nfe/wsdl/${servico}/${method}` : '';
 }
 
+// Remove a declaração <?xml ...?> (não pode aparecer embutida dentro de outro XML).
+function stripXmlDecl(xml) {
+  return String(xml || '').replace(/^\s*<\?xml[^>]*\?>\s*/i, '');
+}
+
 function buildSoapEnvelope(servico, xmlNFe, versaoQrNfe = '4.00', cUF = '35') {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:nfe="http://www.portalfiscal.inf.br/nfe/wsdl/${servico}">
@@ -973,7 +978,7 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
     // Montar lote NF-e (envio individual)
     const loteXml = `<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
       <idLote>${Date.now()}</idLote><indSinc>1</indSinc>
-      ${xmlAssinado}
+      ${stripXmlDecl(xmlAssinado)}
     </enviNFe>`;
 
     // Extrair UF do XML assinado para roteamento SEFAZ correto por estado
