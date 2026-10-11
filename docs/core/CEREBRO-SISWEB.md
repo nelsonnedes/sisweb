@@ -1166,6 +1166,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`. Deploy nf_consultarNFe + nf_enviarSEFAZ OK.
 - **Gates:** sintaxe OK.
 
+## Sessao 2026-10-11 — cStat 588 (caracteres de edicao) → XML compacto antes de assinar
+
+- **cStat 588** na emissao: "Nao e permitida a presenca de caracteres de edicao no inicio/fim da mensagem ou entre as tags (Elemento: enviNFe)". SEFAZ rejeita **whitespace/indentacao entre tags**.
+- **Fix definitivo**: `compactXml(xml)` = `replace(/>\s+</g,'><').trim()` em `functions/nf-functions.js`; aplicado em `assinarXMLcomForge` **antes de assinar** (a assinatura cobre exatamente os bytes enviados) e nos wrappers `enviNFe`/`consSitNFe`. `nf-xml-builder.buildNFeXML` tambem retorna XML compacto.
+- **Armadilha:** compactar DEPOIS de assinar invalida a assinatura (digest muda). Deve compactar ANTES e assinar a forma compacta.
+- **Arquivos:** `functions/nf-functions.js`, `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`.
+- **Gates:** `npm test` 1137/0/1; deploy 6 functions + hosting OK.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

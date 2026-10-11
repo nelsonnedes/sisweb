@@ -581,7 +581,10 @@ const NFXmlBuilder = (() => {
 </infNFe>
 </NFe>`;
 
-    return { xml, chave: chaveInfo.chave, total };
+    // SEFAZ (cStat 588) rejeita "caracteres de edição" entre tags: gerar XML COMPACTO
+    // (sem quebras/indentação). A assinatura é feita sobre esta forma compacta.
+    const compact = xml.replace(/>\s+</g, '><').trim();
+    return { xml: compact, chave: chaveInfo.chave, total };
   }
 
   return {

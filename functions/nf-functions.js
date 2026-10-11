@@ -697,6 +697,9 @@ async function descriptografarPFXdoStorage(tenantId, uid, senha) {
 
 // ─── Assinar XML com RSA-SHA1 (XMLDSIG — exigido pela SEFAZ) ─────────────
 function assinarXMLcomForge(xmlStr, pfxBuffer, senha, options = {}) {
+  // Compactar ANTES de assinar: a assinatura cobre exatamente os bytes enviados
+  // (SEFAZ rejeita whitespace entre tags — cStat 588 — e valida a assinatura).
+  xmlStr = compactXml(xmlStr);
   const forge = getForge();
   const bytes  = pfxBuffer.toString('binary');
   const asn1   = forge.asn1.fromDer(bytes);
@@ -781,6 +784,11 @@ function soapActionFor(servico) {
 // Remove a declaração <?xml ...?> (não pode aparecer embutida dentro de outro XML).
 function stripXmlDecl(xml) {
   return String(xml || '').replace(/^\s*<\?xml[^>]*\?>\s*/i, '');
+}
+
+// SEFAZ (cStat 588) rejeita "caracteres de edição" entre tags → XML compacto.
+function compactXml(xml) {
+  return String(xml || '').replace(/>\s+</g, '><').trim();
 }
 
 function buildSoapEnvelope(servico, xmlNFe, versaoQrNfe = '4.00', cUF = '35') {
@@ -976,10 +984,7 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
     const pfxBuffer = await descriptografarPFXdoStorage(tenantId, uid, senhaA1);
 
     // Montar lote NF-e (envio individual)
-    const loteXml = `<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
-      <idLote>${Date.now()}</idLote><indSinc>1</indSinc>
-      ${stripXmlDecl(xmlAssinado)}
-    </enviNFe>`;
+    const loteXml = `<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><idLote>${Date.now()}</idLote><indSinc>1</indSinc>${stripXmlDecl(xmlAssinado)}</enviNFe>`;
 
     // Extrair UF do XML assinado para roteamento SEFAZ correto por estado
     const ufEmitMatch = xmlAssinado.match(/<UF>([A-Z]{2})<\/UF>/);
@@ -1120,11 +1125,7 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
 
   try {
     const pfxBuffer = await descriptografarPFXdoStorage(tenantId, uid, senhaA1);
-    const consultaXml = `<consSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.01">
-      <tpAmb>${env === 'producao' ? 1 : 2}</tpAmb>
-      <xServ>CONSULTAR</xServ>
-      <chNFe>${chave}</chNFe>
-    </consSitNFe>`;
+    const consultaXml = `<consSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.01"><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><xServ>CONSULTAR</xServ><chNFe>${chave}</chNFe></consSitNFe>`;
 
     const cUF = resolveCUF({ chave });
     const url  = getEndpoint('NfeConsultaProtocolo4', env);
