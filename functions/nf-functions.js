@@ -45,9 +45,9 @@ function getForge() {
 // ─── SEFAZ Endpoints por ambiente e UF ────────────────────────────────────
 const SEFAZ_EP = {
   homologacao: {
-    NfeAutorizacao4:    'https://homologacao.nfe.svrs.rs.gov.br/ws/NfeAutorizacao/NFeAutorizacao4.asmx',
-    NfeRetAutorizacao4: 'https://homologacao.nfe.svrs.rs.gov.br/ws/NfeRetAutorizacao/NFeRetAutorizacao4.asmx',
-    NfeConsultaProtocolo4: 'https://homologacao.nfe.svrs.rs.gov.br/ws/NfeConsulta2/NfeConsulta2.asmx',
+    NfeAutorizacao4:    'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeAutorizacao/NFeAutorizacao4.asmx',
+    NfeRetAutorizacao4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeRetAutorizacao/NFeRetAutorizacao4.asmx',
+    NfeConsultaProtocolo4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeConsulta2/NfeConsulta2.asmx',
     NFeRecepcaoEvento4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/recepcaoevento/recepcaoevento4.asmx',
     NfeRecepcaoEvento4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/recepcaoevento/recepcaoevento4.asmx',
     NFeInutilizacao4:   'https://nfe-homologacao.svrs.rs.gov.br/ws/nfeinutilizacao/nfeinutilizacao4.asmx',

@@ -37,3 +37,11 @@ test('inutilizacao monta infInut assinado, valida faixa local e persiste auditor
   assert.match(nfFunctions, /parseSefazResponse\(resp\.body, \['102'\]\)/);
   assert.match(nfFunctions, /companies\/\$\{tenantId\}\/fiscal\/notas\/inutilizacoes\/\$\{recordId\}/);
 });
+
+test('endpoints SEFAZ homologacao usam o host correto (nfe-homologacao)', () => {
+  const nfFunctions = read('functions/nf-functions.js');
+  assert.doesNotMatch(nfFunctions, /homologacao\.nfe\.svrs\.rs\.gov\.br/, 'host inexistente derruba a consulta (getaddrinfo ENOTFOUND)');
+  assert.match(nfFunctions, /https:\/\/nfe-homologacao\.svrs\.rs\.gov\.br\/ws\/NfeAutorizacao\/NFeAutorizacao4\.asmx/);
+  assert.match(nfFunctions, /https:\/\/nfe-homologacao\.svrs\.rs\.gov\.br\/ws\/NfeRetAutorizacao\/NFeRetAutorizacao4\.asmx/);
+  assert.match(nfFunctions, /https:\/\/nfe-homologacao\.svrs\.rs\.gov\.br\/ws\/NfeConsulta2\/NfeConsulta2\.asmx/);
+});
