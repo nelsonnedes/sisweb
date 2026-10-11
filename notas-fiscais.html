@@ -541,6 +541,19 @@
         .btn-small {
             padding: 5px 8px;
             font-size: 12px;
+            min-height: 32px;
+            min-width: 32px;
+            box-sizing: border-box;
+        }
+
+        /* UX: botoes padronizados na NF (38 acao / 32 pequeno), acima do sistema global. */
+        #nfForm .btn {
+            height: 38px !important;
+            box-sizing: border-box;
+        }
+        #nfForm .btn.btn-small {
+            height: 32px !important;
+            min-width: 32px !important;
         }
 
         .table-container {
@@ -1038,8 +1051,8 @@
             }
         }
 
-        /* UX: botoes Novo/Editar cliente 38px no desktop (padrao campos). */
-        #nfForm .nf-customer-picker .nf-cust-btn {
+        /* UX: botoes de campo (cliente/natureza) 38px no desktop (padrao campos). */
+        #nfForm .btn.btn-small.nf-cust-btn {
             height: 38px !important;
             min-width: 38px !important;
         }
@@ -1146,7 +1159,7 @@
                     <select id="nfNatOpSelect" style="flex:1" onchange="nfAplicarNatOp(this)">
                       <option value="">Selecione a Natureza...</option>
                     </select>
-                    <button type="button" onclick="window.NFNaturezas?.abrirModal()" class="btn btn-primary btn-small"
+                     <button type="button" onclick="window.NFNaturezas?.abrirModal()" class="btn btn-primary btn-small nf-cust-btn"
                       title="Nova Natureza da Operação" style="white-space:nowrap;padding:8px 10px;">
                       <i class="fas fa-plus"></i>
                     </button>

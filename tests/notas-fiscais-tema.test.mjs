@@ -45,8 +45,7 @@ test('textos usam tokens (contraste nos dois temas)', async (t) => {
   });
 });
 
-test('pills de status via tokens', async (t) => {
-  await t.test('statusMap usa tokens de severidade', () => {
+test('pills de status via tokens', async (t) => {  await t.test('statusMap usa tokens de severidade', () => {
     assert.ok(nf.includes("['🟡 Rascunho', 'warning']"), 'rascunho via token');
     assert.ok(nf.includes('var(--sw-${tok})'), 'pill interpolado por token');
     assert.ok(!nf.includes("'#856404','#fff3cd'"), 'sem par pastel fixo');
@@ -54,5 +53,18 @@ test('pills de status via tokens', async (t) => {
 
   await t.test('msg fiscal usa tokens', () => {
     assert.ok(nf.includes("const [tok, cls] = cores[tipo]"), 'cores via token');
+  });
+});
+
+test('botoes padronizados: acao 38, campo 38, pequeno 32', async (t) => {
+  await t.test('regra de acao e pequena com especificidade', () => {
+    assert.ok(nf.includes('#nfForm .btn {'), 'acao 38 escopada');
+    assert.ok(nf.includes('#nfForm .btn.btn-small {'), 'pequeno 32 escopado');
+    assert.ok(nf.includes('#nfForm .btn.btn-small.nf-cust-btn'), 'campo 38 vence pequeno');
+  });
+
+  await t.test('botoes de campo marcados', () => {
+    const n = (nf.match(/nf-cust-btn/g) || []).length;
+    assert.ok(n >= 4, `2 cliente + 1 natureza + CSS (achado ${n})`);
   });
 });
