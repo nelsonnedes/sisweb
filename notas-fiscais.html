@@ -3551,7 +3551,16 @@
 
       const volAtual = montarVolumeAtualNF();
       const vols = _volumesNF.length ? _volumesNF.slice() : (volumeTemDadosNF(volAtual) ? [volAtual] : []);
-      if (vols.length) transp.vol = vols;
+      if (vols.length) {
+        // (b) qVol não informado → preencher com a soma das quantidades dos itens.
+        // qVol é inteiro no leiaute (nº de volumes), então arredondamos a soma.
+        const temQVol = vols.some((v) => v.qVol && String(v.qVol).trim() !== '');
+        if (!temQVol) {
+          const somaQtd = (_itensNF || []).reduce((s, it) => s + (parseFloat(it.qCom != null ? it.qCom : it.quantidade) || 0), 0);
+          if (somaQtd > 0) vols[0].qVol = String(Math.round(somaQtd));
+        }
+        transp.vol = vols;
+      }
 
       return transp;
     }

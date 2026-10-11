@@ -1133,6 +1133,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Pendente de decisao:** volume `qVol` (DANFE "TRANSPORTADOR/VOLUMES :: QUANTIDADE") — usuario espera refletir a quantidade total dos itens; hoje e o numero de volumes digitado.
 - **Gates:** `npm test` 1136/0/1; HTML 0 erros; deploy 5 functions + hosting OK.
 
+## Sessao 2026-10-11 — Volume qVol auto (soma das quantidades dos itens)
+
+- **Decisao do usuario (b):** quando o `qVol` do volume nao for informado, preencher com a **soma das quantidades dos itens** (arredondada, pois `qVol` e inteiro no leiaute). Em `notas-fiscais.html:montarTransporteFromForm` (aplica so quando nenhum volume tem qVol). Trava `tests/nf-volume-qvol.test.mjs`.
+- **Armadilha:** `nf-xml-builder.buildVolume` usa `onlyDigits(qVol)` → valores com virgula viravam "0010". Por isso o auto-preenchimento usa inteiro.
+- **Gates:** `npm test` 1137/0/1; hosting publicado.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").
