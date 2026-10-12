@@ -217,6 +217,16 @@ const NFService = (() => {
       cofins: pisCofins.cofins,
     };
     if (ipiCalc) imposto.ipi = ipiCalc;
+    // RTC (cStat 1115): todo item carrega <IBSCBS> — default neutro
+    // (CST 000/cClassTrib 000001/alíq. 0) quando a config não detalhar.
+    const ibscbsCalc = window.NFConfigService.calcularIBSCBS?.(
+      cfg, parseFloat(item.vProd || item.total) || 0
+    );
+    imposto.ibscbs = ibscbsCalc || {
+      habilitado: true, cst: '000', cClassTrib: '000001',
+      pIBSUF: 0, pIBSMun: 0, pCBS: 0,
+      vBC: parseFloat(item.vProd || item.total) || 0,
+    };
     return imposto;
   }
 

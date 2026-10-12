@@ -96,6 +96,57 @@ test('validador: CST 620 sem mono e mono sem CST 620', () => {
   assert.match(cstErrado.errors.join('|'), /exige CST 620/);
 });
 
+test('cross-check NFePHP: vTot = vMono + vMonoReten (sem Ret, sem bio)', () => {
+  const g = {
+    habilitado: true, cst: '620', cClassTrib: '620001',
+    mono: {
+      ibs: { regime: 'adRem', padrao: { qBCMono: 100, aliq: 0.05 }, ret: { v: 99 }, bio: { qBCBioComb: 5, vDif: 77 } },
+      cbs: { regime: 'adRem', padrao: { qBCMono: 100, aliq: 0.03 }, reten: { qBCMonoReten: 10, aliqReten: 0.03 } },
+    },
+  };
+  const tot = B.calcularTotais([itemBase(g)], 0, 0);
+  // padrao IBS 5.00 + reten 0 → tot 5.00 (ret 99 e bio 77 FORA do total)
+  assert.equal(tot.vMonoIBS, 5);
+  assert.equal(tot.vMonoRetIBS, 99);
+  assert.equal(tot.vMonoCBS, 3);
+  assert.equal(tot.vMonoRetenCBS, 0.3);
+});
+
+test('cStat 1115: item sem IBSCBS é barrado no validador antes da SEFAZ', () => {
+  const semIbs = itemBase(undefined);
+  delete semIbs.imposto.ibscbs;
+  const r = V.validarItem(semIbs, 0);
+  assert.equal(r.valid, false);
+  assert.match(r.errors.join('|'), /IBS\/CBS não informado.*cStat 1115/);
+  const flagOff = V.validarItem(itemBase({ habilitado: false, cst: '000', cClassTrib: '000001' }), 0);
+  assert.equal(flagOff.valid, false, 'habilitado=false explícito também barra');
+});
+
+test('cStat 1115: builder omite IBSCBS ausente (validador barra antes de enviar)', () => {
+  const it = itemBase(undefined);
+  delete it.imposto.ibscbs;
+  const nfe = {
+    emit: { cnpj: '11222333000181', razaoSocial: 'E', ie: '1', crt: 3,
+      endereco: { uf: 'SP', codigoMunicipio: '3550308', logradouro: 'R', numero: '1', bairro: 'B', municipio: 'S', cep: '01001000' } },
+    dest: { nome: 'C', cnpj: '11222333000181', indIEDest: 9,
+      endereco: { uf: 'SP', codigoMunicipio: '3550308', logradouro: 'R', numero: '2', bairro: 'B', municipio: 'S', cep: '01001000' } },
+    ide: { serie: '1', nNF: 1, dhEmi: new Date().toISOString(), tpNF: 1, tpAmb: 2, cMunFG: '3550308' },
+    det: [it], transp: { modFrete: 9 }, pag: [{ tPag: '01', vPag: 5000 }],
+  };
+  nfe.total = B.calcularTotais(nfe.det, 0, 0);
+  const { xml } = B.buildNFeXML(nfe);
+  assert.doesNotMatch(xml, /<IBSCBS>/, 'sem ibscbs no item = sem grupo');
+});
+
+test('calcularIBSCBS: legado com CST+cClassTrib emite; vazio retorna null', () => {
+  const cfgSrc = fs.readFileSync('nf-config.js', 'utf8');
+  const C = new Function('window', 'console', cfgSrc + '; return window.NFConfigService;')({ window: {} }, console);
+  assert.equal(C.calcularIBSCBS({ impostos: { ibscbs: {} } }, 100), null);
+  const legado = C.calcularIBSCBS({ impostos: { ibscbs: { cst: '000', cClassTrib: '000001' } } }, 100);
+  assert.equal(legado.habilitado, true, 'dado legado com CST+cClassTrib emite');
+  assert.equal(legado.cst, '000');
+});
+
 test('validador: regime inválido e lado sem blocos', () => {
   const g = { habilitado: true, cst: '620', cClassTrib: '620001', mono: { ibs: { regime: 'x' } } };
   const r = V.validarItem(itemBase(g), 0);

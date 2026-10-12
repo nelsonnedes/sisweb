@@ -3275,7 +3275,8 @@
         imposto.cofins = pc.cofins;
         const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
         if (ipi) imposto.ipi = ipi;
-        const ibscbs = window.NFConfigService.calcularIBSCBS?.(cfg, total);
+        const ibscbs = window.NFConfigService.calcularIBSCBS?.(cfg, total)
+          || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
         if (ibscbs) imposto.ibscbs = ibscbs;
         const isSel = window.NFConfigService.calcularIS?.(cfg, total);
         if (isSel) imposto.is = isSel;
@@ -3352,7 +3353,8 @@
         const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
         if (ipi) imposto.ipi = ipi;
         else delete imposto.ipi;
-        const ibscbs3 = window.NFConfigService.calcularIBSCBS?.(cfg, total);
+        const ibscbs3 = window.NFConfigService.calcularIBSCBS?.(cfg, total)
+          || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
         if (ibscbs3) imposto.ibscbs = ibscbs3; else delete imposto.ibscbs;
         const isSel3 = window.NFConfigService.calcularIS?.(cfg, total);
         if (isSel3) imposto.is = isSel3; else delete imposto.is;
@@ -5696,7 +5698,8 @@ renderizarVolumesNF();
         imposto.cofins = pc.cofins;
         const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
         if (ipi) imposto.ipi = ipi;
-        const ibscbs = window.NFConfigService.calcularIBSCBS?.(cfg, total);
+        const ibscbs = window.NFConfigService.calcularIBSCBS?.(cfg, total)
+          || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
         if (ibscbs) imposto.ibscbs = ibscbs;
         const isSel = window.NFConfigService.calcularIS?.(cfg, total);
         if (isSel) imposto.is = isSel;
@@ -5751,7 +5754,8 @@ renderizarVolumesNF();
         imposto.pis = pc.pis; imposto.cofins = pc.cofins;
         const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
         if (ipi) imposto.ipi = ipi;
-        const ibscbs2 = window.NFConfigService.calcularIBSCBS?.(cfg, total);
+        const ibscbs2 = window.NFConfigService.calcularIBSCBS?.(cfg, total)
+          || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
         if (ibscbs2) imposto.ibscbs = ibscbs2;
         const isSel2 = window.NFConfigService.calcularIS?.(cfg, total);
         if (isSel2) imposto.is = isSel2;

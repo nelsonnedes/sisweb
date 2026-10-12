@@ -283,17 +283,21 @@ const NFXmlBuilder = (() => {
   }
 
   // ─── IBS/CBS monofásico (gIBSCBSMono, TMonofasia — CST 620) ─────────────
-  // Espelho do XSD oficial (DFeTiposBasicos TMonofasia, PL_010f): IBS e CBS,
-  // cada lado em regime adRem OU adValorem, com blocos padrao/reten/ret
-  // (+gpBioDiferenca p/ mistura EAC/gasolina). Valores (v) são auto-calculados
-  // (q×aliq ou vBC×aliq) quando ausentes, como no gIBSCBS.
-  // Totais do item (vTotIBSMonoItem/vTotCBSMonoItem, obrigatórios no XSD):
-  // padrao + reten + bio de cada lado; retido anteriormente (ret) NÃO compõe
-  // o total da operação (já recolhido) — override explícito prevalece.
+  // Espelho do XSD oficial (DFeTiposBasicos TMonofasia, PL_010f) + cross-check
+  // NFePHP TraitTagDetIBSCBS::tagIBSCBSMono:
+  //  - IBS e CBS, cada lado em regime adRem OU adValorem, com blocos
+  //    padrao/reten/ret (+gpBioDiferenca p/ mistura EAC/gasolina);
+  //  - sub-blocos emitidos SOMENTE quando o gatilho existe (NFePHP usa
+  //    !empty(qBCMono/vBCMono/qBCMonoReten/vBCMonoReten/vRet/qBCBioComb));
+  //  - totais do item (vTotIBSMonoItem/vTotCBSMonoItem, obrigatórios):
+  //    vMono + vMonoReten por lado (NFePHP: sem Ret, sem gpBio, sem Dif);
+  //  - totais W34 gMono acumulam vMono/vMonoReten/vMonoRet por lado.
+  // Valores (v) são auto-calculados (q×aliq ou vBC×aliq) quando ausentes,
+  // como no gIBSCBS; override explícito prevalece.
   function monoLadoTotais(lado, m) {
     if (!m) return { tot: 0, padrao: 0, reten: 0, ret: 0 };
     const f = parseFiscalNumber;
-    const pad = m.padrao || {}, ret = m.reten || {}, rdo = m.ret || {}, bio = m.bio || {};
+    const pad = m.padrao || {}, ret = m.reten || {}, rdo = m.ret || {};
     let padrao = 0, reten = 0;
     if (m.regime === 'adRem') {
       const q = f(pad.qBCMono), a = f(pad.aliq);
@@ -310,8 +314,8 @@ const NFXmlBuilder = (() => {
       reten = ret.vReten != null && ret.vReten !== '' ? f(ret.vReten) : bcr * f(ret.aliqReten) / 100;
     }
     const retido = f(rdo.v);
-    const bioV = f(bio.vDif);
-    return { tot: padrao + reten + bioV, padrao, reten, ret: retido };
+    // NFePHP UB105a-10/UB105b-10: vTot = vMono + vMonoReten (sem Ret, sem bio)
+    return { tot: padrao + reten, padrao, reten, ret: retido };
   }
   function buildMonoAdRem(lado, m) {
     const tagV = lado === 'ibs' ? 'IBS' : 'CBS';
@@ -361,14 +365,16 @@ const NFXmlBuilder = (() => {
 
   // ─── IBS/CBS (Reforma Tributária — grupo <IBSCBS>, TTribNFe) ──────────────
   // Validado contra o schema oficial PL_010f_v1.04 (DFeTiposBasicos TTribNFe /
-  // TCIBS_NFe). Emitido apenas quando habilitado na config/item (minOccurs=0),
-  // preservando o comportamento atual quando ausente.
+  // TCIBS_NFe). Presença de CST+cClassTrib = intenção de emitir (a SEFAZ
+  // exige o grupo em todo item — cStat 1115 se ausente; fonte: NFePHP
+  // sped-nfe master, flagIBSCBS ligada por cClassTrib presente). O flag
+  // `habilitado=false` com CST+cClassTrib preenchidos NÃO omite (dado legado
+  // ou config parcial); omitir exige remover CST/cClassTrib.
   function buildIBSCBS(item) {
     const g = item?.imposto?.ibscbs;
-    if (!g || !g.habilitado) return '';
-    if (!g.cst || !g.cClassTrib) {
-      throw new Error('IBS/CBS: CST e cClassTrib são obrigatórios quando o grupo está habilitado');
-    }
+    if (!g) return '';
+    if (!g.cst || !g.cClassTrib) return '';
+    if (g.habilitado === false) return '';
     const vBCn = parseFiscalNumber(g.vBC != null ? g.vBC : (item.vProd || item.total));
     const pIBSUF = parseFiscalNumber(g.pIBSUF), pIBSMun = parseFiscalNumber(g.pIBSMun), pCBS = parseFiscalNumber(g.pCBS);
     const pRed = parseFiscalNumber(g.pRedAliq);
@@ -437,6 +443,13 @@ const NFXmlBuilder = (() => {
   }
 
   // ─── Imposto Seletivo (<IS>, TIS) — Reforma Tributária ────────────────────
+  // Cross-check NFePHP TraitTagDetIS::tagIS:
+  //  - vBCIS+pIS+adRemIS(opc) SÓ quando vBCIS informado (isset);
+  //  - uTrib+qTrib SÓ quando AMBOS informados;
+  //  - vIS sempre.
+  // Nosso contrato: vBC/pIS sempre presentes no objeto (default do form) →
+  // emitimos o bloco completo; adRemIS só quando preenchido; uTrib+qTrib
+  // quando ambos presentes (passthrough uTribIS/qTribIS).
   function buildIS(item) {
     const g = item?.imposto?.is;
     if (!g || !g.habilitado) return '';
@@ -446,9 +459,12 @@ const NFXmlBuilder = (() => {
     const vBCISn = parseFiscalNumber(g.vBCIS != null ? g.vBCIS : (item.vProd || item.total));
     const pIS = parseFiscalNumber(g.pIS);
     const vISn = g.vIS != null ? parseFiscalNumber(g.vIS) : vBCISn * pIS / 100;
-    const adRem = g.adRemIS != null ? `<adRemIS>${num(g.adRemIS, 4)}</adRemIS>` : '';
+    const adRem = (g.adRemIS != null && String(g.adRemIS).trim() !== '')
+      ? `<adRemIS>${num(g.adRemIS, 4)}</adRemIS>` : '';
+    const uTribQ = (g.uTribIS && g.qTribIS != null && String(g.qTribIS).trim() !== '')
+      ? `<uTrib>${esc(String(g.uTribIS).slice(0, 6))}</uTrib><qTrib>${num(g.qTribIS, 4)}</qTrib>` : '';
     return `\n        <IS><CSTIS>${esc(g.cstIS)}</CSTIS><cClassTribIS>${esc(g.cClassTribIS)}</cClassTribIS>`
-      + `<vBCIS>${num(vBCISn)}</vBCIS><pIS>${num(pIS, 4)}</pIS>${adRem}<vIS>${num(vISn)}</vIS></IS>`;
+      + `<vBCIS>${num(vBCISn)}</vBCIS><pIS>${num(pIS, 4)}</pIS>${adRem}${uTribQ}<vIS>${num(vISn)}</vIS></IS>`;
   }
 
   // ─── IPI (opcional por configuracao fiscal) ───────────────────────────────
@@ -648,9 +664,10 @@ const NFXmlBuilder = (() => {
       vIPI    += parseFloat(it.imposto?.ipi?.vIPI) || 0;
       vPIS    += parseFloat(it.imposto?.pis?.vPIS) || 0;
       vCOFINS += parseFloat(it.imposto?.cofins?.vCOFINS) || 0;
-      // Reforma Tributária: IBSCBS
+      // Reforma Tributária: IBSCBS (mesma regra do buildIBSCBS: emite se
+      // cst+cClassTrib presentes e habilitado !== false)
       const gi = it.imposto?.ibscbs;
-      if (gi && gi.habilitado) {
+      if (gi && gi.cst && gi.cClassTrib && gi.habilitado !== false) {
         // Monofásico (CST 620) é quantitativo (qBCMono/vBCMono) — não tem vBC
         // de IBS/CBS: só acumula totais gMono, sem poluir vBCIBSCBS/vIBS/vCBS.
         if (gi.mono) {

@@ -1290,6 +1290,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — cStat 1115 (IBS/CBS não informado) + cross-check NFePHP
+
+- **Causa raiz (evidência SEFAZ, não palpite):** homologação rejeitou 1688 com `1115 Rejeicao: IBS/CBS não informado`. Cross-check NFePHP `sped-nfe` master: `Make` schema > 9 (PL_010) monta `<IBSCBS>` em TODO item e `flagIBSCBS` liga por `cClassTrib` presente — SEFAZ exige o grupo mesmo neutro (CST 000/alíq. 0). Nosso builder omitia (`minOccurs=0` + flag `habilitado=false` no print do usuário) e `calcularImpostosItem` nem chamava `calcularIBSCBS`.
+- **Fix (4 pontos):** `calcularImpostosItem` injeta IBSCBS neutro (000/000001/0) quando config omite; `adicionarItemNF(Manual|Cadastrado)` + `recalcularImpostosItemNF` com mesmo fallback; `calcularIBSCBS` aceita legado com CST+cClassTrib; `buildIBSCBS` emite por presença de CST+cClassTrib (`habilitado=false` explícito ainda omite); validador BLOQUEIA item sem IBSCBS (mensagem cita 1115); default da config vira habilitado neutro.
+- **Cross-check NFePHP aplicado:** `tagIBSCBSMono` — vTot = vMono+vMonoReten (SEM Ret/bio; corrigido, era padrao+reten+bio); sub-blocos só com gatilho; `tagIS` — adRemIS só preenchido + uTrib+qTrib só ambos (adicionado passthrough uTribIS/qTribIS); `taggCompraGov` — ordem tpEnteGov/pRedutor/tpOperGov + refDFeAnt 0-99 (confere); `addTagDet` — gTribRegular/gTribCompraGov filhos de gIBSCBS pós-gCBS (confere); `tagIBSCBSTot` — gMono com 6 campos (confere). **ACBr: repositório oficial não localizado via URL pública (404 nas tentativas) — registrado como NÃO VERIFICADO, sem presumir.**
+- **Trava:** testes 1115 no `nf-ibscbs-mono.test.mjs` (validador barra, builder omite, legado emite) + cross-check vTot.
+- **Gates:** lint + typecheck OK; `npm test` 1206/1205/0/1; XSD 15/15; hosting publicado.
+- **Ação usuário:** Ctrl+F5; **reemitir a 1688** (clonar ou reenviar — item agora leva `<IBSCBS>` neutro; se contribuinte do IBS/CBS, preencher CST/cClassTrib/alíquotas na Configuração).
+
 ## Sessao 2026-10-12 — Pendências fiscais: gMono (CST 620), gTribRegular/gTribCompraGov, gCompraGov, Eventos_RTC + paginação Consulta
 
 - **gMono (TMonofasia, CST 620)**: `buildIBSCBSMono` (IBS/CBS × adRem/adValorem × padrao/reten/ret/bio), auto-cálculo q×aliq/vBC×aliq, `vTotIBSMonoItem/vTotCBSMonoItem`, totais `gMono` em `IBSCBSTot` (emite mesmo sem vBC — monofásico é quantitativo), trava builder `CST<>620`, validador regime/blocos. XSD oficial 2/2 (adRem+adValorem).

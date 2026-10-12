@@ -80,10 +80,12 @@ const NFConfigService = (() => {
         partilhaUF: 60, // % UF destino (2024: 100%)
       },
       // Reforma Tributária (LC 214/2025 — NT 2024.002 / schema PL_010f)
+      // Default HABILITADO e neutro (CST 000/cClassTrib 000001/alíq. 0):
+      // a SEFAZ exige <IBSCBS> em todo item (cStat 1115 se ausente).
       ibscbs: {
-        habilitado: false,
-        cst: '',        // CST do IBS/CBS (ex.: 000)
-        cClassTrib: '', // Classificação Tributária do IBS/CBS
+        habilitado: true,
+        cst: '000',
+        cClassTrib: '000001',
         pIBSUF: 0,      // % alíquota IBS UF
         pIBSMun: 0,     // % alíquota IBS Município
         pCBS: 0,        // % alíquota CBS
@@ -343,13 +345,24 @@ const NFConfigService = (() => {
   }
 
   // ─── Reforma Tributária: IBS/CBS ─────────────────────────────────────────
+  // NT 2025.002-RTC (fonte: NFePHP sped-nfe master): a partir do schema
+  // PL_010 (schema > 9 no Make), TODO item de NF-e carrega <IBSCBS> —
+  // cClassTrib presente liga flagIBSCBS e o grupo é exigido pela SEFAZ
+  // (homologação já rejeita cStat 1115 sem ele, mesmo com CST 000/alíq. 0).
+  // Por isso o default aqui é HABILITADO (CST 000, cClassTrib 000001,
+  // alíquotas 0 — neutro fiscalmente) e o builder emite SEMPRE que
+  // cst+cClassTrib existirem, mesmo se `habilitado` estiver ausente em
+  // dado legado. Desabilitar = remover CST/cClassTrib (não só o flag).
   function calcularIBSCBS(config, valorProduto) {
     const g = (config.impostos && config.impostos.ibscbs) || {};
-    if (!g.habilitado) return null;
+    // Presença de CST+cClassTrib = intenção de emitir IBSCBS (dado legado ou
+    // config parcial sem o flag). Só retorna null quando AMBOS estão vazios.
+    const hasTrib = String(g.cst || '').trim() !== '' && String(g.cClassTrib || '').trim() !== '';
+    if (!g.habilitado && !hasTrib) return null;
     const out = {
       habilitado: true,
-      cst: g.cst || '',
-      cClassTrib: g.cClassTrib || '',
+      cst: g.cst || '000',
+      cClassTrib: g.cClassTrib || '000001',
       pIBSUF: Number(g.pIBSUF) || 0,
       pIBSMun: Number(g.pIBSMun) || 0,
       pCBS: Number(g.pCBS) || 0,

@@ -147,9 +147,13 @@ const NFValidator = (() => {
     // PIS/COFINS
     if (!item.imposto?.pis)    erros.push(`Item ${n}: Grupo PIS obrigatório`);
     if (!item.imposto?.cofins) erros.push(`Item ${n}: Grupo COFINS obrigatório`);
-    // IBS/CBS monofásico (CST 620) e grupos opcionais gTribRegular/gTribCompraGov
+    // IBS/CBS (cStat 1115): grupo EXIGIDO em todo item (fonte: NFePHP
+    // sped-nfe master — flagIBSCBS ligada por cClassTrib presente). Ausência
+    // = rejeição SEFAZ, então o validador bloqueia antes de transmitir.
     const gIbs = item.imposto?.ibscbs;
-    if (gIbs && gIbs.habilitado) {
+    if (!gIbs || !gIbs.cst || !gIbs.cClassTrib || gIbs.habilitado === false) {
+      erros.push(`Item ${n}: IBS/CBS não informado (grupo <IBSCBS> obrigatório — cStat 1115). Habilite IBS/CBS na Configuração fiscal`);
+    } else {
       const cstIbs = String(gIbs.cst || gIbs.CST || '');
       const hasMono = !!(gIbs.mono && (gIbs.mono.ibs || gIbs.mono.cbs));
       if (hasMono && cstIbs !== '620') erros.push(`Item ${n}: monofásico (gIBSCBSMono) exige CST 620`);
@@ -178,7 +182,7 @@ const NFValidator = (() => {
           if (tg[k] == null || String(tg[k]).trim() === '') erros.push(`Item ${n}: gTribCompraGov.${k} obrigatório`);
         }
       }
-    }
+    } // fim else (ibscbs presente)
     return erros.length ? fail(erros) : ok();
   }
 
