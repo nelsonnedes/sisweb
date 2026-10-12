@@ -136,6 +136,9 @@ const NFService = (() => {
     const dhEmi   = formData.dhEmi    || new Date().toISOString();
     const tpAmb   = nfeCfg.ambiente === 'producao' ? 1 : 2;
     const ufEmit  = emp.endereco?.uf || 'SP';
+    const ufDest  = formData.dest?.endereco?.uf || '';
+    // idDest (4.00): 1=Interna (mesma UF), 2=Interestadual (UF diferente), 3=Exterior
+    const idDestAuto = !ufDest ? 1 : (ufDest === 'EX' ? 3 : (ufDest !== ufEmit ? 2 : 1));
 
     // Monta objeto NF-e
     return {
@@ -149,7 +152,7 @@ const NFService = (() => {
         nNF:        numero,
         dhEmi,
         tpNF:       formData.tpNF ?? 1, // 4.00: 0=Entrada, 1=Saída
-        idDest:     formData.idDest || 1,
+        idDest:     formData.idDest || idDestAuto,
         cMunFG:     emp.endereco?.codigoMunicipio || '',
         tpImp:      nfeCfg.tpImp   || '1',
         tpAmb,

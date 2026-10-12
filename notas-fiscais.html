@@ -1638,6 +1638,7 @@
                 <option value="aguardando">Aguardando SEFAZ</option>
                 <option value="rejeitada">Rejeitada</option>
                 <option value="cancelada">Cancelada</option>
+                <option value="inutilizada">Inutilizada</option>
               </select>
             </div>
             <div class="form-group" style="max-width:140px">
@@ -4278,6 +4279,7 @@ renderizarVolumesNF();
         autorizada: ['✅ Autorizada', 'success'],
         rejeitada:  ['❌ Rejeitada',  'danger'],
         cancelada:  ['🚫 Cancelada',  'danger'],
+        inutilizada:['⛔ Inutilizada','text-3'],
         erro_envio: ['⚠️ Erro',       'warning'],
       };
       tbody.innerHTML = notas.map(n => {
@@ -4663,6 +4665,26 @@ renderizarVolumesNF();
           ufEmit: cfg.empresa?.endereco?.uf || '',
         });
         setEventoFiscalMsg(data?.autorizada ? 'Inutilização autorizada pela SEFAZ.' : (data?.xMotivo || 'Evento enviado, confira o retorno.'), data?.autorizada ? 'ok' : 'warn');
+        if (data?.autorizada) {
+          // Refletir na Consulta: marcar as notas locais (não oficiais) da faixa como inutilizadas
+          try {
+            const tid = obterTenantIdNF();
+            const lista = await window.NFStorage.listarNFs(tid, 55);
+            for (const n of lista) {
+              const nn = parseInt(n.numero, 10);
+              const serieN = String(n.ide?.serie ?? n.serie ?? '1');
+              if (['rascunho','rejeitada','erro_envio','aguardando'].includes(n.status)
+                  && Number.isFinite(nn) && nn >= numeroInicial && nn <= numeroFinal
+                  && serieN === String(serie)) {
+                await window.NFStorage.atualizarStatus(tid, 55, n.id, 'inutilizada', {
+                  nProt: data.nProt || '',
+                  xMotivo: data.xMotivo || 'Inutilização homologada pela SEFAZ',
+                  inutilizacaoEm: new Date().toISOString(),
+                });
+              }
+            }
+          } catch (_) {}
+        }
         consultarNotas();
         __nfEventoFim(__inutBtn);
       } catch (e) {

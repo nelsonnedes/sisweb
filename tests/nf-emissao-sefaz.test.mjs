@@ -62,6 +62,11 @@ test('C3: numeração atômica via backend (nf_reservarNumero)', () => {
   assert.match(idx, /exports\.nf_reservarNumero\s*=/);
 });
 
+test('idDest automático (1 interna / 2 interestadual / 3 exterior)', () => {
+  assert.match(svc, /idDestAuto/);
+  assert.match(svc, /ufDest !== ufEmit \? 2 : 1/);
+});
+
 test('atualizarStatus não substitui o nó (merge preservando campos)', () => {
   assert.doesNotMatch(sto, /substitui completamente/);
   assert.match(sto, /const atual = await carregarNF/);

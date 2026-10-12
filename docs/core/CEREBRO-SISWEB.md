@@ -1240,6 +1240,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`, `functions/package.json` (+lock), `tests/fiscal-nfe-events.test.mjs`.
 - **Gates:** `npm test` 1141/0/1; deploy 5 signers OK.
 
+## Sessao 2026-10-11 — idDest automatico (cStat 773) + inutilizacao refletida na Consulta
+
+- **cStat 773** "Operacao Interna e UF destino difere da UF origem": `idDest` estava fixo em `1`. Fix em `nf-service.js:buildNFeFromForm` — `idDestAuto`: UF dest == UF emit → `1`, diferente → `2`, `EX` → `3` (respeita `formData.idDest` se informado).
+- **Inutilizacao sem reflexo**: apos `nf_inutilizarNumeracao` autorizada, as notas locais (rascunho/rejeitada/erro/aguardando) da faixa/serie agora sao marcadas `inutilizada` (com nProt/xMotivo) via `atualizarStatus` (merge). Novo status `⛔ Inutilizada` (pill + filtro "Inutilizada") + visivel no modal de detalhes.
+- **Arquivos:** `nf-service.js`, `notas-fiscais.html`, testes. Hosting publicado.
+- **Gates:** `npm test` 1143/0/1; HTML 0 erros.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

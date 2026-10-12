@@ -34,6 +34,12 @@ test('rascunhos: sem duplicar, com excluir, natureza restaurada', async (t) => {
     assert.ok(nf.includes('window.clonarNotaNF'), 'exposição global');
   });
 
+  await t.test('inutilização reflete nas notas locais (status + filtro)', () => {
+    assert.ok(nf.includes("inutilizada:['⛔ Inutilizada'"), 'pill de status');
+    assert.ok(nf.includes('<option value="inutilizada">Inutilizada</option>'), 'filtro');
+    assert.ok(nf.includes("atualizarStatus(tid, 55, n.id, 'inutilizada'"), 'marca a faixa');
+  });
+
   await t.test('botão excluir rascunho com confirm danger', () => {
     assert.ok(nf.includes("onclick=\"excluirRascunhoNF('${n.id}')\""), 'botão na lista');
     assert.ok(nf.includes('window.excluirRascunhoNF'), 'exposição global');
