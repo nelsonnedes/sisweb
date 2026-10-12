@@ -1213,6 +1213,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `notas-fiscais.html`, testes. Hosting publicado.
 - **Gates:** `npm test` 1139/0/1; HTML 0 erros.
 
+## Sessao 2026-10-11 — cStat 297: digest sobre forma CANÔNICA (xmlns + entidades)
+
+- **cStat 297** ("Assinatura difere do calculado") em NFe e inutilizacao: a `DigestValue` era o SHA-1 do `infNFe/infEvento/infInut` **cru**, mas a SEFAZ recalcula sobre o **C14N**. Divergências garantidas: (1) o bruto **não** carrega o `xmlns` herdado do pai (o C14N o renderiza); (2) `&quot;/&apos;/&gt;` em texto são expandidos para `" ' >` pelo C14N.
+- **Fix** em `assinarXMLcomForge` (`functions/nf-functions.js`): normalizar o elemento para a forma canônica **antes** de hashear e de enviar — injetar `xmlns="http://www.portalfiscal.inf.br/nfe"` explícito, decodificar `&quot;/&apos;/&gt;`, e injetar a `Signature` com replacer-function (evita `$` em dados). Ordem de atributos (`Id,versao`) e SignedInfo (já inline/explícito) já são C14N-estáveis.
+- **Armadilha:** jamais hashear o XML "bonitinho"; a assinatura cobre exatamente os bytes enviados após normalização. Teste local fraco para cripto — a validação real é a resposta da SEFAZ.
+- **Arquivos:** `functions/nf-functions.js`, `tests/fiscal-nfe-events.test.mjs`.
+- **Gates:** `npm test` 1141/0/1; deploy nf_assinarXML/nf_enviarSEFAZ/nf_cancelarNFe/nf_cartaCorrecaoNFe/nf_inutilizarNumeracao OK.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

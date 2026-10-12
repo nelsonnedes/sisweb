@@ -723,11 +723,18 @@ function assinarXMLcomForge(xmlStr, pfxBuffer, senha, options = {}) {
   if (!idMatch) throw new Error(`Atributo Id="${idPrefix}..." não encontrado em <${tagName}>`);
   const refId = idMatch[1];
 
-  // Canonicalizar o elemento fiscal alvo (C14N simples usado pelo legado Sisweb)
+  // Canonicalizar o elemento fiscal alvo (subset C14N exigido pela SEFAZ).
+  // A SEFAZ recalcula o digest sobre a forma CANÔNICA do infNFe/infEvento/infInut.
+  // O bruto NÃO basta: (1) falta o xmlns herdado (C14N o renderiza) e
+  // (2) &quot;/&apos;/&gt; em texto são expandidos para " ' > pelo C14N.
   const elementPattern = new RegExp(`<${tagName}[^>]*>[\\s\\S]*?<\\/${tagName}>`, 'i');
   const signedElementMatch = xmlStr.match(elementPattern);
   if (!signedElementMatch) throw new Error(`Elemento <${tagName}> não encontrado no XML`);
-  const signedElementC14n = signedElementMatch[0];
+  let signedElementC14n = signedElementMatch[0];
+  if (!new RegExp(`^<${tagName}[^>]*\\sxmlns=`, 'i').test(signedElementC14n)) {
+    signedElementC14n = signedElementC14n.replace(new RegExp(`^<${tagName}`, 'i'), `<${tagName} xmlns="http://www.portalfiscal.inf.br/nfe"`);
+  }
+  signedElementC14n = signedElementC14n.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&gt;/g, '>');
 
   // SHA-1 do elemento canonicalizado
   const md = forge.md.sha1.create();
@@ -758,8 +765,9 @@ ${signedInfo}\
 <KeyInfo><X509Data><X509Certificate>${certB64}</X509Certificate></X509Data></KeyInfo>\
 </Signature>`;
 
-  // Injetar Signature logo após o elemento fiscal assinado
-  const xmlAssinado = xmlStr.replace(signedElementMatch[0], `${signedElementMatch[0]}${signature}`);
+  // Injetar Signature logo após o elemento fiscal assinado, usando a FORMA
+  // CANÔNICA (a mesma do digest). Replacer-function evita interpretar `$` em dados.
+  const xmlAssinado = xmlStr.replace(signedElementMatch[0], () => `${signedElementC14n}${signature}`);
   return xmlAssinado;
 }
 
