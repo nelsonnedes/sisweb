@@ -50,10 +50,13 @@ test('assinatura usa forma canônica (C14N): xmlns explícito + entidades de tex
   const nfFunctions = read('functions/nf-functions.js');
   // O digest deve cobrir o xmlns herdado (que o bruto não tem) e expandir
   // &quot;/&apos;/&gt; como o C14N faz — senão SEFAZ retorna 297.
-  assert.match(nfFunctions, /xmlns="http:\/\/www\.portalfiscal\.inf\.br\/nfe"/, 'normaliza com xmlns explícito');
-  assert.match(nfFunctions, /signedElementC14n/, 'usa a forma canônica');
+  // Porém o ENVIADO não pode ter xmlns redundante (cStat 587) — usa-se sentForm.
+  assert.match(nfFunctions, /xmlns="http:\/\/www\.portalfiscal\.inf\.br\/nfe"/, 'forma do digest com xmlns explícito');
+  assert.match(nfFunctions, /sentForm/, 'forma enviada sem xmlns redundante');
+  assert.match(nfFunctions, /hashForm/, 'forma do digest (canônica)');
   assert.match(nfFunctions, /replace\(\/&quot;\/g/, 'expande &quot; (C14N usa " literal)');
   assert.match(nfFunctions, /replace\(\/&apos;\/g/, 'expande &apos; (C14N usa \' literal)');
   assert.match(nfFunctions, /replace\(\/&gt;\/g/, 'expande &gt; (C14N usa > literal)');
   assert.match(nfFunctions, /replace\(signedElementMatch\[0\], \(\) =>/, 'injeção sem interpretar $');
+  assert.match(nfFunctions, /leafCert/, 'KeyInfo com o certificado-FOLHA (casa com a chave)');
 });

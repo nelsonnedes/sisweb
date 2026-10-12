@@ -1221,6 +1221,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`, `tests/fiscal-nfe-events.test.mjs`.
 - **Gates:** `npm test` 1141/0/1; deploy nf_assinarXML/nf_enviarSEFAZ/nf_cancelarNFe/nf_cartaCorrecaoNFe/nf_inutilizarNumeracao OK.
 
+## Sessao 2026-10-11 — Assinatura: hash canônico × envio conforme (587 + 297 juntos)
+
+- **cStat 587** (NFe): *"Usar somente o namespace padrão da NF-e (infNFe)"* — enviar `<infNFe>` com `xmlns` redundante/explícito é rejeitado no leiaute, mesmo sendo XML válido.
+- **Resolução (dupla)**: hashear a FORMA CANÔNICA (`hashForm` = enviada + `xmlns` herdado renderizado, entidades `&quot;/&apos;/&gt;` expandidas) e ENVIAR a forma sem xmlns redundante (`sentForm`). As duas são C14N-equivalentes → digest confere (cura 297) e leiaute é aceito (cura 587).
+- **KeyInfo**: agora usa o certificado-**FOLHA** (o que casa com a chave privada, via `publicKey.n`), não necessariamente `certBags[0]`. Se o KeyInfo trouxer outro cert, o RSA não confere com o embutido → 297. Fallback p/ keyBag simples.
+- **Armadilha:** nunca confundir "XML válido" com "XML que a SEFAZ aceita" — 587 é regra de leiaute, 297 é cripto; as duas podem coexistir (este caso).
+- **Arquivos:** `functions/nf-functions.js`, `tests/fiscal-nfe-events.test.mjs`.
+- **Gates:** `npm test` 1141/0/1; deploy nf_assinarXML/nf_enviarSEFAZ/nf_cancelarNFe/nf_cartaCorrecaoNFe/nf_inutilizarNumeracao OK.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

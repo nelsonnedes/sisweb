@@ -707,14 +707,24 @@ function assinarXMLcomForge(xmlStr, pfxBuffer, senha, options = {}) {
   const tagName = options.tagName || 'infNFe';
   const idPrefix = options.idPrefix || 'NFe';
 
-  // Extrair chave privada
+  // Extrair chave privada (fallback p/ keyBag simples) e o certificado-FOLHA
+  // (o que casa com a chave privada — deve ir no KeyInfo, senão o RSA não
+  // confere com o certificado embutido e a SEFAZ retorna 297).
   const keyBags  = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+  const plainKeyBags = p12.getBags({ bagType: forge.pki.oids.keyBag });
   const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-  const privateKey = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag][0].key;
-  const cert       = certBags[forge.pki.oids.certBag][0].cert;
+  const keyBagArr  = (keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || plainKeyBags[forge.pki.oids.keyBag] || []);
+  const certBagArr = (certBags[forge.pki.oids.certBag] || []);
+  if (!keyBagArr.length)  throw new Error('Chave privada não encontrada no certificado A1.');
+  if (!certBagArr.length) throw new Error('Certificado não encontrado no arquivo A1.');
+  const privateKey = keyBagArr[0].key;
+  const privModHex = privateKey && privateKey.n ? privateKey.n.toString(16) : '';
+  const allCerts = certBagArr.map((b) => b.cert);
+  const leafIdx = allCerts.findIndex((c) => c && c.publicKey && c.publicKey.n && c.publicKey.n.toString(16) === privModHex);
+  const leafCert = leafIdx >= 0 ? allCerts[leafIdx] : allCerts[0];
 
-  // Serializar certificado em base64
-  const certDer = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
+  // Serializar certificado-FOLHA em base64 (KeyInfo deve trazer o signatário)
+  const certDer = forge.asn1.toDer(forge.pki.certificateToAsn1(leafCert)).getBytes();
   const certB64 = Buffer.from(certDer, 'binary').toString('base64');
 
   // Localizar tag a assinar (infNFe, infEvento ou infInut) e seu Id
@@ -723,22 +733,22 @@ function assinarXMLcomForge(xmlStr, pfxBuffer, senha, options = {}) {
   if (!idMatch) throw new Error(`Atributo Id="${idPrefix}..." não encontrado em <${tagName}>`);
   const refId = idMatch[1];
 
-  // Canonicalizar o elemento fiscal alvo (subset C14N exigido pela SEFAZ).
-  // A SEFAZ recalcula o digest sobre a forma CANÔNICA do infNFe/infEvento/infInut.
-  // O bruto NÃO basta: (1) falta o xmlns herdado (C14N o renderiza) e
-  // (2) &quot;/&apos;/&gt; em texto são expandidos para " ' > pelo C14N.
+  // Forma ENVIADA: SEM xmlns redundante (cStat 587) e SEM &quot;/&apos;/&gt; em texto.
+  // Forma do DIGEST (canônica): a enviada + o xmlns herdado renderizado (C14N).
+  // As duas são C14N-equivalentes: o digest confere e o leiaute é aceito.
   const elementPattern = new RegExp(`<${tagName}[^>]*>[\\s\\S]*?<\\/${tagName}>`, 'i');
   const signedElementMatch = xmlStr.match(elementPattern);
   if (!signedElementMatch) throw new Error(`Elemento <${tagName}> não encontrado no XML`);
-  let signedElementC14n = signedElementMatch[0];
-  if (!new RegExp(`^<${tagName}[^>]*\\sxmlns=`, 'i').test(signedElementC14n)) {
-    signedElementC14n = signedElementC14n.replace(new RegExp(`^<${tagName}`, 'i'), `<${tagName} xmlns="http://www.portalfiscal.inf.br/nfe"`);
+  const rawElement = signedElementMatch[0];
+  const sentForm = rawElement.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&gt;/g, '>');
+  let hashForm = sentForm;
+  if (!new RegExp(`^<${tagName}[^>]*\\sxmlns=`, 'i').test(hashForm)) {
+    hashForm = hashForm.replace(new RegExp(`^<${tagName}`, 'i'), `<${tagName} xmlns="http://www.portalfiscal.inf.br/nfe"`);
   }
-  signedElementC14n = signedElementC14n.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&gt;/g, '>');
 
-  // SHA-1 do elemento canonicalizado
+  // SHA-1 da forma canônica
   const md = forge.md.sha1.create();
-  md.update(signedElementC14n, 'utf8');
+  md.update(hashForm, 'utf8');
   const digestB64 = Buffer.from(md.digest().bytes(), 'binary').toString('base64');
 
   // SignedInfo
@@ -766,8 +776,8 @@ ${signedInfo}\
 </Signature>`;
 
   // Injetar Signature logo após o elemento fiscal assinado, usando a FORMA
-  // CANÔNICA (a mesma do digest). Replacer-function evita interpretar `$` em dados.
-  const xmlAssinado = xmlStr.replace(signedElementMatch[0], () => `${signedElementC14n}${signature}`);
+  // ENVIADA (sem xmlns redundante). Replacer-function evita interpretar `$`.
+  const xmlAssinado = xmlStr.replace(signedElementMatch[0], () => `${sentForm}${signature}`);
   return xmlAssinado;
 }
 
