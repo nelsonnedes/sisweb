@@ -1255,6 +1255,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `notas-fiscais.html`, `nf-service.js`. Hosting publicado.
 - **Gates:** `npm test` 1143/0/1; HTML 0 erros.
 
+## Sessao 2026-10-11 — cStat 733: CFOP acompanha o idDest
+
+- **cStat 733** "CFOP de operacao interna e idDest <> 1": emitindo PA->BA (idDest 2) com CFOP **5102** (interno 5xxx). Regra: operacao interna usa 1xxx/5xxx; interestadual usa 2xxx/6xxx.
+- **Fix:** `nf-config.js:ajustarCFOP(idDest, cfop)` troca so o 1º digito (5102<->6102, 1102<->2102); `nf-service.buildNFeFromForm` aplica em todos os itens usando o `idDestFinal`. Teste unitario real (`tests/nf-cfop-iddest.test.mjs`, nao so string).
+- **Nota:** notas ja rejeitadas (snapshot) nao mudam — e preciso **clonar/reemitir** para sair com o CFOP correto.
+- **Arquivos:** `nf-config.js`, `nf-service.js`, testes. Hosting publicado.
+- **Gates:** `npm test` 1145/0/1.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

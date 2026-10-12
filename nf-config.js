@@ -465,6 +465,24 @@ const NFConfigService = (() => {
     return 3;
   }
 
+  // ─── Ajustar CFOP ao tipo de operação (cStat 733) ─────────────────────────
+  // 1xxx/5xxx = Interna (idDest 1); 2xxx/6xxx = Interestadual (idDest 2).
+  // Troca só o 1º dígito, mantendo a operação (ex.: 5102 -> 6102).
+  function ajustarCFOP(idDest, cfop) {
+    const c = String(cfop || '');
+    if (!/^[1256]\d{3}$/.test(c)) return c;
+    const interna = String(idDest) === '1';
+    const primeiro = c[0];
+    if (interna) {
+      if (primeiro === '6') return '5' + c.slice(1);
+      if (primeiro === '2') return '1' + c.slice(1);
+    } else if (String(idDest) === '2') {
+      if (primeiro === '5') return '6' + c.slice(1);
+      if (primeiro === '1') return '2' + c.slice(1);
+    }
+    return c;
+  }
+
   // ─── API pública ──────────────────────────────────────────────────────────
   return {
     loadConfig,
@@ -478,6 +496,7 @@ const NFConfigService = (() => {
     aliquotaInterestadual,
     calcularIBSCBS,
     calcularIS,
+    ajustarCFOP,
     validarCNPJ,
     validarCPF,
     formatarCNPJ,

@@ -140,6 +140,8 @@ const NFService = (() => {
     // idDest (4.00): 1=Interna (mesma UF), 2=Interestadual (UF diferente), 3=Exterior
     const idDestAuto = !ufDest ? 1 : (ufDest === 'EX' ? 3 : (ufDest !== ufEmit ? 2 : 1));
 
+    const idDestFinal = formData.idDest || idDestAuto;
+
     // Monta objeto NF-e
     return {
       modelo: 55,
@@ -152,7 +154,7 @@ const NFService = (() => {
         nNF:        numero,
         dhEmi,
         tpNF:       formData.tpNF ?? 1, // 4.00: 0=Entrada, 1=Saída
-        idDest:     formData.idDest || idDestAuto,
+        idDest:     idDestFinal,
         cMunFG:     emp.endereco?.codigoMunicipio || '',
         tpImp:      nfeCfg.tpImp   || '1',
         tpAmb,
@@ -178,6 +180,8 @@ const NFService = (() => {
       dest: formData.dest,
       det:  itens.map((it, i) => ({
         ...it,
+        // 733: CFOP acompanha o idDest (5xxx/1xxx interna, 6xxx/2xxx interestadual)
+        cfop: window.NFConfigService?.ajustarCFOP?.(idDestFinal, it.cfop) || it.cfop,
         nItem: i + 1,
         imposto: it.imposto || calcularImpostosItem(it, formData.dest?.endereco?.uf),
       })),
