@@ -1290,6 +1290,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — DANFE cancelada: marca "CANCELADA"
+
+- **Bug:** `naoAutorizada = !(autorizada && nProt)` marcava cancelada como "SEM VALOR FISCAL / NÃO AUTORIZADA".
+- **Fix (`nf-danfe.js`):** `cancelada = status==='cancelada'` → marca `CANCELADA` + `NF-e CANCELADA NA SEFAZ`; demais nao-autorizadas mantem sem-valor-fiscal. Pratica MOC/DANFE p/ doc cancelado.
+- **Trava:** `tests/nf-danfe-marcas.test.mjs`. Hosting publicado.
+- **Gates:** `npm test` 1165/1164/0/1; lint + typecheck OK.
+
 ## Sessao 2026-10-12 — Lote 3 (filtros 38px, XML 403, CC-e/PDF, cancel loader)
 
 - **Filtros:** botao tinha `36px !important` global x inputs fluidos + `flex-end`. Fix: bloco `#consulta` com 38px (padrao campos) p/ inputs/selects/btns + `align-items:center`; mobile volta a `wrap`.

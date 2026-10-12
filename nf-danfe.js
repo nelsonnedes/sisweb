@@ -1017,18 +1017,23 @@ const NFDanfe = (() => {
     y += dadosH + 2;
 
     const totalPages = doc.internal.getNumberOfPages();
+    // Marca d'água: NF-e cancelada → "CANCELADA" (nunca "não autorizada");
+    // demais não autorizadas (rascunho/rejeitada/erro) → sem valor fiscal.
+    const cancelada = status === 'cancelada';
     const naoAutorizada = !(status === 'autorizada' && nProt);
+    const marca1 = cancelada ? 'CANCELADA' : 'SEM VALOR FISCAL';
+    const marca2 = cancelada ? 'NF-e CANCELADA NA SEFAZ' : 'NÃO AUTORIZADA PELA SEFAZ';
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      if (naoAutorizada) {
+      if (cancelada || naoAutorizada) {
         // Marca d'água: DANFE de NF-e não autorizada NÃO tem valor fiscal.
         try { if (typeof doc.setGState === 'function' && typeof doc.GState === 'function') doc.setGState(new doc.GState({ opacity: 0.16 })); } catch (_) {}
         doc.setTextColor(200, 40, 40);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(40);
-        doc.text('SEM VALOR FISCAL', PW / 2, 135, { align: 'center', angle: 28 });
+        doc.text(marca1, PW / 2, 135, { align: 'center', angle: 28 });
         doc.setFontSize(15);
-        doc.text('NÃO AUTORIZADA PELA SEFAZ', PW / 2, 152, { align: 'center', angle: 28 });
+        doc.text(marca2, PW / 2, 152, { align: 'center', angle: 28 });
         try { if (typeof doc.setGState === 'function' && typeof doc.GState === 'function') doc.setGState(new doc.GState({ opacity: 1 })); } catch (_) {}
         doc.setTextColor(...COR_PRETO);
       }
