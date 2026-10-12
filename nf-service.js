@@ -232,14 +232,9 @@ const NFService = (() => {
     const cfgVal = window.NFValidator.validarConfigParaEmissao(_config);
     if (!cfgVal.valid) throw new Error('Configuração incompleta:\n• ' + cfgVal.errors.join('\n• '));
 
-    // 2. Calcular totais
+    // 2. Calcular totais (vTotTrib = soma dos tributos calculados; o texto IBPT
+    //    da Lei da Transparência vai só em infCpl/Dados Adicionais, não no vTotTrib)
     const total = window.NFXmlBuilder.calcularTotais(nfeData.det, nfeData.desconto, nfeData.frete);
-    // Lei da Transparência: se houver percentuais IBPT configurados, usar como vTotTrib aproximado.
-    try {
-      const ibpt = (_config && _config.impostos && _config.impostos.ibpt) || {};
-      const pct = (Number(ibpt.federal) || 0) + (Number(ibpt.estadual) || 0) + (Number(ibpt.municipal) || 0);
-      if (pct > 0) total.vTotTrib = Math.round((Number(total.vNF) || 0) * pct) / 100;
-    } catch (_) {}
     nfeData.total = total;
 
     // 3. Validar NF-e

@@ -1263,6 +1263,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-config.js`, `nf-service.js`, testes. Hosting publicado.
 - **Gates:** `npm test` 1145/0/1.
 
+## Sessao 2026-10-11 — cStat 685 (vTotTrib) + botoes de Acoes
+
+- **cStat 685** "Total do Valor Aproximado dos Tributos difere do somatorio": o `<vTotTrib>` do XML estava sendo sobrescrito pelo % IBPT, mas a SEFAZ exige a **soma dos tributos calculados**. Revertido em `nf-service.emitirNFe` (vTotTrib = calcularTotais). O texto IBPT da Lei da Transparencia fica **só** em `infCpl`/Dados Adicionais.
+- **Botoes de Acoes do rascunho quebrando linha + Editar invisivel no escuro**: `#notasTable .nf-actions-cell{white-space:nowrap}` e botoes 32px com fundo solido via tokens `--sw-*` + icone branco (alta especificidade, vale nos dois temas).
+- **Arquivos:** `nf-service.js`, `notas-fiscais.html`. Hosting publicado.
+- **Gates:** `npm test` 1145/0/1; HTML 0 erros.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

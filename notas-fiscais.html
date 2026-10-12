@@ -579,6 +579,26 @@
             padding-right: 0 !important;
         }
 
+        /* Ações da Consulta: sem quebra de linha e visíveis nos dois temas */
+        #notasTable .nf-actions-cell { white-space: nowrap; }
+        #notasTable .nf-actions-cell .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 0;
+            cursor: pointer;
+            margin: 0 2px;
+            vertical-align: middle;
+        }
+        #notasTable .nf-actions-cell .btn i { color: #fff; font-size: 13px; }
+        #notasTable .nf-actions-cell .btn-primary { background: var(--sw-brand); }
+        #notasTable .nf-actions-cell .btn-success { background: var(--sw-success); }
+        #notasTable .nf-actions-cell .btn-warning { background: var(--sw-warning); }
+        #notasTable .nf-actions-cell .btn-danger  { background: var(--sw-danger); }
+
         .table-container {
             overflow-x: auto;
             margin-top: 15px;
