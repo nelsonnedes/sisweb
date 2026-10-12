@@ -472,21 +472,22 @@ const NFXmlBuilder = (() => {
     return parts.length ? `<vol>${parts.join('')}</vol>` : '';
   }
 
-  function buildTransp(transp) {
+  function buildTransp(transp, idDest) {
     const t = transp || {};
     const modFrete = parseInt(t.modFrete ?? 9, 10);
     const mf = Number.isFinite(modFrete) ? modFrete : 9;
     const volXml = (Array.isArray(t.vol) ? t.vol : (t.vol ? [t.vol] : []))
       .map(buildVolume)
       .join('');
-    // cStat 868: com modFrete 9 (sem ocorrência de transporte), NÃO informar
-    // transporta/veicTransp/reboque — só modFrete (+volumes, que descrevem a carga).
+    // X03-30: modFrete 9 → só modFrete (+vol).
     if (mf === 9) {
       return `<transp><modFrete>9</modFrete>${volXml}</transp>`;
     }
     const transportaXml = buildTransporta(t.transporta);
-    const veicXml = buildVeiculo('veicTransp', t.veicTransp);
-    const reboqueXml = (Array.isArray(t.reboque) ? t.reboque : [])
+    // X02-20 (868): operação interestadual (idDest 2) não informa veicTransp/reboque.
+    const semVeicReboque = String(idDest) === '2';
+    const veicXml = semVeicReboque ? '' : buildVeiculo('veicTransp', t.veicTransp);
+    const reboqueXml = semVeicReboque ? '' : (Array.isArray(t.reboque) ? t.reboque : [])
       .map((rb) => buildVeiculo('reboque', rb))
       .join('');
     return `<transp><modFrete>${mf}</modFrete>${transportaXml}${veicXml}${reboqueXml}${volXml}</transp>`;
@@ -587,7 +588,7 @@ const NFXmlBuilder = (() => {
     // ──────────────────────────────────────────────────────────────────────
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <NFe xmlns="${NS}">
-<infNFe Id="NFe${chaveInfo.chave}" versao="4.00">${buildIde(ide, chaveInfo)}${buildEmit(emit)}${buildDest(dest, ide.tpAmb)}${itensXml}${buildTotal(total)}${buildTransp(transp)}${buildPag(pag)}${buildInfAdic(infAdic)}
+<infNFe Id="NFe${chaveInfo.chave}" versao="4.00">${buildIde(ide, chaveInfo)}${buildEmit(emit)}${buildDest(dest, ide.tpAmb)}${itensXml}${buildTotal(total)}${buildTransp(transp, ide.idDest)}${buildPag(pag)}${buildInfAdic(infAdic)}
 </infNFe>
 </NFe>`;
 

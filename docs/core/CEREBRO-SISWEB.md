@@ -1290,6 +1290,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-11 — cStat 868: regra oficial X02-20 (idDest 2, nao modFrete)
+
+- **Correcao de rumo (fato oficial MOC X02-20):** "Se operacao interestadual (idDest=2), nao informar veicTransp e reboque". A hipotese anterior (modFrete 1/3/4 veda os grupos) estava **errada** e foi revertida.
+- **Fix:** `normalizarTransporte(formData, idDest)` e `buildTransp(transp, idDest)` omitem `veicTransp`/`reboque` quando `idDest=2` (mantem `transporta` e `vol`); `modFrete=9` continua omitindo tudo (X03-30). `buildNFeXML` passa `ide.idDest`.
+- **Armadilha:** nunca inferir regra fiscal por eliminacao — validar no MOC (X02-20 vs X03-30 sao condicoes diferentes).
+- **Arquivos:** `nf-service.js`, `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
+- **Gates:** `npm test` 1149/0/1.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

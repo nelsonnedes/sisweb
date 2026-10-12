@@ -39,10 +39,11 @@ const NFService = (() => {
     return parseFloat(raw.replace(/[^\d.-]/g, '')) || 0;
   }
 
-  function normalizarTransporte(formData = {}) {
+  function normalizarTransporte(formData = {}, idDest) {
     const src = formData.transp || { modFrete: formData.modFrete ?? 9 };
     const modFrete = parseInt(src.modFrete ?? formData.modFrete ?? 9, 10);
     const transp = { modFrete: Number.isFinite(modFrete) ? modFrete : 9 };
+    // X03-30 (845): modFrete 9 (sem transporte) não informa os grupos.
     if (transp.modFrete === 9) return transp;
 
     const addNonEmpty = (target, key, value) => {
@@ -91,6 +92,12 @@ const NFService = (() => {
       return item;
     }).filter((v) => Object.keys(v).length);
     if (vol.length) transp.vol = vol;
+
+    // X02-20 (868): operação interestadual (idDest 2) não informa veicTransp/reboque.
+    if (String(idDest) === '2') {
+      delete transp.veicTransp;
+      delete transp.reboque;
+    }
 
     return transp;
   }
@@ -185,7 +192,7 @@ const NFService = (() => {
         nItem: i + 1,
         imposto: it.imposto || calcularImpostosItem(it, formData.dest?.endereco?.uf),
       })),
-      transp: normalizarTransporte(formData),
+      transp: normalizarTransporte(formData, idDestFinal),
       pag:    formData.pag || [{ tPag: '01', vPag: 0 }],
       infAdic: formData.infAdic || '',
       desconto: parseFloat(formData.desconto) || 0,
