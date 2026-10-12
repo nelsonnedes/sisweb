@@ -1290,6 +1290,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — Download XML: CORS do bucket + fallback backend
+
+- **Evidencia (logs.md:92-94):** 403 sumiu (getDownloadURL OK); falha era **CORS** — `firebasestorage...?alt=media&token=` sem `Access-Control-Allow-Origin` p/ `sisweb-7ce82.web.app` → `Failed to fetch`.
+- **Fix raiz:** `gsutil cors set` no bucket `sisweb-7ce82.firebasestorage.app` → `[{"origin":["https://sisweb-7ce82.web.app"],"method":["GET","HEAD"],"maxAgeSeconds":3600}]` (config em `C:\Users\Nelson\AppData\Local\Temp\opencode\storage-cors.json`).
+- **Fallback:** novo callable `nf_baixarXML` (Admin SDK; auth + `assertTenantAccess`; prefere `xmlProcStoragePath`; paths restritos a `companies|tenants/`; retorna base64) + export no `index.js`; frontend tenta direto e cai p/ backend (toast "via servidor"). Deploy `functions:nf_baixarXML` OK.
+- **Arquivos:** `functions/nf-functions.js`, `functions/index.js`, `notas-fiscais.html`, `tests/nf-baixar-xml.test.mjs`. Hosting + function publicados.
+- **Gates:** `npm test` 1168/1167/0/1; lint + typecheck OK.
+
 ## Sessao 2026-10-12 — DANFE cancelada: marca "CANCELADA"
 
 - **Bug:** `naoAutorizada = !(autorizada && nProt)` marcava cancelada como "SEM VALOR FISCAL / NÃO AUTORIZADA".

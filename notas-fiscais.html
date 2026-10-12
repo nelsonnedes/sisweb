@@ -4583,7 +4583,23 @@ renderizarVolumesNF();
         const nf = await window.NFStorage.carregarNF(tid, 55, nfId);
         if (!nf) return notifyUser('Nota não encontrada');
         const path = nf.xmlProcStoragePath || nf.xmlStoragePath || nf.xmlPath || '';
-        const xml = nf.xmlAutorizado || await window.NFStorage.carregarXML(tid, nfId, path);
+        let xml = nf.xmlAutorizado || '';
+        let viaServidor = false;
+        if (!xml) {
+          try {
+            xml = await window.NFStorage.carregarXML(tid, nfId, path);
+          } catch (e1) {
+            console.warn('[NF-e] Download direto falhou, tentando via backend:', e1?.code || e1?.message || e1);
+            // Fallback backend (Admin SDK — imune a CORS/regras do browser).
+            const data = await window.firebaseService.callFunction('nf_baixarXML', { tenantId: tid, nfId, modelo: 55 });
+            if (data?.xmlBase64) {
+              xml = new TextDecoder('utf-8').decode(Uint8Array.from(atob(data.xmlBase64), (c) => c.charCodeAt(0)));
+              viaServidor = true;
+            } else {
+              throw e1;
+            }
+          }
+        }
         if (!xml) return notifyUser('XML autorizado não disponível para esta nota');
         const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
         const a = document.createElement('a');
@@ -4591,12 +4607,15 @@ renderizarVolumesNF();
         a.download = `${nf.chave || String(nf.numero || nfId).padStart(9, '0')}-nfe.xml`;
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-        notifyUser('⬇️ XML autorizado baixado');
+        notifyUser(viaServidor ? '⬇️ XML autorizado baixado (via servidor)' : '⬇️ XML autorizado baixado');
       } catch(e) {
         const m = String(e?.code || e?.message || e);
         console.warn('[NF-e] Baixar XML:', m);
-        if (/unauthorized|unauthenticated|permission_denied|permission-denied|403|object-not-found|outro tenant/i.test(m)) {
-          return notifyUser('Sem permissão para ler o XML no Storage (403). Saia e entre novamente para atualizar o vínculo com a empresa; se persistir, fale com o suporte (regras do Storage).');
+        if (/unauthorized|unauthenticated|permission_denied|permission-denied|not-found|object-not-found|outro tenant/i.test(m)) {
+          return notifyUser('Não foi possível obter o XML (Storage inacessível). Saia e entre novamente para atualizar o vínculo com a empresa; se persistir, fale com o suporte.');
+        }
+        if (/failed to fetch|load failed|network|cors|err_failed/i.test(m)) {
+          return notifyUser('Falha de rede/CORS ao ler o XML. Verifique a conexão e tente de novo; se persistir, fale com o suporte.');
         }
         notifyUser('Erro ao baixar XML: ' + m);
       }

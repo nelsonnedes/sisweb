@@ -1171,6 +1171,60 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// CLOUD FUNCTION: nf_baixarXML
+// Retorna o XML autorizado (nfeProc quando disponível) via Admin SDK — fallback
+// quando o download direto do Storage falha no browser (CORS ou regras/claims).
+// ═══════════════════════════════════════════════════════════════════════════
+exports.nf_baixarXML = onFiscalCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação obrigatória');
+  }
+  const { tenantId: rawTenantId, nfId: rawNfId, modelo } = data || {};
+  const tenantId = sanitizePathSegment(rawTenantId, 'tenantId');
+  const nfId = sanitizePathSegment(rawNfId, 'nfId');
+  if (!tenantId || !nfId) {
+    throw new functions.https.HttpsError('invalid-argument', 'tenantId e nfId são obrigatórios');
+  }
+  await assertTenantAccess(context, tenantId);
+  const modKey = getModKey(modelo);
+  try {
+    const db = admin.database();
+    let note = null;
+    for (const ref of getFiscalNoteRefs(db, tenantId, modKey, nfId)) {
+      try {
+        const snap = await ref.get();
+        if (snap.exists()) { note = snap.val() || {}; break; }
+      } catch (_) {}
+    }
+    if (!note) {
+      throw new functions.https.HttpsError('not-found', 'Nota não encontrada');
+    }
+    const candidates = [note.xmlProcStoragePath, note.xmlStoragePath, note.xmlPath]
+      .map((p) => String(p || '').replace(/^\/+/, ''))
+      .filter((p) => p && !p.includes('..') && (p.startsWith('companies/') || p.startsWith('tenants/')));
+    if (!candidates.length) {
+      throw new functions.https.HttpsError('not-found', 'XML não disponível para esta nota');
+    }
+    const bucket = admin.storage().bucket();
+    let lastErr = null;
+    for (const storagePath of candidates) {
+      try {
+        const [buf] = await bucket.file(storagePath).download();
+        if (buf && buf.length) {
+          return { xmlBase64: buf.toString('base64'), storagePath, chave: note.chave || '' };
+        }
+      } catch (e) { lastErr = e; }
+    }
+    functions.logger.warn(`[nf_baixarXML] Arquivo ausente | tid=${tenantId} nfId=${nfId} | tried=${candidates.join(',')} | err=${lastErr && lastErr.message}`);
+    throw new functions.https.HttpsError('not-found', 'Arquivo XML não encontrado no Storage');
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    functions.logger.error('[nf_baixarXML] Erro:', (e && e.message) || e);
+    throw new functions.https.HttpsError('internal', `Falha ao ler XML: ${(e && e.message) || e}`);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // CLOUD FUNCTION 4: nf_cancelarNFe
 // Registra evento de cancelamento na SEFAZ (prazo: até 24h/30 dias)
 // ═══════════════════════════════════════════════════════════════════════════
