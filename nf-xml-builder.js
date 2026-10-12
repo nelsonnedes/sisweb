@@ -494,11 +494,17 @@ const NFXmlBuilder = (() => {
   }
 
   // ─── Bloco <pag> (pagamento) ──────────────────────────────────────────────
+  // YA03-30 (cStat 904, NT 2017.002 / MOC Anexo I): tPag 90 (Sem pagamento) ou 91
+  // com vPag<>0 → "Rejeicao: Informado indevidamente campo valor de pagamento".
+  // XSD oficial: vPag "poderá ser omitida quando tPag=90", mas o elemento NÃO tem
+  // minOccurs="0" (é required) — por isso emitimos 0.00 (forma aprovada), nunca omitimos.
   function buildPag(pag) {
     const pagamentos = Array.isArray(pag) && pag.length > 0 ? pag : [{ tPag: '01', vPag: 0 }];
-    const detPag = pagamentos.map(p =>
-      `<detPag><tPag>${p.tPag || '01'}</tPag><vPag>${num(p.vPag)}</vPag></detPag>`
-    ).join('');
+    const detPag = pagamentos.map(p => {
+      const tPag = p.tPag || '01';
+      const vPag = (tPag === '90' || tPag === '91') ? 0 : p.vPag;
+      return `<detPag><tPag>${tPag}</tPag><vPag>${num(vPag)}</vPag></detPag>`;
+    }).join('');
     return `<pag>${detPag}</pag>`;
   }
 

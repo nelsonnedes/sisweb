@@ -1290,6 +1290,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — cStat 904: tPag 90 + vPag<>0 (YA03-30, NT 2017.002)
+
+- **Regra oficial:** YA03-30 = `tPag=90` (Sem pagamento) **ou 91** com `vPag<>0` → 904. Nao confundir: soma ΣvPag≠vNF = 865/866; vTroco = 869/965; dPag = familia YA03a/b.
+- **Bug:** `coletarFormDataNF` enviava `pag:[{90, total}]` quando usuario selecionava "Sem Pagamento" (ou reemitia rascunho, que restaura select=90).
+- **Fix 2 camadas:** (1) coletor zera `vPag` p/ 90/91 + `notifyUser` orientando a escolher o meio real (sem bloquear — remessa sem cobranca c/ vNF>0 e 90 é legitima); (2) `buildPag` fail-safe zera `vPag` p/ 90/91.
+- **XSD oficial (`leiauteNFe_v4.00.xsd:6011`):** `vPag` "poderá ser omitida quando tPag=90" mas o elemento NAO tem `minOccurs="0"` → emitimos `0.00` (forma aprovada), nunca omitimos.
+- **Arquivos:** `notas-fiscais.html`, `nf-xml-builder.js`, `tests/nf-pagamento-90.test.mjs`. Hosting publicado.
+- **Gates:** `npm test` 1153/1152/0/1; lint + typecheck OK.
+
 ## Sessao 2026-10-11 — cStat 868: regra oficial X02-20 (idDest 2, nao modFrete)
 
 - **Correcao de rumo (fato oficial MOC X02-20):** "Se operacao interestadual (idDest=2), nao informar veicTransp e reboque". A hipotese anterior (modFrete 1/3/4 veda os grupos) estava **errada** e foi revertida.

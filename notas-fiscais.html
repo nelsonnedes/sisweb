@@ -3798,7 +3798,14 @@
       const dhEmi = Number.isNaN(dhEmiDate.getTime()) ? new Date().toISOString() : dhEmiDate.toISOString();
       const total = calcularTotalFormNF();
       const tPag = options.rascunho ? '90' : (document.getElementById('nfFormaPag')?.value || '01');
-      const vPag = options.rascunho ? 0 : total.total;
+      // YA03-30 (cStat 904): tPag 90/91 (sem pagamento) com vPag<>0 → rejeição SEFAZ.
+      // Zera e avisa; se houver cobrança, o usuário deve selecionar o meio real.
+      // (Não bloqueia: operação sem cobrança com vNF>0 e tPag 90 é legítima.)
+      let vPag = options.rascunho ? 0 : total.total;
+      if (!options.rascunho && (tPag === '90' || tPag === '91') && Number(total.total) > 0) {
+        vPag = 0;
+        notifyUser('⚠️ Forma "Sem Pagamento" selecionada: valor do pagamento zerado (regra SEFAZ 904). Se houver cobrança, selecione o meio real (Dinheiro, PIX, Cartão…).');
+      }
       const tpNFRaw = parseInt(document.getElementById('nfTipo')?.value, 10);
       return {
         tpNF: Number.isFinite(tpNFRaw) ? tpNFRaw : 1,
