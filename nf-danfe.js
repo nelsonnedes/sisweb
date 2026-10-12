@@ -1184,6 +1184,73 @@ const NFDanfe = (() => {
     doc.save(`${label}_${String(numero).padStart(9, '0')}.pdf`);
   }
 
+  // ─── DACC-e: Documento Auxiliar da Carta de Correção Eletrônica ─────────
+  // Texto de condições de uso conforme MOC (Convênio S/N 1970, art. 7º, § 1º-A).
+  const CCE_COND_USO = 'A Carta de Correção é disciplinada pelo parágrafo 1º-A do art. 7º do Convênio S/N, de 15 de dezembro de 1970 e pode ser utilizada para regularização de erro ocorrido na emissão de documento fiscal, desde que o erro não esteja relacionado com: I - as variáveis que determinam o valor do imposto tais como: base de cálculo, alíquota, diferença de preço, quantidade, valor da operação ou da prestação; II - a correção de dados cadastrais que implique mudança do remetente ou do destinatário; III - a data de emissão ou de saída.';
+
+  function gerarDACCe(nf, cce) {
+    const { jsPDF } = window.jspdf || window;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const nfe = nf || {};
+    const ev = cce || {};
+    const emit = nfe.emit || {};
+    const ide = nfe.ide || {};
+    const dest = nfe.dest || {};
+    const chaveFmt = String(nfe.chave || '').replace(/\D/g, '').replace(/(\d{4})/g, '$1 ').trim();
+    const end = emit.endereco || {};
+    const endEmit = [end.logradouro, end.numero, end.bairro,
+      end.municipio && end.UF ? `${end.municipio}/${end.UF}` : (end.municipio || end.UF),
+      end.cep].filter(Boolean).join(' - ');
+    const emitDoc = emit.cnpj || emit.CNPJ || emit.cpf || emit.CPF || '';
+    const seq = String(ev.nSeqEvento ?? '').padStart(2, '0');
+    const ML = 10, CW = 190;
+    let y = 12;
+    const ensure = (h) => { if (y + h > 280) { doc.addPage(); y = 12; } };
+    const box = (titulo, linhas, hMin = 8) => {
+      const wrapped = linhas.filter(Boolean).flatMap((t) => doc.splitTextToSize(String(t), CW - 4));
+      const h = Math.max(hMin, 6 + wrapped.length * 4.5);
+      ensure(h);
+      doc.setDrawColor(0); doc.rect(ML, y, CW, h);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+      doc.text(String(titulo).toUpperCase(), ML + 2, y + 4.5);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+      if (wrapped.length) doc.text(wrapped, ML + 2, y + 9);
+      y += h + 2;
+    };
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+    doc.text('CARTA DE CORREÇÃO ELETRÔNICA — CC-e', 105, y, { align: 'center' }); y += 6;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text('Modelo 55 · Documento Auxiliar (DACC-e) — sem valor fiscal', 105, y, { align: 'center' }); y += 8;
+    box('Emitente', [
+      `${emit.razaoSocial || emit.xNome || ''}  ·  CNPJ: ${fmtDoc(emitDoc)}  ·  IE: ${emit.ie || emit.IE || ''}`,
+      endEmit,
+    ]);
+    box('NF-e corrigida', [
+      `Chave de acesso: ${chaveFmt}`,
+      `NF-e nº ${String(nfe.numero || ide.nNF || '').padStart(9, '0')}  ·  Série ${ide.serie || '1'}  ·  Destinatário: ${dest.nome || dest.xNome || ''}`,
+    ]);
+    box('Evento', [
+      `Sequência: ${seq}  ·  Data/hora: ${String(ev.dhEvento || '').replace('T', ' ').slice(0, 19)}  ·  Protocolo: ${ev.nProt || ''}`,
+      `Status SEFAZ: ${[ev.cStat, ev.xMotivo].filter(Boolean).join(' ')}`,
+    ]);
+    box('Correção apresentada', [String(ev.correcao || '')], 20);
+    box('Condições de uso (MOC)', [CCE_COND_USO], 20);
+    if (String(ide.tpAmb) === '2') {
+      ensure(8);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+      doc.text('AMBIENTE DE HOMOLOGAÇÃO — SEM VALOR FISCAL', 105, y + 5, { align: 'center' });
+      y += 8;
+    }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+    doc.text(`Sisweb - DACC-e gerado em ${new Date().toLocaleString('pt-BR')}`, 105, 292, { align: 'center' });
+    return doc;
+  }
+
+  function abrirDACCe(nf, cce) {
+    const doc = gerarDACCe(nf, cce);
+    window.open(doc.output('bloburl'), '_blank');
+  }
+
   // ─── Abrir em nova aba ────────────────────────────────────────────────────
   async function abrirDANFE(nfeData) {
     const mod = parseInt(nfeData.ide?.mod) || 55;
@@ -1205,6 +1272,8 @@ const NFDanfe = (() => {
     downloadDANFE,
     abrirDANFE,
     blobURLDANFE,
+    gerarDACCe,
+    abrirDACCe,
     buildQRCodeUrl,
     prepararDANFEComAssets,
     normalizarNFeParaDANFE,

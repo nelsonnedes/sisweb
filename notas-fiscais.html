@@ -1099,6 +1099,45 @@
             height: 38px !important;
             min-width: 38px !important;
         }
+
+        /* UX Consulta: equaliza altura dos filtros (38px padrao campos) sem tocar no resto.
+           Botoes tem 36px !important global — o escopo #consulta neutraliza só aqui. */
+        #consulta > .form-row { align-items: center !important; }
+        #consulta .form-group { margin-bottom: 0; justify-content: center; }
+        #consulta .form-group input,
+        #consulta .form-group select,
+        #consulta #searchNF.search-box {
+            height: 38px !important;
+            min-height: 38px !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 8px 12px !important;
+            font-size: 14px !important;
+            line-height: 1.2 !important;
+            border-radius: 6px !important;
+        }
+        #consulta .form-group .btn {
+            height: 38px !important;
+            min-height: 38px !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 8px 12px !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+        @media (max-width: 768px) {
+            #consulta > .form-row { flex-wrap: wrap !important; overflow-x: visible !important; align-items: stretch !important; }
+            #consulta .form-group { flex: 1 1 100% !important; max-width: none !important; min-width: 0 !important; }
+            #consulta .form-group input,
+            #consulta .form-group select,
+            #consulta #searchNF.search-box,
+            #consulta .form-group .btn { width: 100% !important; max-width: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -4553,7 +4592,14 @@ renderizarVolumesNF();
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 5000);
         notifyUser('⬇️ XML autorizado baixado');
-      } catch(e) { notifyUser('Erro ao baixar XML: ' + (e?.message || e)); }
+      } catch(e) {
+        const m = String(e?.code || e?.message || e);
+        console.warn('[NF-e] Baixar XML:', m);
+        if (/unauthorized|unauthenticated|permission_denied|permission-denied|403|object-not-found|outro tenant/i.test(m)) {
+          return notifyUser('Sem permissão para ler o XML no Storage (403). Saia e entre novamente para atualizar o vínculo com a empresa; se persistir, fale com o suporte (regras do Storage).');
+        }
+        notifyUser('Erro ao baixar XML: ' + m);
+      }
     }
     window.baixarXMLNotaNF = baixarXMLNotaNF;
 
@@ -4633,12 +4679,13 @@ renderizarVolumesNF();
       if (modal) { modal.style.display = 'none'; modal.classList.remove('show'); }
     }
 
-    function abrirModalCartaCorrecaoNF(nfId, chave) {
+    async function abrirModalCartaCorrecaoNF(nfId, chave) {
       const modal = ensureEventoFiscalModal();
       document.getElementById('nfFiscalEventTitle').innerHTML = '<i class="fas fa-file-signature"></i> Carta de Correção da NF-e';
       document.getElementById('nfFiscalEventBody').innerHTML = `
         <input type="hidden" id="nfCceId" value="${escapeHtmlNF(nfId)}">
         <input type="hidden" id="nfCceChave" value="${escapeHtmlNF(chave)}">
+        <div id="nfCceHistorico" style="margin-bottom:12px;font-size:13px;color: var(--sw-text-2);">Carregando CC-es registradas...</div>
         <p style="margin:0 0 10px;color: var(--sw-text-2) ;font-size:13px;">Use CC-e somente para correções permitidas pela legislação, sem alterar valores, destinatário, impostos, data de emissão ou dados que mudem a operação fiscal.</p>
         <div class="form-group">
           <label for="nfCceTexto">Correção *</label>
@@ -4655,7 +4702,53 @@ renderizarVolumesNF();
       modal.style.display = 'block';
       modal.classList.add('show');
       document.getElementById('nfCceTexto')?.focus();
+      carregarHistoricoCCeNF(nfId);
     }
+
+    // Histórico de CC-es da nota (eventos/cce/NN + legado cartasCorrecao), cada uma com PDF.
+    async function carregarHistoricoCCeNF(nfId) {
+      const box = document.getElementById('nfCceHistorico');
+      if (!box) return;
+      try {
+        const tid = obterTenantIdNF();
+        const nf = tid ? await window.NFStorage.carregarNF(tid, 55, nfId).catch(() => null) : null;
+        const mapa = Object.assign({}, nf?.cartasCorrecao, nf?.eventos?.cce);
+        const seqs = Object.keys(mapa).sort();
+        if (!seqs.length) {
+          box.innerHTML = '<span style="opacity:.8">Nenhuma carta de correção registrada para esta nota.</span>';
+          return;
+        }
+        box.innerHTML = '<strong style="color:var(--sw-text-1)">Cartas registradas (' + seqs.length + '):</strong>' + seqs.map((seq) => {
+          const e = mapa[seq] || {};
+          const dh = String(e.dhEvento || '').replace('T', ' ').slice(0, 19);
+          const prot = e.nProt ? ' · Prot: ' + escapeHtmlNF(String(e.nProt)) : '';
+          const ok = (e.autorizada === false || (e.cStat && e.cStat !== '135' && e.cStat !== '136')) ? '⚠️' : '✅';
+          const trecho = escapeHtmlNF(String(e.correcao || '').slice(0, 90));
+          return `<div style="display:flex;gap:8px;align-items:center;margin-top:6px;padding:6px 8px;border:1px solid var(--sw-border);border-radius:6px;">`
+            + `<span style="flex:1;min-width:0;">${ok} <strong>Seq ${escapeHtmlNF(String(seq).padStart(2, '0'))}</strong>`
+            + `${dh ? ' · ' + escapeHtmlNF(dh) : ''}${prot} — ${trecho}${String(e.correcao || '').length > 90 ? '…' : ''}</span>`
+            + `<button type="button" class="btn btn-primary btn-small" onclick="baixarDACCE('${escapeHtmlNF(nfId)}','${escapeHtmlNF(seq)}')" title="Baixar CC-e em PDF">PDF</button></div>`;
+        }).join('');
+      } catch (_) {
+        box.innerHTML = '<span style="opacity:.8">Não foi possível carregar o histórico de CC-es.</span>';
+      }
+    }
+
+    // Baixar PDF (DACC-e) de uma CC-e registrada.
+    async function baixarDACCE(nfId, seq) {
+      try {
+        const tid = obterTenantIdNF();
+        if (!tid) return notifyUser('Tenant não identificado');
+        const nf = await window.NFStorage.carregarNF(tid, 55, nfId);
+        if (!nf) return notifyUser('Nota não encontrada');
+        const mapa = Object.assign({}, nf?.cartasCorrecao, nf?.eventos?.cce);
+        const cce = mapa[seq] ?? mapa[String(seq).padStart(2, '0')];
+        if (!cce) return notifyUser('CC-e não encontrada');
+        if (!window.NFDanfe?.abrirDACCe) return notifyUser('Gerador de PDF da CC-e não carregado');
+        window.NFDanfe.abrirDACCe(nf, cce);
+      } catch (e) { notifyUser('Erro ao gerar PDF da CC-e: ' + (e?.message || e)); }
+    }
+    window.baixarDACCE = baixarDACCE;
 
     // Trava anti-duplo-envio de eventos fiscais (F-11/F-12). Espelha confirmarEmissao:
     // botao desabilitado com spinner + overlay + flag (SEFAZ nao tolera repeticao).
@@ -4713,6 +4806,9 @@ renderizarVolumesNF();
         });
         setEventoFiscalMsg(data?.autorizada ? 'CC-e autorizada pela SEFAZ.' : (data?.xMotivo || 'Evento enviado, confira o retorno.'), data?.autorizada ? 'ok' : 'warn');
         consultarNotas();
+        try { await carregarHistoricoCCeNF(nfId); } catch (_) {}
+        const senhaEl = document.getElementById('nfCceSenha');
+        if (senhaEl) senhaEl.value = '';
         __nfEventoFim(__cceBtn);
       } catch (e) {
         setEventoFiscalMsg(`CC-e não enviada: ${e.message || e}. Verifique se a Cloud Function nf_cartaCorrecaoNFe já foi implantada.`, 'erro');
@@ -4820,18 +4916,31 @@ renderizarVolumesNF();
         ? await window.promptDialog({ title: 'Senha do certificado A1', message: 'Informe a senha do certificado A1 para assinar o evento de cancelamento.', placeholder: 'Senha do certificado A1', confirmLabel: 'Cancelar NF-e', cancelLabel: 'Voltar', inputType: 'password', autoComplete: 'current-password', icon: 'fas fa-lock' })
         : null;
       if (!senha) return;
+      // Trava anti-duplo-envio + feedback (espelha CC-e/Inutilização: SEFAZ não tolera repetição).
+      if (__nfEventoInFlight) return notifyUser('Já há um evento fiscal em andamento. Aguarde...', 'warning');
+      __nfEventoInFlight = true;
+      notifyUser('⏳ Enviando cancelamento à SEFAZ...', 'info');
+      try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Cancelando NF-e na SEFAZ...'); } catch (_) {}
+      const btnCancelOrig = document.querySelector('button[onclick^="iniciarCancelamento(\'' + nfId + '\'"]');
+      const btnCancelLabel = btnCancelOrig ? btnCancelOrig.innerHTML : null;
+      if (btnCancelOrig) { btnCancelOrig.disabled = true; btnCancelOrig.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
       try {
         const tid = obterTenantIdNF();
-        if (!tid) return notifyUser('Tenant não identificado');
-        const cfg = window.NFService.getConfig() || {};
+        if (!tid) { notifyUser('Tenant não identificado', 'error'); return; }
+        const cfg = window.NFService?.getConfig?.() || {};
         const data = await window.firebaseService.callFunction('nf_cancelarNFe', {
           tenantId: tid, nfId, modelo: 55, chave, nProt, justificativa: just,
           senhaA1: senha, ambiente: cfg.nfe?.ambiente || 'homologacao',
           cnpjEmit: cfg.empresa?.cnpj || '',
         });
-        notifyUser(data.cancelada ? '✅ NF-e cancelada com sucesso!' : `⚠️ ${data.xMotivo}`);
+        if (data?.cancelada) notifyUser('✅ NF-e cancelada com sucesso!', 'success');
+        else notifyUser(`⚠️ ${data?.xMotivo || 'Evento enviado, confira o retorno.'}`, 'warning');
         consultarNotas();
-      } catch(e) { notifyUser('Erro no cancelamento: ' + e.message); }
+      } catch(e) { notifyUser('Erro no cancelamento: ' + (e?.message || e), 'error'); }
+      finally {
+        if (btnCancelOrig) { btnCancelOrig.disabled = false; if (btnCancelLabel) btnCancelOrig.innerHTML = btnCancelLabel; }
+        __nfEventoFim(null);
+      }
     }
 
     async function editarRascunho(nfId, modo = 'editar') {      try {

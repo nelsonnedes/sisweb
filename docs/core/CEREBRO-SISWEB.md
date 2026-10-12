@@ -1290,6 +1290,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — Lote 3 (filtros 38px, XML 403, CC-e/PDF, cancel loader)
+
+- **Filtros:** botao tinha `36px !important` global x inputs fluidos + `flex-end`. Fix: bloco `#consulta` com 38px (padrao campos) p/ inputs/selects/btns + `align-items:center`; mobile volta a `wrap`.
+- **XML 403:** `storage.rules` exigia `subscriptionStatus` p/ READ. Split: `allow read` so vinculo tenant; `allow write` mantem assinatura. Deploy `firebase deploy --only storage` OK. Frontend: catch classifica 403 (orienta logout/login).
+- **CC-e:** modal agora lista `eventos/cce/NN` (+ legado `cartasCorrecao`) c/ seq/data/protocolo/trecho + botao PDF cada; novo `gerarDACCe/abrirDACCe` em `nf-danfe.js` (condicao de uso MOC cite Conv. S/N 1970; homologacao marcada); pos-envio recarrega historico e limpa senha.
+- **Cancel:** trava `__nfEventoInFlight` + toast progresso + `SiswebLoading` + botao origem c/ spinner + `finally` (`__nfEventoFim(null)`); `data?.`/`e?.message` robustos.
+- **Arquivos:** `notas-fiscais.html`, `nf-danfe.js`, `storage.rules`, `tests/nf-eventos-cce-cancel.test.mjs`. Hosting + Storage publicados.
+- **Gates:** `npm test` 1163/1162/0/1; lint + typecheck OK.
+
 ## Sessao 2026-10-12 — Lote Consulta/DANFE (6 itens)
 
 - **Rascunho x pagamento:** coletor forcava `tPag=90` no rascunho (perda deterministica). Agora preserva o `tPag` do select; `vPag=0` no rascunho e p/ 90/91 (YA03-30). Restore (4829) ja lia `pag[0].tPag`.
