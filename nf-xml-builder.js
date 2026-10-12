@@ -460,7 +460,11 @@ const NFXmlBuilder = (() => {
   function buildVolume(vol) {
     const v = vol || {};
     const parts = [];
-    const qVol = onlyDigits(v.qVol);
+    // qVol é inteiro no leiaute (vol/qVol: pattern [0-9]{1,15} — nº de volumes).
+    // Decimal digitado (ex. "0,010" m³, que pertence ao item qCom) é OMITIDO em vez
+    // de corrompido para "0010"; formulário/validador barram com mensagem.
+    const qVolRaw = String(v.qVol ?? '').trim();
+    const qVol = /^[0-9]{1,15}$/.test(qVolRaw) ? qVolRaw : '';
     if (qVol) parts.push(`<qVol>${qVol}</qVol>`);
     if (v.esp || v.especie) parts.push(`<esp>${esc(v.esp || v.especie).slice(0, 60)}</esp>`);
     if (v.marca) parts.push(`<marca>${esc(v.marca).slice(0, 60)}</marca>`);

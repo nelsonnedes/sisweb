@@ -313,6 +313,15 @@ const NFDanfe = (() => {
           RNTC: childText(veicNode, 'RNTC'),
         });
       }
+      const reboqueNodes = directChildren(transpNode, 'reboque').slice(0, 5);
+      if (reboqueNodes.length) {
+        const rbs = reboqueNodes.map((rb) => onlyFilledObject({
+          placa: childText(rb, 'placa'),
+          UF: childText(rb, 'UF'),
+          RNTC: childText(rb, 'RNTC'),
+        })).filter((rb) => Object.keys(rb).length);
+        if (rbs.length) transp.reboque = rbs;
+      }
       if (volumes.length) transp.vol = volumes;
 
       const pag = directChildren(pagNode, 'detPag').map((detPag) => onlyFilledObject({
@@ -819,7 +828,9 @@ const NFDanfe = (() => {
     const veic = transp.veicTransp || {};
     const vols = Array.isArray(transp.vol) ? transp.vol.filter(Boolean) : (transp.vol ? [transp.vol] : []);
     const vol = vols[0] || {};
-    const totalQVol = vols.reduce((s, item) => s + (parseInt(String(item.qVol || '').replace(/\D/g, ''), 10) || 0), 0);
+    // qVol é inteiro (nº de volumes); soma só dígitos válidos, nunca strip de decimal.
+    const qVolInt = (x) => { const s = String(x ?? '').trim(); return /^[0-9]{1,15}$/.test(s) ? parseInt(s, 10) : 0; };
+    const totalQVol = vols.reduce((s, item) => s + qVolInt(item.qVol), 0);
     const totalPesoB = vols.reduce((s, item) => s + (item.pesoB !== '' && item.pesoB != null ? parseFiscalNumber(item.pesoB) : 0), 0);
     const totalPesoL = vols.reduce((s, item) => s + (item.pesoL !== '' && item.pesoL != null ? parseFiscalNumber(item.pesoL) : 0), 0);
     const especies = [...new Set(vols.map((item) => item.esp || item.especie).filter(Boolean))];
@@ -986,7 +997,20 @@ const NFDanfe = (() => {
     const infoPag = pagReais.length
       ? `Pagamento: ${pagReais.map((p) => `${p.tPag || ''} ${fmtFiscalMaybe(p.vPag)}`).join(' | ')}`
       : '';
-    const infoAdic = [nfeData.infAdic || '', infoPag].filter(Boolean).join('\n');
+    // Placas (tração/reboques) em Dados Adicionais quando existirem no objeto ou no
+    // XML (texto livre em infCpl — não viola X02-20, que rege só os grupos do XML).
+    // Não duplica o bloco "Reboques: ..." já gerado na emissão.
+    const baseAdic = nfeData.infAdic || '';
+    const partesTransp = [];
+    const veicD = transp.veicTransp || {};
+    if (veicD.placa && !/tração:/i.test(baseAdic)) {
+      partesTransp.push(`Tração: ${cleanCode(veicD.placa)}${veicD.UF || veicD.uf ? '/' + String(veicD.UF || veicD.uf).toUpperCase() : ''}`);
+    }
+    const rbsD = Array.isArray(transp.reboque) ? transp.reboque.filter(Boolean) : [];
+    if (rbsD.length && !/reboques:/i.test(baseAdic)) {
+      partesTransp.push('Reboques: ' + rbsD.map((rb, i) => `${i + 1}) ${cleanCode(rb.placa)}${rb.UF || rb.uf ? '/' + String(rb.UF || rb.uf).toUpperCase() : ''}`).join(' / '));
+    }
+    const infoAdic = [baseAdic, partesTransp.join(' / '), infoPag].filter(Boolean).join('\n');
     const dadosH = Math.min(30, Math.max(15, splitTextForWidth(doc, infoAdic || 'Sem informações complementares.', 130).length * 3 + 6));
     fiscalBox(ML, y, 128, dadosH, 'INFORMAÇÕES COMPLEMENTARES', infoAdic || 'Sem informações complementares.', { valueSize: 5.4, maxLines: 8 });
     fiscalBox(ML + 128, y, 62, dadosH, 'RESERVADO AO FISCO', '', { valueSize: 5.4, maxLines: 8 });

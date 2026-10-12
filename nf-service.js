@@ -93,12 +93,9 @@ const NFService = (() => {
     }).filter((v) => Object.keys(v).length);
     if (vol.length) transp.vol = vol;
 
-    // X02-20 (868): operação interestadual (idDest 2) não informa veicTransp/reboque.
-    if (String(idDest) === '2') {
-      delete transp.veicTransp;
-      delete transp.reboque;
-    }
-
+    // X02-20 (868): veicTransp/reboque são omitidos do XML quando idDest=2, mas o
+    // filtro fica SÓ em buildTransp (nf-xml-builder.js, que recebe ide.idDest).
+    // Aqui os dados são mantidos no objeto para DANFE/Dados Adicionais e reedição.
     return transp;
   }
 

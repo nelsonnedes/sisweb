@@ -1360,7 +1360,7 @@
                   <div class="form-row">
                     <div class="form-group" style="max-width:130px">
                       <label for="nfVolQVol">Qtd. volumes:</label>
-                      <input type="text" id="nfVolQVol" maxlength="15" placeholder="Ex.: 10">
+                      <input type="text" id="nfVolQVol" maxlength="15" placeholder="Ex.: 10" inputmode="numeric" title="Número inteiro de volumes (ex.: 10). A quantidade em m³ vai no item.">
                     </div>
                     <div class="form-group" style="max-width:160px">
                       <label for="nfVolEspecie">Espécie:</label>
@@ -1646,9 +1646,9 @@
 
         <!-- Aba Consulta -->
         <div id="consulta" class="tab-content">
-          <div class="form-row" style="flex-wrap:wrap;gap:8px;align-items:flex-end;">
-            <div class="form-group">
-              <input type="text" id="searchNF" class="search-box" placeholder="Número, cliente, CNPJ ou chave..." oninput="consultarNotas()">
+          <div class="form-row" style="flex-wrap:nowrap;flex-direction:row;gap:8px;align-items:flex-end;overflow-x:auto;padding-bottom:4px;">
+            <div class="form-group" style="flex:1 1 220px;min-width:200px;margin-bottom:0;">
+              <input type="text" id="searchNF" class="search-box" placeholder="Número, cliente, CNPJ ou chave..." oninput="consultarNotas()" style="margin-bottom:0;">
             </div>
             <div class="form-group" style="max-width:180px">
               <select id="filterStatus" onchange="consultarNotas()">
@@ -1667,13 +1667,13 @@
             <div class="form-group" style="max-width:140px">
               <input type="date" id="filterDataFim" onchange="consultarNotas()" title="Data fim">
             </div>
-            <div class="form-group">
-              <button onclick="consultarNotas()" class="btn btn-primary">
+            <div class="form-group" style="flex:0 0 auto;margin-bottom:0;">
+              <button onclick="consultarNotas()" class="btn btn-primary" style="white-space:nowrap;">
                 <i class="fas fa-sync"></i> Atualizar
               </button>
             </div>
-            <div class="form-group">
-              <button onclick="abrirModalInutilizacaoNF()" class="btn btn-warning" title="Inutilizar faixa de numeração ainda não utilizada">
+            <div class="form-group" style="flex:0 0 auto;margin-bottom:0;">
+              <button onclick="abrirModalInutilizacaoNF()" class="btn btn-warning" style="white-space:nowrap;" title="Inutilizar faixa de numeração ainda não utilizada">
                 <i class="fas fa-ban"></i> Inutilizar nº
               </button>
             </div>
@@ -1689,7 +1689,7 @@
                   <th class="number-cell">Valor Total</th>
                   <th>Chave / Protocolo</th>
                   <th>Status</th>
-                  <th style="min-width:160px">Ações</th>
+                  <th style="min-width:230px">Ações</th>
                 </tr>
               </thead>
               <tbody id="notasTable">
@@ -3378,7 +3378,10 @@
 
     function montarVolumeAtualNF() {
       const g = (id) => document.getElementById(id)?.value?.trim() || '';
-      const qVol = g('nfVolQVol').replace(/\D/g, '');
+      // qVol é inteiro no leiaute (nº de volumes, pattern [0-9]{1,15}). NÃO aplicar
+      // strip silencioso: decimal digitado (ex. "0,010" m³, que pertence ao item qCom)
+      // segue cru e é recusado com mensagem no validador/revisão — nunca vira "0010".
+      const qVol = g('nfVolQVol');
       const pesoBraw = g('nfPesoBruto');
       const pesoLraw = g('nfPesoLiquido');
       const lacres = parseLacresNF(g('nfVolLacres'));
@@ -3587,7 +3590,7 @@
         const temQVol = vols.some((v) => v.qVol && String(v.qVol).trim() !== '');
         if (!temQVol) {
           const somaQtd = (_itensNF || []).reduce((s, it) => s + (parseFloat(it.qCom != null ? it.qCom : it.quantidade) || 0), 0);
-          if (somaQtd > 0) vols[0].qVol = String(Math.round(somaQtd));
+          if (somaQtd > 0 && Math.round(somaQtd) >= 1) vols[0].qVol = String(Math.round(somaQtd));
         }
         transp.vol = vols;
       }
@@ -3769,12 +3772,26 @@
       return `Total aproximado de tributos: R$ ${brl(pct)} (${p2(pct)}%)  Federais R$ ${brl(f)} (${p2(f)}%)  Estaduais R$ ${brl(e)} (${p2(e)}%)${mun} . Fonte: ${ibpt.fonte || 'IBPT'}.`;
     }
 
+    // Provisão de Impostos Estaduais x Federais (split do IBPT configurado).
+    // Exige % em Configuração > Impostos (nunca inventar alíquota). Retorna '' se zerado.
+    function montarProvisaoTextoNF() {
+      const cfg = window.NFService?.getConfig?.() || {};
+      const ibpt = cfg.impostos?.ibpt || {};
+      const f = Number(ibpt.federal) || 0, e = Number(ibpt.estadual) || 0;
+      if (f + e <= 0) return '';
+      const total = calcularTotalFormNF().total || 0;
+      const brl = (p) => (total * p / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const p2  = (x) => x.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return `Provisão: Trib. Estaduais aprox. R$ ${brl(e)} (${p2(e)}%) | Trib. Federais aprox. R$ ${brl(f)} (${p2(f)}%) (Fonte: ${ibpt.fonte || 'IBPT'}).`;
+    }
+
     function montarInfoAdicionalNF(textoUsuario = '') {
       const reboques = _reboquesNF || [];
       // Remover blocos gerados automaticamente (evita duplicar ao reeditar rascunho)
       let texto = String(textoUsuario || '')
         .replace(/Reboques:\s*(?:\/\s*\d+\)\s*[A-Za-z0-9]+(?:\s*\/\s*[A-Za-z]{2})?\s*)+/gi, '')
         .replace(/Total aproximado de tributos:[\s\S]*?Fonte:[^.\n]*\./gi, '')
+        .replace(/Provisão:\s*Trib\.[\s\S]*?\(Fonte:[^.\n]*\)\.?/gi, '')
         .replace(/^\s*\/\s*/, '')
         .replace(/\s*\/\s*$/, '')
         .trim();
@@ -3787,6 +3804,8 @@
       if (texto) blocos.push(texto);
       const ibptTxt = montarIBPTTextoNF();
       if (ibptTxt) blocos.push(ibptTxt);
+      const provTxt = montarProvisaoTextoNF();
+      if (provTxt) blocos.push(provTxt);
       return blocos.join(' / ');
     }
 
@@ -3797,11 +3816,12 @@
       const dhEmiDate = new Date(`${dataInput}T12:00:00`);
       const dhEmi = Number.isNaN(dhEmiDate.getTime()) ? new Date().toISOString() : dhEmiDate.toISOString();
       const total = calcularTotalFormNF();
-      const tPag = options.rascunho ? '90' : (document.getElementById('nfFormaPag')?.value || '01');
+      // Rascunho preserva o tPag escolhido (antes forçava 90 e a seleção se perdia).
+      const tPag = document.getElementById('nfFormaPag')?.value || '01';
       // YA03-30 (cStat 904): tPag 90/91 (sem pagamento) com vPag<>0 → rejeição SEFAZ.
       // Zera e avisa; se houver cobrança, o usuário deve selecionar o meio real.
       // (Não bloqueia: operação sem cobrança com vNF>0 e tPag 90 é legítima.)
-      let vPag = options.rascunho ? 0 : total.total;
+      let vPag = (options.rascunho || tPag === '90' || tPag === '91') ? 0 : total.total;
       if (!options.rascunho && (tPag === '90' || tPag === '91') && Number(total.total) > 0) {
         vPag = 0;
         notifyUser('⚠️ Forma "Sem Pagamento" selecionada: valor do pagamento zerado (regra SEFAZ 904). Se houver cobrança, selecione o meio real (Dinheiro, PIX, Cartão…).');
@@ -3983,7 +4003,9 @@
         });
         if (rbsRev.length && !veic.placa) alerts.warnings.push('Reboque informado sem placa de tração.');
         vols.forEach((vol, idx) => {
-          const qVol = parseInt(String(vol.qVol || '').replace(/\D/g, ''), 10);
+          const qVolRaw = String(vol.qVol ?? '').trim();
+          const qVol = /^[0-9]{1,15}$/.test(qVolRaw) ? parseInt(qVolRaw, 10) : NaN;
+          if (vol.qVol && !Number.isFinite(qVol)) alerts.errors.push(`Volume ${idx + 1}: quantidade deve ser número inteiro (nº de volumes); quantidade em m³ vai no item.`);
           const pesoB = parseNumeroFiscal(vol.pesoB);
           const pesoL = parseNumeroFiscal(vol.pesoL);
           const lacres = Array.isArray(vol.lacres) ? vol.lacres.filter(Boolean) : [];
@@ -4332,6 +4354,8 @@ renderizarVolumesNF();
           <td data-label="Status"><span onclick="nfMostrarDetalheStatus('${n.id}')" title="Ver detalhes do status" style="cursor:pointer;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:var(--sw-text-1);background:color-mix(in srgb, var(--sw-${tok}) 25%, transparent);border:1px solid var(--sw-${tok});">${label}</span></td>
           <td data-label="Ações" class="nf-actions-cell">
             ${window.NFDanfe ? `<button class="btn btn-primary btn-small" onclick="abrirDANFENota('${n.id}')" title="DANFE"><i class="fas fa-file-pdf"></i></button>` : ''}
+            ${n.status==='autorizada' ? `<button class="btn btn-primary btn-small" onclick="baixarXMLNotaNF('${n.id}')" title="Baixar XML autorizado"><i class="fas fa-file-code"></i></button>` : ''}
+            ${n.chave ? `<button class="btn btn-success btn-small" onclick="copiarChaveNF('${n.chave}')" title="Copiar chave de acesso"><i class="fas fa-key"></i></button>` : ''}
             <button class="btn btn-success btn-small" onclick="clonarNotaNF('${n.id}')" title="Clonar nota"><i class="fas fa-copy"></i></button>
             ${n.status==='autorizada' ? `<button class="btn btn-warning btn-small" onclick="abrirModalCartaCorrecaoNF('${n.id}','${n.chave || ''}')" title="Carta de Correção"><i class="fas fa-file-signature"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-danger btn-small" onclick="iniciarCancelamento('${n.id}','${n.chave}','${n.nProt||''}')" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
@@ -4343,7 +4367,7 @@ renderizarVolumesNF();
       }).join('');
     }
 
-    function nfInfoDetalheModal(titulo, linhas) {
+    function nfInfoDetalheModal(titulo, linhas, acoes = []) {
       try { document.getElementById('nfStatusDetalheModal')?.remove(); } catch (_) {}
       const ov = document.createElement('div');
       ov.id = 'nfStatusDetalheModal';
@@ -4368,11 +4392,22 @@ renderizarVolumesNF();
         row.appendChild(kk); row.appendChild(vv); dl.appendChild(row);
       });
       box.appendChild(dl);
+      const footer = document.createElement('div');
+      footer.style.cssText = 'margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;';
+      (Array.isArray(acoes) ? acoes : []).forEach((a) => {
+        if (!a || !a.label || typeof a.onclick !== 'function') return;
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = a.label;
+        b.style.cssText = 'padding:9px 16px;border:0;border-radius:8px;background:var(--sw-surface-2,#e2e8f0);color:var(--sw-text-1,#0f172a);font-weight:600;cursor:pointer;';
+        b.onclick = a.onclick;
+        footer.appendChild(b);
+      });
       const btn = document.createElement('button');
       btn.type = 'button'; btn.textContent = 'Fechar';
-      btn.style.cssText = 'margin-top:16px;padding:9px 16px;border:0;border-radius:8px;background:var(--sw-brand,#2563eb);color:#fff;font-weight:600;cursor:pointer;';
+      btn.style.cssText = 'padding:9px 16px;border:0;border-radius:8px;background:var(--sw-brand,#2563eb);color:#fff;font-weight:600;cursor:pointer;';
       btn.onclick = () => ov.remove();
-      box.appendChild(btn);
+      footer.appendChild(btn);
+      box.appendChild(footer);
       ov.appendChild(box);
       ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
       document.addEventListener('keydown', function _esc(e) { if (e.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', _esc, true); } }, true);
@@ -4401,6 +4436,9 @@ renderizarVolumesNF();
           ['Protocolo', nf.nProt || ''],
           ['Chave de acesso', nf.chave || ''],
           ['Última atualização', nf.dhAutorizacao || nf.updatedAt || nf.ultimaConsultaSefaz?.em || ''],
+        ], [
+          ...(nf.chave ? [{ label: '🔑 Copiar chave', onclick: () => copiarChaveNF(nf.chave) }] : []),
+          ...((o.status || nf.status) === 'autorizada' ? [{ label: '⬇️ Baixar XML', onclick: () => baixarXMLNotaNF(nfId) }] : []),
         ]);
       } catch (e) { notifyUser('Erro ao abrir detalhes: ' + (e?.message || e)); }
     }
@@ -4497,6 +4535,44 @@ renderizarVolumesNF();
         window.NFDanfe.abrirDANFE(nf);
       } catch(e) { notifyUser('Erro ao gerar DANFE: ' + e.message); }
     }
+
+    // Baixar XML autorizado (nfeProc quando disponível) da nota.
+    async function baixarXMLNotaNF(nfId) {
+      try {
+        const tid = obterTenantIdNF();
+        if (!tid) return notifyUser('Tenant não identificado');
+        const nf = await window.NFStorage.carregarNF(tid, 55, nfId);
+        if (!nf) return notifyUser('Nota não encontrada');
+        const path = nf.xmlProcStoragePath || nf.xmlStoragePath || nf.xmlPath || '';
+        const xml = nf.xmlAutorizado || await window.NFStorage.carregarXML(tid, nfId, path);
+        if (!xml) return notifyUser('XML autorizado não disponível para esta nota');
+        const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${nf.chave || String(nf.numero || nfId).padStart(9, '0')}-nfe.xml`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+        notifyUser('⬇️ XML autorizado baixado');
+      } catch(e) { notifyUser('Erro ao baixar XML: ' + (e?.message || e)); }
+    }
+    window.baixarXMLNotaNF = baixarXMLNotaNF;
+
+    // Copiar chave de acesso (44 dígitos) para a área de transferência.
+    function copiarChaveNF(chave) {
+      const k = String(chave || '').replace(/\D/g, '');
+      if (!k) return notifyUser('Chave de acesso indisponível');
+      const done = () => notifyUser('✅ Chave de acesso copiada');
+      const fallback = () => {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = k; document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); ta.remove(); done();
+        } catch(e) { notifyUser('Não foi possível copiar automaticamente: ' + k); }
+      };
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(k).then(done).catch(fallback);
+      else fallback();
+    }
+    window.copiarChaveNF = copiarChaveNF;
 
     function obterTenantIdNF() {
       const confirmed = window.__siswebNFOperationalReady === true

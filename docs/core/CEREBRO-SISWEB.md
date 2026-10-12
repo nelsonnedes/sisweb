@@ -1290,6 +1290,25 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — Lote Consulta/DANFE (6 itens)
+
+- **Rascunho x pagamento:** coletor forcava `tPag=90` no rascunho (perda deterministica). Agora preserva o `tPag` do select; `vPag=0` no rascunho e p/ 90/91 (YA03-30). Restore (4829) ja lia `pag[0].tPag`.
+- **qVol "0,010"→"10":** causa = strip `replace(/\D/g,'')` no form + builder + DANFE + validador. XSD `vol/qVol` = pattern `[0-9]{1,15}` (inteiro; `0,010` como qVol e schema-invalido; m³ vai em `prod/qCom`). Fix: sem strip — validador + revisao recusam decimal c/ mensagem; `buildVolume` omite tag invalida; DANFE soma validada; auto-fill so se `round>=1`.
+- **Filtros 1 linha:** `#consulta .form-row` inline `nowrap+row+overflow-x:auto`; busca `flex:1 1 220px`; botoes `flex:0 0 auto`.
+- **Baixar XML + Copiar Chave:** botoes na linha (XML so autorizada; chave qdo houver) + footer do modal `nfInfoDetalheModal(titulo,linhas,acoes)`; `baixarXMLNotaNF` prefere `xmlProcStoragePath` (nfeProc); `copiarChaveNF` c/ fallback execCommand.
+- **Reboques no DANFE:** removidos `delete` em `normalizarTransporte` (filtro X02-20 fica SO em `buildTransp`); `nf-danfe` parseia `<reboque>` e sintetiza `Tração:/Reboques:` em infCpl sem duplicar bloco da emissao. infCpl e texto livre — nao viola X02-20.
+- **Provisao Estadual/Federal:** `montarProvisaoTextoNF()` (split IBPT cfg; exige % configurados, nunca inventa) + strip idempotente na reedicao.
+- **Arquivos:** `notas-fiscais.html`, `nf-service.js`, `nf-xml-builder.js`, `nf-validator.js`, `nf-danfe.js`, `tests/nf-volumes-qvol.test.mjs`. Hosting publicado.
+- **Gates:** `npm test` 1158/1157/0/1; lint + typecheck OK; `node --check` nos 5 JS.
+
+## Sessao 2026-10-12 — Protocolo Arquiteto Fiscal (papel permanente)
+
+- Papel: auditor tecnico, nao gerador criativo. Hierarquia: MOC > NT > XSD > SEFAZ > ACBr > NFePHP > codigo. Codigo NUNCA prevalece sobre documentacao oficial.
+- Fontes primarias: Portal NF-e, Portal MDF-e SVRS, MOC, NTs, XSD em `tests/schemas/nfe/`, NFePHP (sped-nfe/sped-mdfe), ACBr, docs Reforma Tributaria, RVs SEFAZ, tabelas oficiais.
+- Processo 8 passos (analisar codigo → regra → doc oficial → validar MOC/NT/XSD → evidencias → correcao → codigo → motivo). Reforma Tributaria: sempre checar NT mais recente (IBS/CBS/IS).
+- Lacuna honesta: correcoes 868/904 usaram MOC+NT+XSD; cross-check ACBr/NFePHP ainda pendente p/ grupos complexos (gMono, RTC). Aplicar nos proximos.
+- Resposta tecnica sempre em: DIAGNOSTICO / EVIDENCIAS / IMPACTO / CORRECAO PROPOSTA / CODIGO CORRIGIDO.
+
 ## Sessao 2026-10-12 — cStat 904: tPag 90 + vPag<>0 (YA03-30, NT 2017.002)
 
 - **Regra oficial:** YA03-30 = `tPag=90` (Sem pagamento) **ou 91** com `vPag<>0` → 904. Nao confundir: soma ΣvPag≠vNF = 865/866; vTroco = 869/965; dPag = familia YA03a/b.

@@ -196,8 +196,11 @@ const NFValidator = (() => {
     const vols = Array.isArray(t.vol) ? t.vol : (t.vol ? [t.vol] : []);
     vols.forEach((vol, idx) => {
       const n = idx + 1;
-      const qVol = String(vol.qVol || '').replace(/\D/g, '');
-      if (qVol && parseInt(qVol, 10) <= 0) erros.push(`Volume ${n}: quantidade deve ser maior que zero`);
+      // qVol é inteiro no leiaute (nº de volumes, pattern [0-9]{1,15}); decimal
+      // (ex. "0,010" m³) pertence ao item (qCom) — recusar com mensagem, nunca strip.
+      const qVolRaw = String(vol.qVol ?? '').trim();
+      if (qVolRaw && !/^[0-9]{1,15}$/.test(qVolRaw)) erros.push(`Volume ${n}: quantidade deve ser número inteiro (nº de volumes); quantidade em m³ vai no item`);
+      else if (qVolRaw && parseInt(qVolRaw, 10) <= 0) erros.push(`Volume ${n}: quantidade deve ser maior que zero`);
       const pesoBInformado = vol.pesoB !== '' && vol.pesoB != null;
       const pesoLInformado = vol.pesoL !== '' && vol.pesoL != null;
       const pesoB = parseNumeroFiscal(vol.pesoB);
