@@ -59,4 +59,9 @@ test('assinatura usa forma canônica (C14N): xmlns explícito + entidades de tex
   assert.match(nfFunctions, /replace\(\/&gt;\/g/, 'expande &gt; (C14N usa > literal)');
   assert.match(nfFunctions, /replace\(signedElementMatch\[0\], \(\) =>/, 'injeção sem interpretar $');
   assert.match(nfFunctions, /leafCert/, 'KeyInfo com o certificado-FOLHA (casa com a chave)');
+  // SignedInfo SEM self-closing: o C14N expande <x/> para <x></x> e o bruto divergiria (RSA → 297).
+  assert.doesNotMatch(nfFunctions, /<CanonicalizationMethod[^>]*\/>/, 'SignedInfo sem self-closing (CanonicalizationMethod)');
+  assert.doesNotMatch(nfFunctions, /<SignatureMethod[^>]*\/>/, 'SignedInfo sem self-closing (SignatureMethod)');
+  assert.doesNotMatch(nfFunctions, /<Transform[^>]*\/>/, 'SignedInfo sem self-closing (Transform)');
+  assert.doesNotMatch(nfFunctions, /<DigestMethod[^>]*\/>/, 'SignedInfo sem self-closing (DigestMethod)');
 });

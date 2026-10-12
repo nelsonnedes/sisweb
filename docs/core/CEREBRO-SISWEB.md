@@ -1230,6 +1230,16 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `functions/nf-functions.js`, `tests/fiscal-nfe-events.test.mjs`.
 - **Gates:** `npm test` 1141/0/1; deploy nf_assinarXML/nf_enviarSEFAZ/nf_cancelarNFe/nf_cartaCorrecaoNFe/nf_inutilizarNumeracao OK.
 
+## Sessao 2026-10-11 — cStat 297: causa real = SignedInfo com self-closing (C14N expande)
+
+- **Diagnostico diferencial (prova, nao chute):** comparei nosso normalizador contra C14N de referencia (`xml-crypto`) byte a byte → **digest do infNFe estava CORRETO**. O 297 estava no **RSA sobre o SignedInfo**.
+- **Causa:** nosso `SignedInfo` usava elementos **self-closing** (`<CanonicalizationMethod .../>`, `<Transform .../>`, etc.). O XML **C14N expande** `<x/>` para `<x></x>` — logo nosso RSA cobria bytes diferentes do que a SEFAZ canonicaliza. **Qualquer self-closing no conteúdo assinado quebra o RSA.**
+- **Prova:** reescrevi com fechamentos explícitos e a assinatura **VERIFICOU** na implementação de referência (`VERIFICAÇÃO: VÁLIDA`).
+- **Fix** em `assinarXMLcomForge`: `SignedInfo` com tags de fechamento explícitas (sem `/>`), normalizador também expande `/>` no elemento assinado (resiliência), travas de teste. `xml-crypto` foi só ferramenta de diagnóstico (removido do bundle + temporários).
+- **Armadilha definitiva do XMLDSIG:** bruto assinado deve ser **idêntico** à forma canônica — sem self-closing, com xmlns herdado renderizado, sem `&quot;/&apos;/&gt;` em texto.
+- **Arquivos:** `functions/nf-functions.js`, `functions/package.json` (+lock), `tests/fiscal-nfe-events.test.mjs`.
+- **Gates:** `npm test` 1141/0/1; deploy 5 signers OK.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

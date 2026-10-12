@@ -740,7 +740,9 @@ function assinarXMLcomForge(xmlStr, pfxBuffer, senha, options = {}) {
   const signedElementMatch = xmlStr.match(elementPattern);
   if (!signedElementMatch) throw new Error(`Elemento <${tagName}> não encontrado no XML`);
   const rawElement = signedElementMatch[0];
-  const sentForm = rawElement.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&gt;/g, '>');
+  const sentForm = rawElement
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&gt;/g, '>')
+    .replace(/<([A-Za-z][\w:.-]*)([^>]*)\/>/g, '<$1$2></$1>');
   let hashForm = sentForm;
   if (!new RegExp(`^<${tagName}[^>]*\\sxmlns=`, 'i').test(hashForm)) {
     hashForm = hashForm.replace(new RegExp(`^<${tagName}`, 'i'), `<${tagName} xmlns="http://www.portalfiscal.inf.br/nfe"`);
@@ -751,16 +753,16 @@ function assinarXMLcomForge(xmlStr, pfxBuffer, senha, options = {}) {
   md.update(hashForm, 'utf8');
   const digestB64 = Buffer.from(md.digest().bytes(), 'binary').toString('base64');
 
-  // SignedInfo
-  const signedInfo = `<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#">\
-<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>\
-<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>\
-<Reference URI="#${refId}">\
-<Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>\
-<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></Transforms>\
-<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>\
-<DigestValue>${digestB64}</DigestValue>\
-</Reference></SignedInfo>`;
+  // SignedInfo com tags de fechamento EXPLÍCITAS (sem self-closing).
+  // O C14N expande <x/> para <x></x>; self-closing no bruto quebra o RSA (cStat 297).
+  const signedInfo = `<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#">`
+    + `<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></CanonicalizationMethod>`
+    + `<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"></SignatureMethod>`
+    + `<Reference URI="#${refId}"><Transforms>`
+    + `<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"></Transform>`
+    + `<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></Transform>`
+    + `</Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"></DigestMethod>`
+    + `<DigestValue>${digestB64}</DigestValue></Reference></SignedInfo>`;
 
   // Assinar SignedInfo com RSA-SHA1
   const mdSign = forge.md.sha1.create();
