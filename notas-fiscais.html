@@ -3308,8 +3308,17 @@
       if (!opt || !opt.value) return null;
       const cnpjCpf = document.getElementById('nfClienteCnpj')?.value.replace(/\D/g,'') || '';
       const isCNPJ  = cnpjCpf.length === 14;
-      const ie = document.getElementById('nfClienteIE')?.value
+      let ie = document.getElementById('nfClienteIE')?.value
         || opt.dataset?.ie || opt.dataset?.inscricaoEstadual || '';
+      // Fallback: a opção temporária (rascunho/clone) não tem dataset.ie —
+      // buscar a IE no cadastro do cliente pelo CNPJ/CPF.
+      if (!ie && typeof nfClienteValor === 'function') {
+        try {
+          const lista = (typeof _clientesNFTodos !== 'undefined' && Array.isArray(_clientesNFTodos)) ? _clientesNFTodos : [];
+          const cli = lista.find(c => String(c.cnpj || c.cpf || '').replace(/\D/g, '') === cnpjCpf);
+          if (cli) ie = nfClienteValor(cli, 'ie', 'inscricaoEstadual', 'ieDest', 'ie_dest', 'inscricao_estadual') || '';
+        } catch (_) {}
+      }
       return {
         nome:    opt.text,
         cnpj:    isCNPJ ? cnpjCpf : '',
@@ -4805,6 +4814,7 @@ renderizarVolumesNF();
               const newOpt = new Option(dest.nome, dest.cnpj || dest.cpf || '_rascunho');
               newOpt.dataset.cnpj  = dest.cnpj || '';
               newOpt.dataset.cpf   = dest.cpf  || '';
+              newOpt.dataset.ie    = dest.ie   || '';
               newOpt.dataset.uf    = dest.endereco?.uf || '';
               newOpt.dataset.bairro = dest.endereco?.bairro || '';
               newOpt.dataset.cep   = dest.endereco?.cep || '';

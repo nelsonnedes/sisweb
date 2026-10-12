@@ -1247,6 +1247,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-service.js`, `notas-fiscais.html`, testes. Hosting publicado.
 - **Gates:** `npm test` 1143/0/1; HTML 0 erros.
 
+## Sessao 2026-10-11 — cStat 696 (IE/indFinal do destinatario)
+
+- **cStat 696** "Operacao com nao contribuinte deve indicar consumidor final": o XML saia com `indIEDest=9` para um cliente **Contribuinte ICMS com IE**. Causa: a IE se perdia porque a **opcao temporaria** do cliente (rascunho/clone) nao tinha `data-ie` e `montarDestFromForm` lia vazio.
+- **Fix IE**: `montarDestFromForm` agora busca a IE no cadastro (`_clientesNFTodos` por CNPJ/CPF) quando o dataset esta vazio; a opcao temporaria passa a carregar `dataset.ie`.
+- **Fix indFinal**: `nf-service.buildNFeFromForm` agora define `indFinal=1` quando `indIEDest=9` (exigencia da RV 696), mantendo 0 para contribuintes.
+- **Arquivos:** `notas-fiscais.html`, `nf-service.js`. Hosting publicado.
+- **Gates:** `npm test` 1143/0/1; HTML 0 erros.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

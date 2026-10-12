@@ -157,7 +157,8 @@ const NFService = (() => {
         tpImp:      nfeCfg.tpImp   || '1',
         tpAmb,
         finNFe:     formData.finNFe || 1,
-        indFinal:   formData.indFinal || 0,
+        // 696: operação com Não Contribuinte (indIEDest 9) exige consumidor final (indFinal 1)
+        indFinal:   formData.indFinal ?? (String(formData.dest?.indIEDest) === '9' ? 1 : 0),
         indPres:    formData.indPres  || 0,
         natOp:      formData.natOp    || nfeCfg.naturezaOperacao || 'Venda de Mercadoria',
         ufEmit,
