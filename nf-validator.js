@@ -147,6 +147,38 @@ const NFValidator = (() => {
     // PIS/COFINS
     if (!item.imposto?.pis)    erros.push(`Item ${n}: Grupo PIS obrigatório`);
     if (!item.imposto?.cofins) erros.push(`Item ${n}: Grupo COFINS obrigatório`);
+    // IBS/CBS monofásico (CST 620) e grupos opcionais gTribRegular/gTribCompraGov
+    const gIbs = item.imposto?.ibscbs;
+    if (gIbs && gIbs.habilitado) {
+      const cstIbs = String(gIbs.cst || gIbs.CST || '');
+      const hasMono = !!(gIbs.mono && (gIbs.mono.ibs || gIbs.mono.cbs));
+      if (hasMono && cstIbs !== '620') erros.push(`Item ${n}: monofásico (gIBSCBSMono) exige CST 620`);
+      if (!hasMono && cstIbs === '620') erros.push(`Item ${n}: CST 620 exige grupo monofásico (mono.ibs/mono.cbs)`);
+      if (hasMono) {
+        for (const lado of ['ibs', 'cbs']) {
+          const m = gIbs.mono[lado];
+          if (!m) continue;
+          if (!['adRem', 'adValorem'].includes(m.regime)) erros.push(`Item ${n}: mono.${lado}.regime deve ser adRem ou adValorem`);
+          if (![m.padrao, m.reten, m.ret, m.bio].some(Boolean)) erros.push(`Item ${n}: mono.${lado} sem blocos (padrao/reten/ret/bio)`);
+        }
+      }
+      const baseAlt = !!(gIbs.transfCred || gIbs.ajusteCompet);
+      if ((gIbs.tribRegular || gIbs.tribCompraGov) && (baseAlt || hasMono)) {
+        erros.push(`Item ${n}: gTribRegular/gTribCompraGov só com base gIBSCBS (não com CST 620/800/811)`);
+      }
+      const tr = gIbs.tribRegular;
+      if (tr) {
+        for (const k of ['cstReg', 'cClassTribReg', 'pAliqEfetRegIBSUF', 'vTribRegIBSUF', 'pAliqEfetRegIBSMun', 'vTribRegIBSMun', 'pAliqEfetRegCBS', 'vTribRegCBS']) {
+          if (tr[k] == null || String(tr[k]).trim() === '') erros.push(`Item ${n}: gTribRegular.${k} obrigatório`);
+        }
+      }
+      const tg = gIbs.tribCompraGov;
+      if (tg) {
+        for (const k of ['pAliqIBSUF', 'vTribIBSUF', 'pAliqIBSMun', 'vTribIBSMun', 'pAliqCBS', 'vTribCBS']) {
+          if (tg[k] == null || String(tg[k]).trim() === '') erros.push(`Item ${n}: gTribCompraGov.${k} obrigatório`);
+        }
+      }
+    }
     return erros.length ? fail(erros) : ok();
   }
 
@@ -230,6 +262,21 @@ const NFValidator = (() => {
     if (![0, 1].includes(parseInt(ide.tpNF)))  erros.push('Tipo de operação inválido (0=Entrada, 1=Saída)');
     if (![1, 2].includes(parseInt(ide.tpAmb))) erros.push('Ambiente inválido (1=Produção, 2=Homologação)');
     if (!validarCodigoMunicipio(ide.cMunFG)) erros.push('Código IBGE do município de ocorrência obrigatório/inválido');
+    // Compras governamentais (ide > gCompraGov, TCompraGov — regras da doc do schema oficial)
+    const cg = ide.compraGov;
+    if (cg) {
+      if (!['1', '2', '3', '4', '5', '6'].includes(String(cg.tpEnteGov))) erros.push('ide.compraGov.tpEnteGov inválido (1=União, 2=Estados, 3=DF, 4=Municípios, 5=Consórcio, 6=Comitê Gestor IBS)');
+      if (!['1', '2', '3', '4'].includes(String(cg.tpOperGov))) erros.push('ide.compraGov.tpOperGov inválido (1-4)');
+      if (cg.pRedutor == null || String(cg.pRedutor).trim() === '' || !(Number(cg.pRedutor) >= 0)) erros.push('ide.compraGov.pRedutor obrigatório (>= 0)');
+      const refs = Array.isArray(cg.refDFeAnt) ? cg.refDFeAnt : (cg.refDFeAnt ? [cg.refDFeAnt] : []);
+      const tpOp = String(cg.tpOperGov);
+      if (tpOp === '2' && refs.length !== 1) erros.push('ide.compraGov: tpOperGov 2 exige exatamente 1 refDFeAnt');
+      if (tpOp === '3' && refs.length < 1) erros.push('ide.compraGov: tpOperGov 3 exige ao menos 1 refDFeAnt');
+      if ((tpOp === '1' || tpOp === '4') && refs.length > 0) erros.push('ide.compraGov: tpOperGov 1 e 4 vedam refDFeAnt');
+      refs.forEach((r) => {
+        if (!/^[0-9]{44}$/.test(String(r).replace(/\D/g, ''))) erros.push('ide.compraGov.refDFeAnt deve ter 44 dígitos');
+      });
+    }
     return erros.length ? fail(erros) : ok();
   }
 

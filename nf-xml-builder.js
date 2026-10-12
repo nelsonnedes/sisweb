@@ -92,6 +92,16 @@ const NFXmlBuilder = (() => {
   // leiauteNFe_v4.00.xsd): `indPag` NÃO faz parte do grupo <ide> no leiaute
   // 4.00 (existe apenas em <detPag>, minOccurs=0). Portanto NÃO deve ser
   // emitido em <ide>.
+  // ─── Compras governamentais (ide > gCompraGov, TCompraGov — RTC) ───────
+  // Ordem XSD: após verProc (builder não emite dhCont/xJust/gPagAntecipado).
+  // Regras de refDFeAnt por tpOperGov vêm da documentação do schema oficial:
+  // tpOperGov 2 = exatamente 1 chave; 3 = 1..99; 1 e 4 = vedado.
+  function buildCompraGov(cg) {
+    if (!cg) return '';
+    const refs = Array.isArray(cg.refDFeAnt) ? cg.refDFeAnt : (cg.refDFeAnt ? [cg.refDFeAnt] : []);
+    return `<gCompraGov><tpEnteGov>${esc(cg.tpEnteGov)}</tpEnteGov><pRedutor>${num(cg.pRedutor, 4)}</pRedutor><tpOperGov>${esc(cg.tpOperGov)}</tpOperGov>${refs.map((r) => `<refDFeAnt>${esc(String(r).replace(/\D/g, ''))}</refDFeAnt>`).join('')}</gCompraGov>`;
+  }
+
   function buildIde(ide, chaveInfo) {
     // TDateTimeUTC: sem milissegundos, offset -03:00 (validado no schema oficial)
     const dhEmi = ide.dhEmi ? new Date(ide.dhEmi).toISOString().replace(/\.\d{3}Z$/, '-03:00') : '';
@@ -115,7 +125,7 @@ const NFXmlBuilder = (() => {
       <indFinal>${ide.indFinal || 0}</indFinal>
       <indPres>${ide.indPres || 0}</indPres>
       <procEmi>0</procEmi>
-      <verProc>Sisweb 1.0</verProc>
+      <verProc>Sisweb 1.0</verProc>${buildCompraGov(ide.compraGov)}
     </ide>`;
   }
 
@@ -272,6 +282,83 @@ const NFXmlBuilder = (() => {
     return `<COFINSNT><CST>${cst}</CST></COFINSNT>`;
   }
 
+  // ─── IBS/CBS monofásico (gIBSCBSMono, TMonofasia — CST 620) ─────────────
+  // Espelho do XSD oficial (DFeTiposBasicos TMonofasia, PL_010f): IBS e CBS,
+  // cada lado em regime adRem OU adValorem, com blocos padrao/reten/ret
+  // (+gpBioDiferenca p/ mistura EAC/gasolina). Valores (v) são auto-calculados
+  // (q×aliq ou vBC×aliq) quando ausentes, como no gIBSCBS.
+  // Totais do item (vTotIBSMonoItem/vTotCBSMonoItem, obrigatórios no XSD):
+  // padrao + reten + bio de cada lado; retido anteriormente (ret) NÃO compõe
+  // o total da operação (já recolhido) — override explícito prevalece.
+  function monoLadoTotais(lado, m) {
+    if (!m) return { tot: 0, padrao: 0, reten: 0, ret: 0 };
+    const f = parseFiscalNumber;
+    const pad = m.padrao || {}, ret = m.reten || {}, rdo = m.ret || {}, bio = m.bio || {};
+    let padrao = 0, reten = 0;
+    if (m.regime === 'adRem') {
+      const q = f(pad.qBCMono), a = f(pad.aliq);
+      padrao = pad.v != null && pad.v !== '' ? f(pad.v) : q * a;
+      const qr = f(ret.qBCMonoReten), ar = f(ret.aliqReten);
+      reten = ret.vReten != null && ret.vReten !== '' ? f(ret.vReten) : qr * ar;
+    } else {
+      const bc = f(pad.vBCMono);
+      padrao = pad.v != null && pad.v !== '' ? f(pad.v)
+        : (lado === 'ibs'
+          ? bc * f(pad.aliqUF) / 100 + bc * f(pad.aliqMun) / 100
+          : bc * f(pad.aliq) / 100);
+      const bcr = f(ret.vBCMonoReten);
+      reten = ret.vReten != null && ret.vReten !== '' ? f(ret.vReten) : bcr * f(ret.aliqReten) / 100;
+    }
+    const retido = f(rdo.v);
+    const bioV = f(bio.vDif);
+    return { tot: padrao + reten + bioV, padrao, reten, ret: retido };
+  }
+  function buildMonoAdRem(lado, m) {
+    const tagV = lado === 'ibs' ? 'IBS' : 'CBS';
+    const pad = m.padrao || {}, ret = m.reten || {}, rdo = m.ret || {}, bio = m.bio || {};
+    const t = monoLadoTotais(lado, m);
+    let s = '';
+    if (m.padrao) s += `<gMonoPadrao><qBCMono>${num(pad.qBCMono, 4)}</qBCMono><adRem${tagV}>${num(pad.aliq, 4)}</adRem${tagV}><v${tagV}Mono>${num(t.padrao)}</v${tagV}Mono></gMonoPadrao>`;
+    if (m.reten) s += `<gMonoReten><qBCMonoReten>${num(ret.qBCMonoReten, 4)}</qBCMonoReten><adRem${tagV}Reten>${num(ret.aliqReten, 4)}</adRem${tagV}Reten><v${tagV}MonoReten>${num(t.reten)}</v${tagV}MonoReten></gMonoReten>`;
+    if (m.ret) s += `<gMonoRet><v${tagV}MonoRet>${num(t.ret)}</v${tagV}MonoRet></gMonoRet>`;
+    if (m.bio) s += `<gpBioDiferenca><qBCBioComb>${num(bio.qBCBioComb, 4)}</qBCBioComb><v${tagV}Diferenca>${num(bio.vDif)}</v${tagV}Diferenca></gpBioDiferenca>`;
+    return s;
+  }
+  function buildMonoAdValorem(lado, m) {
+    const pad = m.padrao || {}, ret = m.reten || {}, rdo = m.ret || {}, bio = m.bio || {};
+    const t = monoLadoTotais(lado, m);
+    let s = '';
+    if (lado === 'ibs') {
+      if (m.padrao) {
+        const bc = parseFiscalNumber(pad.vBCMono);
+        const vUF = pad.vUF != null && pad.vUF !== '' ? parseFiscalNumber(pad.vUF) : bc * parseFiscalNumber(pad.aliqUF) / 100;
+        const vMun = pad.vMun != null && pad.vMun !== '' ? parseFiscalNumber(pad.vMun) : bc * parseFiscalNumber(pad.aliqMun) / 100;
+        s += `<gMonoPadrao><vBCMono>${num(pad.vBCMono)}</vBCMono><pAliqMonoUF>${num(pad.aliqUF, 4)}</pAliqMonoUF><vIBSMonoUF>${num(vUF)}</vIBSMonoUF><pAliqMonoMun>${num(pad.aliqMun, 4)}</pAliqMonoMun><vIBSMonoMun>${num(vMun)}</vIBSMonoMun><vIBSMono>${num(t.padrao)}</vIBSMono></gMonoPadrao>`;
+      }
+      if (m.reten) s += `<gMonoReten><vBCMonoReten>${num(ret.vBCMonoReten)}</vBCMonoReten><pAliqMonoReten>${num(ret.aliqReten, 4)}</pAliqMonoReten><vIBSMonoReten>${num(t.reten)}</vIBSMonoReten></gMonoReten>`;
+      if (m.ret) s += `<gMonoRet><vIBSMonoRet>${num(t.ret)}</vIBSMonoRet></gMonoRet>`;
+      if (m.bio) s += `<gpBioDiferenca><qBCBioComb>${num(bio.qBCBioComb, 4)}</qBCBioComb><vIBSDiferenca>${num(bio.vDif)}</vIBSDiferenca></gpBioDiferenca>`;
+    } else {
+      if (m.padrao) s += `<gMonoPadrao><vBCMono>${num(pad.vBCMono)}</vBCMono><pAliqMonoCBS>${num(pad.aliq, 4)}</pAliqMonoCBS><vCBSMono>${num(t.padrao)}</vCBSMono></gMonoPadrao>`;
+      if (m.reten) s += `<gMonoReten><vBCMonoReten>${num(ret.vBCMonoReten)}</vBCMonoReten><pAliqMonoReten>${num(ret.aliqReten, 4)}</pAliqMonoReten><vCBSMonoReten>${num(t.reten)}</vCBSMonoReten></gMonoReten>`;
+      if (m.ret) s += `<gMonoRet><vCBSMonoRet>${num(t.ret)}</vCBSMonoRet></gMonoRet>`;
+      if (m.bio) s += `<gpBioDiferenca><qBCBioComb>${num(bio.qBCBioComb, 4)}</qBCBioComb><vCBSDiferenca>${num(bio.vDif)}</vCBSDiferenca></gpBioDiferenca>`;
+    }
+    return s;
+  }
+  function buildIBSCBSMono(mono) {
+    const m = mono || {};
+    const tIBS = monoLadoTotais('ibs', m.ibs);
+    const tCBS = monoLadoTotais('cbs', m.cbs);
+    const vTotIBS = m.vTotIBSMonoItem != null && m.vTotIBSMonoItem !== '' ? parseFiscalNumber(m.vTotIBSMonoItem) : tIBS.tot;
+    const vTotCBS = m.vTotCBSMonoItem != null && m.vTotCBSMonoItem !== '' ? parseFiscalNumber(m.vTotCBSMonoItem) : tCBS.tot;
+    let s = '<gIBSCBSMono>';
+    if (m.ibs) s += m.ibs.regime === 'adValorem' ? `<gIBSMonoAdValorem>${buildMonoAdValorem('ibs', m.ibs)}</gIBSMonoAdValorem>` : `<gIBSMonoAdRem>${buildMonoAdRem('ibs', m.ibs)}</gIBSMonoAdRem>`;
+    if (m.cbs) s += m.cbs.regime === 'adValorem' ? `<gCBSMonoAdValorem>${buildMonoAdValorem('cbs', m.cbs)}</gCBSMonoAdValorem>` : `<gCBSMonoAdRem>${buildMonoAdRem('cbs', m.cbs)}</gCBSMonoAdRem>`;
+    s += `<vTotIBSMonoItem>${num(vTotIBS)}</vTotIBSMonoItem><vTotCBSMonoItem>${num(vTotCBS)}</vTotCBSMonoItem></gIBSCBSMono>`;
+    return s;
+  }
+
   // ─── IBS/CBS (Reforma Tributária — grupo <IBSCBS>, TTribNFe) ──────────────
   // Validado contra o schema oficial PL_010f_v1.04 (DFeTiposBasicos TTribNFe /
   // TCIBS_NFe). Emitido apenas quando habilitado na config/item (minOccurs=0),
@@ -295,18 +382,34 @@ const NFXmlBuilder = (() => {
     const vIBSMunn = g.vIBSMun != null ? parseFiscalNumber(g.vIBSMun) : vBCn * pIBSMun / 100;
     const vIBSn = vIBSUFn + vIBSMunn;
     const vCBSn = g.vCBS != null ? parseFiscalNumber(g.vCBS) : vBCn * pCBS / 100;
-    // Grupo base — choice do TTribNFe: gIBSCBS | gTransfCred (CST 800) | gAjusteCompet (CST 811)
+    // Grupo base — choice do TTribNFe: gIBSCBSMono (CST 620) | gTransfCred
+    // (CST 800) | gAjusteCompet (CST 811) | gIBSCBS (demais CST)
     let baseGroup;
-    if (g.transfCred) {
+    if (g.mono) {
+      if (String(g.cst) !== '620') {
+        throw new Error('IBS/CBS monofásico (gIBSCBSMono) exige CST 620');
+      }
+      baseGroup = buildIBSCBSMono(g.mono);
+    } else if (g.transfCred) {
       baseGroup = `<gTransfCred><vIBS>${num(g.transfCred.vIBS)}</vIBS><vCBS>${num(g.transfCred.vCBS)}</vCBS></gTransfCred>`;
     } else if (g.ajusteCompet) {
       baseGroup = `<gAjusteCompet><competApur>${esc(g.ajusteCompet.competApur)}</competApur><vIBS>${num(g.ajusteCompet.vIBS)}</vIBS><vCBS>${num(g.ajusteCompet.vCBS)}</vCBS></gAjusteCompet>`;
     } else {
+      // gTribRegular/gTribCompraGov: filhos de TCIBS_NFe (após gCBS) — só com base gIBSCBS
+      const tribRegularTag = g.tribRegular
+        ? `<gTribRegular><CSTReg>${esc(g.tribRegular.cstReg)}</CSTReg><cClassTribReg>${esc(g.tribRegular.cClassTribReg)}</cClassTribReg>`
+          + `<pAliqEfetRegIBSUF>${num(g.tribRegular.pAliqEfetRegIBSUF, 4)}</pAliqEfetRegIBSUF><vTribRegIBSUF>${num(g.tribRegular.vTribRegIBSUF)}</vTribRegIBSUF>`
+          + `<pAliqEfetRegIBSMun>${num(g.tribRegular.pAliqEfetRegIBSMun, 4)}</pAliqEfetRegIBSMun><vTribRegIBSMun>${num(g.tribRegular.vTribRegIBSMun)}</vTribRegIBSMun>`
+          + `<pAliqEfetRegCBS>${num(g.tribRegular.pAliqEfetRegCBS, 4)}</pAliqEfetRegCBS><vTribRegCBS>${num(g.tribRegular.vTribRegCBS)}</vTribRegCBS></gTribRegular>` : '';
+      const tribCompraGovTag = g.tribCompraGov
+        ? `<gTribCompraGov><pAliqIBSUF>${num(g.tribCompraGov.pAliqIBSUF, 4)}</pAliqIBSUF><vTribIBSUF>${num(g.tribCompraGov.vTribIBSUF)}</vTribIBSUF>`
+          + `<pAliqIBSMun>${num(g.tribCompraGov.pAliqIBSMun, 4)}</pAliqIBSMun><vTribIBSMun>${num(g.tribCompraGov.vTribIBSMun)}</vTribIBSMun>`
+          + `<pAliqCBS>${num(g.tribCompraGov.pAliqCBS, 4)}</pAliqCBS><vTribCBS>${num(g.tribCompraGov.vTribCBS)}</vTribCBS></gTribCompraGov>` : '';
       baseGroup = `<gIBSCBS><vBC>${num(vBCn)}</vBC>`
         + `<gIBSUF><pIBSUF>${num(pIBSUF, 4)}</pIBSUF>${gDifTag()}${gRedTag(pIBSUF)}<vIBSUF>${num(vIBSUFn)}</vIBSUF></gIBSUF>`
         + `<gIBSMun><pIBSMun>${num(pIBSMun, 4)}</pIBSMun>${gDifTag()}${gRedTag(pIBSMun)}<vIBSMun>${num(vIBSMunn)}</vIBSMun></gIBSMun>`
         + `<vIBS>${num(vIBSn)}</vIBS>`
-        + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS>${gDifTag()}${gRedTag(pCBS)}<vCBS>${num(vCBSn)}</vCBS></gCBS>`
+        + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS>${gDifTag()}${gRedTag(pCBS)}<vCBS>${num(vCBSn)}</vCBS></gCBS>${tribRegularTag}${tribCompraGovTag}`
         + `</gIBSCBS>`;
     }
     // Estorno de crédito (opcional)
@@ -420,8 +523,22 @@ const NFXmlBuilder = (() => {
         <vCOFINS>${num(t.vCOFINS)}</vCOFINS>
         <vOutro>0.00</vOutro>
         <vNF>${num(t.vNF)}</vNF>
-      </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${(Number(t.vBCIBSCBS) > 0) ? `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>${num(t.vDifIBSUF)}</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>${num(t.vDifIBSMun)}</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>${num(t.vDifCBS)}</vDif><vDevTrib>0.00</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS>${(Number(t.vIBSEstCred) > 0 || Number(t.vCBSEstCred) > 0) ? `<gEstornoCred><vIBSEstCred>${num(t.vIBSEstCred)}</vIBSEstCred><vCBSEstCred>${num(t.vCBSEstCred)}</vCBSEstCred></gEstornoCred>` : ''}</IBSCBSTot>` : ''}
+      </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${buildIBSCBSTot(t)}
     </total>`;
+  }
+
+  // ─── Bloco <total> — IBSCBSTot (TIBSCBSMonoTot) ────────────────────────
+  // gMono (Totais da Monofasia, só modelos 55/65): emitido quando há valores
+  // monofásicos, mesmo sem vBCIBSCBS (monofásico é quantitativo, não tem vBC).
+  function buildIBSCBSTot(t) {
+    const hasMono = ['vMonoIBS', 'vMonoCBS', 'vMonoRetenIBS', 'vMonoRetenCBS', 'vMonoRetIBS', 'vMonoRetCBS']
+      .some((k) => Number(t[k]) > 0);
+    if (!(Number(t.vBCIBSCBS) > 0) && !hasMono) return '';
+    const gMono = hasMono
+      ? `<gMono><vIBSMono>${num(t.vMonoIBS)}</vIBSMono><vCBSMono>${num(t.vMonoCBS)}</vCBSMono>`
+        + `<vIBSMonoReten>${num(t.vMonoRetenIBS)}</vIBSMonoReten><vCBSMonoReten>${num(t.vMonoRetenCBS)}</vCBSMonoReten>`
+        + `<vIBSMonoRet>${num(t.vMonoRetIBS)}</vIBSMonoRet><vCBSMonoRet>${num(t.vMonoRetCBS)}</vCBSMonoRet></gMono>` : '';
+    return `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>${num(t.vDifIBSUF)}</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>${num(t.vDifIBSMun)}</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>${num(t.vDifCBS)}</vDif><vDevTrib>0.00</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS>${gMono}${(Number(t.vIBSEstCred) > 0 || Number(t.vCBSEstCred) > 0) ? `<gEstornoCred><vIBSEstCred>${num(t.vIBSEstCred)}</vIBSEstCred><vCBSEstCred>${num(t.vCBSEstCred)}</vCBSEstCred></gEstornoCred>` : ''}</IBSCBSTot>`;
   }
 
   // ─── Bloco <transp> ───────────────────────────────────────────────────────
@@ -523,6 +640,7 @@ const NFXmlBuilder = (() => {
     let vProd = 0, vBC = 0, vICMS = 0, vIPI = 0, vPIS = 0, vCOFINS = 0;
     let vBCIBSCBS = 0, vIBSUF = 0, vIBSMun = 0, vCBS = 0, vIS = 0;
     let vDifIBSUF = 0, vDifIBSMun = 0, vDifCBS = 0, vCredPres = 0, vIBSEstCred = 0, vCBSEstCred = 0;
+    let vMonoIBS = 0, vMonoCBS = 0, vMonoRetenIBS = 0, vMonoRetenCBS = 0, vMonoRetIBS = 0, vMonoRetCBS = 0;
     itens.forEach(it => {
       vProd   += parseFloat(it.vProd || it.total) || 0;
       vBC     += parseFloat(it.imposto?.icms?.vBC) || 0;
@@ -533,6 +651,14 @@ const NFXmlBuilder = (() => {
       // Reforma Tributária: IBSCBS
       const gi = it.imposto?.ibscbs;
       if (gi && gi.habilitado) {
+        // Monofásico (CST 620) é quantitativo (qBCMono/vBCMono) — não tem vBC
+        // de IBS/CBS: só acumula totais gMono, sem poluir vBCIBSCBS/vIBS/vCBS.
+        if (gi.mono) {
+          const tI = monoLadoTotais('ibs', gi.mono.ibs);
+          const tC = monoLadoTotais('cbs', gi.mono.cbs);
+          vMonoIBS += tI.padrao; vMonoRetenIBS += tI.reten; vMonoRetIBS += tI.ret;
+          vMonoCBS += tC.padrao; vMonoRetenCBS += tC.reten; vMonoRetCBS += tC.ret;
+        } else {
         const bc = parseFiscalNumber(gi.vBC != null ? gi.vBC : (it.vProd || it.total));
         const puf = parseFiscalNumber(gi.pIBSUF), pmu = parseFiscalNumber(gi.pIBSMun), pcb = parseFiscalNumber(gi.pCBS);
         vBCIBSCBS += bc;
@@ -551,6 +677,7 @@ const NFXmlBuilder = (() => {
           vIBSEstCred += parseFiscalNumber(gi.estornoCred.vIBSEstCred);
           vCBSEstCred += parseFiscalNumber(gi.estornoCred.vCBSEstCred);
         }
+        }
       }
       // Imposto Seletivo
       const gs = it.imposto?.is;
@@ -566,7 +693,8 @@ const NFXmlBuilder = (() => {
     return { vProd, vBC, vICMS, vIPI, vPIS, vCOFINS, vDesc, vFrete, vNF,
       vTotTrib: vICMS + vIPI + vPIS + vCOFINS + vIBS + vCBS + vIS,
       vBCIBSCBS, vIBSUF, vIBSMun, vIBS, vCBS, vIS,
-      vDifIBSUF, vDifIBSMun, vDifCBS, vCredPres, vIBSEstCred, vCBSEstCred };
+      vDifIBSUF, vDifIBSMun, vDifCBS, vCredPres, vIBSEstCred, vCBSEstCred,
+      vMonoIBS, vMonoCBS, vMonoRetenIBS, vMonoRetenCBS, vMonoRetIBS, vMonoRetCBS };
   }
 
   // ─── Montar XML NF-e completo (sem assinatura) ────────────────────────────

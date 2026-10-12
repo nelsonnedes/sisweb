@@ -1104,6 +1104,72 @@
            Botoes tem 36px !important global — o escopo #consulta neutraliza só aqui. */
         #consulta > .form-row { align-items: center !important; }
         #consulta .form-group { margin-bottom: 0; justify-content: center; }
+        /* Barra de paginação da Consulta — mesmo padrão do estoque (claro/escuro via tokens). */
+        .nf-pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .nf-pagination-bar:empty { display: none; }
+        .nf-pagination-bar .pagination-size-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--sw-text-2);
+            font-size: 13px;
+            margin-right: auto;
+        }
+        .nf-pagination-bar .pagination-size-control select {
+            width: auto;
+            min-width: 76px;
+            height: 34px;
+            padding: 4px 8px;
+            font-size: 13px;
+            color: var(--sw-text-1);
+            background: var(--sw-surface);
+            border: 1px solid var(--sw-border);
+            border-radius: 6px;
+        }
+        .nf-pagination-bar .pagination-page-buttons {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .nf-pagination-bar .pagination-page-buttons button {
+            min-width: 34px;
+            height: 34px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sw-text-1);
+            background: var(--sw-surface);
+            border: 1px solid var(--sw-border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .nf-pagination-bar .pagination-page-buttons button:hover:not(:disabled) {
+            border-color: var(--sw-brand);
+            color: var(--sw-brand);
+        }
+        .nf-pagination-bar .pagination-page-buttons button.active {
+            background: var(--sw-brand);
+            border-color: var(--sw-brand);
+            color: #fff;
+        }
+        .nf-pagination-bar .pagination-page-buttons button:disabled {
+            opacity: .45;
+            cursor: default;
+        }
+        .nf-pagination-bar .pagination-total-info {
+            font-size: 12px;
+            color: var(--sw-text-2);
+        }
+        #consulta > .form-row { align-items: center !important; }
+        #consulta .form-group { margin-bottom: 0; justify-content: center; }
         #consulta .form-group input,
         #consulta .form-group select,
         #consulta #searchNF.search-box {
@@ -1580,9 +1646,10 @@
                       <td colspan="9" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">Nenhum item adicionado</td>
                     </tr>
                   </tbody>
-                </table>
-              </div>
-            </div>
+            </table>
+           </div>
+           <div id="paginacaoConsultaNF" class="nf-pagination-bar"></div>
+         </div>
 
             <!-- TOTAIS + PAGAMENTO -->
             <div class="form-section nf-step-panel" data-nf-step="pagamento" hidden>
@@ -2397,6 +2464,7 @@
     <script src="nf-cert.js?v=b522cff21ec4"></script>
     <script src="nf-validator.js?v=f5434c6237c4"></script>
     <script src="nf-xml-builder.js?v=bcd43e0f4abc"></script>
+    <script src="nf-fiscal-events.js"></script>
     <script src="nf-storage.js?v=0ffeb7a55341"></script>
     <script src="nf-service.js?v=cc90c406b09e"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -4382,7 +4450,44 @@ renderizarVolumesNF();
     window.limparFormulario = limparFormularioNF; // compat
 
     // ─── Consultar notas no Firebase ──────────────────────
-    async function consultarNotas() {
+    // Paginação local (mesmo padrão do estoque/movimentações): fatia a lista
+    // filtrada pelo backend; preferência de itens/página em localStorage
+    // (por tenant+usuário), opções 10/25/50/100.
+    const NF_CONSULTA_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+    const NF_CONSULTA_PAGE_SIZE_DEFAULT = 25;
+    let __nfConsultaNotasCache = [];
+    let __nfConsultaPagina = 1;
+    function __nfConsultaPageKey() {
+      try {
+        const tid = (typeof obterTenantIdNF === 'function' ? obterTenantIdNF() : '') || 'default';
+        const u = (() => { try { return String(window.firebaseService?.currentUser?.uid || 'anon'); } catch (_) { return 'anon'; } })();
+        return `nf_consulta_${tid}_${u}_items_per_page`;
+      } catch (_) { return 'nf_consulta_default_anon_items_per_page'; }
+    }
+    function nfConsultaPageSize() {
+      try {
+        const v = parseInt(localStorage.getItem(__nfConsultaPageKey()) || '', 10);
+        if (NF_CONSULTA_PAGE_SIZE_OPTIONS.includes(v)) return v;
+      } catch (_) {}
+      return NF_CONSULTA_PAGE_SIZE_DEFAULT;
+    }
+    function nfConsultaSetPageSize(value) {
+      const size = parseInt(value, 10);
+      if (!NF_CONSULTA_PAGE_SIZE_OPTIONS.includes(size)) return;
+      try { localStorage.setItem(__nfConsultaPageKey(), String(size)); } catch (_) {}
+      __nfConsultaPagina = 1;
+      renderizarTabelaNotasPaginada();
+    }
+    window.nfConsultaSetPageSize = nfConsultaSetPageSize;
+    function nfConsultaMudarPagina(page) {
+      const size = nfConsultaPageSize();
+      const total = Math.max(1, Math.ceil(__nfConsultaNotasCache.length / size));
+      __nfConsultaPagina = Math.min(Math.max(1, parseInt(page, 10) || 1), total);
+      renderizarTabelaNotasPaginada();
+    }
+    window.nfConsultaMudarPagina = nfConsultaMudarPagina;
+
+    async function consultarNotas(resetPage = true) {
       const tbody = document.getElementById('notasTable');
       if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="7" class="nf-card-empty" style="text-align:center;">⏳ Carregando...</td></tr>';
@@ -4394,7 +4499,9 @@ renderizarVolumesNF();
           dataFim:    document.getElementById('filterDataFim')?.value,
         };
         const notas = window.NFService ? await window.NFService.listarNotas(55, filtros) : [];
-        carregarTabelaNotas(notas);
+        __nfConsultaNotasCache = Array.isArray(notas) ? notas : [];
+        if (resetPage) __nfConsultaPagina = 1;
+        renderizarTabelaNotasPaginada();
         // Atualizar dashboard também
         if (window.NFService) {
           const stats = await window.NFService.getDashboard();
@@ -4409,11 +4516,75 @@ renderizarVolumesNF();
       }
     }
 
+    function renderizarTabelaNotasPaginada() {
+      const size = nfConsultaPageSize();
+      const total = __nfConsultaNotasCache.length;
+      const totalPaginas = Math.max(1, Math.ceil(total / size));
+      if (__nfConsultaPagina > totalPaginas) __nfConsultaPagina = totalPaginas;
+      const inicio = (__nfConsultaPagina - 1) * size;
+      carregarTabelaNotas(__nfConsultaNotasCache.slice(inicio, inicio + size));
+      renderizarPaginacaoConsultaNF(total, __nfConsultaPagina, size);
+    }
+
+    function renderizarPaginacaoConsultaNF(totalItems, paginaAtual, pageSize) {
+      const container = document.getElementById('paginacaoConsultaNF');
+      if (!container) return;
+      const totalPaginas = Math.ceil(totalItems / pageSize);
+      container.innerHTML = '';
+      if (!totalItems) return;
+      const label = document.createElement('label');
+      label.className = 'pagination-size-control';
+      label.innerHTML = `<span>Itens por página:</span>
+        <select onchange="nfConsultaSetPageSize(this.value)">
+          ${NF_CONSULTA_PAGE_SIZE_OPTIONS.map((opt) => `<option value="${opt}" ${opt === pageSize ? 'selected' : ''}>${opt}</option>`).join('')}
+        </select>`;
+      container.appendChild(label);
+      if (!totalPaginas || totalPaginas <= 1) {
+        const info = document.createElement('span');
+        info.className = 'pagination-total-info';
+        info.textContent = `${totalItems} nota(s)`;
+        container.appendChild(info);
+        return;
+      }
+      const host = document.createElement('span');
+      host.className = 'pagination-page-buttons';
+      container.appendChild(host);
+      const addBtn = (text, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.textContent = text;
+        btn.type = 'button';
+        if (active) btn.classList.add('active');
+        btn.disabled = disabled;
+        btn.onclick = () => nfConsultaMudarPagina(page);
+        host.appendChild(btn);
+      };
+      addBtn('<<<', 1, paginaAtual === 1);
+      addBtn('<', paginaAtual - 1, paginaAtual === 1);
+      const startPage = Math.max(1, paginaAtual - 2);
+      const endPage = Math.min(totalPaginas, paginaAtual + 2);
+      if (startPage > 1) {
+        addBtn('1', 1, false, paginaAtual === 1);
+        if (startPage > 2) { const s = document.createElement('span'); s.textContent = '...'; host.appendChild(s); }
+      }
+      for (let i = startPage; i <= endPage; i++) addBtn(String(i), i, false, i === paginaAtual);
+      if (endPage < totalPaginas) {
+        if (endPage < totalPaginas - 1) { const s = document.createElement('span'); s.textContent = '...'; host.appendChild(s); }
+        addBtn(String(totalPaginas), totalPaginas, false, paginaAtual === totalPaginas);
+      }
+      addBtn('>', paginaAtual + 1, paginaAtual === totalPaginas);
+      addBtn('>>>', totalPaginas, paginaAtual === totalPaginas);
+      const info = document.createElement('span');
+      info.className = 'pagination-total-info';
+      info.textContent = `Pág. ${paginaAtual}/${totalPaginas} · ${totalItems} nota(s)`;
+      container.appendChild(info);
+    }
+
     function carregarTabelaNotas(notas) {
       const tbody = document.getElementById('notasTable');
       if (!tbody) return;
       if (!notas || notas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="nf-card-empty" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">Nenhuma nota fiscal encontrada</td></tr>';
+        renderizarPaginacaoConsultaNF(__nfConsultaNotasCache.length, __nfConsultaPagina, nfConsultaPageSize());
         return;
       }
       const statusMap = {
@@ -4443,6 +4614,7 @@ renderizarVolumesNF();
             ${n.chave ? `<button class="btn btn-success btn-small" onclick="copiarChaveNF('${n.chave}')" title="Copiar chave de acesso"><i class="fas fa-key"></i></button>` : ''}
             <button class="btn btn-success btn-small" onclick="clonarNotaNF('${n.id}')" title="Clonar nota"><i class="fas fa-copy"></i></button>
             ${n.status==='autorizada' ? `<button class="btn btn-warning btn-small" onclick="abrirModalCartaCorrecaoNF('${n.id}','${n.chave || ''}')" title="Carta de Correção"><i class="fas fa-file-signature"></i></button>` : ''}
+            ${n.status==='autorizada' ? `<button class="btn btn-info btn-small" onclick="abrirModalEventoRTCNF('${n.id}','${n.chave || ''}')" title="Evento RTC (conciliação IBS/CBS)"><i class="fas fa-balance-scale"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-danger btn-small" onclick="iniciarCancelamento('${n.id}','${n.chave}','${n.nProt||''}')" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
             ${n.status==='rascunho' ? `<button class="btn btn-warning btn-small" onclick="editarRascunho('${n.id}')" title="Editar"><i class="fas fa-edit"></i></button>` : ''}
             ${n.status==='rascunho' ? `<button class="btn btn-danger btn-small" onclick="excluirRascunhoNF('${n.id}')" title="Excluir rascunho"><i class="fas fa-trash"></i></button>` : ''}
@@ -4889,6 +5061,232 @@ renderizarVolumesNF();
         __nfEventoFim(typeof __cceBtn !== 'undefined' ? __cceBtn : null);
       }
     }
+
+    // ─── Eventos RTC (Conciliação Tributária IBS/CBS) ─────────────────────
+    // Catálogo oficial Eventos_RTC (15 eventos de negócio). O <detEvento> é
+    // montado no frontend via window.NFRtcEvents (mesma regra do backend
+    // nf_eventoRTC) só para PRÉ-VISUALIZAÇÃO/validação; o backend reconstrói
+    // e assina. Itens (quando houver) referenciam nItem do <det> da NF-e.
+    let __nfRtcItens = [];
+
+    function __nfRtcCatalog() {
+      if (window.NFRtcEvents?.listForRole) return window.NFRtcEvents.listForRole();
+      return [];
+    }
+
+    async function abrirModalEventoRTCNF(nfId, chave) {
+      if (!window.NFRtcEvents) return notifyUser('Catálogo RTC não carregado (nf-fiscal-events.js)');
+      const modal = ensureEventoFiscalModal();
+      const cfg = window.NFService?.getConfig?.() || {};
+      const ufEmit = cfg.empresa?.uf || '';
+      const cOrgaoSug = ({ AC:'12',AL:'27',AP:'16',AM:'13',BA:'29',CE:'23',DF:'53',ES:'32',GO:'52',MA:'21',MT:'51',MS:'50',MG:'31',PA:'15',PB:'25',PR:'41',PE:'26',PI:'22',RJ:'33',RN:'24',RS:'43',RO:'11',RR:'14',SC:'42',SP:'35',SE:'28',TO:'17' })[ufEmit] || '';
+      const opts = __nfRtcCatalog().map((e) => `<option value="${e.tpEvento}">${e.tpEvento} — ${escapeHtmlNF(e.desc)}</option>`).join('');
+      document.getElementById('nfFiscalEventTitle').innerHTML = '<i class="fas fa-balance-scale"></i> Evento RTC da NF-e (IBS/CBS)';
+      document.getElementById('nfFiscalEventBody').innerHTML = `
+        <input type="hidden" id="nfRtcId" value="${escapeHtmlNF(nfId)}">
+        <input type="hidden" id="nfRtcChave" value="${escapeHtmlNF(chave)}">
+        <div id="nfRtcHistorico" style="margin-bottom:12px;font-size:13px;color: var(--sw-text-2);">Carregando eventos RTC registrados...</div>
+        <p style="margin:0 0 10px;color: var(--sw-text-2);font-size:13px;">Eventos de conciliação tributária da Reforma (crédito presumido, perecimento, imobilização, manifestações...). Exigem NF-e autorizada.</p>
+        <div class="form-row">
+          <div class="form-group" style="flex:2;min-width:220px;"><label for="nfRtcTipo">Tipo de evento *</label><select id="nfRtcTipo" onchange="__nfRtcRenderCampos()">${opts}</select></div>
+          <div class="form-group"><label for="nfRtcOrgao">UF autora *</label><input id="nfRtcOrgao" inputmode="numeric" maxlength="2" value="${cOrgaoSug}" placeholder="15"></div>
+          <div class="form-group"><label for="nfRtcAutor">Autor *</label><select id="nfRtcAutor"></select></div>
+        </div>
+        <div id="nfRtcCampos"></div>
+        <div class="form-group">
+          <label for="nfRtcSenha">Senha do certificado A1 *</label>
+          <input type="password" id="nfRtcSenha" autocomplete="off">
+        </div>
+        <div id="nfFiscalEventMsg" style="display:none"></div>`;
+      document.getElementById('nfFiscalEventFooter').innerHTML = `
+        <button type="button" class="btn btn-secondary" onclick="fecharModalEventoFiscalNF()">Cancelar</button>
+        <button type="button" class="btn btn-info" onclick="enviarEventoRTCNF()"><i class="fas fa-paper-plane"></i> Enviar evento RTC</button>`;
+      modal.style.display = 'block';
+      modal.classList.add('show');
+      __nfRtcItens = [];
+      __nfRtcRenderCampos();
+      carregarHistoricoRTCNF(nfId);
+    }
+    window.abrirModalEventoRTCNF = abrirModalEventoRTCNF;
+
+    function __nfRtcDef() {
+      const tp = document.getElementById('nfRtcTipo')?.value;
+      return (tp && window.NFRtcEvents?.CATALOG?.[tp]) ? { tp, def: window.NFRtcEvents.CATALOG[tp] } : null;
+    }
+
+    function __nfRtcRenderCampos() {
+      const cur = __nfRtcDef();
+      const box = document.getElementById('nfRtcCampos');
+      const autorSel = document.getElementById('nfRtcAutor');
+      if (!cur || !box) return;
+      const { tp, def } = cur;
+      const autores = { 1: '1=Empresa emitente', 2: '2=Empresa destinatária', 5: '5=Fisco', 8: '8=Sucessora', 9: '9=Outros órgãos' };
+      autorSel.innerHTML = String(def.autor).split(',').map((a) => `<option value="${a}">${autores[a.trim()] || a}</option>`).join('');
+      let html = `<p style="margin:0 0 8px;font-size:13px;color:var(--sw-text-2)">${escapeHtmlNF(def.desc)} <span style="opacity:.7">(tpAutor permitido: ${escapeHtmlNF(def.autor)})</span></p>`;
+      if (def.kind === 'scalar' || def.kind === 'flag') {
+        html += def.fields.map((f) => {
+          if (f.fixed != null) return `<div class="form-group"><label>${escapeHtmlNF(f.label)}</label><input value="1 (fixo)" disabled></div>`;
+          if (f.type === 'flag') return `<div class="form-group"><label for="rtc_${f.key}">${escapeHtmlNF(f.label)}</label><select id="rtc_${f.key}"><option value="1">1=Sim/Aceite</option><option value="0">0=Não</option></select></div>`;
+          if (f.type === 'date') return `<div class="form-group"><label for="rtc_${f.key}">${escapeHtmlNF(f.label)}</label><input id="rtc_${f.key}" type="date"></div>`;
+          if (f.type === 'motivo') return `<div class="form-group"><label for="rtc_${f.key}">${escapeHtmlNF(f.label)}</label><select id="rtc_${f.key}"><option value="1">1=Falta manifestação das sucessoras</option><option value="2">2=Outros</option></select></div>`;
+          if (f.type === 'text500') return `<div class="form-group"><label for="rtc_${f.key}">${escapeHtmlNF(f.label)}</label><textarea id="rtc_${f.key}" rows="3" maxlength="500" style="width:100%;resize:vertical;"></textarea></div>`;
+          return '';
+        }).join('');
+      } else if (def.kind === 'credit-presumed') {
+        html += `<div class="form-row">
+            <div class="form-group"><label>nItem *</label><input id="rtc_nItem" type="number" min="1" max="990" placeholder="Nº do item na NF-e"></div>
+            <div class="form-group"><label>vBCCredPres *</label><input id="rtc_vBCCredPres" inputmode="decimal" placeholder="100.00"></div>
+            <div class="form-group"><label>cCredPres (2 díg.) *</label><input id="rtc_cCredPres" maxlength="2" placeholder="01"></div>
+          </div><div class="form-row">
+            <div class="form-group"><label>pCredPres IBS</label><input id="rtc_pIBS" inputmode="decimal" placeholder="5"></div>
+            <div class="form-group"><label>vCredPres IBS</label><input id="rtc_vIBS" inputmode="decimal" placeholder="5.00"></div>
+            <div class="form-group"><label>pCredPres CBS</label><input id="rtc_pCBS" inputmode="decimal" placeholder="5"></div>
+            <div class="form-group"><label>vCredPres CBS</label><input id="rtc_vCBS" inputmode="decimal" placeholder="5.00"></div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-small" onclick="__nfRtcAddItem('credit-presumed')"><i class="fas fa-plus"></i> Adicionar item</button>
+          <div id="nfRtcItens" style="margin-top:8px;font-size:13px;"></div>`;
+      } else if (def.kind === 'item-nocontrol') {
+        html += `<div class="form-row">
+            <div class="form-group"><label>nItem *</label><input id="rtc_nItem" type="number" min="1" max="990" placeholder="Nº do item na NF-e"></div>
+            <div class="form-group"><label>vCredIBS *</label><input id="rtc_vCredIBS" inputmode="decimal" placeholder="7.50"></div>
+            <div class="form-group"><label>vCredCBS *</label><input id="rtc_vCredCBS" inputmode="decimal" placeholder="2.50"></div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-small" onclick="__nfRtcAddItem('item-nocontrol')"><i class="fas fa-plus"></i> Adicionar item</button>
+          <div id="nfRtcItens" style="margin-top:8px;font-size:13px;"></div>`;
+      } else {
+        const spec = window.NFRtcEvents.ITEM_GROUP[def.group] || {};
+        const credit = spec.credit ? `<div class="form-row">
+            <div class="form-group"><label>Crédito IBS a estornar *</label><input id="rtc_cIBS" inputmode="decimal" placeholder="3.00"></div>
+            <div class="form-group"><label>Crédito CBS a estornar *</label><input id="rtc_cCBS" inputmode="decimal" placeholder="1.50"></div>
+          </div>` : '';
+        html += `<div class="form-row">
+            <div class="form-group"><label>nItem *</label><input id="rtc_nItem" type="number" min="1" max="990" placeholder="Nº do item na NF-e"></div>
+            <div class="form-group"><label>vIBS *</label><input id="rtc_vIBS" inputmode="decimal" placeholder="10.00"></div>
+            <div class="form-group"><label>vCBS *</label><input id="rtc_vCBS" inputmode="decimal" placeholder="5.00"></div>
+          </div><div class="form-row">
+            <div class="form-group"><label>Qtd (${escapeHtmlNF(spec.qty || 'qtde')}) *</label><input id="rtc_qty" inputmode="decimal" placeholder="2.0000"></div>
+            <div class="form-group"><label>Unid. (${escapeHtmlNF(spec.unit || 'unidade')}) *</label><input id="rtc_unit" maxlength="6" placeholder="UN"></div>
+          </div>${credit}
+          <button type="button" class="btn btn-secondary btn-small" onclick="__nfRtcAddItem('control')"><i class="fas fa-plus"></i> Adicionar item</button>
+          <div id="nfRtcItens" style="margin-top:8px;font-size:13px;"></div>`;
+      }
+      box.innerHTML = html;
+      __nfRtcDrawItens();
+    }
+    window.__nfRtcRenderCampos = __nfRtcRenderCampos;
+
+    function __nfRtcAddItem(kind) {
+      const g = (id) => document.getElementById(id)?.value ?? '';
+      try {
+        if (kind === 'credit-presumed') {
+          __nfRtcItens.push({ nItem: g('rtc_nItem'), vBCCredPres: g('rtc_vBCCredPres'), cCredPres: g('rtc_cCredPres'),
+            gIBSCredPres: g('rtc_pIBS') || g('rtc_vIBS') ? { pCredPres: g('rtc_pIBS'), vCredPres: g('rtc_vIBS') } : undefined,
+            gCBSCredPres: g('rtc_pCBS') || g('rtc_vCBS') ? { pCredPres: g('rtc_pCBS'), vCredPres: g('rtc_vCBS') } : undefined });
+        } else if (kind === 'item-nocontrol') {
+          __nfRtcItens.push({ nItem: g('rtc_nItem'), vCredIBS: g('rtc_vCredIBS'), vCredCBS: g('rtc_vCredCBS') });
+        } else {
+          __nfRtcItens.push({ nItem: g('rtc_nItem'), vIBS: g('rtc_vIBS'), vCBS: g('rtc_vCBS'), qty: g('rtc_qty'), unit: g('rtc_unit'), cIBS: g('rtc_cIBS'), cCBS: g('rtc_cCBS') });
+        }
+        // Validação imediata (mensagem amigável antes do envio)
+        const cur = __nfRtcDef();
+        window.NFRtcEvents.buildDetEvento(cur.tp, { cOrgaoAutor: document.getElementById('nfRtcOrgao')?.value || '00', tpAutor: document.getElementById('nfRtcAutor')?.value, verAplic: 'Sisweb 1.0', scalar: __nfRtcScalar(), itens: __nfRtcItens });
+        ['rtc_nItem', 'rtc_vBCCredPres', 'rtc_cCredPres', 'rtc_pIBS', 'rtc_vIBS', 'rtc_pCBS', 'rtc_vCBS', 'rtc_vCredIBS', 'rtc_vCredCBS', 'rtc_qty', 'rtc_unit', 'rtc_cIBS', 'rtc_cCBS'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+        document.getElementById('rtc_nItem')?.focus();
+        __nfRtcDrawItens();
+      } catch (e) {
+        __nfRtcItens.pop();
+        setEventoFiscalMsg('Item inválido: ' + (e?.message || e), 'warn');
+      }
+    }
+    window.__nfRtcAddItem = __nfRtcAddItem;
+
+    function __nfRtcDrawItens() {
+      const box = document.getElementById('nfRtcItens');
+      if (!box) return;
+      box.innerHTML = __nfRtcItens.length
+        ? '<strong>' + __nfRtcItens.length + ' item(ns):</strong>' + __nfRtcItens.map((it, i) =>
+          `<div style="display:flex;gap:8px;align-items:center;margin-top:4px;padding:4px 8px;border:1px solid var(--sw-border);border-radius:6px;"><span style="flex:1">nItem ${escapeHtmlNF(String(it.nItem))}</span><button type="button" class="btn btn-danger btn-small" onclick="__nfRtcDelItem(${i})">×</button></div>`).join('')
+        : '<span style="opacity:.7">Nenhum item adicionado.</span>';
+    }
+    window.__nfRtcDelItem = (i) => { __nfRtcItens.splice(i, 1); __nfRtcDrawItens(); };
+
+    function __nfRtcScalar() {
+      const cur = __nfRtcDef();
+      const out = {};
+      if (!cur) return out;
+      (cur.def.fields || []).forEach((f) => {
+        if (f.fixed != null) return;
+        out[f.key] = document.getElementById('rtc_' + f.key)?.value ?? '';
+      });
+      return out;
+    }
+
+    async function carregarHistoricoRTCNF(nfId) {
+      const box = document.getElementById('nfRtcHistorico');
+      if (!box) return;
+      try {
+        const tid = obterTenantIdNF();
+        const nf = tid ? await window.NFStorage.carregarNF(tid, 55, nfId).catch(() => null) : null;
+        const mapa = (nf?.eventos?.rtc && typeof nf.eventos.rtc === 'object') ? nf.eventos.rtc : {};
+        const seqs = Object.keys(mapa).sort();
+        if (!seqs.length) {
+          box.innerHTML = '<span style="opacity:.8">Nenhum evento RTC registrado para esta nota.</span>';
+          return;
+        }
+        box.innerHTML = '<strong style="color:var(--sw-text-1)">Eventos RTC (' + seqs.length + '):</strong>' + seqs.map((seq) => {
+          const e = mapa[seq] || {};
+          const dh = String(e.dhEvento || '').replace('T', ' ').slice(0, 19);
+          const prot = e.nProt ? ' · Prot: ' + escapeHtmlNF(String(e.nProt)) : '';
+          const ok = (e.autorizada === false || (e.cStat && e.cStat !== '135' && e.cStat !== '136')) ? '⚠️' : '✅';
+          return `<div style="display:flex;gap:8px;align-items:center;margin-top:6px;padding:6px 8px;border:1px solid var(--sw-border);border-radius:6px;">`
+            + `<span style="flex:1;min-width:0;">${ok} <strong>${escapeHtmlNF(String(e.tpEvento || ''))}</strong>`
+            + `${dh ? ' · ' + escapeHtmlNF(dh) : ''}${prot} — ${escapeHtmlNF(String(e.descEvento || e.resumo || '').slice(0, 90))}</span></div>`;
+        }).join('');
+      } catch (_) {
+        box.innerHTML = '<span style="opacity:.8">Não foi possível carregar o histórico RTC.</span>';
+      }
+    }
+
+    async function enviarEventoRTCNF() {
+      if (__nfEventoInFlight) return;
+      const cur = __nfRtcDef();
+      if (!cur) return setEventoFiscalMsg('Selecione o tipo de evento.', 'warn');
+      const nfId = document.getElementById('nfRtcId')?.value || '';
+      const chave = document.getElementById('nfRtcChave')?.value || '';
+      const cOrgaoAutor = (document.getElementById('nfRtcOrgao')?.value || '').trim();
+      const tpAutor = document.getElementById('nfRtcAutor')?.value;
+      const senhaA1 = document.getElementById('nfRtcSenha')?.value || '';
+      if (!/^[0-9]{2}$/.test(cOrgaoAutor)) return setEventoFiscalMsg('UF autora: código IBGE com 2 dígitos (ex.: 15=PA).', 'warn');
+      if (!senhaA1) return setEventoFiscalMsg('Informe a senha do certificado A1.', 'warn');
+      const payload = { cOrgaoAutor, tpAutor, verAplic: 'Sisweb 1.0', scalar: __nfRtcScalar(), itens: __nfRtcItens };
+      try {
+        window.NFRtcEvents.buildDetEvento(cur.tp, payload); // pré-validação local
+      } catch (e) { return setEventoFiscalMsg('Evento inválido: ' + (e?.message || e), 'warn'); }
+      __nfEventoInFlight = true;
+      const btn = __nfEventoBtn('enviarEventoRTCNF', true, 'Enviando...');
+      try { if (window.SiswebLoading?.show) window.SiswebLoading.show('Enviando evento RTC à SEFAZ...'); } catch (_) {}
+      try {
+        if (typeof window.firebaseService?.callFunction !== 'function') throw new Error('Firebase Functions indisponível.');
+        const cfg = window.NFService?.getConfig?.() || {};
+        const data = await window.firebaseService.callFunction('nf_eventoRTC', {
+          tenantId: obterTenantIdNF(), nfId, modelo: 55, chave,
+          tpEvento: cur.tp, cOrgaoAutor, tpAutor, verAplic: 'Sisweb 1.0',
+          scalar: payload.scalar, itens: payload.itens,
+          senhaA1, ambiente: cfg.nfe?.ambiente || 'homologacao', cnpjEmit: cfg.empresa?.cnpj || '',
+        });
+        setEventoFiscalMsg(data?.autorizada ? `Evento ${cur.tp} autorizado pela SEFAZ.` : (data?.xMotivo || 'Evento enviado, confira o retorno.'), data?.autorizada ? 'ok' : 'warn');
+        consultarNotas();
+        try { await carregarHistoricoRTCNF(nfId); } catch (_) {}
+        const senhaEl = document.getElementById('nfRtcSenha');
+        if (senhaEl) senhaEl.value = '';
+        __nfRtcItens = []; __nfRtcDrawItens();
+        __nfEventoFim(btn);
+      } catch (e) {
+        setEventoFiscalMsg(`Evento RTC não enviado: ${e.message || e}. Verifique se a Cloud Function nf_eventoRTC já foi implantada.`, 'erro');
+        __nfEventoFim(typeof btn !== 'undefined' ? btn : null);
+      }
+    }
+    window.enviarEventoRTCNF = enviarEventoRTCNF;
 
     function abrirModalInutilizacaoNF() {
       const cfg = window.NFService?.getConfig?.() || {};

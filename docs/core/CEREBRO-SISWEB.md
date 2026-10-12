@@ -1290,6 +1290,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — Pendências fiscais: gMono (CST 620), gTribRegular/gTribCompraGov, gCompraGov, Eventos_RTC + paginação Consulta
+
+- **gMono (TMonofasia, CST 620)**: `buildIBSCBSMono` (IBS/CBS × adRem/adValorem × padrao/reten/ret/bio), auto-cálculo q×aliq/vBC×aliq, `vTotIBSMonoItem/vTotCBSMonoItem`, totais `gMono` em `IBSCBSTot` (emite mesmo sem vBC — monofásico é quantitativo), trava builder `CST<>620`, validador regime/blocos. XSD oficial 2/2 (adRem+adValorem).
+- **gTribRegular (TTribRegular)/gTribCompraGov (TTribCompraGov)**: filhos de TCIBS_NFe pós-gCBS, só com base gIBSCBS (validador recusa com 620/800/811); XSD 1/1.
+- **ide gCompraGov (TCompraGov)**: após verProc; validador aplica doc do schema (tpOperGov 2=1 chave, 3=1..99, 1/4 vedado; 44 dígitos); XSD 1/1.
+- **Eventos_RTC**: `nf-fiscal-events.js` (catálogo 15 eventos + `buildDetEvento` com patterns TDec_1302/TDec_1104/TData/TnItem), `nf_eventoRTC` (backend reconstrói+assina+`eventos/rtc/NN`, resolveRtcSequence), modal com botão ⚖️ na Consulta + pré-validação + histórico; `211120` fora (sem XSD próprio, só alvo de e110001-cancelamento); tpAutor por evento (1/2/5/8).
+- **Paginação Consulta**: cache local + fatia, `nfConsultaSetPageSize/MudarPagina`, preferências localStorage tenant+usuário, opções [10,25,50,100] default 25, CSS tokens claro/escuro, filtros 38px intactos.
+- **Gates:** lint + typecheck OK; `npm test` 1202/1201/0/1; XSD 15/15; hosting publicado.
+
 ## Sessao 2026-10-12 — Carimbo sumido: parser sobrescrevia status
 
 - **Causa raiz:** `parseNFeXmlToDanfeData:351` decreta `status='autorizada'` se o XML tem `<nProt>`; o merge `{...original,...parsed}` clobberava o estado real. Nota **cancelada** + nfeProc (que sempre tem prot de AUTORIZACAO) → virava 'autorizada'+nProt → **sem carimbo**. Antes aparecia pq notas antigas nao tinham XML persistido (parse null → objeto intacto).

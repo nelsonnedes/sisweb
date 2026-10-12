@@ -359,7 +359,7 @@ const NFConfigService = (() => {
     if (Number(g.pDif) > 0) out.pDif = Number(g.pDif);
     if (g.credPresOper && g.credPresOper.cCredPres) out.credPresOper = { ...g.credPresOper };
     // Grupos alternativos/opcionais do TTribNFe (passthrough quando informados)
-    ['transfCred', 'ajusteCompet', 'estornoCred', 'credPresIBSZFM'].forEach((k) => {
+    ['transfCred', 'ajusteCompet', 'estornoCred', 'credPresIBSZFM', 'mono', 'tribRegular', 'tribCompraGov'].forEach((k) => {
       if (g[k] && typeof g[k] === 'object') out[k] = { ...g[k] };
     });
     return out;

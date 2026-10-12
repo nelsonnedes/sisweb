@@ -6901,6 +6901,7 @@ exports.nf_baixarXML         = nfFunctions.nf_baixarXML;
 exports.nf_reservarNumero    = nfFunctions.nf_reservarNumero;
 exports.nf_cancelarNFe       = nfFunctions.nf_cancelarNFe;
 exports.nf_cartaCorrecaoNFe  = nfFunctions.nf_cartaCorrecaoNFe;
+exports.nf_eventoRTC         = nfFunctions.nf_eventoRTC;
 exports.nf_inutilizarNumeracao = nfFunctions.nf_inutilizarNumeracao;
 exports.nf_uploadCertificadoA1 = nfFunctions.nf_uploadCertificadoA1;
 exports.nf_removerCertificado = nfFunctions.nf_removerCertificado;

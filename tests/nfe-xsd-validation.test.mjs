@@ -58,6 +58,7 @@ function buildXml(opts = {}) {
     ide: { serie: '1', nNF: 1, dhEmi: new Date().toISOString(), tpNF: 1, tpAmb: 2, cMunFG: '3550308', mod: 55 },
     det, transp: { modFrete: 9 }, pag: [{ tPag: '01', vPag: 100 }], infAdic: '', desconto: 0, frete: 0,
   };
+  if (opts.compraGov) nfe.ide.compraGov = opts.compraGov;
   nfe.total = B.calcularTotais(nfe.det, 0, 0);
   return B.buildNFeXML(nfe).xml.replace('</infNFe>', `</infNFe>${SIGNATURE}`);
 }
@@ -83,6 +84,29 @@ test('NF-e gerada é válida contra o XSD oficial (nfe_v4.00.xsd)', { skip: !val
   });
   await t.test('gCredPresIBSZFM', async () => {
     await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 10, pIBSMun: 0, pCBS: 9, credPresIBSZFM: { competApur: '2026-01', tpCredPresIBSZFM: '1', vCredPresIBSZFM: 5 } } }), XSD));
+  });
+  await t.test('gIBSCBSMono adRem (CST 620)', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs: { habilitado: true, cst: '620', cClassTrib: '620001',
+      mono: {
+        ibs: { regime: 'adRem', padrao: { qBCMono: 100, aliq: 0.05 }, reten: { qBCMonoReten: 10, aliqReten: 0.05 }, ret: { v: 1 }, bio: { qBCBioComb: 5, vDif: 0.25 } },
+        cbs: { regime: 'adRem', padrao: { qBCMono: 100, aliq: 0.03 } },
+      } } }), XSD));
+  });
+  await t.test('gIBSCBSMono adValorem (CST 620)', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs: { habilitado: true, cst: '620', cClassTrib: '620001',
+      mono: {
+        ibs: { regime: 'adValorem', padrao: { vBCMono: 1000, aliqUF: 10, aliqMun: 2 } },
+        cbs: { regime: 'adValorem', padrao: { vBCMono: 1000, aliq: 9 }, ret: { v: 2 } },
+      } } }), XSD));
+  });
+  await t.test('gTribRegular + gTribCompraGov', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 10, pIBSMun: 0, pCBS: 9,
+      tribRegular: { cstReg: '000', cClassTribReg: '000001', pAliqEfetRegIBSUF: 10, vTribRegIBSUF: 10, pAliqEfetRegIBSMun: 0, vTribRegIBSMun: 0, pAliqEfetRegCBS: 9, vTribRegCBS: 9 },
+      tribCompraGov: { pAliqIBSUF: 10, vTribIBSUF: 10, pAliqIBSMun: 0, vTribIBSMun: 0, pAliqCBS: 9, vTribCBS: 9 } } }), XSD));
+  });
+  await t.test('ide gCompraGov (tpOperGov 2 + 1 chave)', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ rtc: true,
+      compraGov: { tpEnteGov: '4', pRedutor: 10, tpOperGov: '2', refDFeAnt: ['35260111222333000181550010000000011000000001'] } }), XSD));
   });
 });
 

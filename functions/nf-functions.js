@@ -1748,6 +1748,226 @@ exports.nf_obterConfiguracaoFiscal = onFiscalCall(async (data, context) => {
   };
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CLOUD FUNCTION 14: nf_eventoRTC
+// Registra Evento de Conciliação Tributária (RTC) — tpEventos 112110..412130
+// (pacote oficial Eventos_RTC). Mesmo pipeline dos demais eventos
+// (assinarXMLcomForge infEvento + NFeRecepcaoEvento4). O <detEvento> é
+// construído no backend a partir do payload validado (frontend apenas coleta);
+// histórico em eventos/rtc/NN (espelho do padrão eventos/cce/NN).
+// ═══════════════════════════════════════════════════════════════════════════
+const RTC_EVENT_DEFS = {
+  112110: { desc: 'Informação de efetivo pagamento integral para liberar crédito presumido do adquirente', autor: ['1'], scalar: ['indQuitacao:1'] },
+  112120: { desc: 'Importação em ALC/ZFM não convertida em isenção', autor: ['1'], group: 'gConsumo', qty: 'qtde', unit: 'unidade', credit: false },
+  112130: { desc: 'Perecimento, perda, roubo ou furto durante o transporte contratado pelo fornecedor', autor: ['1'], group: 'gPerecimento', qty: 'qPerecimento', unit: 'uPerecimento', credit: true },
+  112140: { desc: 'Fornecimento não realizado com pagamento antecipado', autor: ['1'], group: 'gItemNaoFornecido', qty: 'qNaoFornecida', unit: 'uNaoFornecida', credit: false },
+  112150: { desc: 'Atualização da Data de Previsão de Entrega', autor: ['1'], scalar: ['dPrevEntrega:date'] },
+  211110: { desc: 'Solicitação de Apropriação de crédito presumido', autor: ['1', '2'], creditPresumed: true },
+  211124: { desc: 'Perecimento, perda, roubo ou furto durante o transporte contratado pelo adquirente', autor: ['2'], group: 'gPerecimento', qty: 'qPerecimento', unit: 'uPerecimento', credit: false },
+  211128: { desc: 'Aceite de débito na apuração por emissão de nota de crédito', autor: ['2'], scalar: ['indAceitacao:flag'] },
+  211130: { desc: 'Imobilização de Item', autor: ['2'], group: 'gImobilizacao', qty: 'qImobilizado', unit: 'uImobilizado', credit: false },
+  211140: { desc: 'Solicitação de Apropriação de Crédito de Combustível', autor: ['2'], group: 'gConsumoComb', qty: 'qComb', unit: 'uComb', credit: false },
+  211150: { desc: 'Solicitação de Apropriação de Crédito para bens e serviços que dependem de atividade do adquirente', autor: ['2'], credito: true },
+  212110: { desc: 'Manifestação sobre Pedido de Transferência de Crédito de IBS em Operação de Sucessão', autor: ['8'], scalar: ['indAceitacao:flag'] },
+  212120: { desc: 'Manifestação sobre Pedido de Transferência de Crédito de CBS em Operação de Sucessão', autor: ['8'], scalar: ['indAceitacao:flag'] },
+  412120: { desc: 'Manifestação do Fisco sobre Pedido de Transferência de Crédito de IBS em Operação de Sucessão', autor: ['5'], scalar: ['indDeferimento:flag', 'cMotivo:motivo', 'xMotivo:text500'] },
+  412130: { desc: 'Manifestação do Fisco sobre Pedido de Transferência de Crédito de CBS em Operação de Sucessão', autor: ['5'], scalar: ['indDeferimento:flag', 'cMotivo:motivo', 'xMotivo:text500'] },
+};
+
+function rtcDec2(v, field) {
+  const s = String(v == null ? '' : v).trim().replace(',', '.');
+  if (!/^(0|0\.[0-9]{1,2}|[1-9][0-9]{0,12}(\.[0-9]{1,2})?)$/.test(s)) {
+    throw new functions.https.HttpsError('invalid-argument', `RTC ${field}: decimal 13+2 inválido`);
+  }
+  return Number(s).toFixed(2);
+}
+function rtcDec4(v, field) {
+  const s = String(v == null ? '' : v).trim().replace(',', '.');
+  if (!/^(0|0\.[0-9]{1,4}|[1-9][0-9]{0,10}(\.[0-9]{1,4})?)$/.test(s)) {
+    throw new functions.https.HttpsError('invalid-argument', `RTC ${field}: decimal 11+4 inválido`);
+  }
+  return Number(s).toFixed(4);
+}
+function rtcNItem(v) {
+  const n = parseInt(v, 10);
+  if (!Number.isFinite(n) || n < 1 || n > 990) throw new functions.https.HttpsError('invalid-argument', 'RTC nItem deve estar entre 1 e 990');
+  return n;
+}
+function rtcBuildDetEvento(tpEvento, p) {
+  const def = RTC_EVENT_DEFS[tpEvento];
+  if (!def) throw new functions.https.HttpsError('invalid-argument', `RTC tpEvento ${tpEvento} não suportado`);
+  const cOrgao = String(p.cOrgaoAutor || '').trim();
+  if (!/^[0-9]{2}$/.test(cOrgao)) throw new functions.https.HttpsError('invalid-argument', 'RTC cOrgaoAutor: código IBGE da UF (2 dígitos)');
+  const tpAutor = String(p.tpAutor != null ? p.tpAutor : def.autor[0]).trim();
+  if (!def.autor.includes(tpAutor)) throw new functions.https.HttpsError('invalid-argument', `RTC ${tpEvento}: tpAutor deve ser ${def.autor.join(' ou ')}`);
+  const verAplic = String(p.verAplic || '').trim();
+  if (verAplic.length < 1 || verAplic.length > 20) throw new functions.https.HttpsError('invalid-argument', 'RTC verAplic: 1–20 caracteres');
+  let body = '';
+  if (def.scalar) {
+    const sc = (p.scalar && typeof p.scalar === 'object') ? p.scalar : {};
+    for (const spec of def.scalar) {
+      const [key, kind] = spec.split(':');
+      if (kind === '1') { body += `<${key}>1</${key}>`; continue; }
+      const raw = sc[key];
+      if (kind === 'flag') {
+        const s = String(raw).trim();
+        if (s !== '0' && s !== '1') throw new functions.https.HttpsError('invalid-argument', `RTC ${key}: deve ser 0 ou 1`);
+        body += `<${key}>${s}</${key}>`;
+      } else if (kind === 'date') {
+        const s = String(raw || '').trim();
+        if (!/^20[0-9]{2}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/.test(s)) throw new functions.https.HttpsError('invalid-argument', `RTC ${key}: data AAAA-MM-DD`);
+        body += `<${key}>${s}</${key}>`;
+      } else if (kind === 'motivo') {
+        const s = String(raw).trim();
+        if (s !== '1' && s !== '2') throw new functions.https.HttpsError('invalid-argument', `RTC ${key}: deve ser 1 ou 2`);
+        body += `<${key}>${s}</${key}>`;
+      } else if (kind === 'text500') {
+        const s = String(raw || '').trim().replace(/\s+/g, ' ');
+        if (s.length < 1 || s.length > 500) throw new functions.https.HttpsError('invalid-argument', `RTC ${key}: 1–500 caracteres`);
+        body += `<${key}>${escapeXml(s)}</${key}>`;
+      }
+    }
+  } else {
+    const itens = Array.isArray(p.itens) ? p.itens : [];
+    if (!itens.length) throw new functions.https.HttpsError('invalid-argument', `RTC ${tpEvento}: informe ao menos 1 item`);
+    if (itens.length > 990) throw new functions.https.HttpsError('invalid-argument', 'RTC: máximo 990 itens por evento');
+    const seen = new Set();
+    for (const it of itens) {
+      const n = rtcNItem(it.nItem);
+      if (seen.has(n)) throw new functions.https.HttpsError('invalid-argument', `RTC: nItem ${n} duplicado`);
+      seen.add(n);
+      if (def.creditPresumed) {
+        const cc = String(it.cCredPres || '').trim();
+        if (!/^[0-9]{2}$/.test(cc)) throw new functions.https.HttpsError('invalid-argument', 'RTC cCredPres: 2 dígitos');
+        let s = `<gCredPresOper nItem="${n}"><vBCCredPres>${rtcDec2(it.vBCCredPres, 'vBCCredPres')}</vBCCredPres><cCredPres>${cc}</cCredPres>`;
+        for (const lado of ['gIBSCredPres', 'gCBSCredPres']) {
+          const g = it[lado];
+          if (!g) continue;
+          const ps = String(g.pCredPres == null ? '' : g.pCredPres).trim().replace(',', '.');
+          if (!/^(0|0\.[0-9]{2,4}|[1-9][0-9]{0,2}(\.[0-9]{2,4})?)$/.test(ps)) throw new functions.https.HttpsError('invalid-argument', `RTC ${lado}.pCredPres inválido`);
+          s += `<${lado}><pCredPres>${String(Number(ps))}</pCredPres><vCredPres>${rtcDec2(g.vCredPres, lado + '.vCredPres')}</vCredPres></${lado}>`;
+        }
+        body += s + '</gCredPresOper>';
+      } else if (def.credito) {
+        body += `<gCredito nItem="${n}"><vCredIBS>${rtcDec2(it.vCredIBS, 'vCredIBS')}</vCredIBS><vCredCBS>${rtcDec2(it.vCredCBS, 'vCredCBS')}</vCredCBS></gCredito>`;
+      } else {
+        const u = String(it.unit || '').trim();
+        if (u.length < 1 || u.length > 6) throw new functions.https.HttpsError('invalid-argument', `RTC ${def.unit}: 1–6 caracteres`);
+        let g = `<${def.group} nItem="${n}"><vIBS>${rtcDec2(it.vIBS, 'vIBS')}</vIBS><vCBS>${rtcDec2(it.vCBS, 'vCBS')}</vCBS>`
+          + `<gControleEstoque><${def.qty}>${rtcDec4(it.qty, def.qty)}</${def.qty}><${def.unit}>${escapeXml(u)}</${def.unit}>`;
+        if (def.credit) g += `<vIBS>${rtcDec2(it.cIBS, 'crédito vIBS')}</vIBS><vCBS>${rtcDec2(it.cCBS, 'crédito vCBS')}</vCBS>`;
+        body += g + '</gControleEstoque></' + def.group + '>';
+      }
+    }
+  }
+  return `<detEvento versao="1.00"><descEvento>${escapeXml(def.desc)}</descEvento>`
+    + `<cOrgaoAutor>${cOrgao}</cOrgaoAutor><tpAutor>${tpAutor}</tpAutor>`
+    + `<verAplic>${escapeXml(verAplic)}</verAplic>${body}</detEvento>`;
+}
+
+async function resolveRtcSequence(db, tenantId, modKey, nfId, rawSeq) {
+  if (rawSeq != null && rawSeq !== '') return normalizeSeqEvento(rawSeq, 1);
+  for (const ref of getFiscalNoteRefs(db, tenantId, modKey, nfId)) {
+    try {
+      const snap = await ref.get();
+      if (!snap.exists()) continue;
+      const note = snap.val() || {};
+      const events = note.eventos && note.eventos.rtc && typeof note.eventos.rtc === 'object' ? note.eventos.rtc : {};
+      const seqs = Object.keys(events).map((k) => parseInt(String(k).replace(/\D/g, ''), 10)).filter(Number.isFinite);
+      if (seqs.length) return normalizeSeqEvento(Math.max(...seqs) + 1, 1);
+    } catch (_) {}
+  }
+  return 1;
+}
+
+exports.nf_eventoRTC = onFiscalCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação obrigatória');
+  }
+  const { tenantId: rawTenantId, nfId: rawNfId, modelo, chave, tpEvento, cOrgaoAutor, tpAutor, verAplic, scalar, itens, senhaA1, ambiente, cnpjEmit, nSeqEvento } = data || {};
+  const tenantId = sanitizePathSegment(rawTenantId, 'tenantId');
+  const nfId = sanitizePathSegment(rawNfId, 'nfId');
+  const chaveNFe = requireAccessKey(chave);
+  const tp = String(tpEvento || '').trim();
+  if (!RTC_EVENT_DEFS[tp]) {
+    throw new functions.https.HttpsError('invalid-argument', `tpEvento RTC não suportado: ${tp}`);
+  }
+  if (!senhaA1) {
+    throw new functions.https.HttpsError('invalid-argument', 'senhaA1 obrigatório');
+  }
+
+  const { uid } = await assertTenantAccess(context, tenantId);
+  const env    = ambiente === 'producao' ? 'producao' : 'homologacao';
+  const modKey = getModKey(modelo);
+  const db     = admin.database();
+  const cnpj   = requireCnpj(cnpjEmit);
+  const cUF    = resolveCUF({ chave: chaveNFe });
+  const seq    = await resolveRtcSequence(db, tenantId, modKey, nfId, nSeqEvento);
+  const seqStr = String(seq).padStart(2, '0');
+  const dhEvento = toFiscalDateTime();
+  const detEvento = rtcBuildDetEvento(tp, { cOrgaoAutor, tpAutor, verAplic, scalar, itens });
+
+  try {
+    const pfxBuffer = await descriptografarPFXdoStorage(tenantId, uid, senhaA1);
+    const eventoXml = `<envEvento xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.00">
+      <idLote>${Date.now()}</idLote>
+      <evento xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.00">
+        <infEvento Id="ID${tp}${chaveNFe}${seqStr}">
+          <cOrgao>${cUF}</cOrgao>
+          <tpAmb>${env === 'producao' ? 1 : 2}</tpAmb>
+          <CNPJ>${cnpj}</CNPJ>
+          <chNFe>${chaveNFe}</chNFe>
+          <dhEvento>${dhEvento}</dhEvento>
+          <tpEvento>${tp}</tpEvento>
+          <nSeqEvento>${seq}</nSeqEvento>
+          <verEvento>1.00</verEvento>
+          ${detEvento}
+        </infEvento>
+      </evento>
+    </envEvento>`;
+
+    const eventoAssinado = assinarXMLcomForge(eventoXml, pfxBuffer, senhaA1, { tagName: 'infEvento', idPrefix: 'ID' });
+    const url  = getEndpoint('NFeRecepcaoEvento4', env);
+    const soap = buildSoapEnvelope('NFeRecepcaoEvento4', eventoAssinado, '1.00', cUF);
+    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeRecepcaoEvento4'));
+    const ret  = parseSefazResponse(resp.body, ['135', '136']);
+    const nowIso = new Date().toISOString();
+    const resumo = scalar && typeof scalar === 'object'
+      ? Object.entries(scalar).map(([k, v]) => `${k}=${v}`).join('; ').slice(0, 200)
+      : `${Array.isArray(itens) ? itens.length : 0} item(ns)`;
+    const eventPayload = {
+      tipo: 'rtc',
+      tpEvento: tp,
+      descEvento: RTC_EVENT_DEFS[tp].desc,
+      nSeqEvento: seq,
+      resumo,
+      cStat: ret.cStat,
+      xMotivo: ret.xMotivo,
+      nProt: ret.nProt,
+      dhEvento,
+      autorizada: ret.autorizada,
+      xmlRetorno: ret.xmlRetorno,
+      updatedAt: nowIso,
+    };
+    await updateFiscalNote(db, tenantId, modKey, nfId, {
+      ultimaEventoRTC: eventPayload,
+      [`eventos/rtc/${seqStr}`]: eventPayload,
+      updatedAt: nowIso,
+    });
+    return {
+      autorizada: ret.autorizada,
+      cStat: ret.cStat,
+      xMotivo: ret.xMotivo,
+      nProt: ret.nProt,
+      nSeqEvento: seq,
+      tpEvento: tp,
+    };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    throw new functions.https.HttpsError('internal', `Falha no Evento RTC: ${e.message}`);
+  }
+});
+
 // Compartilhado apenas pelo módulo MDF-e do backend; não é uma API callable.
 exports.__mdfeInternals = {
   assertTenantAccess,
