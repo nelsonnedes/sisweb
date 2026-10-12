@@ -16,3 +16,9 @@ test('não autorizadas mantêm SEM VALOR FISCAL / NÃO AUTORIZADA', () => {
   assert.match(danfe, /const naoAutorizada = !\(status === 'autorizada' && nProt\)/, 'regra mantida');
   assert.match(danfe, /'NÃO AUTORIZADA PELA SEFAZ'/, 'texto mantido');
 });
+
+test('estado fiscal do objeto prevalece sobre o XML (cancelada não vira autorizada)', () => {
+  // O nfeProc persistido sempre tem protNFe de AUTORIZAÇÃO; sem a trava, o merge
+  // marcava status='autorizada' e o carimbo sumia (bug reportado).
+  assert.match(danfe, /status: original\.status \|\| parsed\.status \|\| 'rascunho'/, 'merge preserva status do objeto');
+});

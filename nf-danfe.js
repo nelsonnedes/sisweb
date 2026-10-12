@@ -408,6 +408,11 @@ const NFDanfe = (() => {
     return {
       ...original,
       ...parsed,
+      // Estado fiscal (status) é autoridade do OBJETO (eventos SEFAZ: cancelada,
+      // rejeitada...). O XML persistido (nfeProc) sempre contém o protocolo de
+      // AUTORIZAÇÃO, então o parse marcaria 'autorizada' e apagaria o carimbo
+      // (ex.: cancelada virava 'autorizada' + nProt → sem marca d'água).
+      status: original.status || parsed.status || 'rascunho',
       emit: {
         ...(parsed.emit || {}),
         ...pickDanfeAssetFields(original.emit || {}),

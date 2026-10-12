@@ -1290,6 +1290,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — Carimbo sumido: parser sobrescrevia status
+
+- **Causa raiz:** `parseNFeXmlToDanfeData:351` decreta `status='autorizada'` se o XML tem `<nProt>`; o merge `{...original,...parsed}` clobberava o estado real. Nota **cancelada** + nfeProc (que sempre tem prot de AUTORIZACAO) → virava 'autorizada'+nProt → **sem carimbo**. Antes aparecia pq notas antigas nao tinham XML persistido (parse null → objeto intacto).
+- **Fix:** `status: original.status || parsed.status || 'rascunho'` no merge — estado fiscal do objeto (eventos SEFAZ) e autoridade; XML e verdade do documento, nao do ciclo de vida.
+- **Trava:** teste no `nf-danfe-marcas.test.mjs`. Hosting publicado.
+- **Gates:** `npm test` 1174/1173/0/1; lint + typecheck OK.
+
 ## Sessao 2026-10-12 — Lote 4 (chave DANFE, loader DANFE, Dashboard profissional)
 
 - **Chave 1 linha:** `doc.text(...,{maxWidth})` do jsPDF QUEBRA em espacos (era o "2860" solto). Fix: fonte courier calculada (`getTextWidth`, piso 4) p/ caber em `fiscoW-3`, sem maxWidth.
