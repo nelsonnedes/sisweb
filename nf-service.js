@@ -256,10 +256,18 @@ const NFService = (() => {
     const nfeVal = window.NFValidator.validarNFe(nfeData);
     if (!nfeVal.valid) throw new Error('Erros na NF-e:\n• ' + nfeVal.errors.join('\n• '));
 
-    // 4. Obter número definitivo (reserva atômica no backend)
-    const numero = await window.NFStorage.incrementarNumero(_tenantId, 55);
-    nfeData.numero = String(numero).padStart(9, '0');
-    nfeData.ide.nNF = numero;
+    // 4. Número definitivo: reaproveita o MESMO número quando for reenvio de
+    //    rejeitada/erro_envio (sem vínculo na SEFAZ — sem protocolo de
+    //    autorização; MOC: numeração só se consome no uso fiscal). Rascunho e
+    //    nota nova reservam número atômico no backend como antes.
+    const stReenvio = String(nfeData.status || '').toLowerCase();
+    if ((stReenvio === 'rejeitada' || stReenvio === 'erro_envio') && nfeData.numero && nfeData.ide?.nNF) {
+      // Reenvio: mantém numero/ide.nNF/id — atualiza o MESMO registro.
+    } else {
+      const numero = await window.NFStorage.incrementarNumero(_tenantId, 55);
+      nfeData.numero = String(numero).padStart(9, '0');
+      nfeData.ide.nNF = numero;
+    }
     nfeData.id = nfeData.id || `nf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     // 5. Gerar XML

@@ -1290,6 +1290,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — Reenvio de rejeitada/erro_envio (botão Editar + mesmo número)
+
+- **Você estava certo:** rejeitada (cStat numérico, ex. 1115) e erro_envio (falha de comunicação) NÃO têm vínculo na SEFAZ (sem protocolo de autorização) — podem ser corrigidas e reenviadas com o MESMO número (numeração só se consome no uso fiscal). Faltava o botão Editar nesses status (só rascunho tinha).
+- **Fix:** botão ✏️ `Corrigir e reenviar` para rejeitada/erro_envio; `editarRascunho` com trava fail-closed (autorizada/cancelada/inutilizada/aguardando nunca entram); reenvio preserva id+número (service não reserva número novo; pré-montagem reaproveita); edição de item legado recalcula IBSCBS neutro (caso 1115); mensagem pós-edição mostra cStat+motivo e orienta.
+- **Trava:** `tests/nf-reenvio-rejeitada.test.mjs` (6/6).
+- **Gates:** lint + typecheck OK; `npm test` 1212/1211/0/1; hosting publicado.
+- **Ação usuário:** Ctrl+F5 → Consulta → linha 1688 (⚠️ Erro) agora tem ✏️ → `Corrigir e reenviar` → Emitir (mesmo nº 1688, com IBSCBS neutro).
+
 ## Sessao 2026-10-12 — cStat 1115 (IBS/CBS não informado) + cross-check NFePHP
 
 - **Causa raiz (evidência SEFAZ, não palpite):** homologação rejeitou 1688 com `1115 Rejeicao: IBS/CBS não informado`. Cross-check NFePHP `sped-nfe` master: `Make` schema > 9 (PL_010) monta `<IBSCBS>` em TODO item e `flagIBSCBS` liga por `cClassTrib` presente — SEFAZ exige o grupo mesmo neutro (CST 000/alíq. 0). Nosso builder omitia (`minOccurs=0` + flag `habilitado=false` no print do usuário) e `calcularImpostosItem` nem chamava `calcularIBSCBS`.

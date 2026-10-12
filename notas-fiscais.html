@@ -4312,6 +4312,21 @@
         const formData = coletarFormDataNF(dest);
         _notaEmCurso = window.NFService?.buildNFeFromForm?.(formData, _itensNF);
         if (!_notaEmCurso) return mostrarAlertaEmissao('❌ Erro ao montar NF-e. Verifique a configuração fiscal.');
+        // Reenvio de rejeitada/erro_envio: preserva id + número (reaproveita o
+        // registro; sem vínculo SEFAZ, sem consumir numeração nova).
+        if (_rascunhoEditandoId) {
+          try {
+            const tid0 = obterTenantIdNF();
+            const orig = tid0 ? await window.NFStorage.carregarNF(tid0, 55, _rascunhoEditandoId).catch(() => null) : null;
+            const st0 = String(orig?.status || '').toLowerCase();
+            if ((st0 === 'rejeitada' || st0 === 'erro_envio') && orig?.numero) {
+              _notaEmCurso.id = _rascunhoEditandoId;
+              _notaEmCurso.numero = orig.numero;
+              if (_notaEmCurso.ide) _notaEmCurso.ide.nNF = parseInt(String(orig.numero).replace(/\D/g, ''), 10) || _notaEmCurso.ide.nNF;
+              _notaEmCurso.status = st0;
+            }
+          } catch (_) {}
+        }
         if (window.NFXmlBuilder?.calcularTotais) {
           _notaEmCurso.total = window.NFXmlBuilder.calcularTotais(_notaEmCurso.det || [], _notaEmCurso.desconto, _notaEmCurso.frete);
         }
@@ -4618,7 +4633,7 @@ renderizarVolumesNF();
             ${n.status==='autorizada' ? `<button class="btn btn-warning btn-small" onclick="abrirModalCartaCorrecaoNF('${n.id}','${n.chave || ''}')" title="Carta de Correção"><i class="fas fa-file-signature"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-info btn-small" onclick="abrirModalEventoRTCNF('${n.id}','${n.chave || ''}')" title="Evento RTC (conciliação IBS/CBS)"><i class="fas fa-balance-scale"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-danger btn-small" onclick="iniciarCancelamento('${n.id}','${n.chave}','${n.nProt||''}')" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
-            ${n.status==='rascunho' ? `<button class="btn btn-warning btn-small" onclick="editarRascunho('${n.id}')" title="Editar"><i class="fas fa-edit"></i></button>` : ''}
+            ${['rascunho','rejeitada','erro_envio'].includes(n.status) ? `<button class="btn btn-warning btn-small" onclick="editarRascunho('${n.id}')" title="${n.status==='rascunho' ? 'Editar' : 'Corrigir e reenviar'}"><i class="fas fa-edit"></i></button>` : ''}
             ${n.status==='rascunho' ? `<button class="btn btn-danger btn-small" onclick="excluirRascunhoNF('${n.id}')" title="Excluir rascunho"><i class="fas fa-trash"></i></button>` : ''}
             ${(n.status==='aguardando' || n.status==='erro_envio') ? `<button class="btn btn-primary btn-small" onclick="consultarStatusSefazNF('${n.id}')" title="Consultar status na SEFAZ"><i class="fas fa-sync-alt"></i></button>` : ''}
           </td>
@@ -5417,7 +5432,8 @@ renderizarVolumesNF();
       }
     }
 
-    async function editarRascunho(nfId, modo = 'editar') {      try {
+    async function editarRascunho(nfId, modo = 'editar') {
+      try {
         const tid = obterTenantIdNF();
         if (!tid) return notifyUser('Tenant não identificado');
 
@@ -5441,6 +5457,16 @@ renderizarVolumesNF();
             }
           }
           return notifyUser('Rascunho não encontrado');
+        }
+
+        // Rejeitada/erro de envio NÃO vincula nada na SEFAZ (sem protocolo de
+        // autorização): pode ser corrigida e reenviada com o MESMO número.
+        // Editar aqui reaproveita o registro (editarRascunho usa o próprio
+        // nfId); clonar gera registro novo com próximo número. Autorizada,
+        // cancelada, inutilizada e aguardando NUNCA entram aqui (sem botão).
+        const stEdit = String(nf.status || '').toLowerCase();
+        if (modo === 'editar' && !['rascunho', 'rejeitada', 'erro_envio'].includes(stEdit)) {
+          return notifyUser(`Nota ${stEdit || 'sem status'} não pode ser editada (só rascunho, rejeitada ou erro de envio). Use Clonar.`);
         }
 
         // Ir para aba emissão
@@ -5516,27 +5542,43 @@ renderizarVolumesNF();
           if (ufSel) { ufSel.disabled = false; ufSel.value = dest.endereco?.uf || ''; ufSel.disabled = true; }
         }
 
-        // Recarregar itens
-        _itensNF = (nf.det || []).map((it, idx) => ({
-          id:     `it_rascunho_${idx}`,
-          cProd:  it.cProd || it.id || String(idx),
-          xProd:  it.xProd || it.descricao || 'Produto',
-          ncm:    it.ncm || it.NCM || '00000000',
-          cfop:   it.cfop || '5102',
-          uCom:   it.uCom || it.unidade || 'UN',
-          uTrib:  it.uCom || 'UN',
-          qCom:   parseFloat(it.qCom || it.quantidade) || 0,
-          vUnCom: parseFloat(it.vUnCom || it.valorUnitario) || 0,
-          vProd:  parseFloat(it.vProd || it.total) || 0,
-          csosn:  it.csosn || it.imposto?.icms?.csosn || '102',
-          imposto: it.imposto || {},
-        }));
+        // Recarregar itens (recalcula IBSCBS neutro se o item legado não tinha —
+        // ex.: rejeitada 1115 por IBS/CBS não informado)
+        _itensNF = (nf.det || []).map((it, idx) => {
+          let imposto = it.imposto || {};
+          try {
+            if (!imposto.ibscbs || !imposto.ibscbs.cst || !imposto.ibscbs.cClassTrib) {
+              const cfg0 = window.NFService?.getConfig?.() || {};
+              const tot0 = parseFloat(it.vProd || it.total) || 0;
+              const ib0 = window.NFConfigService?.calcularIBSCBS?.(cfg0, tot0)
+                || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: tot0 };
+              imposto = { ...imposto, ibscbs: ib0 };
+            }
+          } catch (_) {}
+          return {
+            id:     `it_rascunho_${idx}`,
+            cProd:  it.cProd || it.id || String(idx),
+            xProd:  it.xProd || it.descricao || 'Produto',
+            ncm:    it.ncm || it.NCM || '00000000',
+            cfop:   it.cfop || '5102',
+            uCom:   it.uCom || it.unidade || 'UN',
+            uTrib:  it.uCom || 'UN',
+            qCom:   parseFloat(it.qCom || it.quantidade) || 0,
+            vUnCom: parseFloat(it.vUnCom || it.valorUnitario) || 0,
+            vProd:  parseFloat(it.vProd || it.total) || 0,
+            csosn:  it.csosn || it.imposto?.icms?.csosn || '102',
+            imposto,
+          };
+        });
         renderizarItensNF();
         atualizarTotaisNF();
 
-        mostrarAlertaEmissao(modo === 'clonar'
-          ? `✅ Nota clonada com sucesso (nova nota, nº ${String(proxNumEdicao || '').padStart(9, '0') || 'próximo'}). Revise e clique em Emitir.`
-          : `✅ Rascunho #${String(nf.numero||'').padStart(9,'0') || nfId.slice(-6)} carregado. Revise e clique em Emitir.`, 'ok');
+        const msgPosErro = (stEdit === 'rejeitada' || stEdit === 'erro_envio')
+          ? `⚠️ Nota ${stEdit === 'rejeitada' ? 'rejeitada' : 'com erro de envio'} (cStat ${nf.cStat || '?'}: ${nf.xMotivo || nf.descricao || 'ver detalhes'}). Corrija e clique em Emitir — mesmo número, sem vínculo na SEFAZ.`
+          : (modo === 'clonar'
+            ? `✅ Nota clonada com sucesso (nova nota, nº ${String(proxNumEdicao || '').padStart(9, '0') || 'próximo'}). Revise e clique em Emitir.`
+            : `✅ Rascunho #${String(nf.numero||'').padStart(9,'0') || nfId.slice(-6)} carregado. Revise e clique em Emitir.`);
+        mostrarAlertaEmissao(msgPosErro, stEdit === 'rascunho' && modo !== 'clonar' ? 'ok' : (stEdit === 'rascunho' ? 'ok' : 'warn'));
       } catch(e) {
         notifyUser('Erro ao carregar rascunho: ' + e.message);
       }
