@@ -42,9 +42,8 @@ test('A3/A4: CST e CSOSN mapeados corretamente no XML', () => {
   assert.match(xml, /case '60'/);
 });
 
-test('M2: vTotTrib calculado (não 0.00 fixo)', () => {
+test('M2: vTotTrib calculado internamente (omitido do XML — opcional, evita 685)', () => {
   assert.match(xml, /vTotTrib: vICMS \+ vIPI \+ vPIS \+ vCOFINS \+ vIBS \+ vCBS \+ vIS/);
-  assert.doesNotMatch(xml, /<vTotTrib>0\.00<\/vTotTrib>/);
 });
 
 test('A2: alíquota interestadual consciente de origem (4/7/12)', () => {

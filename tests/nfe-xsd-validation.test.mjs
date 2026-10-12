@@ -97,3 +97,8 @@ test('dhEmi sem milissegundos (TDateTimeUTC)', () => {
 test('<indPag> não é emitido em <ide>', () => {
   assert.doesNotMatch(buildXml({}), /<indPag>/);
 });
+
+test('<vTotTrib> omitido do XML (opcional no schema; evita cStat 685)', () => {
+  assert.doesNotMatch(buildXml({}), /<vTotTrib>/);
+  assert.doesNotMatch(buildXml({ rtc: true }), /<vTotTrib>/);
+});

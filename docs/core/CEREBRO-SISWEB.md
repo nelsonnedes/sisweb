@@ -1276,6 +1276,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `nf-service.js`, testes. Hosting publicado.
 - **Gates:** `npm test` 1145/0/1.
 
+## Sessao 2026-10-11 — cStat 685: vTotTrib omitido (opcional no schema)
+
+- **cStat 685 persistia** com qualquer valor de `vTotTrib` (soma de tributos ou IBPT%). Fato do schema oficial: `<vTotTrib>` em `ICMSTot` e **`minOccurs="0"`** ("Valor estimado"), ou seja, **opcional**.
+- **Decisao correta** (sugerida pelo usuario e confirmada): como e so previsao informativa e nao ha como garantir o valor exato, **omitir** `<vTotTrib>` do XML em vez de enviar valor rejeitado. O texto IBPT da Lei da Transparencia continua em `infCpl`/DANFE.
+- **Arquivos:** `nf-xml-builder.js`, testes. Hosting publicado.
+- **Gates:** `npm test` 1146/0/1 (XSD valida sem vTotTrib).
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

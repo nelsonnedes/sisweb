@@ -420,7 +420,6 @@ const NFXmlBuilder = (() => {
         <vCOFINS>${num(t.vCOFINS)}</vCOFINS>
         <vOutro>0.00</vOutro>
         <vNF>${num(t.vNF)}</vNF>
-        <vTotTrib>${num(t.vTotTrib != null && t.vTotTrib !== '' ? t.vTotTrib : ((Number(t.vICMS)||0) + (Number(t.vIPI)||0) + (Number(t.vPIS)||0) + (Number(t.vCOFINS)||0) + (Number(t.vIBS)||0) + (Number(t.vCBS)||0) + (Number(t.vIS)||0)))}</vTotTrib>
       </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${(Number(t.vBCIBSCBS) > 0) ? `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>${num(t.vDifIBSUF)}</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>${num(t.vDifIBSMun)}</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>${num(t.vDifCBS)}</vDif><vDevTrib>0.00</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS>${(Number(t.vIBSEstCred) > 0 || Number(t.vCBSEstCred) > 0) ? `<gEstornoCred><vIBSEstCred>${num(t.vIBSEstCred)}</vIBSEstCred><vCBSEstCred>${num(t.vCBSEstCred)}</vCBSEstCred></gEstornoCred>` : ''}</IBSCBSTot>` : ''}
     </total>`;
   }
