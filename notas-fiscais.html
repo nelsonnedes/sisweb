@@ -4294,6 +4294,7 @@ renderizarVolumesNF();
           <td data-label="Status"><span onclick="nfMostrarDetalheStatus('${n.id}')" title="Ver detalhes do status" style="cursor:pointer;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:var(--sw-text-1);background:color-mix(in srgb, var(--sw-${tok}) 25%, transparent);border:1px solid var(--sw-${tok});">${label}</span></td>
           <td data-label="Ações" class="nf-actions-cell">
             ${window.NFDanfe ? `<button class="btn btn-primary btn-small" onclick="abrirDANFENota('${n.id}')" title="DANFE"><i class="fas fa-file-pdf"></i></button>` : ''}
+            <button class="btn btn-success btn-small" onclick="clonarNotaNF('${n.id}')" title="Clonar nota"><i class="fas fa-copy"></i></button>
             ${n.status==='autorizada' ? `<button class="btn btn-warning btn-small" onclick="abrirModalCartaCorrecaoNF('${n.id}','${n.chave || ''}')" title="Carta de Correção"><i class="fas fa-file-signature"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-danger btn-small" onclick="iniciarCancelamento('${n.id}','${n.chave}','${n.nProt||''}')" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
             ${n.status==='rascunho' ? `<button class="btn btn-warning btn-small" onclick="editarRascunho('${n.id}')" title="Editar"><i class="fas fa-edit"></i></button>` : ''}
@@ -4699,7 +4700,7 @@ renderizarVolumesNF();
       } catch(e) { notifyUser('Erro no cancelamento: ' + e.message); }
     }
 
-    async function editarRascunho(nfId) {      try {
+    async function editarRascunho(nfId, modo = 'editar') {      try {
         const tid = obterTenantIdNF();
         if (!tid) return notifyUser('Tenant não identificado');
 
@@ -4728,7 +4729,7 @@ renderizarVolumesNF();
         // Ir para aba emissão
         showTab('emissao');
         limparFormularioNF();
-        _rascunhoEditandoId = nfId;
+        _rascunhoEditandoId = modo === 'editar' ? nfId : null; // clonar = nova nota (não altera a original)
 
         // Preencher dados da NF
         const ide  = nf.ide  || {};
@@ -4755,6 +4756,11 @@ renderizarVolumesNF();
         } catch (_) {}
         set('nfModFrete',  nf.transp?.modFrete ?? 9);
         preencherTransporteForm(nf.transp || {});
+        // Reboques (composição veicular) — restaura placas ao editar/clonar
+        _reboquesNF = (Array.isArray(nf.transp?.reboque) ? nf.transp.reboque : [])
+          .map(rb => ({ placa: rb.placa || '', UF: rb.UF || rb.uf || '' }))
+          .filter(rb => rb.placa);
+        if (typeof renderizarReboquesNF === 'function') renderizarReboquesNF();
         atualizarEstadoTransporteNF();
         set('nfInfoAdic',  nf.infAdic || '');
         set('nfDesconto',  nf.desconto ? `R$ ${parseFloat(nf.desconto).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '');
@@ -4810,11 +4816,19 @@ renderizarVolumesNF();
         renderizarItensNF();
         atualizarTotaisNF();
 
-        mostrarAlertaEmissao(`✅ Rascunho #${String(nf.numero||'').padStart(9,'0') || nfId.slice(-6)} carregado. Revise e clique em Emitir.`, 'ok');
+        mostrarAlertaEmissao(modo === 'clonar'
+          ? `✅ Nota clonada com sucesso (nova nota, nº ${String(proxNumEdicao || '').padStart(9, '0') || 'próximo'}). Revise e clique em Emitir.`
+          : `✅ Rascunho #${String(nf.numero||'').padStart(9,'0') || nfId.slice(-6)} carregado. Revise e clique em Emitir.`, 'ok');
       } catch(e) {
         notifyUser('Erro ao carregar rascunho: ' + e.message);
       }
     }
+
+    // ─── Clonar nota: cria uma NOVA nota com os mesmos dados (não altera a original) ───
+    async function clonarNotaNF(nfId) {
+      return editarRascunho(nfId, 'clonar');
+    }
+    window.clonarNotaNF = clonarNotaNF;
 
     // ─── Consultar status na SEFAZ (aguardando/erro_envio) ───
     // Padrão grandes sistemas: registro intermediário tem ação de refresh,

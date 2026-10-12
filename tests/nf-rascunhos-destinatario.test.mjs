@@ -22,9 +22,16 @@ test('destinatário: botoes e editar funcionam', async (t) => {  await t.test('b
 test('rascunhos: sem duplicar, com excluir, natureza restaurada', async (t) => {
   await t.test('id do rascunho rastreado e preservado no save', () => {
     assert.ok(nf.includes('let _rascunhoEditandoId = null;'), 'estado declarado');
-    assert.ok(nf.includes('_rascunhoEditandoId = nfId;'), 'fixado na edição');
+    assert.ok(nf.includes("_rascunhoEditandoId = modo === 'editar' ? nfId : null"), 'fixado na edição (nulo ao clonar)');
     assert.ok(nf.includes('if (_rascunhoEditandoId) nfeData.id = _rascunhoEditandoId;'),
       'save atualiza em vez de duplicar');
+  });
+
+  await t.test('clonar nota reutiliza a carga (modo clonar) e tem botão', () => {
+    assert.ok(nf.includes('function clonarNotaNF'), 'função clonar');
+    assert.ok(nf.includes("editarRascunho(nfId, 'clonar')"), 'delega com modo clonar');
+    assert.ok(nf.includes('onclick="clonarNotaNF('), 'botão na lista');
+    assert.ok(nf.includes('window.clonarNotaNF'), 'exposição global');
   });
 
   await t.test('botão excluir rascunho com confirm danger', () => {

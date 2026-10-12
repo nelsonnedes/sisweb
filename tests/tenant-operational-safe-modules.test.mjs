@@ -84,8 +84,8 @@ test('notas fiscais resolve tenant autenticado antes de inicializar modulos e ev
     ['async function removerCertificado()', 'const PROVEDOR_INFO = {'],
     ['async function conectarA3Nuvem()', 'async function salvarConfiguracoes()'],
     ['async function abrirDANFENota(nfId) {', 'function obterTenantIdNF() {'],
-    ['async function iniciarCancelamento(nfId, chave, nProt) {', 'async function editarRascunho(nfId) {'],
-    ['async function editarRascunho(nfId) {', 'function nfRenderizarTabelaNaturezas() {'],
+    ['async function iniciarCancelamento(nfId, chave, nProt) {', "async function editarRascunho(nfId, modo = 'editar') {"],
+    ["async function editarRascunho(nfId, modo = 'editar') {", 'function nfRenderizarTabelaNaturezas() {'],
     ['async function nfRemoverNatureza(id, desc) {', 'window.nfEditarNatureza  = nfEditarNatureza;'],
   ];
 

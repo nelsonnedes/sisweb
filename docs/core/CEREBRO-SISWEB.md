@@ -1206,6 +1206,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-latin1.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1139/0/1.
 
+## Sessao 2026-10-11 — Clonar nota (Acoes)
+
+- **Clonar nota**: botao `fa-copy` em Acoes (todas as notas) → `clonarNotaNF(id)` → reaproveita `editarRascunho(id, 'clonar')` (DRY): carrega todos os dados (dest/itens/volumes/reboques/transp/pag/infAdic/natOp) como **nova nota** (numero = proximo do contador), sem alterar a original (`_rascunhoEditandoId = null`). `editarRascunho` ganhou o param `modo` ('editar'|'clonar') e passou a restaurar **reboques** tambem.
+- **Trava:** `tests/nf-rascunhos-destinatario.test.mjs` (clonar) + ajustes em `tenant-operational-safe-modules.test.mjs` (nova assinatura).
+- **Arquivos:** `notas-fiscais.html`, testes. Hosting publicado.
+- **Gates:** `npm test` 1139/0/1; HTML 0 erros.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").
