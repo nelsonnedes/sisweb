@@ -43,7 +43,7 @@ test('A3/A4: CST e CSOSN mapeados corretamente no XML', () => {
 });
 
 test('M2: vTotTrib calculado (não 0.00 fixo)', () => {
-  assert.match(xml, /vTotTrib: vICMS \+ vIPI \+ vPIS \+ vCOFINS/);
+  assert.match(xml, /vTotTrib: vICMS \+ vIPI \+ vPIS \+ vCOFINS \+ vIBS \+ vCBS \+ vIS/);
   assert.doesNotMatch(xml, /<vTotTrib>0\.00<\/vTotTrib>/);
 });
 

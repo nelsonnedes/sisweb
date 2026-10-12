@@ -1270,6 +1270,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-service.js`, `notas-fiscais.html`. Hosting publicado.
 - **Gates:** `npm test` 1145/0/1; HTML 0 erros.
 
+## Sessao 2026-10-11 — cStat 685 (cont.): vTotTrib inclui IBS/CBS/IS
+
+- **cStat 685 persistia** com `vTotTrib` = soma só dos tributos antigos. Como as notas têm `<IBSCBS>`/`<IS>`, a SEFAZ soma **todos**. Fix: `calcularTotais.vTotTrib` e fallback de `buildTotal` = `vICMS+vIPI+vPIS+vCOFINS+vIBS+vCBS+vIS`. (Supersede: o override IBPT foi descartado; texto IBPT fica só em `infCpl`.)
+- **Arquivos:** `nf-xml-builder.js`, `nf-service.js`, testes. Hosting publicado.
+- **Gates:** `npm test` 1145/0/1.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").

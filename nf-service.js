@@ -232,8 +232,9 @@ const NFService = (() => {
     const cfgVal = window.NFValidator.validarConfigParaEmissao(_config);
     if (!cfgVal.valid) throw new Error('Configuração incompleta:\n• ' + cfgVal.errors.join('\n• '));
 
-    // 2. Calcular totais (vTotTrib = soma dos tributos calculados; o texto IBPT
-    //    da Lei da Transparência vai só em infCpl/Dados Adicionais, não no vTotTrib)
+    // 2. Calcular totais. vTotTrib = soma dos tributos (inclui IBS/CBS/IS quando
+    //    presentes) — é o que a SEFAZ valida (cStat 685). O texto IBPT da Lei da
+    //    Transparência vai só em infCpl/Dados Adicionais, nunca no vTotTrib.
     const total = window.NFXmlBuilder.calcularTotais(nfeData.det, nfeData.desconto, nfeData.frete);
     nfeData.total = total;
 
