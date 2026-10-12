@@ -1759,6 +1759,14 @@
                     <h3 id="totalCanceladas">0</h3>
                     <p>Canceladas</p>
                 </div>
+                <div class="stat-card">
+                    <h3 id="totalAguardando">0</h3>
+                    <p>Aguardando SEFAZ</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalRejeitadas">0</h3>
+                    <p>Rejeitadas</p>
+                </div>
             </div>
 
             <div class="form-section">
@@ -1773,11 +1781,47 @@
                         <input type="date" id="relPeriodoFim">
                     </div>
                     <div class="form-group">
+                        <label for="relStatusFiltro">Status:</label>
+                        <select id="relStatusFiltro">
+                            <option value="">Todos os status</option>
+                            <option value="rascunho">Rascunho</option>
+                            <option value="aguardando">Aguardando SEFAZ</option>
+                            <option value="autorizada">Autorizada</option>
+                            <option value="rejeitada">Rejeitada</option>
+                            <option value="cancelada">Cancelada</option>
+                            <option value="inutilizada">Inutilizada</option>
+                            <option value="erro_envio">Erro de envio</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>&nbsp;</label>
-                        <button onclick="gerarRelatorio()" class="btn btn-primary">
+                        <button onclick="window.NFDashboard && window.NFDashboard.gerarRelatorio()" class="btn btn-primary">
                             <i class="fas fa-chart-bar"></i> Gerar Relatório
                         </button>
                     </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button onclick="window.NFDashboard && window.NFDashboard.exportarCSV()" class="btn btn-success" title="Exportar relatório filtrado em CSV">
+                            <i class="fas fa-file-csv"></i> Exportar CSV
+                        </button>
+                    </div>
+                </div>
+                <p id="relResumo" style="font-size:13px;color:var(--sw-text-2);margin:4px 0 12px;"></p>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:12px;">
+                    <div class="form-section" style="margin:0;"><h4 style="margin:0 0 8px;font-size:13px;">Faturamento por dia</h4><div style="height:240px;"><canvas id="nfChartDiaria"></canvas></div></div>
+                    <div class="form-section" style="margin:0;"><h4 style="margin:0 0 8px;font-size:13px;">Notas por status</h4><div style="height:240px;"><canvas id="nfChartStatus"></canvas></div></div>
+                    <div class="form-section" style="margin:0;"><h4 style="margin:0 0 8px;font-size:13px;">Top destinatários (R$)</h4><div style="height:240px;"><canvas id="nfChartTopDest"></canvas></div></div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Número</th><th>Data</th><th>Destinatário</th><th>Status</th><th style="text-align:right;">Valor Total</th></tr></thead>
+                        <tbody id="relatorioCorpo"><tr><td colspan="5" style="text-align:center;opacity:.7;">Abra a aba para carregar</td></tr></tbody>
+                    </table>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                    <button class="btn btn-secondary btn-small" onclick="window.NFDashboard && window.NFDashboard.irPaginaRelatorio(-1)">‹ Anterior</button>
+                    <button class="btn btn-secondary btn-small" onclick="window.NFDashboard && window.NFDashboard.irPaginaRelatorio(1)">Próxima ›</button>
+                    <span id="relPaginacaoInfo" style="font-size:12px;color:var(--sw-text-2);"></span>
                 </div>
             </div>
         </div>
@@ -2355,6 +2399,8 @@
     <script src="nf-xml-builder.js?v=bcd43e0f4abc"></script>
     <script src="nf-storage.js?v=0ffeb7a55341"></script>
     <script src="nf-service.js?v=cc90c406b09e"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="nf-dashboard.js"></script>
     <!-- Novos módulos Fase 0 -->
     <script src="nf-naturezas.js?v=05fd0ab378b6"></script>
     <script src="nf-preferencias.js?v=e5580c53ca86"></script>
@@ -4558,11 +4604,15 @@ renderizarVolumesNF();
     // ─── Abrir DANFE de nota da lista ─────────────────────
     async function abrirDANFENota(nfId) {
       if (!window.NFService || !window.NFDanfe) return notifyUser('Módulos não carregados');
+      const btnDanfe = document.querySelector(`button[onclick="abrirDANFENota('${nfId}')"]`);
+      const btnDanfeLabel = btnDanfe ? btnDanfe.innerHTML : null;
+      if (btnDanfe) { btnDanfe.disabled = true; btnDanfe.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+      notifyUser('🧾 Gerando DANFE...', 'info');
       try {
         const tid = obterTenantIdNF();
-        if (!tid) return notifyUser('Tenant não identificado');
+        if (!tid) { notifyUser('Tenant não identificado', 'error'); return; }
         const nf  = await window.NFStorage.carregarNF(tid, 55, nfId);
-        if (!nf) return notifyUser('Nota não encontrada');
+        if (!nf) { notifyUser('Nota não encontrada', 'error'); return; }
         if (!nf.xmlAutorizado && window.NFStorage.carregarXML) {
           try {
             nf.xmlAutorizado = await window.NFStorage.carregarXML(tid, nfId, nf.xmlStoragePath || nf.xmlPath || '');
@@ -4571,8 +4621,13 @@ renderizarVolumesNF();
           }
         }
         await nfAplicarLogoEmpresaAoDanfe(nf, tid);
-        window.NFDanfe.abrirDANFE(nf);
-      } catch(e) { notifyUser('Erro ao gerar DANFE: ' + e.message); }
+        const aberta = await window.NFDanfe.abrirDANFE(nf);
+        if (aberta) notifyUser('✅ DANFE aberto em nova aba', 'success');
+        else notifyUser('⚠️ DANFE gerado, mas o navegador bloqueou a nova aba. Permita pop-ups para este site.', 'warning');
+      } catch(e) { notifyUser('Erro ao gerar DANFE: ' + (e?.message || e), 'error'); }
+      finally {
+        if (btnDanfe) { btnDanfe.disabled = false; if (btnDanfeLabel) btnDanfe.innerHTML = btnDanfeLabel; }
+      }
     }
 
     // Baixar XML autorizado (nfeProc quando disponível) da nota.
@@ -5939,6 +5994,11 @@ renderizarVolumesNF();
             // Marcar o botão da tab como ativo
             const tabButton = document.querySelector(`.tabs .tab[onclick*="showTab('${tabName}')"]`);
             if (tabButton) tabButton.classList.add('active');
+
+            // Dashboard carrega sozinho ao abrir (1 leitura em cache + filtros locais).
+            if (tabName === 'dashboard' && window.NFDashboard && typeof window.NFDashboard.refresh === 'function') {
+              window.NFDashboard.refresh().catch((e) => console.warn('[Dashboard]', (e && e.message) || e));
+            }
         };
 
         function salvarNotaFiscal() {

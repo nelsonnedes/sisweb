@@ -725,8 +725,16 @@ const NFDanfe = (() => {
     doc.setFontSize(4.8);
     doc.text('CHAVE DE ACESSO', fiscoX + 1.2, y + 18);
     doc.setFont('courier', 'normal');
-    doc.setFontSize(5.5);
-    doc.text(chaveFormatada || 'Chave ainda não gerada', fiscoX + fiscoW / 2, y + 22.2, { align: 'center', maxWidth: fiscoW - 3 });
+    // Chave em UMA linha: maxWidth quebrava ("2860" solto na 2ª linha).
+    // Calcula a fonte para caber em fiscoW-3, sem quebrar.
+    let chaveSize = 5.5;
+    try {
+      const wChave = doc.getTextWidth(chaveFormatada || 'Chave ainda não gerada');
+      const chaveMaxW = fiscoW - 3;
+      if (wChave > chaveMaxW && wChave > 0) chaveSize = Math.max(4, 5.5 * chaveMaxW / wChave);
+    } catch (_) {}
+    doc.setFontSize(chaveSize);
+    doc.text(chaveFormatada || 'Chave ainda não gerada', fiscoX + fiscoW / 2, y + 22.2, { align: 'center' });
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(4.6);
     doc.text('Consulta de autenticidade no portal nacional da NF-e', fiscoX + 1.2, y + 28.2, { maxWidth: fiscoW - 2 });
@@ -1261,7 +1269,8 @@ const NFDanfe = (() => {
     const mod = parseInt(nfeData.ide?.mod) || 55;
     const doc = mod === 65 ? await gerarDANFENFCe(nfeData) : gerarDANFE(await prepararDANFEComAssets(nfeData));
     const url = doc.output('bloburl');
-    window.open(url, '_blank');
+    const win = window.open(url, '_blank');
+    return !!win;
   }
 
   // ─── Retornar blob URL ────────────────────────────────────────────────────

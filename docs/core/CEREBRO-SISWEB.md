@@ -1290,6 +1290,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-12 — Lote 4 (chave DANFE, loader DANFE, Dashboard profissional)
+
+- **Chave 1 linha:** `doc.text(...,{maxWidth})` do jsPDF QUEBRA em espacos (era o "2860" solto). Fix: fonte courier calculada (`getTextWidth`, piso 4) p/ caber em `fiscoW-3`, sem maxWidth.
+- **Loader DANFE:** `abrirDANFENota` era fire-and-forget (sem await → erros sumiam). Agora: spinner no botao + toast progresso/sucesso + `await abrirDANFE` (retorna `!!win`; bloqueador de pop-up gera aviso) + `finally` restaura botao.
+- **Dashboard profissional (`nf-dashboard.js` novo, ~250 linhas):** CORRIGIDO `gerarRelatorio()` inexistente (ReferenceError no botao!). 1 leitura (55+65) em cache por visita; filtros locais (periodo+status); KPIs +2 (Aguardando/Rejeitadas); 3 charts (chart.js CDN 4.4.1, guarded offline); resumo c/ impostos destacados; tabela paginada 50/pag; export CSV (`;`, BOM, `relatorio-nfe-AAAAMMDD.csv`); `showTab('dashboard')` auto-refresh. Agregacao single-pass (status, dia, top dest, ICMS/IPI/PIS/COFINS de `det.imposto`).
+- **Arquivos:** `nf-danfe.js`, `notas-fiscais.html`, `nf-dashboard.js`, `tests/nf-dashboard-danfe.test.mjs`. Hosting publicado.
+- **Gates:** `npm test` 1173/1172/0/1; lint + typecheck OK.
+
 ## Sessao 2026-10-12 — Download XML: CORS do bucket + fallback backend
 
 - **Evidencia (logs.md:92-94):** 403 sumiu (getDownloadURL OK); falha era **CORS** — `firebasestorage...?alt=media&token=` sem `Access-Control-Allow-Origin` p/ `sisweb-7ce82.web.app` → `Failed to fetch`.
