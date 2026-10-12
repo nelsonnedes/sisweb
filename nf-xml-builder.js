@@ -11,8 +11,16 @@ const NFXmlBuilder = (() => {
   const NS = 'http://www.portalfiscal.inf.br/nfe';
 
   // ─── Sanitizar texto para XML ──────────────────────────────────────────────
+  // SEFAZ (cStat 225): campos TString só aceitam Latin-1 (padrão [!-ÿ]) e sem
+  // espaço no início/fim. Normaliza pontuação Unicode e remove o que não cabe.
   function esc(v) {
-    return String(v || '')
+    return String(v == null ? '' : v)
+      .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+      .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+      .replace(/[\u2013\u2014\u2015]/g, '-')
+      .replace(/\u2026/g, '...')
+      .replace(/[^\x20-\xFF]/g, '')
+      .replace(/^\s+|\s+$/g, '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')

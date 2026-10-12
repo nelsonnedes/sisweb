@@ -1198,6 +1198,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `notas-fiscais.html`. Hosting publicado.
 - **Gates:** `npm test` 1138/0/1; HTML 0 erros.
 
+## Sessao 2026-10-11 — cStat 225: xNome/TString só aceita Latin-1 (em dash)
+
+- **cStat 225** "Schema XML (Elemento: infNFe/dest/xNome)": o XSD oficial define `xNome` (e demais `TString`) com pattern `[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}` → **somente Latin-1 (U+0021–U+00FF)** e sem espaço no inicio/fim. O nome do cliente continha **em dash `—` (U+2014)** → fora do range → rejeitado. Confirmado validando localmente contra `tests/schemas/nfe/nfe_v4.00.xsd`.
+- **Fix global** em `nf-xml-builder.js:esc()`: normaliza pontuacao Unicode (aspas curvas -> retas, en/em dash -> hifen, `…` -> `...`), remove `[^\x20-\xFF]` (nao-Latin-1), trima inicio/fim e so depois faz o escape XML. Vale para todos os textos da NF-e.
+- **Armadilha:** NF-e é UTF-8 mas os campos `TString` só aceitam Latin-1; qualquer caractere > U+00FF (em dash, aspas curvas, emoji) causa cStat 225.
+- **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-latin1.test.mjs`. Hosting publicado.
+- **Gates:** `npm test` 1139/0/1.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").
