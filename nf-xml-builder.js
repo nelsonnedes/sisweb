@@ -474,19 +474,22 @@ const NFXmlBuilder = (() => {
 
   function buildTransp(transp) {
     const t = transp || {};
-    const modFrete = t.modFrete !== undefined ? t.modFrete : 9;
+    const modFrete = parseInt(t.modFrete ?? 9, 10);
+    const mf = Number.isFinite(modFrete) ? modFrete : 9;
+    const volXml = (Array.isArray(t.vol) ? t.vol : (t.vol ? [t.vol] : []))
+      .map(buildVolume)
+      .join('');
+    // cStat 868: com modFrete 9 (sem ocorrência de transporte), NÃO informar
+    // transporta/veicTransp/reboque — só modFrete (+volumes, que descrevem a carga).
+    if (mf === 9) {
+      return `<transp><modFrete>9</modFrete>${volXml}</transp>`;
+    }
     const transportaXml = buildTransporta(t.transporta);
     const veicXml = buildVeiculo('veicTransp', t.veicTransp);
     const reboqueXml = (Array.isArray(t.reboque) ? t.reboque : [])
       .map((rb) => buildVeiculo('reboque', rb))
       .join('');
-    const volXml = (Array.isArray(t.vol) ? t.vol : (t.vol ? [t.vol] : []))
-      .map(buildVolume)
-      .join('');
-    return `
-    <transp>
-      <modFrete>${modFrete}</modFrete>${transportaXml}${veicXml}${reboqueXml}${volXml}
-    </transp>`;
+    return `<transp><modFrete>${mf}</modFrete>${transportaXml}${veicXml}${reboqueXml}${volXml}</transp>`;
   }
 
   // ─── Bloco <pag> (pagamento) ──────────────────────────────────────────────

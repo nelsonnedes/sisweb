@@ -1283,6 +1283,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, testes. Hosting publicado.
 - **Gates:** `npm test` 1146/0/1 (XSD valida sem vTotTrib).
 
+## Sessao 2026-10-11 — cStat 868: builder nao emite grupos de transporte com modFrete 9
+
+- **cStat 868** "Grupos Transportador/Veiculo/Reboque nao devem ser informados": com `modFrete=9`, o `normalizarTransporte` removia, mas o `buildTransp` (XML) **nao** — qualquer dado residual gerava XML invalido.
+- **Fix (defesa em profundidade)**: `nf-xml-builder.buildTransp` agora, com `modFrete=9`, emite **só** `<modFrete>9</modFrete>` (+volumes, que descrevem a carga) e ignora transporta/veicTransp/reboque. Vale para numero ou string "9".
+- **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
+- **Gates:** `npm test` 1147/0/1.
+
 ## 18. Perfil global permanente (OpenCode Zen) — registrado 2026-10-09
 
 - **Papel:** em toda sessão, atuar como Engenheiro de Software Principal + Arquiteto + Revisor + DevOps (também vale p/ Codex/Antigravity que lerem este arquivo). Espelho resumido em `AGENTS.md` ("Perfil Global OpenCode Zen").
