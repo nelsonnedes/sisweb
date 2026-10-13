@@ -6052,6 +6052,7 @@ renderizarVolumesNF();
           const g = window.NFTaxTables.validarCodigoICMS(crt, nat.csosn);
           if (!g.ok) notifyUser('⚠️ Natureza "' + nat.descricao + '": ' + g.erro);
         }
+      } catch (_) {}
       // A8: tipo da natureza × tpNF — natureza de entrada com tpNF saída
       // (ou vice-versa) gera CFOP/natureza incoerentes. Sugere o ajuste.
       try {

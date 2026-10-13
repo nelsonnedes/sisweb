@@ -1290,6 +1290,16 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-13 — Fix raiz do 404/MIME + SyntaxError no script inline (logs real)
+
+- **Sintoma (logs.md do usuario):** console mostrava `nf-itens.js:1 Failed to load resource: 404`, `Refused to execute script ... MIME type ('text/html')`, e `notas-fiscais.html:6076 SyntaxError: Missing catch or finally after try`. Resultado: funcoes (`irParaEtapaNF`/`consultarNotas`/`atualizarEstadoTransporteNF`) indefinidas.
+- **CAUSA RAIZ — 2 problemas independentes:**
+  - **(1) Build incompleto:** `nf-itens.js`, `nf-tax-tables.js`, `nf-fiscal-events.js` e `nf-dashboard.js` **nao estavam no `hosting-files.json`** (manifest do build) → o `scripts/build-hosting.mjs` nao os copiava para `hosting-dist/` → 404 no servidor → o SPA fallback devolve HTML → MIME `text/html` recusado. Os 4 foram adicionados ao manifest (apos `nf-config.js`), build 541→545 arquivos.
+  - **(2) SyntaxError no script inline:** na funcao `nfAplicarNatOp`, ao inserir o bloco A8 (tipo×tpNF) foi removido o `catch` do `try` anterior (linha da guarda CRT×codigo) — o bloco A8 ficou dentro do try sem catch. Corrigido: fechado o `try/catch` da guarda antes do bloco A8.
+- **Validacao:** extras `new Function()` em todos os scripts classic inline do `notas-fiscais.html` = 0 erros (o unico "erro" restante e o `${import}` do `<script type="module">`, esperado). DOI: 4 arquivos → HTTP 200 + `text/javascript`.
+- **Regra para futuros `.js`:** todo JS novo referenciado no HTML deve ser adicionado ao `hosting-files.json` (ou o build nao o publica) E receber `?v=` (cachebuster). Scripts inline devem ser validados com `new Function()` apos qualquer edicao multilinha (falha comum: try/catch desbalanceado ao inserir blocos).
+- **Gates:** lint + typecheck OK; `npm test` 1260/1259/0/1; XSD 20/20; build 545; deploy hosting OK.
+
 ## Sessao 2026-10-13 — Retomada pós-stale-cache: gates verdes + ondas 1-4 consolidadas
 
 - **Contexto de retomada:** usuário relatou "quase tudo não funciona mais" ao testar a emissão. Causa raiz diagnosticada e corrigida na sessão anterior = **stale cache** (`nf-itens.js`/`nf-tax-tables.js` sem cache-buster): browsers serviam versões antigas. Fix: `node tools/inject-cachebusters.mjs` + rebuild + deploy (commit add83a9).
