@@ -17,16 +17,76 @@ const NFNaturezas = (() => {
   'use strict';
 
   // ─── Naturezas padrão (seed quando lista estiver vazia) ───────────────────
+  // regras[] (Fase B — grade Destino × Produto, como nas telas referência):
+  // [{ destino:'QUALQUER'|UF, produto:'QUALQUER'|'NCM:xxxxxxxx', cfop,
+  //    aliq (%, opcional), base (% da BC, opcional), codigo (CST/CSOSN conf.
+  //    regime), pisCst?, cofinsCst?, cstIBS?, cClassTrib? }].
+  // Sem regras → vale cfopPadrao/csosn da natureza (compatibilidade).
   const NATUREZAS_PADRAO = [
-    { id: 'nat_venda_merc',   descricao: 'Venda de Mercadoria',          cfopPadrao: '5102', tipo: 'saida',   csosn: '102', ativo: true },
-    { id: 'nat_venda_prod',   descricao: 'Venda de Produção Própria',    cfopPadrao: '5101', tipo: 'saida',   csosn: '102', ativo: true },
-    { id: 'nat_devol_compra', descricao: 'Devolução de Compra',          cfopPadrao: '5202', tipo: 'saida',   csosn: '102', ativo: true },
-    { id: 'nat_remessa',      descricao: 'Remessa para Industrialização',cfopPadrao: '5501', tipo: 'saida',   csosn: '400', ativo: true },
-    { id: 'nat_transfer',     descricao: 'Transferência de Mercadoria',  cfopPadrao: '5151', tipo: 'saida',   csosn: '102', ativo: true },
-    { id: 'nat_compra_merc',  descricao: 'Compra de Mercadoria',         cfopPadrao: '1102', tipo: 'entrada', csosn: '102', ativo: true },
-    { id: 'nat_devol_venda',  descricao: 'Devolução de Venda',           cfopPadrao: '1202', tipo: 'entrada', csosn: '102', ativo: true },
-    { id: 'nat_brinde',       descricao: 'Remessa em Bonificação/Brinde',cfopPadrao: '5910', tipo: 'saida',   csosn: '400', ativo: true },
+    { id: 'nat_venda_merc',   descricao: 'Venda de Mercadoria',          cfopPadrao: '5102', tipo: 'saida',   csosn: '102', ativo: true, regras: [] },
+    { id: 'nat_venda_prod',   descricao: 'Venda de Produção Própria',    cfopPadrao: '5101', tipo: 'saida',   csosn: '102', ativo: true, regras: [] },
+    { id: 'nat_devol_compra', descricao: 'Devolução de Compra',          cfopPadrao: '5202', tipo: 'saida',   csosn: '102', ativo: true, regras: [] },
+    { id: 'nat_remessa',      descricao: 'Remessa para Industrialização',cfopPadrao: '5501', tipo: 'saida',   csosn: '400', ativo: true, regras: [] },
+    { id: 'nat_transfer',     descricao: 'Transferência de Mercadoria',  cfopPadrao: '5151', tipo: 'saida',   csosn: '102', ativo: true, regras: [] },
+    { id: 'nat_compra_merc',  descricao: 'Compra de Mercadoria',         cfopPadrao: '1102', tipo: 'entrada', csosn: '102', ativo: true, regras: [] },
+    { id: 'nat_devol_venda',  descricao: 'Devolução de Venda',           cfopPadrao: '1202', tipo: 'entrada', csosn: '102', ativo: true, regras: [] },
+    { id: 'nat_brinde',       descricao: 'Remessa em Bonificação/Brinde',cfopPadrao: '5910', tipo: 'saida',   csosn: '400', ativo: true, regras: [] },
   ];
+
+  // ─── Resolver regra da natureza para um item (pura, testável em node) ───
+  // Prioridade: destino exato (UF) > QUALQUER; produto exato (NCM ou id) >
+  // QUALQUER. Retorna a regra ou null (vale cfopPadrao/csosn da natureza).
+  function resolverRegra(natureza, { ufDest, ncm, produtoId } = {}) {
+    const regras = Array.isArray(natureza?.regras) ? natureza.regras : [];
+    if (!regras.length) return null;
+    const uf = String(ufDest || '').toUpperCase();
+    const ncmD = String(ncm || '').replace(/\D/g, '');
+    const pid = String(produtoId || '');
+    const score = (r) => {
+      const d = String(r.destino || 'QUALQUER').toUpperCase();
+      const p = String(r.produto || 'QUALQUER').toUpperCase();
+      if (d !== 'QUALQUER' && d !== uf) return -1;
+      const pNcm = p.startsWith('NCM:') ? p.slice(4).replace(/\D/g, '') : '';
+      const pMatch = p === 'QUALQUER' || (pNcm && pNcm === ncmD) || (pid && p === pid.toUpperCase());
+      if (!pMatch) return -1;
+      return (d !== 'QUALQUER' ? 2 : 0) + (p !== 'QUALQUER' ? 1 : 0);
+    };
+    let best = null, bestScore = -1;
+    for (const r of regras) {
+      const s = score(r);
+      if (s > bestScore) { bestScore = s; best = r; }
+    }
+    return bestScore >= 0 ? best : null;
+  }
+
+  // ─── Aplicar regra resolvida num item (pura) ────────────────────────────
+  // Retorna { aplicado: bool, campos: [...] }. Não recalcula valores aqui —
+  // o chamador (buildNFeFromForm) recalcula ICMS com aliq/base da regra.
+  function aplicarRegraNoItem(item, regra) {
+    if (!regra) return { aplicado: false, campos: [] };
+    const campos = [];
+    if (regra.cfop && /^[1-9]\d{3}$/.test(String(regra.cfop))) { item.cfop = String(regra.cfop); campos.push('cfop'); }
+    if (regra.codigo && /^[0-9]{2,3}$/.test(String(regra.codigo))) {
+      item.csosn = String(regra.codigo);
+      item.imposto = item.imposto || {};
+      item.imposto.icms = { ...(item.imposto.icms || {}), csosn: String(regra.codigo) };
+      // Regime Normal usa cst; SN usa csosn (o gate valida; aqui espelha)
+      if (String(regra.codigo).length === 2) item.imposto.icms.cst = String(regra.codigo);
+      campos.push('codigo');
+    }
+    if (regra.pisCst) { item.imposto = item.imposto || {}; item.imposto.pis = { ...(item.imposto.pis || {}), cST: String(regra.pisCst) }; campos.push('pis'); }
+    if (regra.cofinsCst) { item.imposto = item.imposto || {}; item.imposto.cofins = { ...(item.imposto.cofins || {}), cST: String(regra.cofinsCst) }; campos.push('cofins'); }
+    if (regra.cstIBS || regra.cClassTrib) {
+      item.imposto = item.imposto || {};
+      item.imposto.ibscbs = { ...(item.imposto.ibscbs || {}), habilitado: true };
+      if (regra.cstIBS) item.imposto.ibscbs.cst = String(regra.cstIBS);
+      if (regra.cClassTrib) item.imposto.ibscbs.cClassTrib = String(regra.cClassTrib);
+      campos.push('ibscbs');
+    }
+    if (regra.aliq != null && String(regra.aliq).trim() !== '') { item._regraAliq = Number(regra.aliq); campos.push('aliq'); }
+    if (regra.base != null && String(regra.base).trim() !== '') { item._regraBase = Number(regra.base); campos.push('base'); }
+    return { aplicado: campos.length > 0, campos };
+  }
 
   // ─── Cache local para evitar roundtrips desnecessários ───────────────────
   let _cache = null;
@@ -145,6 +205,18 @@ const NFNaturezas = (() => {
       document.body.appendChild(modal);
       _bindModalEvents();
     }
+    // CSOSN/CST por regime (Fase A/B): SN→CSOSN, Normal→CST (NFePHP/MOC)
+    try {
+      const cfg = window.NFService?.getConfig?.() || {};
+      const crt = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+      const selCS = document.getElementById('natOpCSOSN');
+      if (selCS && window.NFTaxTables) {
+        const lista = String(crt) === '3' ? window.NFTaxTables.CST_ICMS_FULL : window.NFTaxTables.CSOSN_FULL;
+        const atual = selCS.value;
+        selCS.innerHTML = Object.keys(lista).map((cod) => `<option value="${cod}">${cod} – ${lista[cod]}</option>`).join('');
+        if (lista[atual]) selCS.value = atual;
+      }
+    } catch (_) {}
     // Preencher para edição
     const nat = opts.natureza || {};
     _setField('natOpId', nat.id || '');
@@ -153,6 +225,8 @@ const NFNaturezas = (() => {
     _setField('natOpTipo', nat.tipo || 'saida');
     _setField('natOpCSOSN', nat.csosn || '102');
     _setField('natOpNotas', nat.notas || '');
+    __natRegrasEdit = Array.isArray(nat.regras) ? JSON.parse(JSON.stringify(nat.regras)) : [];
+    __natRenderRegras();
     modal.style.display = 'flex';
     document.getElementById('natOpDescricao')?.focus();
   }
@@ -217,6 +291,24 @@ const NFNaturezas = (() => {
             <textarea id="natOpNotas" rows="2" maxlength="200" placeholder="Observações opcionais..."
               style="width:100%;padding:8px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;background:var(--sw-surface-2);color:var(--sw-text-1);"></textarea>
           </div>
+          <div style="margin:14px 0 6px;border-top:1px solid var(--sw-border);padding-top:12px;">
+            <label style="font-weight:600;font-size:13px;color:var(--sw-text-1);display:block;margin-bottom:4px;">Regras por destino × produto (Fase B):</label>
+            <div style="font-size:12px;color:var(--sw-text-2);margin-bottom:8px;">Destino: UF ou QUALQUER. Produto: QUALQUER, NCM:xxxxxxxx ou ID do produto. Sem regra → vale CFOP/CSOSN padrão acima.</div>
+            <div id="natOpRegrasLista"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px;">
+              <input id="natRegraDestino" placeholder="Destino (ex.: SP)" maxlength="8" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+              <input id="natRegraProduto" placeholder="Produto (NCM:xxxx)" maxlength="14" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+              <input id="natRegraCFOP" placeholder="CFOP (ex.: 6102)" maxlength="4" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+              <input id="natRegraAliq" placeholder="Alíq. % (opcional)" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+              <input id="natRegraBase" placeholder="Base % (opcional)" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+              <input id="natRegraCodigo" placeholder="CST/CSOSN (opcional)" maxlength="3" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+              <input id="natRegraPIS" placeholder="PIS CST (opcional)" maxlength="2" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+              <input id="natRegraCOFINS" placeholder="COFINS CST (opcional)" maxlength="2" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+              <input id="natRegraCSTIBS" placeholder="CST IBS (opcional)" maxlength="3" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+              <input id="natRegraCClassTrib" placeholder="cClassTrib (opcional)" maxlength="6" style="padding:7px;border:1px solid var(--sw-border);border-radius:4px;font-size:13px;background:var(--sw-surface-2);color:var(--sw-text-1);">
+            </div>
+            <button id="natOpRegraAdd" type="button" style="margin-top:8px;padding:7px 14px;border:1px solid var(--sw-success);border-radius:4px;background:none;color:var(--sw-success);cursor:pointer;font-size:13px;font-weight:600;">+ Adicionar regra</button>
+          </div>
         </div>
         <div style="padding:0 24px 20px;display:flex;gap:10px;justify-content:flex-end;">
           <button id="natOpCancelar" style="padding:9px 18px;border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);color:var(--sw-text-1);cursor:pointer;font-size:14px;">
@@ -235,6 +327,7 @@ const NFNaturezas = (() => {
     document.getElementById('natOpFechar')?.addEventListener('click', fecharModal);
     document.getElementById('natOpCancelar')?.addEventListener('click', fecharModal);
     document.getElementById('natOpSalvar')?.addEventListener('click', _salvarDoModal);
+    document.getElementById('natOpRegraAdd')?.addEventListener('click', __natAddRegra);
     document.getElementById('modalNatOp')?.addEventListener('click', (e) => {
       if (e.target.id === 'modalNatOp') fecharModal();
     });
@@ -271,6 +364,7 @@ const NFNaturezas = (() => {
       tipo:       document.getElementById('natOpTipo')?.value || 'saida',
       csosn:      document.getElementById('natOpCSOSN')?.value || '102',
       notas:      document.getElementById('natOpNotas')?.value || '',
+      regras:     Array.isArray(__natRegrasEdit) ? __natRegrasEdit : [],
       ativo: true,
     };
     try {
@@ -298,7 +392,47 @@ const NFNaturezas = (() => {
     }
   }
 
-  // ─── Helper set field ─────────────────────────────────────────────────────
+  // ─── Regras por natureza (Fase B — grade Destino × Produto) ─────────────
+  let __natRegrasEdit = [];
+  function __natRenderRegras() {
+    const box = document.getElementById('natOpRegrasLista');
+    if (!box) return;
+    if (!__natRegrasEdit.length) {
+      box.innerHTML = '<div style="font-size:12px;color:var(--sw-text-2);padding:6px 0;">Sem regras específicas — vale CFOP/CSOSN padrão da natureza para todos os destinos e produtos.</div>';
+      return;
+    }
+    box.innerHTML = __natRegrasEdit.map((r, i) => `
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;font-size:12px;flex-wrap:wrap;border:1px solid var(--sw-border);border-radius:6px;padding:6px 8px;">
+        <span style="flex:1;min-width:180px;"><strong>Destino:</strong> ${String(r.destino || 'QUALQUER')} · <strong>Produto:</strong> ${String(r.produto || 'QUALQUER')} · <strong>CFOP:</strong> ${String(r.cfop || '—')} · <strong>Alíq:</strong> ${r.aliq ?? '—'}% · <strong>Base:</strong> ${r.base ?? '—'}% · <strong>Cód:</strong> ${String(r.codigo || '—')}</span>
+        <button type="button" data-nat-regra-del="${i}" style="border:1px solid var(--sw-danger);background:none;color:var(--sw-danger);border-radius:4px;padding:2px 8px;cursor:pointer;">×</button>
+      </div>`).join('');
+    box.querySelectorAll('[data-nat-regra-del]').forEach((b) => {
+      b.addEventListener('click', () => { __natRegrasEdit.splice(Number(b.dataset.natRegraDel), 1); __natRenderRegras(); });
+    });
+  }
+  function __natAddRegra() {
+    const g = (id) => (document.getElementById(id)?.value || '').trim();
+    const r = {
+      id: `regra_${Date.now()}`,
+      destino: (g('natRegraDestino') || 'QUALQUER').toUpperCase(),
+      produto: (g('natRegraProduto') || 'QUALQUER').toUpperCase(),
+      cfop: g('natRegraCFOP').replace(/\D/g, ''),
+      aliq: g('natRegraAliq'), base: g('natRegraBase'),
+      codigo: g('natRegraCodigo').replace(/\D/g, ''),
+      pisCst: g('natRegraPIS').replace(/\D/g, '') || undefined,
+      cofinsCst: g('natRegraCOFINS').replace(/\D/g, '') || undefined,
+      cstIBS: g('natRegraCSTIBS').replace(/\D/g, '') || undefined,
+      cClassTrib: g('natRegraCClassTrib').replace(/\D/g, '') || undefined,
+    };
+    if (!/^[1-9]\d{3}$/.test(r.cfop)) { try { notifyUser('CFOP da regra inválido (ex.: 6102)'); } catch (_) {} return; }
+    if (r.codigo && !/^[0-9]{2,3}$/.test(r.codigo)) { try { notifyUser('Código ICMS da regra inválido (CSOSN 3 dígitos ou CST 2 dígitos)'); } catch (_) {} return; }
+    if (r.cClassTrib && !/^\d{6}$/.test(r.cClassTrib)) { try { notifyUser('cClassTrib da regra: 6 dígitos'); } catch (_) {} return; }
+    if (r.cstIBS && r.cClassTrib && r.cClassTrib.slice(0, 3) !== r.cstIBS) { try { notifyUser('cClassTrib incompatível com o CST da regra (prefixo = CST)'); } catch (_) {} return; }
+    Object.keys(r).forEach((k) => { if (r[k] === undefined || r[k] === '') delete r[k]; });
+    __natRegrasEdit.push(r);
+    ['natRegraDestino', 'natRegraProduto', 'natRegraCFOP', 'natRegraAliq', 'natRegraBase', 'natRegraCodigo', 'natRegraPIS', 'natRegraCOFINS', 'natRegraCSTIBS', 'natRegraCClassTrib'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+    __natRenderRegras();
+  }
   function _setField(id, value) {
     const el = document.getElementById(id);
     if (el && value !== undefined) el.value = value;
@@ -316,7 +450,8 @@ const NFNaturezas = (() => {
   }
 
   // ─── API pública ──────────────────────────────────────────────────────────
-  return { carregar, salvar, remover, popularSelect, abrirModal, fecharModal, getById, listar };
+  return { carregar, salvar, remover, popularSelect, abrirModal, fecharModal, getById, listar, resolverRegra, aplicarRegraNoItem, NATUREZAS_PADRAO };
 })();
 
 window.NFNaturezas = NFNaturezas;
+if (typeof module !== 'undefined' && module.exports) module.exports = NFNaturezas;

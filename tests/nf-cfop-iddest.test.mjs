@@ -27,5 +27,8 @@ test('ajustarCFOP troca o 1º dígito conforme idDest', () => {
 test('buildNFeFromForm usa idDest automático por UF', () => {
   const svcSrc = fs.readFileSync('nf-service.js', 'utf8');
   assert.match(svcSrc, /idDestAuto/);
-  assert.match(svcSrc, /ajustarCFOP\?\.\(idDestFinal, it\.cfop\)/);
+  // Sem regra da natureza: CFOP acompanha o idDest (733). Com regra
+  // explícita (Fase B): usa o CFOP da regra (já prevê o destino).
+  assert.match(svcSrc, /regraAplicada\?\.cfop/);
+  assert.match(svcSrc, /ajustarCFOP\?\.\(idDestFinal, item\.cfop\)/);
 });

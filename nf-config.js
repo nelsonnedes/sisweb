@@ -372,9 +372,12 @@ const NFConfigService = (() => {
     if (Number(g.pRedAliq) > 0) out.pRedAliq = Number(g.pRedAliq);
     if (Number(g.pDif) > 0) out.pDif = Number(g.pDif);
     if (g.credPresOper && g.credPresOper.cCredPres) out.credPresOper = { ...g.credPresOper };
+    // Doação (TTribNFe indDoacao=1 — Fase C): flag da config fiscal
+    if (g.indDoacao === '1' || g.indDoacao === 1) out.indDoacao = '1';
     // Grupos alternativos/opcionais do TTribNFe (passthrough quando informados)
-    ['transfCred', 'ajusteCompet', 'estornoCred', 'credPresIBSZFM', 'mono', 'tribRegular', 'tribCompraGov'].forEach((k) => {
+    ['transfCred', 'ajusteCompet', 'estornoCred', 'credPresIBSZFM', 'mono', 'tribRegular', 'tribCompraGov', 'alcZfm', 'indDoacao'].forEach((k) => {
       if (g[k] && typeof g[k] === 'object') out[k] = { ...g[k] };
+      else if (k === 'indDoacao' && (g[k] === '1' || g[k] === 1)) out[k] = '1';
     });
     return out;
   }

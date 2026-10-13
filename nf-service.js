@@ -146,12 +146,19 @@ const NFService = (() => {
 
     const idDestFinal = formData.idDest || idDestAuto;
 
+    // Fase B: natureza da operação resolve regras por item (Destino ×
+    // Produto). Regra com match usa o CFOP explícito (sem ajustarCFOP —
+    // a regra já prevê o destino); sem regra, vale o comportamento atual.
+    const natB = (formData.natOpId && window.NFNaturezas?.getById)
+      ? window.NFNaturezas.getById(formData.natOpId) : null;
+
     // Monta objeto NF-e
     return {
       modelo: 55,
       numero: String(numero).padStart(9, '0'),
       status: 'rascunho',
       dataEmissao: dhEmi.slice(0, 10),
+      natOpId: formData.natOpId || '',
       ide: {
         mod:        55,
         serie,
@@ -182,13 +189,42 @@ const NFService = (() => {
         ...getLogoFieldsFromLocalCompany(),
       },
       dest: formData.dest,
-      det:  itens.map((it, i) => ({
-        ...it,
-        // 733: CFOP acompanha o idDest (5xxx/1xxx interna, 6xxx/2xxx interestadual)
-        cfop: window.NFConfigService?.ajustarCFOP?.(idDestFinal, it.cfop) || it.cfop,
-        nItem: i + 1,
-        imposto: it.imposto || calcularImpostosItem(it, formData.dest?.endereco?.uf),
-      })),
+      det:  itens.map((it, i) => {
+        const item = { ...it };
+        let regraAplicada = null;
+        if (natB && window.NFNaturezas?.resolverRegra) {
+          const regra = window.NFNaturezas.resolverRegra(natB, {
+            ufDest: formData.dest?.endereco?.uf,
+            ncm: item.ncm, produtoId: item.cProd || item.id,
+          });
+          if (regra && window.NFNaturezas?.aplicarRegraNoItem) {
+            window.NFNaturezas.aplicarRegraNoItem(item, regra);
+            regraAplicada = regra;
+            // Alíquota/base da regra: recalcula ICMS do item (SN só troca código)
+            if ((item._regraAliq != null || item._regraBase != null) && item.imposto?.icms) {
+              const vProd = parseFloat(item.vProd || item.total) || 0;
+              const base = item._regraBase != null && String(item._regraBase).trim() !== '' ? Number(item._regraBase) : 100;
+              const aliq = item._regraAliq != null && String(item._regraAliq).trim() !== '' ? Number(item._regraAliq) : null;
+              const vBC = vProd * base / 100;
+              item.imposto.icms.vBC = Math.round(vBC * 100) / 100;
+              if (aliq != null) {
+                item.imposto.icms.pICMS = aliq;
+                item.imposto.icms.vICMS = Math.round(vBC * aliq) / 100;
+              }
+              delete item._regraAliq; delete item._regraBase;
+            }
+          }
+        }
+        return {
+          ...item,
+          // 733: CFOP acompanha o idDest — EXCETO com regra explícita da natureza
+          cfop: regraAplicada?.cfop
+            ? String(regraAplicada.cfop)
+            : (window.NFConfigService?.ajustarCFOP?.(idDestFinal, item.cfop) || item.cfop),
+          nItem: i + 1,
+          imposto: item.imposto || calcularImpostosItem(item, formData.dest?.endereco?.uf),
+        };
+      }),
       transp: normalizarTransporte(formData, idDestFinal),
       pag:    formData.pag || [{ tPag: '01', vPag: 0 }],
       infAdic: formData.infAdic || '',

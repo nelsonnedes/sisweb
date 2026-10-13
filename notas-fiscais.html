@@ -3344,10 +3344,20 @@
       const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
 
       // Calcular impostos automáticos via NFConfigService
-      let imposto = { icms: { csosn, orig: 0 }, pis: { cST: '07' }, cofins: { cST: '07' } };
+      // Fonte fiscal: NATUREZA selecionada prevalece (terceiro modo de item —
+      // mesma regra do manual/cadastrado).
+      const natLeg = window.NFNaturezas?.getById?.(
+        document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '') || null;
+      const cfopNatLeg = (natLeg?.cfopPadrao || '').trim();
+      const codNatLeg = (natLeg?.csosn || '').trim();
+      const cfopEffLeg = (cfopNatLeg && /^[1-9]\d{3}$/.test(cfopNatLeg)) ? cfopNatLeg : cfop;
+      const csosnEffLeg = codNatLeg || csosn;
+      let imposto = { icms: { csosn: csosnEffLeg, orig: 0 }, pis: { cST: '07' }, cofins: { cST: '07' } };
       try {
         const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn, orig: 0 };
+        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: csosnEffLeg, orig: 0 };
+        const crtLeg = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+        if (String(crtLeg) === '3' && /^[0-9]{2}$/.test(csosnEffLeg)) imposto.icms.cst = csosnEffLeg;
         const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
         imposto.pis    = pc.pis;
         imposto.cofins = pc.cofins;
@@ -3364,9 +3374,9 @@
         id:     'it_' + Date.now(),
         cProd:  prodId,
         xProd:  nomeProd,
-        ncm, cfop, uCom: un, uTrib: un,
+        ncm, cfop: cfopEffLeg, uCom: un, uTrib: un,
         qCom:   qtd, vUnCom: vUnit, vProd: total, imposto,
-        csosn,
+        csosn: csosnEffLeg,
       };
       _itensNF.push(item);
       invalidarRevisaoNF();
@@ -3417,6 +3427,16 @@
       const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
       const ufDest = document.getElementById('nfClienteUf')?.value || ufOrig;
       const total = parseFloat(item.vProd || item.total) || 0;
+      // Fonte fiscal: NATUREZA selecionada prevalece sobre o item guardado
+      // (reconciliação — garante CFOP/CSOSN-CST da natureza mesmo em item
+      // antigo, clonado ou de rascunho anterior à troca da natureza).
+      const natRec = window.NFNaturezas?.getById?.(
+        document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '') || null;
+      const cfopNatRec = (natRec?.cfopPadrao || '').trim();
+      const codNatRec = (natRec?.csosn || '').trim();
+      if (cfopNatRec && /^[1-9]\d{3}$/.test(cfopNatRec)) item.cfop = cfopNatRec;
+      const codEffRec = codNatRec || item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst || '102';
+      item.csosn = codEffRec;
       const imposto = {
         ...(item.imposto || {}),
         icms: item.imposto?.icms || { csosn: item.csosn || '102', orig: 0 },
@@ -3425,6 +3445,8 @@
       };
       try {
         imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: item.csosn || '102', orig: 0 };
+        const crtRec = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+        if (String(crtRec) === '3' && /^[0-9]{2}$/.test(item.csosn || '')) imposto.icms.cst = item.csosn;
         const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
         imposto.pis = pc.pis;
         imposto.cofins = pc.cofins;
@@ -4067,6 +4089,7 @@
         serie: document.getElementById('nfSerie')?.value || nfeCfg.serie || '1',
         dhEmi,
         natOp: document.getElementById('nfNatOp')?.value || nfeCfg.naturezaOperacao || 'Venda de Mercadoria',
+        natOpId: document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '',
         modFrete: obterModFreteFromForm(),
         transp: montarTransporteFromForm(),
         infAdic: montarInfoAdicionalNF(document.getElementById('nfInfoAdic')?.value || ''),
@@ -5813,10 +5836,24 @@ renderizarVolumesNF();
       const total = qtd * vUnit;
       const cfg = window.NFService?.getConfig?.() || {};
       const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
-      let imposto = { icms: { csosn, orig: 0 }, pis: { cST: '07' }, cofins: { cST: '07' } };
+      // Fonte fiscal do item: NATUREZA selecionada prevalece (mesma regra do
+      // modo cadastrado — garante CFOP/CSOSN-CST da natureza em todo item).
+      const natMan = window.NFNaturezas?.getById?.(
+        document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '') || null;
+      const cfopNatMan = (natMan?.cfopPadrao || '').trim();
+      const codNatMan = (natMan?.csosn || '').trim();
+      if (cfopNatMan && /^[1-9]\d{3}$/.test(cfopNatMan)) {
+        const cfElMan = document.getElementById('itemCFOP');
+        if (cfElMan) cfElMan.value = cfopNatMan;
+      }
+      const csosnEffMan = codNatMan || csosn;
+      const cfopEffMan = (cfopNatMan && /^[1-9]\d{3}$/.test(cfopNatMan)) ? cfopNatMan : cfop;
+      let imposto = { icms: { csosn: csosnEffMan, orig: 0 }, pis: { cST: '07' }, cofins: { cST: '07' } };
       try {
         const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn, orig: 0 };
+        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: csosnEffMan, orig: 0 };
+        const crtMan = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+        if (String(crtMan) === '3' && /^[0-9]{2}$/.test(csosnEffMan)) imposto.icms.cst = csosnEffMan;
         const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
         imposto.pis    = pc.pis;
         imposto.cofins = pc.cofins;
@@ -5833,8 +5870,8 @@ renderizarVolumesNF();
         id:     'it_' + Date.now(),
         cProd:  'MANUAL_' + Date.now(),
         xProd:  nome,
-        ncm, cfop, uCom: un, uTrib: un,
-        qCom: qtd, vUnCom: vUnit, vProd: total, imposto, csosn,
+        ncm, cfop: cfopEffMan, uCom: un, uTrib: un,
+        qCom: qtd, vUnCom: vUnit, vProd: total, imposto, csosn: csosnEffMan,
       };
       _itensNF.push(item);
       invalidarRevisaoNF();
@@ -5870,10 +5907,26 @@ renderizarVolumesNF();
       const total = qtd * vUnit;
       const cfg = window.NFService?.getConfig?.() || {};
       const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
-      let imposto = { icms: { csosn, orig: 0 }, pis: { cST: '07' }, cofins: { cST: '07' } };
+      // Fonte fiscal do item: NATUREZA selecionada prevalece sobre o campo
+      // (o campo já foi preenchido pela natureza em nfAplicarNatOp; aqui a
+      // reconciliação garante mesmo se a natureza foi trocada depois).
+      const natItem = window.NFNaturezas?.getById?.(
+        document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '') || null;
+      const cfopNat = (natItem?.cfopPadrao || '').trim();
+      const codNat = (natItem?.csosn || '').trim();
+      if (cfopNat && /^[1-9]\d{3}$/.test(cfopNat)) {
+        const cfEl = document.getElementById('itemCFOPCad');
+        if (cfEl) cfEl.value = cfopNat;
+      }
+      const csosnEff = codNat || csosn;
+      const cfopEff = (cfopNat && /^[1-9]\d{3}$/.test(cfopNat)) ? cfopNat : cfop;
+      let imposto = { icms: { csosn: csosnEff, orig: 0 }, pis: { cST: '07' }, cofins: { cST: '07' } };
       try {
         const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn, orig: 0 };
+        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: csosnEff, orig: 0 };
+        // Regime Normal (CRT 3): o código do campo/natureza é CST, não CSOSN
+        const crtItem = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+        if (String(crtItem) === '3' && /^[0-9]{2}$/.test(csosnEff)) imposto.icms.cst = csosnEff;
         const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
         imposto.pis = pc.pis; imposto.cofins = pc.cofins;
         const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
@@ -5889,8 +5942,8 @@ renderizarVolumesNF();
         id:     'it_' + Date.now(),
         cProd:  prodId,
         xProd:  nomeProd,
-        ncm, cfop, uCom: un, uTrib: un,
-        qCom: qtd, vUnCom: vUnit, vProd: total, imposto, csosn,
+        ncm, cfop: cfopEff, uCom: un, uTrib: un,
+        qCom: qtd, vUnCom: vUnit, vProd: total, imposto, csosn: csosnEff,
       };
       _itensNF.push(item);
       invalidarRevisaoNF();
@@ -5913,14 +5966,45 @@ renderizarVolumesNF();
       // Preencher campo hidden (usado em buildNFeFromForm / salvarRascunho)
       const natOpHidden = document.getElementById('nfNatOp');
       if (natOpHidden) natOpHidden.value = nat.descricao;
-      // Auto-preencher CFOP padrão nos campos do item (se vazios)
-      const cfopEl = document.getElementById('itemCFOP');
-      if (cfopEl && nat.cfopPadrao && (!cfopEl.value || cfopEl.value === '5102')) {
-        cfopEl.value = nat.cfopPadrao;
+      // Guardar o ID da natureza (resolução de regras na emissão — Fase B)
+      let natIdHidden = document.getElementById('nfNatOpId');
+      if (!natIdHidden) {
+        natIdHidden = document.createElement('input');
+        natIdHidden.type = 'hidden'; natIdHidden.id = 'nfNatOpId';
+        (document.getElementById('nfForm') || document.body).appendChild(natIdHidden);
       }
-      // Auto-preencher CSOSN
-      const csosnEl = document.getElementById('itemCSOSN');
-      if (csosnEl && nat.csosn) csosnEl.value = nat.csosn;
+      natIdHidden.value = nat.id || id;
+      // A natureza é a fonte fiscal da operação: CFOP e CSOSN/CST dela
+      // SEMPRE prevalecem nos campos do item (manual E cadastrado). Se o
+      // código da natureza conflitar com o regime (CRT) da empresa, avisa —
+      // o validador barra na emissão (gate CRT×código, Fase A).
+      const aplicaCodigo = (selId) => {
+        const el = document.getElementById(selId);
+        if (!el) return;
+        if (nat.csosn) {
+          if (window.NFTaxTables && !el.querySelector(`option[value="${nat.csosn}"]`)) {
+            const o = document.createElement('option');
+            o.value = nat.csosn; o.textContent = `${nat.csosn} — (natureza)`;
+            el.appendChild(o);
+          }
+          el.value = nat.csosn;
+        }
+      };
+      const cfopIds = ['itemCFOP', 'itemCFOPCad'];
+      cfopIds.forEach((fid) => {
+        const el = document.getElementById(fid);
+        if (el && nat.cfopPadrao) el.value = nat.cfopPadrao;
+      });
+      aplicaCodigo('itemCSOSN');
+      aplicaCodigo('itemCSOSNCad');
+      try {
+        const cfg = window.NFService?.getConfig?.() || {};
+        const crt = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+        if (window.NFTaxTables?.validarCodigoICMS && nat.csosn) {
+          const g = window.NFTaxTables.validarCodigoICMS(crt, nat.csosn);
+          if (!g.ok) notifyUser('⚠️ Natureza "' + nat.descricao + '": ' + g.erro);
+        }
+      } catch (_) {}
     }
     window.nfAplicarNatOp = nfAplicarNatOp;
 

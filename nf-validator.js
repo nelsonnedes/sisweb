@@ -195,6 +195,18 @@ const NFValidator = (() => {
         const cc = window.NFTaxTables.validarCClassTrib(gIbs.cst, gIbs.cClassTrib);
         if (!cc.ok) erros.push(`Item ${n}: ${cc.erro}`);
       }
+      // indDoacao (Fase C, TTribNFe): só aceita 1
+      if (gIbs.indDoacao != null && String(gIbs.indDoacao).trim() !== '' && String(gIbs.indDoacao) !== '1') {
+        erros.push(`Item ${n}: indDoacao inválido (somente 1=operação de doação)`);
+      }
+      // ALC/ZFM (Fase C, TALCZFMCBS_NFe): tp 1|2, processo 8–12, ref. numéricos
+      const alc = gIbs.alcZfm;
+      if (alc) {
+        if (!['1', '2'].includes(String(alc.tp))) erros.push(`Item ${n}: gALCZFMCBS.tp inválido (1|2)`);
+        if (alc.nProcSuframa != null && String(alc.nProcSuframa).trim() !== '' && !/^[A-Za-z0-9]{8,12}$/.test(String(alc.nProcSuframa).trim())) {
+          erros.push(`Item ${n}: gALCZFMCBS.nProcSuframa deve ter 8–12 caracteres`);
+        }
+      }
       const cstIbs = String(gIbs.cst || gIbs.CST || '');
       const hasMono = !!(gIbs.mono && (gIbs.mono.ibs || gIbs.mono.cbs));
       if (hasMono && cstIbs !== '620') erros.push(`Item ${n}: monofásico (gIBSCBSMono) exige CST 620`);
@@ -306,6 +318,10 @@ const NFValidator = (() => {
     if (![55, 65].includes(parseInt(ide.mod))) erros.push('Modelo inválido (deve ser 55 ou 65)');
     if (![0, 1].includes(parseInt(ide.tpNF)))  erros.push('Tipo de operação inválido (0=Entrada, 1=Saída)');
     if (![1, 2].includes(parseInt(ide.tpAmb))) erros.push('Ambiente inválido (1=Produção, 2=Homologação)');
+    // dhSaiEnt (Fase C, opcional): se informada, deve ser data válida
+    if (ide.dhSaiEnt != null && String(ide.dhSaiEnt).trim() !== '' && Number.isNaN(new Date(ide.dhSaiEnt).getTime())) {
+      erros.push('Data de saída/entrada (dhSaiEnt) inválida');
+    }
     // finNFe (finalidade) e indPres (presença) — MOC Tabelas (telas referência)
     if (ide.finNFe != null && String(ide.finNFe).trim() !== '' && !['1', '2', '3', '4'].includes(String(ide.finNFe))) {
       erros.push('Finalidade da NF-e inválida (1=Normal, 2=Complementar, 3=Ajuste, 4=Devolução)');

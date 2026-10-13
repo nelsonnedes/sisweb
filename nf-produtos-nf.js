@@ -95,21 +95,38 @@ const NFProdutosNF = (() => {
   }
 
   // ─── Preencher campos do formulário com dados do produto selecionado ──────
+  // Precedência fiscal (a natureza da operação é a fonte da operação):
+  // natureza selecionada > fiscal do produto > produto cadastrado > padrão.
+  // NCM/UN/preço vêm do produto; CFOP e CSOSN/CST vêm da NATUREZA quando
+  // houver uma selecionada (nfAplicarNatOp já preencheu os campos).
   function autoPreencherPorProduto(prodId) {
     if (!prodId) return;
     const sel = document.getElementById('nfProdCadSelect');
     const opt = sel ? Array.from(sel.options).find(o => o.value === prodId) : null;
     if (!opt) return;
+    const natId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
+    const nat = natId && window.NFNaturezas?.getById ? window.NFNaturezas.getById(natId) : null;
 
     // NCM — usa ID com sufixo Cad (seção produto cadastrado)
     const ncmEl = document.getElementById('itemNCMCad');
     if (ncmEl && opt.dataset.ncm) ncmEl.value = opt.dataset.ncm;
 
-    // CFOP (só se campo estiver vazio ou com valor padrão)
+    // CFOP: natureza prevalece; produto só preenche se campo vazio/padrão
     const cfopEl = document.getElementById('itemCFOPCad');
-    if (cfopEl && opt.dataset.cfop && (cfopEl.value === '5102' || !cfopEl.value)) {
-      cfopEl.value = opt.dataset.cfop;
+    if (cfopEl) {
+      if (nat?.cfopPadrao) cfopEl.value = nat.cfopPadrao;
+      else if (opt.dataset.cfop && (cfopEl.value === '5102' || !cfopEl.value)) {
+        cfopEl.value = opt.dataset.cfop;
+      }
     }
+
+    // CSOSN/CST: natureza prevalece; produto NÃO define (sem dado fiscal
+    // próprio nesta fase — Fase B guarda override por produto)
+    try {
+      if (nat?.csosn && typeof window.nfPopularCodigoICMSItem === 'function') {
+        window.nfPopularCodigoICMSItem('itemCSOSNCad', nat.csosn);
+      }
+    } catch (_) {}
 
     // Unidade — compatível com select (NFPreferencias) ou input
     const unEl = document.getElementById('itemUNCad');
@@ -137,6 +154,14 @@ const NFProdutosNF = (() => {
 
     // Guardar nome para uso no adicionarItemNF
     window._nfProdNomeSelecionado = opt.dataset.nome || opt.textContent;
+
+    // Override fiscal do produto (Fase B) — assíncrono, sem bloquear
+    try {
+      const pid = prodId;
+      if (window.NFProdutosNF?.aplicarFiscalProduto) {
+        window.NFProdutosNF.aplicarFiscalProduto(pid).catch(() => {});
+      }
+    } catch (_) {}
   }
 
   // ─── Limpar campos de item ────────────────────────────────────────────────
@@ -149,6 +174,64 @@ const NFProdutosNF = (() => {
     window._nfProdNomeSelecionado = '';
   }
 
+  // ─── Fiscal por produto (Fase B — override NCM/CEST/fiscais) ────────────
+  // Precedência na emissão: regra da natureza > fiscal do produto > config.
+  // Store: localStorage imediato + Firebase (fiscal/produtos-fiscais) quando
+  // disponível. Chave: id do produto no estoque.
+  function fiscalKey(produtoId) { return `nf_prod_fiscal_${produtoId}`; }
+  function getFiscal(produtoId) {
+    if (!produtoId) return null;
+    try {
+      const raw = localStorage.getItem(fiscalKey(produtoId));
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return null;
+  }
+  async function setFiscal(produtoId, fiscal) {
+    if (!produtoId) throw new Error('Produto não identificado');
+    const payload = { ...(fiscal || {}), produtoId, updatedAt: new Date().toISOString() };
+    try { localStorage.setItem(fiscalKey(produtoId), JSON.stringify(payload)); } catch (_) {}
+    try {
+      if (_tenantId && window.firebaseService?.saveToFirebase) {
+        await window.firebaseService.saveToFirebase(`companies/${_tenantId}/fiscal/produtos-fiscais`, String(produtoId), payload);
+      }
+    } catch (e) { console.warn('[NFProdutosNF] Fiscal só local:', e.message); }
+    return payload;
+  }
+  async function carregarFiscal(produtoId) {
+    const local = getFiscal(produtoId);
+    if (local) return local;
+    try {
+      if (_tenantId && window.firebaseService?.loadFromFirebase) {
+        const r = await window.firebaseService.loadFromFirebase(`companies/${_tenantId}/fiscal/produtos-fiscais/${produtoId}`);
+        const d = r && r.success ? r.data : r;
+        if (d && typeof d === 'object') {
+          try { localStorage.setItem(fiscalKey(produtoId), JSON.stringify(d)); } catch (_) {}
+          return d;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+  // Aplica override fiscal do produto nos campos do form cadastrado — SOMENTE
+  // quando NÃO há natureza selecionada (natureza sempre prevalece).
+  async function aplicarFiscalProduto(prodId) {
+    if (!prodId) return null;
+    try {
+      const natId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
+      if (natId) return null; // natureza prevalece
+      const f = await carregarFiscal(prodId);
+      if (!f) return null;
+      const set = (id, v) => { const el = document.getElementById(id); if (el && v != null && String(v).trim() !== '') el.value = String(v); };
+      set('itemNCMCad', f.ncm);
+      set('itemCFOPCad', f.cfop);
+      if (f.codigo && typeof window.nfPopularCodigoICMSItem === 'function') {
+        try { window.nfPopularCodigoICMSItem('itemCSOSNCad', String(f.codigo)); } catch (_) {}
+      }
+      return f;
+    } catch (_) { return null; }
+  }
+
   // ─── Obter produto por ID do cache ────────────────────────────────────────
   function getById(id) {
     return _produtos.find(p => p.id === id || p.codigo === id) || null;
@@ -158,7 +241,7 @@ const NFProdutosNF = (() => {
   function listar() { return _produtos; }
 
   // ─── API pública ──────────────────────────────────────────────────────────
-  return { carregar, alterarTipoProduto, popularSelectCadastrados, autoPreencherPorProduto, getById, listar };
+  return { carregar, alterarTipoProduto, popularSelectCadastrados, autoPreencherPorProduto, getById, listar, getFiscal, setFiscal, carregarFiscal, aplicarFiscalProduto };
 })();
 
 window.NFProdutosNF = NFProdutosNF;

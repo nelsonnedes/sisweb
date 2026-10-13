@@ -105,6 +105,8 @@ const NFXmlBuilder = (() => {
   function buildIde(ide, chaveInfo) {
     // TDateTimeUTC: sem milissegundos, offset -03:00 (validado no schema oficial)
     const dhEmi = ide.dhEmi ? new Date(ide.dhEmi).toISOString().replace(/\.\d{3}Z$/, '-03:00') : '';
+    // dhSaiEnt (Fase C, opcional): data/hora da saída ou entrada da mercadoria
+    const dhSaiEnt = ide.dhSaiEnt ? new Date(ide.dhSaiEnt).toISOString().replace(/\.\d{3}Z$/, '-03:00') : '';
     return `
     <ide>
       <cUF>${getCUF(ide.ufEmit)}</cUF>
@@ -114,6 +116,7 @@ const NFXmlBuilder = (() => {
       <serie>${ide.serie || 1}</serie>
       <nNF>${ide.nNF || 1}</nNF>
       <dhEmi>${dhEmi}</dhEmi>
+      ${dhSaiEnt && dhSaiEnt !== 'Invalid Date' ? `<dhSaiEnt>${dhSaiEnt}</dhSaiEnt>` : ''}
       <tpNF>${ide.tpNF ?? 1}</tpNF>
       <idDest>${ide.idDest || 1}</idDest>
       <cMunFG>${requireCodigoMunicipio(ide.cMunFG, 'Código IBGE do município de ocorrência')}</cMunFG>
@@ -449,11 +452,17 @@ const NFXmlBuilder = (() => {
         ? `<gTribCompraGov><pAliqIBSUF>${num(g.tribCompraGov.pAliqIBSUF, 4)}</pAliqIBSUF><vTribIBSUF>${num(g.tribCompraGov.vTribIBSUF)}</vTribIBSUF>`
           + `<pAliqIBSMun>${num(g.tribCompraGov.pAliqIBSMun, 4)}</pAliqIBSMun><vTribIBSMun>${num(g.tribCompraGov.vTribIBSMun)}</vTribIBSMun>`
           + `<pAliqCBS>${num(g.tribCompraGov.pAliqCBS, 4)}</pAliqCBS><vTribCBS>${num(g.tribCompraGov.vTribCBS)}</vTribCBS></gTribCompraGov>` : '';
+      // ALC/ZFM alíquota zero CBS (TALCZFMCBS_NFe — após gRed, antes de vCBS):
+      // tp 1|2 + nProcSuframa? (8–12) + alíquota/valor de referência.
+      const alcTag = g.alcZfm
+        ? `<gALCZFMCBS><tpALCZFMCBS>${['1', '2'].includes(String(g.alcZfm.tp)) ? g.alcZfm.tp : '1'}</tpALCZFMCBS>`
+          + `${g.alcZfm.nProcSuframa ? `<nProcSuframa>${esc(String(g.alcZfm.nProcSuframa).slice(0, 12))}</nProcSuframa>` : ''}`
+          + `<pAliqEfetRegCBS>${num(g.alcZfm.pAliqEfetRegCBS, 4)}</pAliqEfetRegCBS><vTribRegCBS>${num(g.alcZfm.vTribRegCBS)}</vTribRegCBS></gALCZFMCBS>` : '';
       baseGroup = `<gIBSCBS><vBC>${num(vBCn)}</vBC>`
         + `<gIBSUF><pIBSUF>${num(pIBSUF, 4)}</pIBSUF>${gDifTag()}${devTribTag(g.devTribUF)}${gRedTag(pIBSUF)}<vIBSUF>${num(vIBSUFn)}</vIBSUF></gIBSUF>`
         + `<gIBSMun><pIBSMun>${num(pIBSMun, 4)}</pIBSMun>${gDifTag()}${devTribTag(g.devTribMun)}${gRedTag(pIBSMun)}<vIBSMun>${num(vIBSMunn)}</vIBSMun></gIBSMun>`
         + `<vIBS>${num(vIBSn)}</vIBS>`
-        + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS>${gDifTag()}${devTribTag(g.devTribCBS)}${gRedTag(pCBS)}<vCBS>${num(vCBSn)}</vCBS></gCBS>${tribRegularTag}${tribCompraGovTag}`
+        + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS>${gDifTag()}${devTribTag(g.devTribCBS)}${gRedTag(pCBS)}${alcTag}<vCBS>${num(vCBSn)}</vCBS></gCBS>${tribRegularTag}${tribCompraGovTag}`
         + `</gIBSCBS>`;
     }
     // Estorno de crédito (opcional)
@@ -477,7 +486,7 @@ const NFXmlBuilder = (() => {
         cred = `<gCredPresOper><vBCCredPres>${num(bcCP)}</vBCCredPres><cCredPres>${esc(cp.cCredPres)}</cCredPres>${gIBS}${gCbs}</gCredPresOper>`;
       }
     }
-    return `\n        <IBSCBS><CST>${esc(g.cst)}</CST><cClassTrib>${esc(g.cClassTrib)}</cClassTrib>${baseGroup}${estorno}${cred}</IBSCBS>`;
+    return `\n        <IBSCBS><CST>${esc(g.cst)}</CST><cClassTrib>${esc(g.cClassTrib)}</cClassTrib>${g.indDoacao === '1' || g.indDoacao === 1 ? '<indDoacao>1</indDoacao>' : ''}${baseGroup}${estorno}${cred}</IBSCBS>`;
   }
 
   // ─── Imposto Seletivo (<IS>, TIS) — Reforma Tributária ────────────────────
@@ -519,11 +528,17 @@ const NFXmlBuilder = (() => {
   }
 
   // ─── Bloco <det> (item) ───────────────────────────────────────────────────
+  // vItem (Fase C, XSD det — após </imposto>): participação do item no total
+  // (vProd + IPI do item; override explícito prevalece). Soma dos vItem
+  // acompanha vProd+vIPI dos itens.
   function buildDet(item, nItem, crt) {
     const imp = item.imposto || {};
     const icms = imp.icms || {};
     const usaCSOSN = crt === 1 || crt === 2;
     const icmsXml = usaCSOSN ? buildICMSSN(icms) : buildICMSNormal(icms);
+    const vProdn = parseFiscalNumber(item.vProd || item.total);
+    const vIPIn = parseFiscalNumber(imp.ipi?.vIPI);
+    const vItemn = item.vItem != null && item.vItem !== '' ? parseFiscalNumber(item.vItem) : vProdn + vIPIn;
     return `
     <det nItem="${nItem}">
       <prod>
@@ -549,12 +564,20 @@ const NFXmlBuilder = (() => {
         <PIS>${buildPIS(imp.pis)}</PIS>
         <COFINS>${buildCOFINS(imp.cofins)}</COFINS>${buildIS(item)}${buildIBSCBS(item)}
       </imposto>
+      <vItem>${num(vItemn)}</vItem>
     </det>`;
   }
 
   // ─── Bloco <total> ────────────────────────────────────────────────────────
+  // vNFTot (Fase C, XSD total — após IBSCBSTot): total + impostos "por fora"
+  // (IBS+CBS+IS); override explícito prevalece. Emitido no contexto RTC.
   function buildTotal(tot) {
     const t = tot || {};
+    const ibsTot = parseFiscalNumber(t.vIBS) + parseFiscalNumber(t.vCBS) + parseFiscalNumber(t.vIS);
+    const vNFTot = t.vNFTot != null && t.vNFTot !== '' ? parseFiscalNumber(t.vNFTot) : parseFiscalNumber(t.vNF) + ibsTot;
+    const hasRTC = Number(t.vBCIBSCBS) > 0
+      || ['vMonoIBS', 'vMonoCBS', 'vMonoRetenIBS', 'vMonoRetenCBS', 'vMonoRetIBS', 'vMonoRetCBS'].some((k) => Number(t[k]) > 0)
+      || Number(t.vIS) > 0;
     return `
     <total>
       <ICMSTot>
@@ -577,7 +600,7 @@ const NFXmlBuilder = (() => {
         <vCOFINS>${num(t.vCOFINS)}</vCOFINS>
         <vOutro>0.00</vOutro>
         <vNF>${num(t.vNF)}</vNF>
-      </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${buildIBSCBSTot(t)}
+      </ICMSTot>${(Number(t.vIS) > 0) ? `<ISTot><vIS>${num(t.vIS)}</vIS></ISTot>` : ''}${buildIBSCBSTot(t)}${hasRTC ? `<vNFTot>${num(vNFTot)}</vNFTot>` : ''}
     </total>`;
   }
 

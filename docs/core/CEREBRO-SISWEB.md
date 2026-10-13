@@ -1290,6 +1290,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-13 — Garantia natureza→item + Fase B (regras) + Fase C
+
+- **Garantia (pré-requisito do usuário):** todo item carrega CFOP/CSOSN-CST da natureza — `nfAplicarNatOp` preenche manual+Cad (sempre, não só se vazio) + `nfNatOpId`; `autoPreencherPorProduto` não sobrescreve com CFOP do produto quando há natureza; 3 modos de adicionar item reconciliam + fix CRT3 (campo ia para `csosn` e o `cst` ficava no default 00 — agora `icms.cst` recebe o código); `recalcularImpostosItemNF` reconcilia; `buildNFeFromForm` aplica natureza por item na emissão.
+- **Fase B:** `natureza.regras[]` (destino×produto→cfop/aliq/base/código/PIS/COFINS/IBS) com `resolverRegra` (UF exata>QUALQUER, NCM/ID>QUALQUER) + `aplicarRegraNoItem` (puros, testáveis); modal da natureza com editor de regras + select CSOSN/CST por regime; produto com override fiscal (`fiscal/produtos-fiscais`, precedência natureza>produto>config); regra com CFOP explícito pula `ajustarCFOP`.
+- **Fase C:** `gALCZFMCBS` (tp1|2+Suframa+refs, pós-gRed), `indDoacao`, `vItem` (vProd+vIPI, sempre), `vNFTot` (vNF+IBS+CBS+IS, só contexto RTC — XML legado inalterado), `dhSaiEnt` opcional, `indDoacao` da config.
+- **Bugs pegos em teste:** ordem `qBCMono` no ICMSTot (XSD), vNFTot com IS, string-assert do teste 733 (atualizado p/ novo comportamento).
+- **Trava:** `tests/nf-fase-b-c.test.mjs` (8/8).
+- **Gates:** lint + typecheck OK; `npm test` 1235/1234/0/1; XSD 20/20; hosting publicado.
+
 ## Sessao 2026-10-13 — Fase A: travas CRT×código, PIS/COFINS Qtde, ICMS mono, gDevTrib, finNFe/indPres, tabelas oficiais
 
 - **Tabelas oficiais (sem select obsoleto):** `nf-tax-tables.js` — CSOSN 10 + CST ICMS (c/ 02/15/53/61) + CST PIS/COFINS c/ grupo (aliq/qtde/nt) + finNFe/indPres (MOC); RTC por FORMATO+estrutura: `validarCClassTrib` (prefixo 3 díg. === CST, regra oficial IT 2024.001) + `validarCCredPres` + TABLE_META (fonte Portal NF-e→Documentos→Diversos, IT 2025.002 v1.60). Pesquisa confirmou: tabelas RTC atualizadas por IT (cClassTrib 23/06/2026, CBS 12/05/2026) — não versionar códigos no app.

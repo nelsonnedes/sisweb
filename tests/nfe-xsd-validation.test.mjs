@@ -149,6 +149,32 @@ test('NF-e gerada é válida contra o XSD oficial (nfe_v4.00.xsd)', { skip: !val
       devTribUF: { p: 10, v: 10 }, devTribCBS: { v: 9 } };
     await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs }), XSD));
   });
+  await t.test('gALCZFMCBS (tp 1 + Suframa)', async () => {
+    const ibscbs = { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0,
+      alcZfm: { tp: '1', nProcSuframa: '12345678', pAliqEfetRegCBS: 9, vTribRegCBS: 9 } };
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs }), XSD));
+  });
+  await t.test('vItem + vNFTot + indDoacao + dhSaiEnt', async () => {
+    const xml = buildXml({ rtc: true });
+    assert.match(xml, /<vItem>100\.00<\/vItem>/);
+    assert.match(xml, /<vNFTot>119\.10<\/vNFTot>/, 'vNF 100 + IBS 10 + CBS 9 + IS 0.10');
+    const det = [{
+      cProd: '1', xProd: 'PRODUTO TESTE', ncm: '94036000', cfop: '5102', uCom: 'UN',
+      qCom: 1, vUnCom: 100, vProd: 100,
+      imposto: { icms: { cst: '00', vBC: 100, pICMS: 18, vICMS: 18 }, pis: { cST: '07' }, cofins: { cST: '07' },
+        ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 10, pIBSMun: 0, pCBS: 9, indDoacao: '1' } },
+    }];
+    const nfe = {
+      emit: { cnpj: '11222333000181', razaoSocial: 'EMPRESA TESTE LTDA', ie: '123456789', crt: 3,
+        endereco: { uf: 'SP', codigoMunicipio: '3550308', logradouro: 'RUA TESTE', numero: '100', bairro: 'CENTRO', municipio: 'SAO PAULO', cep: '01001000' } },
+      dest: { nome: 'CLIENTE TESTE', cnpj: '11222333000181', indIEDest: 9,
+        endereco: { uf: 'SP', codigoMunicipio: '3550308', logradouro: 'RUA TESTE', numero: '200', bairro: 'CENTRO', municipio: 'SAO PAULO', cep: '01001000' } },
+      ide: { serie: '1', nNF: 1, dhEmi: new Date().toISOString(), dhSaiEnt: new Date().toISOString(), tpNF: 1, tpAmb: 2, cMunFG: '3550308', mod: 55 },
+      det, transp: { modFrete: 9 }, pag: [{ tPag: '01', vPag: 100 }], infAdic: '', desconto: 0, frete: 0,
+    };
+    nfe.total = B.calcularTotais(nfe.det, 0, 0);
+    await assert.doesNotReject(() => validator.validateXML(B.buildNFeXML(nfe).xml.replace('</infNFe>', `</infNFe>${SIGNATURE}`), XSD));
+  });
 });
 
 test('dhEmi sem milissegundos (TDateTimeUTC)', () => {
