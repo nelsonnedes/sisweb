@@ -1290,6 +1290,16 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-13 — Retomada pós-stale-cache: gates verdes + ondas 1-4 consolidadas
+
+- **Contexto de retomada:** usuário relatou "quase tudo não funciona mais" ao testar a emissão. Causa raiz diagnosticada e corrigida na sessão anterior = **stale cache** (`nf-itens.js`/`nf-tax-tables.js` sem cache-buster): browsers serviam versões antigas. Fix: `node tools/inject-cachebusters.mjs` + rebuild + deploy (commit add83a9).
+- **Limpeza de código morto:** removido `document.getElementById('itemProduto')?.addEventListener('change', ...)` — ID `itemProduto` não existe mais (modo cadastrado usa `nfProdCadSelect`).
+- **Correção de asserção de teste:** `nf-onda-4.test.mjs` buscava `<script src="nf-itens.js"></script>` exato, mas o fix adicionou `?v=<hash>` → atualizado para `src="nf-itens.js` (parcial). 1257→1259 pass.
+- **nf-itens.js hardening:** chamadas a `window.NFConfigService.calcularICMS`/`calcularPISCOFINS` em `recalcularImpostosItem` agora com optional-chaining (`?.`) + fallback `{vBC:0,pICMS:0,vICMS:0}`/`{cST:'07'}` — evita TypeError em carga parcial.
+- **Estado atual:** HEAD `6122818` (modulo fiscal + ondas 1-3); working tree limpo (só logs.md e não-rastreados). **Gates confirmados nesta sessão:** `npm test` 1260/1259/0/1; lint + typecheck limpos; XSD 20/20. Hosting público artigo.
+
+- **Lições p/ próxima sessão:** (1) rodar `inject-cachebusters.mjs` antes de TODO deploy que toque JS (já em Cérebro, re-confirmado); (2) ao criar `.js` novo referenciado em HTML, sempre com `?v=`; (3) em testes que varre HTML por `<script src>`, usar substring parcial (progressivo com hash). (4) `NFConfigService` pode não estar disponível quando módulos acessam via `window` — usar `?.` em todas as novas integrações.
+
 ## Sessao 2026-10-13 — Fix stale cache (cachebusters)
 
 - **Problema:** browsers serviam versões antigas dos JS porque os `?v=` do build anterior não acompanharam os patches feitos fora do pipeline de build.
