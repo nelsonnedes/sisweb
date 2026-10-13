@@ -1290,6 +1290,16 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-13 — Destinatario completo do cadastro + helper transporte
+
+- **Problemas (print do usuario):** (1) "Contribuinte ICMS" nao vinha do cadastro do cliente; (2) faltavam campos IE/CEP/N°/Bairro na secao Destinatario; (3) texto do transporte ("Tração = placa principal acima...") colado nos campos.
+- **Causas:** (1) dois handlers de selecao concorrentes — `carregarClientesNF` fazia `select.onchange = function...` **sobrescrevendo** o inline `nfAtualizarIndIEDest()`, e os datasets nao traziam `indIEDest`; (2) campos nem existiam no HTML; `montarDestFromForm` parseava `"logradouro, numero"` via `split(',')` e bairro/cep vinham so do dataset; (3) `.nf-help-text { margin: -4px 0 12px }` — margin-top negativo colava no bloco anterior.
+- **Fix:** handler unico `nfAoSelecionarCliente()` (povoa CNPJ/IE/CEP/N°/Bairro/Endereço/Cidade/UF/CodIBGE + `indIEDest` do cadastro com fallback IE→1/9); campos readonly novos na secao (grid em 3 linhas); datasets completos nos 2 fluxos (filtro + carga); `montarDestFromForm` usa campos dedicados (sem split); restore do rascunho inclui os novos campos; `.nf-help-text` margin `2px 0 12px` + espaço após lista de reboques.
+- **Fonte de dados:** `js/client.js:normalizeClient` — `inscricaoEstadual/ie`, `indIEDest/indicadorInscricaoEstadual`, `cep/postalCode`, `numero/number`, `bairro/neighborhood`, `codigoMunicipio/cMun/ibgeCode`.
+- **Trava:** `tests/nf-destinatario-cadastro.test.mjs` (6/6).
+- **Gates:** lint + typecheck OK; `npm test` 1270/1269/0/1; deploy hosting OK.
+- **Codigo morto identificado (nao removido):** `buscarCEPEmitente/buscarCEPDestinatario` + listeners de `cep-emitente`/`cep-destinatario` (ids inexistentes) — de versao antiga, sem impacto.
+
 ## Sessao 2026-10-13 — Fix regressao [hidden] (grupos condicionais) + polimento aba Pagamento
 
 - **Discrepancia vista nos prints (abas de Emissao):** (1) "Chave NF-e referenciada" aparecia visivel com Finalidade=Normal (deveria estar `hidden`); (2) "Cartao (tPag 03/04)" aparecia visivel com Forma=Dinheiro.

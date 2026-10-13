@@ -378,10 +378,14 @@
         }
 
         .nf-help-text {
-            margin: -4px 0 12px;
+            margin: 2px 0 12px;
             color: var(--sw-text-2);
             font-size: 12px;
             line-height: 1.35;
+        }
+
+        #nfReboquesLista:not(:empty) + .nf-help-text {
+            margin-top: 10px;
         }
 
         .nf-volume-actions {
@@ -1370,13 +1374,13 @@
             <div class="form-section nf-step-panel" data-nf-step="destinatario" hidden>
               <h3><i class="fas fa-user"></i> Dados do Destinatário</h3>
               <div class="form-row">
-                <div class="form-group">
+                <div class="form-group" style="flex:2 1 320px">
                   <label for="nfCliente">Cliente: *</label>
                   <div class="nf-customer-picker" style="display:flex;gap:8px;align-items:center;">
                     <input type="text" id="nfClienteBusca" placeholder="Buscar cliente..."
                       style="flex:1;min-width:120px"
                       oninput="nfFiltrarClientesSelect(this.value)">
-                    <select id="nfCliente" required style="flex:2" onchange="nfAtualizarIndIEDest()">
+                    <select id="nfCliente" required style="flex:2" onchange="nfAoSelecionarCliente()">
                       <option value="">Selecione um cliente...</option>
                     </select>
                     <button type="button" onclick="openNewClientModal()" class="btn btn-primary btn-small nf-cust-btn"
@@ -1389,9 +1393,13 @@
                     </button>
                   </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="max-width:200px">
                   <label for="nfClienteCnpj">CNPJ/CPF:</label>
                   <input type="text" id="nfClienteCnpj" readonly>
+                </div>
+                <div class="form-group" style="max-width:190px">
+                  <label for="nfClienteIE">Inscrição Estadual:</label>
+                  <input type="text" id="nfClienteIE" readonly placeholder="—">
                 </div>
                 <div class="form-group" style="max-width:190px">
                   <label for="nfIndIEDest">Contribuinte ICMS:</label>
@@ -1401,7 +1409,31 @@
                     <option value="2">2 — Contribuinte isento</option>
                   </select>
                 </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="max-width:140px">
+                  <label for="nfClienteCep">CEP:</label>
+                  <input type="text" id="nfClienteCep" readonly maxlength="9" placeholder="—">
+                </div>
+                <div class="form-group" style="flex:2 1 260px">
+                  <label for="nfClienteEndereco">Endereço:</label>
+                  <input type="text" id="nfClienteEndereco" readonly>
+                </div>
+                <div class="form-group" style="max-width:110px">
+                  <label for="nfClienteNumero">N°:</label>
+                  <input type="text" id="nfClienteNumero" readonly maxlength="10" placeholder="—">
+                </div>
                 <div class="form-group">
+                  <label for="nfClienteBairro">Bairro:</label>
+                  <input type="text" id="nfClienteBairro" readonly>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="nfClienteCidade">Cidade:</label>
+                  <input type="text" id="nfClienteCidade" readonly>
+                </div>
+                <div class="form-group" style="max-width:140px">
                   <label for="nfClienteUf">UF Dest.:</label>
                   <select id="nfClienteUf" disabled>
                     <option value="">--</option>
@@ -1414,15 +1446,9 @@
                     <option>SP</option><option>SE</option><option>TO</option>
                   </select>
                 </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="nfClienteEndereco">Endereço:</label>
-                  <input type="text" id="nfClienteEndereco" readonly>
-                </div>
-                <div class="form-group">
-                  <label for="nfClienteCidade">Cidade:</label>
-                  <input type="text" id="nfClienteCidade" readonly>
+                <div class="form-group" style="max-width:140px">
+                  <label for="nfClienteCodMun">Cód. IBGE:</label>
+                  <input type="text" id="nfClienteCodMun" readonly placeholder="—" title="Código IBGE do município (vem do cadastro do cliente)">
                 </div>
               </div>
             </div>
@@ -3666,13 +3692,13 @@
         ie,
         indIEDest: document.getElementById('nfIndIEDest')?.value || (ie ? (isCNPJ ? 1 : 9) : 9),
         endereco: {
-          logradouro: document.getElementById('nfClienteEndereco')?.value.split(',')[0]?.trim() || 'N/A',
-          numero:     document.getElementById('nfClienteEndereco')?.value.split(',')[1]?.trim() || 'S/N',
-          bairro:     opt.dataset?.bairro || 'N/A',
+          logradouro: document.getElementById('nfClienteEndereco')?.value.trim() || 'N/A',
+          numero:     document.getElementById('nfClienteNumero')?.value.trim() || opt.dataset?.numero || 'S/N',
+          bairro:     document.getElementById('nfClienteBairro')?.value.trim() || opt.dataset?.bairro || 'N/A',
           municipio:  document.getElementById('nfClienteCidade')?.value.split(' - ')[0]?.trim() || 'N/A',
           uf:         document.getElementById('nfClienteUf')?.value || 'SP',
-          cep:        opt.dataset?.cep?.replace(/\D/g,'') || '00000000',
-          codigoMunicipio: opt.dataset?.codigoMunicipio || '',
+          cep:        document.getElementById('nfClienteCep')?.value.replace(/\D/g,'') || opt.dataset?.cep?.replace(/\D/g,'') || '00000000',
+          codigoMunicipio: document.getElementById('nfClienteCodMun')?.value.trim() || opt.dataset?.codigoMunicipio || '',
         },
       };
     }
@@ -5764,8 +5790,14 @@ renderizarVolumesNF();
           }
           set('nfClienteCnpj',     dest.cnpj || dest.cpf || '');
           set('nfClienteBusca',    dest.nome || '');
-          set('nfClienteEndereco', `${dest.endereco?.logradouro || ''}, ${dest.endereco?.numero || ''}`);
+          set('nfClienteIE',       dest.ie || '');
+          set('nfClienteEndereco', dest.endereco?.logradouro || '');
+          set('nfClienteNumero',   dest.endereco?.numero || '');
+          set('nfClienteBairro',   dest.endereco?.bairro || '');
+          set('nfClienteCep',      dest.endereco?.cep || '');
+          set('nfClienteCodMun',   dest.endereco?.codigoMunicipio || '');
           set('nfClienteCidade',   dest.endereco?.municipio || '');
+          set('nfIndIEDest',       dest.indIEDest != null ? String(dest.indIEDest) : '9');
           const ufSel = document.getElementById('nfClienteUf');
           if (ufSel) { ufSel.disabled = false; ufSel.value = dest.endereco?.uf || ''; ufSel.disabled = true; }
         }
@@ -6134,19 +6166,49 @@ renderizarVolumesNF();
         : 'À vista (sem parcelas).';
     }
 
-    // A7: indIEDest explícito (1=contribuinte exige IE, 2=isento, 9=não
-    // contribuinte). Default pela presença de IE (regra anterior mantida).
-    function nfAtualizarIndIEDest() {
+    // A7 + UX: ao selecionar o cliente, povoar TODOS os campos fiscais do
+    // cadastro (CNPJ/CPF, IE, CEP, N°, Bairro, Endereço, Cidade, UF, Cód. IBGE)
+    // e o indIEDest (Contribuinte ICMS) — vindo do cadastro; fallback pela IE.
+    function nfAoSelecionarCliente() {
       try {
-        const opt = document.getElementById('nfCliente')?.selectedOptions?.[0];
-        const doc = (document.getElementById('nfClienteCnpj')?.value || '').replace(/\D/g, '');
-        const ie = (opt?.dataset?.ie || '').trim();
-        const sel = document.getElementById('nfIndIEDest');
-        if (!sel) return;
-        sel.value = ie ? (doc.length === 14 ? '1' : '9') : (sel.value || '9');
-        if (!['1', '2', '9'].includes(sel.value)) sel.value = '9';
+        const sel = document.getElementById('nfCliente');
+        const id = sel?.value || '';
+        if (!id) return;
+        const c = (_clientesNFTodos || []).find((x) => String(x.id) === String(id)) || null;
+        const opt = sel?.selectedOptions?.[0];
+        const v = (...keys) => nfClienteValor(c || {}, ...keys);
+        const dset = (k) => (opt && opt.dataset && opt.dataset[k]) || '';
+        const set = (elId, val) => { const el = document.getElementById(elId); if (el && val != null) el.value = val; };
+
+        const doc = String(v('cnpj', 'cpf', 'documento') || dset('cnpj') || dset('cpf')).replace(/\D/g, '');
+        const ie = v('inscricaoEstadual', 'ie', 'stateRegistration') || dset('ie');
+        const indCadastro = String(v('indIEDest', 'indicadorInscricaoEstadual', 'ieIndicator') || '').trim();
+
+        set('nfClienteCnpj', doc);
+        set('nfClienteIE', ie || '');
+        set('nfClienteCep', v('cep', 'postalCode', 'zipCode') || dset('cep'));
+        set('nfClienteEndereco', v('endereco', 'address') || dset('endereco'));
+        set('nfClienteNumero', v('numero', 'number') || dset('numero'));
+        set('nfClienteBairro', v('bairro', 'neighborhood') || dset('bairro'));
+        set('nfClienteCidade', v('cidade', 'city', 'municipio') || dset('cidade'));
+        set('nfClienteCodMun', v('codigoMunicipio', 'codigoIBGE', 'municipioCodigo', 'municipalityCode', 'cMun', 'ibgeCode') || dset('codigoMunicipio'));
+        const ufEl = document.getElementById('nfClienteUf');
+        const uf = v('estado', 'state', 'uf') || dset('uf');
+        if (ufEl && uf) ufEl.value = uf;
+
+        // Contribuinte ICMS: prioridade para o indIEDest do cadastro (1/2/9);
+        // fallback: IE presente + CNPJ → 1; senão 9 (regra A7/RV 696).
+        const selInd = document.getElementById('nfIndIEDest');
+        if (selInd) {
+          if (['1', '2', '9'].includes(indCadastro)) selInd.value = indCadastro;
+          else selInd.value = ie ? (doc.length === 14 ? '1' : '9') : '9';
+        }
       } catch (_) {}
     }
+    window.nfAoSelecionarCliente = nfAoSelecionarCliente;
+
+    // Compat: chamadas antigas continuam funcionando (delegam ao unificado).
+    function nfAtualizarIndIEDest() { nfAoSelecionarCliente(); }
     window.nfAtualizarIndIEDest = nfAtualizarIndIEDest;
 
     // ─── Filtro em tempo real no campo de busca de cliente ─
@@ -6172,13 +6234,15 @@ renderizarVolumesNF();
         opt.dataset.nome   = nome;
         opt.dataset.cnpj   = c.cnpj   || '';
         opt.dataset.cpf    = c.cpf    || '';
-        opt.dataset.ie     = nfClienteValor(c, 'ie', 'inscricaoEstadual', 'ieDest', 'ie_dest', 'inscricao_estadual') || '';
+        opt.dataset.ie     = nfClienteValor(c, 'ie', 'inscricaoEstadual', 'ieDest', 'ie_dest', 'inscricao_estadual', 'stateRegistration') || '';
+        opt.dataset.indIEDest = nfClienteValor(c, 'indIEDest', 'indicadorInscricaoEstadual', 'ieIndicator') || '';
         opt.dataset.endereco = c.endereco || c.address || '';
+        opt.dataset.numero = c.numero || c.number || '';
         opt.dataset.cidade = c.cidade || c.city || c.municipio || '';
         opt.dataset.uf     = c.estado || c.state || c.uf || '';
-        opt.dataset.bairro = c.bairro || '';
-        opt.dataset.cep    = c.cep    || '';
-        opt.dataset.codigoMunicipio = c.codigoMunicipio || c.codigoIBGE || c.ibge || '';
+        opt.dataset.bairro = c.bairro || c.neighborhood || '';
+        opt.dataset.cep    = c.cep    || c.postalCode || '';
+        opt.dataset.codigoMunicipio = c.codigoMunicipio || c.codigoIBGE || c.ibge || c.cMun || '';
         sel.appendChild(opt);
       });
     }
@@ -6602,29 +6666,22 @@ renderizarVolumesNF();
                     const opt = document.createElement('option');
                     opt.value = String(c.id || '');
                     opt.textContent = c.nome || c.name || c.razao || c.razaoSocial || 'Cliente';
+                    opt.dataset.nome = c.nome || c.name || c.razao || c.razaoSocial || 'Cliente';
                     opt.dataset.cnpj = c.cnpj || c.cpf || '';
                     opt.dataset.cpf = c.cpf || '';
+                    opt.dataset.ie = c.ie || c.inscricaoEstadual || c.stateRegistration || '';
+                    opt.dataset.indIEDest = c.indIEDest || c.indicadorInscricaoEstadual || c.ieIndicator || '';
                     opt.dataset.endereco = c.endereco || c.address || '';
-                    opt.dataset.cidade = c.cidade || c.city || '';
+                    opt.dataset.numero = c.numero || c.number || '';
+                    opt.dataset.cidade = c.cidade || c.city || c.municipio || '';
                     opt.dataset.uf = c.estado || c.state || c.uf || '';
-                    opt.dataset.bairro = c.bairro || '';
+                    opt.dataset.bairro = c.bairro || c.neighborhood || '';
                     opt.dataset.cep = c.cep || c.zip || c.postalCode || '';
-                    opt.dataset.codigoMunicipio = c.codigoMunicipio || c.codigoIBGE || c.ibge || '';
+                    opt.dataset.codigoMunicipio = c.codigoMunicipio || c.codigoIBGE || c.ibge || c.cMun || '';
                     select.appendChild(opt);
                 });
-                select.onchange = function() {
-                    const opt = select.options[select.selectedIndex];
-                    const cnpjEl = document.getElementById('nfClienteCnpj');
-                    const endEl = document.getElementById('nfClienteEndereco');
-                    const cidadeEl = document.getElementById('nfClienteCidade');
-                    const ufEl = document.getElementById('nfClienteUf');
-                    const bairroEl = document.getElementById('nfClienteBairro');
-                    if (cnpjEl) cnpjEl.value = opt?.dataset?.cnpj || '';
-                    if (endEl) endEl.value = opt?.dataset?.endereco || '';
-                    if (cidadeEl) cidadeEl.value = opt?.dataset?.cidade || '';
-                    if (ufEl) ufEl.value = opt?.dataset?.uf || '';
-                    if (bairroEl) bairroEl.value = opt?.dataset?.bairro || '';
-                };
+                // Handler unificado (povoa CNPJ/IE/CEP/N°/Bairro/Endereço/Cidade/UF/IBGE + indIEDest)
+                select.onchange = function() { nfAoSelecionarCliente(); };
             } catch (e) {
                 console.warn('Falha ao carregar clientes na NF:', e?.message || e);
             }
