@@ -154,13 +154,15 @@
             display: flex;
             gap: 15px;
             margin-bottom: 15px;
+            flex-wrap: wrap;
         }
 
         .form-group {
-            flex: 1;
+            flex: 1 1 200px;
             min-width: 0;
             display: flex;
             flex-direction: column;
+            max-width: 100%;
         }
 
         .form-group label {
@@ -778,6 +780,12 @@
             .form-row {
                 flex-direction: column;
                 gap: 0;
+            }
+
+            .form-group {
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
             }
             
             .button-group {

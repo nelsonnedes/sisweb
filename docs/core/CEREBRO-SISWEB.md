@@ -1290,6 +1290,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-13 — Layout abas (flex-wrap) + console limpo
+
+- **Console limpo apos o fix 404/SyntaxError** (logs.md atual): zero 404, zero MIME recusado, zero SyntaxError/ReferenceError. Restam so avisos benignos: `[DOM] Password field not in form` (certSenha fora de <form>), autocomplete em `nfParcValor`, e banner PWA.
+- **Ajuste de layout (campo espremido):** `.form-row` era `display:flex` **sem `flex-wrap`** e `.form-group` tinha `min-width: 0` + `flex:1` → numa linha com 5+ campos, eles comprimiam ao minimo. Fix: `.form-row { flex-wrap: wrap }`, `.form-group { flex: 1 1 200px; max-width: 100% }`; no mobile (768px) `.form-group { flex: 1 1 auto !important; max-width: 100% !important }` (garante coluna com largura total). Aplica-se as abas Emissao (todos os steps), Consulta e Configuracao (herdam o `.form-row` global).
+- **Validacao:** scripts inline classic = 0 erros (`new Function`); lint + typecheck OK; `npm test` 1260/1259/0/1; deploy hosting OK.
+- **Pendencia UX menor:** `certSenha` (Configuracao) fora de `<form>` gera aviso DOM; `nfParcValor` sem `autocomplete`. Nao bloqueante.
+
 ## Sessao 2026-10-13 — Fix raiz do 404/MIME + SyntaxError no script inline (logs real)
 
 - **Sintoma (logs.md do usuario):** console mostrava `nf-itens.js:1 Failed to load resource: 404`, `Refused to execute script ... MIME type ('text/html')`, e `notas-fiscais.html:6076 SyntaxError: Missing catch or finally after try`. Resultado: funcoes (`irParaEtapaNF`/`consultarNotas`/`atualizarEstadoTransporteNF`) indefinidas.
