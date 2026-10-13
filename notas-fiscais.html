@@ -165,6 +165,11 @@
             max-width: 100%;
         }
 
+        /* Restaura o atributo hidden (UA stylesheet é sobrescrita por .form-group{display:flex}) */
+        [hidden] {
+            display: none !important;
+        }
+
         .form-group label {
             font-weight: 600;
             color: var(--primary-color);
@@ -1762,14 +1767,14 @@
                 </div>
                 <div class="form-group" id="nfCardGroup" hidden>
                   <label>Cartão (tPag 03/04):</label>
-                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <select id="nfCardTpIntegra" title="Tipo de integração" style="max-width:130px">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <select id="nfCardTpIntegra" title="Tipo de integração">
                       <option value="2">2 — Não TEF</option>
                       <option value="1">1 — TEF</option>
                     </select>
-                    <input id="nfCardCnpj" maxlength="18" placeholder="CNPJ credenciadora" style="max-width:170px">
-                    <input id="nfCardBand" maxlength="20" placeholder="Bandeira" style="max-width:120px">
-                    <input id="nfCardAut" maxlength="20" placeholder="Autorização" style="max-width:130px">
+                    <input id="nfCardCnpj" maxlength="18" placeholder="CNPJ credenciadora">
+                    <input id="nfCardBand" maxlength="20" placeholder="Bandeira">
+                    <input id="nfCardAut" maxlength="20" placeholder="Autorização">
                   </div>
                 </div>
                 <div class="form-group">
@@ -5721,6 +5726,20 @@ renderizarVolumesNF();
         // Forma de pagamento
         const pag = Array.isArray(nf.pag) ? nf.pag : [];
         if (pag.length) set('nfFormaPag', pag[0].tPag || '01');
+        // Grupos condicionais (hidden) — sincroniza com os valores restaurados
+        try {
+          const gRef = document.getElementById('nfNFrefGroup');
+          if (gRef) gRef.hidden = String(ide.finNFe || '1') === '1';
+          const card = pag[0]?.card || null;
+          const gCard = document.getElementById('nfCardGroup');
+          if (gCard) gCard.hidden = !['03', '04'].includes(String(pag[0]?.tPag || '01'));
+          if (card) {
+            set('nfCardTpIntegra', card.tpIntegra || '2');
+            set('nfCardCnpj', card.CNPJ || card.cnpj || '');
+            set('nfCardBand', card.tBand || '');
+            set('nfCardAut', card.cAut || '');
+          }
+        } catch (_) {}
 
         // Destinatário — tentar encontrar no select de clientes
         if (dest.nome) {

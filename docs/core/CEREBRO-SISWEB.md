@@ -1290,6 +1290,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-13 — Fix regressao [hidden] (grupos condicionais) + polimento aba Pagamento
+
+- **Discrepancia vista nos prints (abas de Emissao):** (1) "Chave NF-e referenciada" aparecia visivel com Finalidade=Normal (deveria estar `hidden`); (2) "Cartao (tPag 03/04)" aparecia visivel com Forma=Dinheiro.
+- **CAUSA RAIZ (CSS):** o atributo HTML `hidden` e implementado pela UA stylesheet como `[hidden]{display:none}`; regras de autor SEMPRE vencem a UA stylesheet — logo `.form-group{display:flex}` **anulava o hidden**. Bug existia desde sempre nos grupos condicionais (`nfNFrefGroup`, `nfCardGroup`).
+- **Fix:** `[hidden] { display: none !important; }` no CSS do `notas-fiscais.html`. Bonus: bloco do Cartao virou grid 2x2 (tpIntegra/CNPJ/Bandeira/Autorizacao) quando visivel; `editarRascunho` agora sincroniza os grupos condicionais ao restaurar (finNFe→NFref; tPag+card→Cartao com valores).
+- **Trava:** `tests/nf-layout-abas.test.mjs` (4/4): regra [hidden], flex-wrap/base-200px/mobile-100%, sincronizacao na edicao, e **manifest cobre todo `<script src>` local do HTML** (anti-404/MIME).
+- **Gates:** lint + typecheck OK; `npm test` 1264/1263/0/1 (era 1260, +4 novos); deploy hosting OK.
+
 ## Sessao 2026-10-13 — Layout abas (flex-wrap) + console limpo
 
 - **Console limpo apos o fix 404/SyntaxError** (logs.md atual): zero 404, zero MIME recusado, zero SyntaxError/ReferenceError. Restam so avisos benignos: `[DOM] Password field not in form` (certSenha fora de <form>), autocomplete em `nfParcValor`, e banner PWA.
