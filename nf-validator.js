@@ -49,9 +49,10 @@ const NFValidator = (() => {
     return n.length === 8;
   }
 
-  // ─── CFOP (4 dígitos: 1-9 + 3 dígitos) ────────────────────────────────────
+  // ─── CFOP (A21: centralizado em NFTaxTables, entradas 1/2/3, saídas 5/6/7) 
   function validarCFOP(cfop) {
-    return /^[1-9]\d{3}$/.test(String(cfop || '').trim());
+    if (window.NFTaxTables?.validarCFOP) return window.NFTaxTables.validarCFOP(cfop);
+    return /^[123567]\d{3}$/.test(String(cfop || '').trim());
   }
 
   // ─── CEP ───────────────────────────────────────────────────────────────────

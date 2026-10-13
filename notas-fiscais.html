@@ -2628,6 +2628,7 @@
     <script src="nf-cert.js?v=b522cff21ec4"></script>
     <script src="nf-validator.js?v=f5434c6237c4"></script>
     <script src="nf-tax-tables.js"></script>
+    <script src="nf-itens.js"></script>
     <script src="nf-xml-builder.js?v=bcd43e0f4abc"></script>
     <script src="nf-fiscal-events.js"></script>
     <script src="nf-storage.js?v=0ffeb7a55341"></script>
@@ -3455,81 +3456,6 @@
       atualizarResumoFiscalNF();
     });
 
-    // ─── Adicionar item ao formulário ─────────────────────
-    function adicionarItemNF() {
-      const prodId  = document.getElementById('itemProduto')?.value;
-      const qtd     = parseFloat(document.getElementById('itemQuantidade')?.value) || 0;
-      const vUnit   = parseMoeda(document.getElementById('itemValorUnitario')?.value);
-      const ncm     = (document.getElementById('itemNCM')?.value || '').replace(/\D/g,'').padStart(8,'0');
-      const cfop    = document.getElementById('itemCFOP')?.value || '5102';
-      const un      = document.getElementById('itemUN')?.value || 'UN';
-      const csosn   = document.getElementById('itemCSOSN')?.value || '102';
-      const cestMan = (document.getElementById('itemCEST')?.value || '').replace(/\D/g, '');
-      const origMan = document.getElementById('itemOrig')?.value || '0';
-      const cestLeg = (document.getElementById('itemCEST')?.value || '').replace(/\D/g, '');
-      const origLeg = document.getElementById('itemOrig')?.value || '0';
-
-      if (!prodId)           return mostrarAlertaEmissao('⚠️ Selecione um produto', 'warn');
-      if (!(qtd > 0))        return mostrarAlertaEmissao('⚠️ Quantidade deve ser maior que zero', 'warn');
-      if (!(vUnit > 0))      return mostrarAlertaEmissao('⚠️ Valor unitário inválido', 'warn');
-      if (ncm.replace(/\D/g,'').length !== 8) return mostrarAlertaEmissao('⚠️ NCM deve ter 8 dígitos', 'warn');
-      if (!/^[1-9]\d{3}$/.test(cfop)) return mostrarAlertaEmissao('⚠️ CFOP inválido (ex: 5102)', 'warn');
-
-      const selProd = document.getElementById('itemProduto');
-      const nomeProd = selProd?.options[selProd.selectedIndex]?.text || '';
-      const total = qtd * vUnit;
-      const cfg = window.NFService?.getConfig?.() || {};
-      const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
-
-      // Calcular impostos automáticos via NFConfigService
-      // Fonte fiscal: NATUREZA selecionada prevalece (terceiro modo de item —
-      // mesma regra do manual/cadastrado).
-      const natLeg = window.NFNaturezas?.getById?.(
-        document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '') || null;
-      const cfopNatLeg = (natLeg?.cfopPadrao || '').trim();
-      const codNatLeg = (natLeg?.csosn || '').trim();
-      const cfopEffLeg = (cfopNatLeg && /^[1-9]\d{3}$/.test(cfopNatLeg)) ? cfopNatLeg : cfop;
-      const csosnEffLeg = codNatLeg || csosn;
-      let imposto = { icms: { csosn: csosnEffLeg, orig: origLeg, }, pis: { cST: '07' }, cofins: { cST: '07' } };
-      try {
-        const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: csosnEffLeg, orig: origLeg, };
-        const crtLeg = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
-        if (String(crtLeg) === '3' && /^[0-9]{2}$/.test(csosnEffLeg)) imposto.icms.cst = csosnEffLeg;
-        const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
-        imposto.pis    = pc.pis;
-        imposto.cofins = pc.cofins;
-        const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
-        if (ipi) imposto.ipi = ipi;
-        const ibscbs = window.NFConfigService.calcularIBSCBS?.(cfg, total)
-          || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
-        if (ibscbs) imposto.ibscbs = ibscbs;
-        const isSel = window.NFConfigService.calcularIS?.(cfg, total);
-        if (isSel) imposto.is = isSel;
-      } catch(_) {}
-
-      const item = {
-        id:     'it_' + Date.now(),
-        cProd:  prodId,
-        xProd:  nomeProd,
-        ncm, cfop: cfopEffLeg, uCom: un, uTrib: un,
-        cest: cestLeg || undefined,
-        qCom:   qtd, vUnCom: vUnit, vProd: total, imposto,
-        csosn: csosnEffLeg,
-      };
-      _itensNF.push(item);
-      invalidarRevisaoNF();
-      renderizarItensNF();
-      atualizarTotaisNF();
-
-      // Limpar campos de item
-      ['itemProduto','itemQuantidade','itemValorUnitario'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-      });
-      ocultarAlertaEmissao();
-    }
-
     function removerItemNF(id) {
       _itensNF = _itensNF.filter(it => it.id !== id);
       invalidarRevisaoNF();
@@ -3563,42 +3489,12 @@
 
     function recalcularImpostosItemNF(item) {
       const cfg = window.NFService?.getConfig?.() || {};
-      const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-      const ufDest = document.getElementById('nfClienteUf')?.value || ufOrig;
-      const total = parseFloat(item.vProd || item.total) || 0;
-      // Fonte fiscal: NATUREZA selecionada prevalece sobre o item guardado
-      // (reconciliação — garante CFOP/CSOSN-CST da natureza mesmo em item
-      // antigo, clonado ou de rascunho anterior à troca da natureza).
-      const natRec = window.NFNaturezas?.getById?.(
-        document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '') || null;
-      const cfopNatRec = (natRec?.cfopPadrao || '').trim();
-      const codNatRec = (natRec?.csosn || '').trim();
-      if (cfopNatRec && /^[1-9]\d{3}$/.test(cfopNatRec)) item.cfop = cfopNatRec;
-      const codEffRec = codNatRec || item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst || '102';
-      item.csosn = codEffRec;
-      const imposto = {
-        ...(item.imposto || {}),
-        icms: item.imposto?.icms || { csosn: item.csosn || '102', orig: 0 },
-        pis: item.imposto?.pis || { cST: '07' },
-        cofins: item.imposto?.cofins || { cST: '07' },
-      };
-      try {
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total, { importado: !!item.importado }), csosn: item.csosn || '102', orig: item.imposto?.icms?.orig ?? 0 };
-        const crtRec = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
-        if (String(crtRec) === '3' && /^[0-9]{2}$/.test(item.csosn || '')) imposto.icms.cst = item.csosn;
-        const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
-        imposto.pis = pc.pis;
-        imposto.cofins = pc.cofins;
-        const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
-        if (ipi) imposto.ipi = ipi;
-        else delete imposto.ipi;
-        const ibscbs3 = window.NFConfigService.calcularIBSCBS?.(cfg, total)
-          || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
-        if (ibscbs3) imposto.ibscbs = ibscbs3; else delete imposto.ibscbs;
-        const isSel3 = window.NFConfigService.calcularIS?.(cfg, total);
-        if (isSel3) imposto.is = isSel3; else delete imposto.is;
-      } catch (_) {}
-      return imposto;
+      const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
+      const natOpId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
+      if (window.NFItens?.recalcularImpostosItem) {
+        return window.NFItens.recalcularImpostosItem(item, { cfg, ufDest, natOpId });
+      }
+      return item.imposto || {};
     }
 
     function editarItemNF(id) {
@@ -6030,61 +5926,34 @@ renderizarVolumesNF();
       const cfop  = document.getElementById('itemCFOP')?.value || '5102';
       const un    = document.getElementById('itemUN')?.value || 'UN';
       const csosn = document.getElementById('itemCSOSN')?.value || '102';
+      const cestMan = (document.getElementById('itemCEST')?.value || '').replace(/\D/g, '');
+      const origMan = document.getElementById('itemOrig')?.value || '0';
+      const importadoMan = !!document.getElementById('itemImportado')?.checked;
 
-      if (!nome)              return mostrarAlertaEmissao('⚠️ Informe o nome do produto', 'warn');
-      if (!(qtd > 0))         return mostrarAlertaEmissao('⚠️ Quantidade deve ser maior que zero', 'warn');
-      if (!(vUnit > 0))       return mostrarAlertaEmissao('⚠️ Valor unitário inválido', 'warn');
-      if (ncm.replace(/\D/g,'').length !== 8) return mostrarAlertaEmissao('⚠️ NCM deve ter 8 dígitos', 'warn');
-      if (!/^[1-9]\d{3}$/.test(cfop)) return mostrarAlertaEmissao('⚠️ CFOP inválido (ex: 5102)', 'warn');
+      const v = window.NFItens?.validarEntradaItem
+        ? window.NFItens.validarEntradaItem({ nome, qtd, vUnit, ncm, cfop })
+        : { valid: !!nome && qtd > 0 && vUnit > 0 && ncm.length === 8 && /^[1-9]\d{3}$/.test(cfop) };
+      if (!v.valid) return mostrarAlertaEmissao('⚠️ ' + (v.erro || 'Campos do item inválidos'), 'warn');
 
-      const total = qtd * vUnit;
       const cfg = window.NFService?.getConfig?.() || {};
       const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
-      // Fonte fiscal do item: NATUREZA selecionada prevalece (mesma regra do
-      // modo cadastrado — garante CFOP/CSOSN-CST da natureza em todo item).
-      const natMan = window.NFNaturezas?.getById?.(
-        document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '') || null;
-      const cfopNatMan = (natMan?.cfopPadrao || '').trim();
-      const codNatMan = (natMan?.csosn || '').trim();
-      if (cfopNatMan && /^[1-9]\d{3}$/.test(cfopNatMan)) {
-        const cfElMan = document.getElementById('itemCFOP');
-        if (cfElMan) cfElMan.value = cfopNatMan;
-      }
-      const csosnEffMan = codNatMan || csosn;
-      const cfopEffMan = (cfopNatMan && /^[1-9]\d{3}$/.test(cfopNatMan)) ? cfopNatMan : cfop;
-      let imposto = { icms: { csosn: csosnEffMan, orig: origMan, }, pis: { cST: '07' }, cofins: { cST: '07' } };
-      try {
-        const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-        const importadoMan = !!document.getElementById('itemImportado')?.checked;
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total, { importado: importadoMan }), csosn: csosnEffMan, orig: origMan, };
-        const crtMan = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
-        if (String(crtMan) === '3' && /^[0-9]{2}$/.test(csosnEffMan)) imposto.icms.cst = csosnEffMan;
-        const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
-        imposto.pis    = pc.pis;
-        imposto.cofins = pc.cofins;
-        const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
-        if (ipi) imposto.ipi = ipi;
-        const ibscbs = window.NFConfigService.calcularIBSCBS?.(cfg, total)
-          || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
-        if (ibscbs) imposto.ibscbs = ibscbs;
-        const isSel = window.NFConfigService.calcularIS?.(cfg, total);
-        if (isSel) imposto.is = isSel;
-      } catch(_) {}
+      const natOpId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
 
-      const item = {
-        id:     'it_' + Date.now(),
-        cProd:  'MANUAL_' + Date.now(),
-        xProd:  nome,
-        ncm, cfop: cfopEffMan, uCom: un, uTrib: un,
-        cest: cestMan || undefined,
-        importado: !!document.getElementById('itemImportado')?.checked || undefined,
-        qCom: qtd, vUnCom: vUnit, vProd: total, imposto, csosn: csosnEffMan,
-      };
+      const item = window.NFItens?.criarItemFiscal
+        ? window.NFItens.criarItemFiscal({
+            id: 'it_' + Date.now(),
+            cProd: 'MANUAL_' + Date.now(),
+            xProd: nome,
+            ncm, cfop, uCom: un, qCom: qtd, vUnCom: vUnit,
+            csosn, cest: cestMan, orig: origMan, importado: importadoMan,
+            natOpId, cfg, ufDest,
+          })
+        : { id: 'it_' + Date.now(), cProd: 'MANUAL_' + Date.now(), xProd: nome, ncm, cfop, uCom: un, uTrib: un, qCom: qtd, vUnCom: vUnit, vProd: qtd * vUnit, csosn, imposto: {} };
+
       _itensNF.push(item);
       invalidarRevisaoNF();
       renderizarItensNF();
       atualizarTotaisNF();
-      // Limpar campos
       ['itemNomeManual','itemQuantidade','itemValorUnitario'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -6092,10 +5961,10 @@ renderizarVolumesNF();
       ocultarAlertaEmissao();
     }
 
-    // ─── adicionarItemNF — MODO CADASTRADO ────────────────
-    // Substitui a original — agora usa NFProdutosNF
+    // ─── adicionarItemNF — MODO CADASTRADO (via NFItens) ─
     function adicionarItemNF() {
       const prodId  = document.getElementById('nfProdCadSelect')?.value;
+      if (!prodId) return mostrarAlertaEmissao('⚠️ Selecione um produto', 'warn');
       const qtd     = parseFloat(document.getElementById('itemQuantidadeCad')?.value) || 0;
       const vUnit   = parseMoeda(document.getElementById('itemValorUnitarioCad')?.value);
       const ncm     = (document.getElementById('itemNCMCad')?.value || '').replace(/\D/g,'').padStart(8,'0');
@@ -6104,59 +5973,31 @@ renderizarVolumesNF();
       const csosn   = document.getElementById('itemCSOSNCad')?.value || '102';
       const cestCad = (document.getElementById('itemCESTCad')?.value || '').replace(/\D/g, '');
       const origCad = document.getElementById('itemOrigCad')?.value || '0';
-
-      if (!prodId)           return mostrarAlertaEmissao('⚠️ Selecione um produto', 'warn');
-      if (!(qtd > 0))        return mostrarAlertaEmissao('⚠️ Quantidade deve ser maior que zero', 'warn');
-      if (!(vUnit > 0))      return mostrarAlertaEmissao('⚠️ Valor unitário inválido', 'warn');
-      if (ncm.replace(/\D/g,'').length !== 8) return mostrarAlertaEmissao('⚠️ NCM deve ter 8 dígitos', 'warn');
-      if (!/^[1-9]\d{3}$/.test(cfop)) return mostrarAlertaEmissao('⚠️ CFOP inválido (ex: 5102)', 'warn');
+      const importadoCad = !!document.getElementById('itemImportadoCad')?.checked;
 
       const nomeProd = window._nfProdNomeSelecionado
         || document.getElementById('nfProdCadSelect')?.options[document.getElementById('nfProdCadSelect').selectedIndex]?.textContent || prodId;
-      const total = qtd * vUnit;
+
+      const v = window.NFItens?.validarEntradaItem
+        ? window.NFItens.validarEntradaItem({ nome: nomeProd, qtd, vUnit, ncm, cfop })
+        : { valid: !!nomeProd && qtd > 0 && vUnit > 0 && ncm.length === 8 && /^[1-9]\d{3}$/.test(cfop) };
+      if (!v.valid) return mostrarAlertaEmissao('⚠️ ' + (v.erro || 'Campos do item inválidos'), 'warn');
+
       const cfg = window.NFService?.getConfig?.() || {};
       const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
-      // Fonte fiscal do item: NATUREZA selecionada prevalece sobre o campo
-      // (o campo já foi preenchido pela natureza em nfAplicarNatOp; aqui a
-      // reconciliação garante mesmo se a natureza foi trocada depois).
-      const natItem = window.NFNaturezas?.getById?.(
-        document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '') || null;
-      const cfopNat = (natItem?.cfopPadrao || '').trim();
-      const codNat = (natItem?.csosn || '').trim();
-      if (cfopNat && /^[1-9]\d{3}$/.test(cfopNat)) {
-        const cfEl = document.getElementById('itemCFOPCad');
-        if (cfEl) cfEl.value = cfopNat;
-      }
-      const csosnEff = codNat || csosn;
-      const cfopEff = (cfopNat && /^[1-9]\d{3}$/.test(cfopNat)) ? cfopNat : cfop;
-      let imposto = { icms: { csosn: csosnEff, orig: origCad, }, pis: { cST: '07' }, cofins: { cST: '07' } };
-      try {
-        const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-        const importadoCad = !!document.getElementById('itemImportadoCad')?.checked;
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total, { importado: importadoCad }), csosn: csosnEff, orig: origCad, };
-        // Regime Normal (CRT 3): o código do campo/natureza é CST, não CSOSN
-        const crtItem = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
-        if (String(crtItem) === '3' && /^[0-9]{2}$/.test(csosnEff)) imposto.icms.cst = csosnEff;
-        const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
-        imposto.pis = pc.pis; imposto.cofins = pc.cofins;
-        const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
-        if (ipi) imposto.ipi = ipi;
-        const ibscbs2 = window.NFConfigService.calcularIBSCBS?.(cfg, total)
-          || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
-        if (ibscbs2) imposto.ibscbs = ibscbs2;
-        const isSel2 = window.NFConfigService.calcularIS?.(cfg, total);
-        if (isSel2) imposto.is = isSel2;
-      } catch(_) {}
+      const natOpId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
 
-      const item = {
-        id:     'it_' + Date.now(),
-        cProd:  prodId,
-        xProd:  nomeProd,
-        ncm, cfop: cfopEff, uCom: un, uTrib: un,
-        cest: cestCad || undefined,
-        importado: !!document.getElementById('itemImportadoCad')?.checked || undefined,
-        qCom: qtd, vUnCom: vUnit, vProd: total, imposto, csosn: csosnEff,
-      };
+      const item = window.NFItens?.criarItemFiscal
+        ? window.NFItens.criarItemFiscal({
+            id: 'it_' + Date.now(),
+            cProd: prodId,
+            xProd: nomeProd,
+            ncm, cfop, uCom: un, qCom: qtd, vUnCom: vUnit,
+            csosn, cest: cestCad, orig: origCad, importado: importadoCad,
+            natOpId, cfg, ufDest,
+          })
+        : { id: 'it_' + Date.now(), cProd: prodId, xProd: nomeProd, ncm, cfop, uCom: un, uTrib: un, qCom: qtd, vUnCom: vUnit, vProd: qtd * vUnit, csosn, imposto: {} };
+
       _itensNF.push(item);
       invalidarRevisaoNF();
       renderizarItensNF();
@@ -6169,7 +6010,6 @@ renderizarVolumesNF();
       ocultarAlertaEmissao();
     }
 
-    // ─── Aplicar Natureza da Operação ao selecionar ────────
     function nfAplicarNatOp(selectEl) {
       const id  = selectEl?.value;
       if (!id) return;

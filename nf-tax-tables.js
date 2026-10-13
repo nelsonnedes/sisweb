@@ -140,6 +140,21 @@
     '9': 'Não presencial — outros',
   };
 
+  // ─── Lista Oficial de UFs (MOC 4.00) ───────────────────────────────────
+  const UF_LIST = [
+    'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+    'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN',
+    'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'
+  ];
+
+  // ─── Validação Centralizada de CFOP (A21) ──────────────────────────────
+  // 1xxx/2xxx/3xxx (entradas), 5xxx/6xxx/7xxx (saídas).
+  function validarCFOP(cfop) {
+    const s = String(cfop || '').trim();
+    if (!/^[123567]\d{3}$/.test(s)) return false;
+    return true;
+  }
+
   // ─── Gates CRT × código ────────────────────────────────────────────────
   // CRT 1/2 (SN/excesso) → SOMENTE CSOSN; CRT 3 (Normal) → SOMENTE CST.
   // Cruzar = rejeição SEFAZ (ex.: 931 CSOSN incompatível com CRT).
@@ -201,6 +216,8 @@
 
   const api = {
     TABLE_META,
+    UF_LIST,
+    validarCFOP,
     CST_ICMS_FULL, CST_ICMS_MONO, CSOSN_FULL, CST_PIS_COFINS_FULL,
     FIN_NFE, IND_PRES,
     regimeDoCRT, validarCodigoICMS, grupoPISCOFINS, descreverPISCOFINS,
