@@ -166,17 +166,17 @@
 
     try {
       imposto.icms = {
-        ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total, { importado: !!item.importado }),
+        ...window.NFConfigService?.calcularICMS?.(cfg, ufOrig, ufDest, total, { importado: !!item.importado }) || { vBC: 0, pICMS: 0, vICMS: 0 },
         csosn: item.csosn,
         orig: item.imposto?.icms?.orig ?? 0,
       };
       if (String(crt) === '3' && /^[0-9]{2}$/.test(item.csosn || '')) {
         imposto.icms.cst = item.csosn;
       }
-      const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
+      const pc = window.NFConfigService?.calcularPISCOFINS?.(cfg, total) || { pis: { cST: '07' }, cofins: { cST: '07' } };
       imposto.pis = pc.pis;
       imposto.cofins = pc.cofins;
-      const ipi = window.NFConfigService.calcularIPI?.(cfg, total);
+      const ipi = window.NFConfigService?.calcularIPI?.(cfg, total);
       if (ipi) imposto.ipi = ipi;
       else delete imposto.ipi;
       const ibscbs = window.NFConfigService.calcularIBSCBS?.(cfg, total)

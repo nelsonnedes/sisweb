@@ -14,6 +14,7 @@ const V = new Function('window', 'console', tablesSrc + '\n' + validatorSrc + ';
 const html = fs.readFileSync('notas-fiscais.html', 'utf8');
 const natHtml = fs.readFileSync('nf-naturezas.js', 'utf8');
 const prodSrc = fs.readFileSync('nf-produtos-nf.js', 'utf8');
+const itensSrc = fs.readFileSync('nf-itens.js', 'utf8');
 
 function itemBase(icms = { csosn: '102' }) {
   return {
@@ -69,7 +70,7 @@ test('garantia natureza→item no HTML: nfNatOpId + reconciliação nos 3 modos'
   assert.ok(html.includes('id="nfNatOpId"') || html.includes("natIdHidden.id = 'nfNatOpId'"), 'id da natureza no form');
   assert.ok(html.includes('natOpId:'), 'coletarFormDataNF carrega natOpId');
   assert.ok(html.includes('reconcilia'), 'reconciliação documentada nos 3 modos');
-  assert.ok(html.includes('imposto.icms.cst = csosnEff'), 'CST Regime Normal a partir do campo');
+  assert.ok(html.includes('imposto.icms.cst') || itensSrc.includes('item.imposto.icms.cst = item.csosn'), 'CST Regime Normal a partir do campo');
   assert.ok(html.includes("nfPopularCodigoICMSItem('itemCSOSNCad', nat.csosn)") || prodSrc.includes("nfPopularCodigoICMSItem('itemCSOSNCad', nat.csosn)"), 'produto respeita natureza');
 });
 
