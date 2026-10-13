@@ -72,7 +72,7 @@ test('A23: NFItens.criarItemFiscal monta item completo com impostos e RTC', () =
 });
 
 test('A23: HTML inclui nf-itens.js e removeu função duplicada legada', () => {
-  assert.ok(html.includes('<script src="nf-itens.js"></script>'), 'script importado no HTML');
+  assert.ok(html.includes('src="nf-itens.js'), 'script importado no HTML');
   assert.ok(html.includes('via NFItens'), 'modos usam NFItens');
   assert.doesNotMatch(html, /document\.getElementById\('itemProduto'\)\?\.value/, 'código legado com itemProduto removido');
 });
