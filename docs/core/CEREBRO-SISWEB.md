@@ -1290,6 +1290,16 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-13 — Fase A: travas CRT×código, PIS/COFINS Qtde, ICMS mono, gDevTrib, finNFe/indPres, tabelas oficiais
+
+- **Tabelas oficiais (sem select obsoleto):** `nf-tax-tables.js` — CSOSN 10 + CST ICMS (c/ 02/15/53/61) + CST PIS/COFINS c/ grupo (aliq/qtde/nt) + finNFe/indPres (MOC); RTC por FORMATO+estrutura: `validarCClassTrib` (prefixo 3 díg. === CST, regra oficial IT 2024.001) + `validarCCredPres` + TABLE_META (fonte Portal NF-e→Documentos→Diversos, IT 2025.002 v1.60). Pesquisa confirmou: tabelas RTC atualizadas por IT (cClassTrib 23/06/2026, CBS 12/05/2026) — não versionar códigos no app.
+- **Gates:** `validarCodigoICMS` (CRT 1/2→só CSOSN, CRT 3→só CST; cruzamento = erro citando 931); validarNFe injeta `emit.crt` no item; prioridade cst×csosn pelo regime (CSOSN 102 não é "02" monofásico — bug pego em teste).
+- **Builder:** ICMS02/15/53/61 (auto q×adRem, pRedAdRem/mot 1|9); PISQtde/COFINSQtde (CST 03); gDevTrib item (pós-gDif) + totais reais (era 0.00 fixo); totais mono ICMS (qBCMono TDec_1302 2dec nos totais; ordem pré-vProd exigida pelo XSD — pego pelo validador oficial).
+- **UI:** selects CSOSN/CST do item por regime; config CST Regime Normal + PIS/COFINS ampliados; finNFe/indPres na emissão (+restore na edição); badge respeita regime.
+- **Trava:** `tests/nf-fase-a-travas.test.mjs` (10/10) + XSD +3 casos (ICMS02, Qtde, gDevTrib) 18/18.
+- **Gates:** lint + typecheck OK; `npm test` 1225/1224/0/1; hosting publicado.
+- **Pendente Fase B/C (não implementado):** regras por natureza (Destino×Produto×CFOP), produto com dados fiscais, gALCZFMCBS, vItem/vNFTot, dhSaiEnt, indDoacao.
+
 ## Sessao 2026-10-12 — Reenvio de rejeitada/erro_envio (botão Editar + mesmo número)
 
 - **Você estava certo:** rejeitada (cStat numérico, ex. 1115) e erro_envio (falha de comunicação) NÃO têm vínculo na SEFAZ (sem protocolo de autorização) — podem ser corrigidas e reenviadas com o MESMO número (numeração só se consome no uso fiscal). Faltava o botão Editar nesses status (só rascunho tinha).

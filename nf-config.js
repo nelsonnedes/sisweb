@@ -52,8 +52,8 @@ const NFConfigService = (() => {
       // Defaults aplicados ao criar novo item — ajustável por produto
       icms: {
         regime: 'simplesNacional',
-        csosn: '102',   // Simples Nacional sem crédito
-        cst: null,      // null = usar CSOSN
+        csosn: '102',   // Simples Nacional sem crédito (CRT 1/2)
+        cst: '00',      // CST ICMS Regime Normal (CRT 3) — select por regime na UI
         aliquotaInterna: 0,    // % alíquota interna (0 = Simples não destaca)
         aliquotaInterestadual: 12, // % padrão
         modalidadeBC: '3', // 3=valor da operação
@@ -290,12 +290,13 @@ const NFConfigService = (() => {
       };
     }
 
-    // Regime Normal / Lucro
+    // Regime Normal / Lucro (CRT 3 — excesso sublimite usa CST, não CSOSN)
+    const cstCfg = String(icms.cst || '00').replace(/\D/g, '').padStart(2, '0').slice(-2);
     const reducao = icms.reducaoBC || 0;
     const vBC = valorProduto * (1 - reducao / 100);
     const vICMS = vBC * (aliquota / 100);
     return {
-      cst: icms.cst || '00',
+      cst: cstCfg,
       csosn: null,
       orig: '0',
       modBC: icms.modalidadeBC || '3',

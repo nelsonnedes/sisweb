@@ -224,7 +224,11 @@ const NFXmlBuilder = (() => {
 
   // ─── ICMS por CST (Regime Normal) — tags corretas do leiaute 4.00 ─────────
   //  00→ICMS00 | 10→ICMS10 | 20→ICMS20 | 30→ICMS30 | 40/41/50→ICMS40
-  //  51→ICMS51 | 60→ICMS60 | 70→ICMS70 | 90→ICMS90 (demais)
+  //  51→ICMS51 | 60→ICMS60 | 70→ICMS70 | 90→ICMS90
+  //  Monofásicos adRem (NT 2023.001, XSD+ NFePHP TraitTagDetICMS):
+  //  02→ICMS02 | 15→ICMS15 | 53→ICMS53 | 61→ICMS61
+  //  (qualquer outro código cai em ICMS90 — NUNCA silencioso: o validador
+  //  barra CST fora da tabela oficial antes de chegar aqui.)
   function buildICMSNormal(icms) {
     const orig = icms.orig || 0;
     const cst = String(icms.cst || '00').replace(/\D/g, '').padStart(2, '0').slice(-2);
@@ -237,6 +241,28 @@ const NFXmlBuilder = (() => {
       return parts.join('');
     };
     switch (cst) {
+      case '02': {
+        // ICMS02: monofásica própria combustíveis (qBCMono? + adRemICMS + vICMSMono)
+        const vMono = icms.vICMSMono != null && icms.vICMSMono !== '' ? parseFiscalNumber(icms.vICMSMono) : parseFiscalNumber(icms.qBCMono) * parseFiscalNumber(icms.adRemICMS);
+        return `<ICMS02><orig>${orig}</orig><CST>02</CST>${icms.qBCMono != null && String(icms.qBCMono).trim() !== '' ? `<qBCMono>${num(icms.qBCMono, 4)}</qBCMono>` : ''}<adRemICMS>${num(icms.adRemICMS, 4)}</adRemICMS><vICMSMono>${num(vMono)}</vICMSMono></ICMS02>`;
+      }
+      case '15': {
+        // ICMS15: monofásica própria + retenção (+pRedAdRem/motRedAdRem? 1|9)
+        const vMono = icms.vICMSMono != null && icms.vICMSMono !== '' ? parseFiscalNumber(icms.vICMSMono) : parseFiscalNumber(icms.qBCMono) * parseFiscalNumber(icms.adRemICMS);
+        const vRet = icms.vICMSMonoReten != null && icms.vICMSMonoReten !== '' ? parseFiscalNumber(icms.vICMSMonoReten) : parseFiscalNumber(icms.qBCMonoReten) * parseFiscalNumber(icms.adRemICMSReten);
+        const red = icms.pRedAdRem != null && String(icms.pRedAdRem).trim() !== ''
+          ? `<pRedAdRem>${num(icms.pRedAdRem, 4)}</pRedAdRem><motRedAdRem>${['1', '9'].includes(String(icms.motRedAdRem)) ? icms.motRedAdRem : '9'}</motRedAdRem>` : '';
+        return `<ICMS15><orig>${orig}</orig><CST>15</CST>${icms.qBCMono != null && String(icms.qBCMono).trim() !== '' ? `<qBCMono>${num(icms.qBCMono, 4)}</qBCMono>` : ''}<adRemICMS>${num(icms.adRemICMS, 4)}</adRemICMS><vICMSMono>${num(vMono)}</vICMSMono>${icms.qBCMonoReten != null && String(icms.qBCMonoReten).trim() !== '' ? `<qBCMonoReten>${num(icms.qBCMonoReten, 4)}</qBCMonoReten>` : ''}<adRemICMSReten>${num(icms.adRemICMSReten, 4)}</adRemICMSReten><vICMSMonoReten>${num(vRet)}</vICMSMonoReten>${red}</ICMS15>`;
+      }
+      case '53': {
+        // ICMS53: monofásica com diferimento (todos opcionais após CST)
+        const opt = (tag, v, dec = 2) => (v != null && String(v).trim() !== '' ? `<${tag}>${num(v, dec)}</${tag}>` : '');
+        return `<ICMS53><orig>${orig}</orig><CST>53</CST>${opt('qBCMono', icms.qBCMono, 4)}${opt('adRemICMS', icms.adRemICMS, 4)}${opt('vICMSMonoOp', icms.vICMSMonoOp)}${opt('pDif', icms.pDif, 4)}${opt('vICMSMonoDif', icms.vICMSMonoDif)}${opt('vICMSMono', icms.vICMSMono)}${opt('qBCMonoDif', icms.qBCMonoDif, 4)}${opt('adRemICMSDif', icms.adRemICMSDif, 4)}</ICMS53>`;
+      }
+      case '61': {
+        // ICMS61: monofásica cobrada anteriormente (qBCMonoRet? + adRemICMSRet + vICMSMonoRet)
+        return `<ICMS61><orig>${orig}</orig><CST>61</CST>${icms.qBCMonoRet != null && String(icms.qBCMonoRet).trim() !== '' ? `<qBCMonoRet>${num(icms.qBCMonoRet, 4)}</qBCMonoRet>` : ''}<adRemICMSRet>${num(icms.adRemICMSRet, 4)}</adRemICMSRet><vICMSMonoRet>${num(icms.vICMSMonoRet)}</vICMSMonoRet></ICMS61>`;
+      }
       case '00':
         return `<ICMS00><orig>${orig}</orig><CST>00</CST><modBC>${icms.modBC || 3}</modBC><vBC>${num(icms.vBC)}</vBC><pICMS>${num(icms.pICMS)}</pICMS><vICMS>${num(icms.vICMS)}</vICMS></ICMS00>`;
       case '10':
@@ -264,20 +290,28 @@ const NFXmlBuilder = (() => {
     }
   }
 
-  // ─── PIS ─────────────────────────────────────────────────────────────────
+  // ─── PIS (MOC: 01/02→PISAliq | 03→PISQtde | demais→PISNT) ────────────────
   function buildPIS(pis) {
-    const cst = pis?.cST || '07';
+    const cst = String(pis?.cST || '07').replace(/\D/g, '').padStart(2, '0').slice(-2);
     if (cst === '01' || cst === '02') {
       return `<PISAliq><CST>${cst}</CST><vBC>${num(pis.vBC)}</vBC><pPIS>${num(pis.pPIS,4)}</pPIS><vPIS>${num(pis.vPIS)}</vPIS></PISAliq>`;
+    }
+    if (cst === '03') {
+      const vPIS = pis.vPIS != null && pis.vPIS !== '' ? parseFiscalNumber(pis.vPIS) : parseFiscalNumber(pis.qBCProd) * parseFiscalNumber(pis.vAliqProd);
+      return `<PISQtde><CST>03</CST><qBCProd>${num(pis.qBCProd, 4)}</qBCProd><vAliqProd>${num(pis.vAliqProd, 4)}</vAliqProd><vPIS>${num(vPIS)}</vPIS></PISQtde>`;
     }
     return `<PISNT><CST>${cst}</CST></PISNT>`;
   }
 
-  // ─── COFINS ───────────────────────────────────────────────────────────────
+  // ─── COFINS (MOC: 01/02→COFINSAliq | 03→COFINSQtde | demais→COFINSNT) ────
   function buildCOFINS(cofins) {
-    const cst = cofins?.cST || '07';
+    const cst = String(cofins?.cST || '07').replace(/\D/g, '').padStart(2, '0').slice(-2);
     if (cst === '01' || cst === '02') {
       return `<COFINSAliq><CST>${cst}</CST><vBC>${num(cofins.vBC)}</vBC><pCOFINS>${num(cofins.pCOFINS,4)}</pCOFINS><vCOFINS>${num(cofins.vCOFINS)}</vCOFINS></COFINSAliq>`;
+    }
+    if (cst === '03') {
+      const vCOFINS = cofins.vCOFINS != null && cofins.vCOFINS !== '' ? parseFiscalNumber(cofins.vCOFINS) : parseFiscalNumber(cofins.qBCProd) * parseFiscalNumber(cofins.vAliqProd);
+      return `<COFINSQtde><CST>03</CST><qBCProd>${num(cofins.qBCProd, 4)}</qBCProd><vAliqProd>${num(cofins.vAliqProd, 4)}</vAliqProd><vCOFINS>${num(vCOFINS)}</vCOFINS></COFINSQtde>`;
     }
     return `<COFINSNT><CST>${cst}</CST></COFINSNT>`;
   }
@@ -388,6 +422,10 @@ const NFXmlBuilder = (() => {
     const vIBSMunn = g.vIBSMun != null ? parseFiscalNumber(g.vIBSMun) : vBCn * pIBSMun / 100;
     const vIBSn = vIBSUFn + vIBSMunn;
     const vCBSn = g.vCBS != null ? parseFiscalNumber(g.vCBS) : vBCn * pCBS / 100;
+    // Devolução de tributo (TDevTrib, NT 2025.002 v1.50 — NFePHP): pDevTrib?
+    // + vDevTrib, após gDif e antes de gRed/vIBSUF em cada lado.
+    const devTribTag = (d) => (d && (d.v != null && String(d.v).trim() !== '' || d.vDevTrib != null)
+      ? `<gDevTrib>${d.p != null && String(d.p).trim() !== '' ? `<pDevTrib>${num(d.p, 4)}</pDevTrib>` : ''}<vDevTrib>${num(d.v != null ? d.v : d.vDevTrib)}</vDevTrib></gDevTrib>` : '');
     // Grupo base — choice do TTribNFe: gIBSCBSMono (CST 620) | gTransfCred
     // (CST 800) | gAjusteCompet (CST 811) | gIBSCBS (demais CST)
     let baseGroup;
@@ -412,10 +450,10 @@ const NFXmlBuilder = (() => {
           + `<pAliqIBSMun>${num(g.tribCompraGov.pAliqIBSMun, 4)}</pAliqIBSMun><vTribIBSMun>${num(g.tribCompraGov.vTribIBSMun)}</vTribIBSMun>`
           + `<pAliqCBS>${num(g.tribCompraGov.pAliqCBS, 4)}</pAliqCBS><vTribCBS>${num(g.tribCompraGov.vTribCBS)}</vTribCBS></gTribCompraGov>` : '';
       baseGroup = `<gIBSCBS><vBC>${num(vBCn)}</vBC>`
-        + `<gIBSUF><pIBSUF>${num(pIBSUF, 4)}</pIBSUF>${gDifTag()}${gRedTag(pIBSUF)}<vIBSUF>${num(vIBSUFn)}</vIBSUF></gIBSUF>`
-        + `<gIBSMun><pIBSMun>${num(pIBSMun, 4)}</pIBSMun>${gDifTag()}${gRedTag(pIBSMun)}<vIBSMun>${num(vIBSMunn)}</vIBSMun></gIBSMun>`
+        + `<gIBSUF><pIBSUF>${num(pIBSUF, 4)}</pIBSUF>${gDifTag()}${devTribTag(g.devTribUF)}${gRedTag(pIBSUF)}<vIBSUF>${num(vIBSUFn)}</vIBSUF></gIBSUF>`
+        + `<gIBSMun><pIBSMun>${num(pIBSMun, 4)}</pIBSMun>${gDifTag()}${devTribTag(g.devTribMun)}${gRedTag(pIBSMun)}<vIBSMun>${num(vIBSMunn)}</vIBSMun></gIBSMun>`
         + `<vIBS>${num(vIBSn)}</vIBS>`
-        + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS>${gDifTag()}${gRedTag(pCBS)}<vCBS>${num(vCBSn)}</vCBS></gCBS>${tribRegularTag}${tribCompraGovTag}`
+        + `<gCBS><pCBS>${num(pCBS, 4)}</pCBS>${gDifTag()}${devTribTag(g.devTribCBS)}${gRedTag(pCBS)}<vCBS>${num(vCBSn)}</vCBS></gCBS>${tribRegularTag}${tribCompraGovTag}`
         + `</gIBSCBS>`;
     }
     // Estorno de crédito (opcional)
@@ -527,7 +565,7 @@ const NFXmlBuilder = (() => {
         <vBCST>0.00</vBCST>
         <vST>0.00</vST>
         <vFCPST>0.00</vFCPST>
-        <vFCPSTRet>0.00</vFCPSTRet>
+        <vFCPSTRet>0.00</vFCPSTRet>${((Number(t.qBCMono) > 0 || Number(t.vICMSMono) > 0 || Number(t.qBCMonoReten) > 0 || Number(t.vICMSMonoReten) > 0 || Number(t.qBCMonoRet) > 0 || Number(t.vICMSMonoRet) > 0) ? `<qBCMono>${num(t.qBCMono)}</qBCMono><vICMSMono>${num(t.vICMSMono)}</vICMSMono><qBCMonoReten>${num(t.qBCMonoReten)}</qBCMonoReten><vICMSMonoReten>${num(t.vICMSMonoReten)}</vICMSMonoReten><qBCMonoRet>${num(t.qBCMonoRet)}</qBCMonoRet><vICMSMonoRet>${num(t.vICMSMonoRet)}</vICMSMonoRet>` : '')}
         <vProd>${num(t.vProd)}</vProd>
         <vFrete>${num(t.vFrete)}</vFrete>
         <vSeg>0.00</vSeg>
@@ -546,6 +584,11 @@ const NFXmlBuilder = (() => {
   // ─── Bloco <total> — IBSCBSTot (TIBSCBSMonoTot) ────────────────────────
   // gMono (Totais da Monofasia, só modelos 55/65): emitido quando há valores
   // monofásicos, mesmo sem vBCIBSCBS (monofásico é quantitativo, não tem vBC).
+  function devTribVal(d) {
+    if (!d) return 0;
+    const v = d.v != null ? d.v : d.vDevTrib;
+    return parseFiscalNumber(v);
+  }
   function buildIBSCBSTot(t) {
     const hasMono = ['vMonoIBS', 'vMonoCBS', 'vMonoRetenIBS', 'vMonoRetenCBS', 'vMonoRetIBS', 'vMonoRetCBS']
       .some((k) => Number(t[k]) > 0);
@@ -554,7 +597,7 @@ const NFXmlBuilder = (() => {
       ? `<gMono><vIBSMono>${num(t.vMonoIBS)}</vIBSMono><vCBSMono>${num(t.vMonoCBS)}</vCBSMono>`
         + `<vIBSMonoReten>${num(t.vMonoRetenIBS)}</vIBSMonoReten><vCBSMonoReten>${num(t.vMonoRetenCBS)}</vCBSMonoReten>`
         + `<vIBSMonoRet>${num(t.vMonoRetIBS)}</vIBSMonoRet><vCBSMonoRet>${num(t.vMonoRetCBS)}</vCBSMonoRet></gMono>` : '';
-    return `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>${num(t.vDifIBSUF)}</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>${num(t.vDifIBSMun)}</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>${num(t.vDifCBS)}</vDif><vDevTrib>0.00</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS>${gMono}${(Number(t.vIBSEstCred) > 0 || Number(t.vCBSEstCred) > 0) ? `<gEstornoCred><vIBSEstCred>${num(t.vIBSEstCred)}</vIBSEstCred><vCBSEstCred>${num(t.vCBSEstCred)}</vCBSEstCred></gEstornoCred>` : ''}</IBSCBSTot>`;
+    return `<IBSCBSTot><vBCIBSCBS>${num(t.vBCIBSCBS)}</vBCIBSCBS><gIBS><gIBSUF><vDif>${num(t.vDifIBSUF)}</vDif><vDevTrib>${num(t.vDevTribIBSUF)}</vDevTrib><vIBSUF>${num(t.vIBSUF)}</vIBSUF></gIBSUF><gIBSMun><vDif>${num(t.vDifIBSMun)}</vDif><vDevTrib>${num(t.vDevTribIBSMun)}</vDevTrib><vIBSMun>${num(t.vIBSMun)}</vIBSMun></gIBSMun><vIBS>${num(t.vIBS)}</vIBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gIBS><gCBS><vDif>${num(t.vDifCBS)}</vDif><vDevTrib>${num(t.vDevTribCBS)}</vDevTrib><vCBS>${num(t.vCBS)}</vCBS><vCredPres>${num(t.vCredPres)}</vCredPres><vCredPresCondSus>0.00</vCredPresCondSus></gCBS>${gMono}${(Number(t.vIBSEstCred) > 0 || Number(t.vCBSEstCred) > 0) ? `<gEstornoCred><vIBSEstCred>${num(t.vIBSEstCred)}</vIBSEstCred><vCBSEstCred>${num(t.vCBSEstCred)}</vCBSEstCred></gEstornoCred>` : ''}</IBSCBSTot>`;
   }
 
   // ─── Bloco <transp> ───────────────────────────────────────────────────────
@@ -656,11 +699,30 @@ const NFXmlBuilder = (() => {
     let vProd = 0, vBC = 0, vICMS = 0, vIPI = 0, vPIS = 0, vCOFINS = 0;
     let vBCIBSCBS = 0, vIBSUF = 0, vIBSMun = 0, vCBS = 0, vIS = 0;
     let vDifIBSUF = 0, vDifIBSMun = 0, vDifCBS = 0, vCredPres = 0, vIBSEstCred = 0, vCBSEstCred = 0;
+    let vDevTribIBSUF = 0, vDevTribIBSMun = 0, vDevTribCBS = 0;
     let vMonoIBS = 0, vMonoCBS = 0, vMonoRetenIBS = 0, vMonoRetenCBS = 0, vMonoRetIBS = 0, vMonoRetCBS = 0;
+    // ICMS monofásico (NT 2023.001 — ICMSTot qBCMono/vICMSMono/... opcionais)
+    let qBCMono = 0, vICMSMono = 0, qBCMonoReten = 0, vICMSMonoReten = 0, qBCMonoRet = 0, vICMSMonoRet = 0;
     itens.forEach(it => {
       vProd   += parseFloat(it.vProd || it.total) || 0;
       vBC     += parseFloat(it.imposto?.icms?.vBC) || 0;
       vICMS   += parseFloat(it.imposto?.icms?.vICMS) || 0;
+      // ICMS monofásico por item (CST 02/15/53/61): totais opcionais do ICMSTot.
+      // Auto-cálculo q×adRem espelha o buildICMSNormal (o item raramente
+      // traz vICMSMono preenchido). NOTA XSD: nos TOTAIS qBCMono* é
+      // TDec_1302 (2 decimais), diferente do item (TDec_1104v, 4 casas).
+      const mi = it.imposto?.icms || {};
+      const mcs = String(mi.cst || '');
+      if (['02', '15', '53', '61'].includes(mcs)) {
+        const q = parseFiscalNumber(mi.qBCMono), a = parseFiscalNumber(mi.adRemICMS);
+        const qr = parseFiscalNumber(mi.qBCMonoReten), ar = parseFiscalNumber(mi.adRemICMSReten);
+        qBCMono      += q;
+        vICMSMono    += mi.vICMSMono != null && mi.vICMSMono !== '' ? parseFiscalNumber(mi.vICMSMono) : q * a;
+        qBCMonoReten += qr;
+        vICMSMonoReten += mi.vICMSMonoReten != null && mi.vICMSMonoReten !== '' ? parseFiscalNumber(mi.vICMSMonoReten) : qr * ar;
+        qBCMonoRet   += parseFiscalNumber(mi.qBCMonoRet);
+        vICMSMonoRet += parseFiscalNumber(mi.vICMSMonoRet);
+      }
       vIPI    += parseFloat(it.imposto?.ipi?.vIPI) || 0;
       vPIS    += parseFloat(it.imposto?.pis?.vPIS) || 0;
       vCOFINS += parseFloat(it.imposto?.cofins?.vCOFINS) || 0;
@@ -682,6 +744,9 @@ const NFXmlBuilder = (() => {
         vIBSUF    += gi.vIBSUF  != null ? parseFiscalNumber(gi.vIBSUF)  : bc * puf / 100;
         vIBSMun   += gi.vIBSMun != null ? parseFiscalNumber(gi.vIBSMun) : bc * pmu / 100;
         vCBS      += gi.vCBS    != null ? parseFiscalNumber(gi.vCBS)    : bc * pcb / 100;
+        vDevTribIBSUF  += devTribVal(gi.devTribUF);
+        vDevTribIBSMun += devTribVal(gi.devTribMun);
+        vDevTribCBS    += devTribVal(gi.devTribCBS);
         const pdif = parseFiscalNumber(gi.pDif);
         if (pdif > 0) { vDifIBSUF += bc * pdif / 100; vDifIBSMun += bc * pdif / 100; vDifCBS += bc * pdif / 100; }
         const cp = gi.credPresOper;
@@ -711,7 +776,9 @@ const NFXmlBuilder = (() => {
       vTotTrib: vICMS + vIPI + vPIS + vCOFINS + vIBS + vCBS + vIS,
       vBCIBSCBS, vIBSUF, vIBSMun, vIBS, vCBS, vIS,
       vDifIBSUF, vDifIBSMun, vDifCBS, vCredPres, vIBSEstCred, vCBSEstCred,
-      vMonoIBS, vMonoCBS, vMonoRetenIBS, vMonoRetenCBS, vMonoRetIBS, vMonoRetCBS };
+      vDevTribIBSUF, vDevTribIBSMun, vDevTribCBS,
+      vMonoIBS, vMonoCBS, vMonoRetenIBS, vMonoRetenCBS, vMonoRetIBS, vMonoRetCBS,
+      qBCMono, vICMSMono, qBCMonoReten, vICMSMonoReten, qBCMonoRet, vICMSMonoRet };
   }
 
   // ─── Montar XML NF-e completo (sem assinatura) ────────────────────────────

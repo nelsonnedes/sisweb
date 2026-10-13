@@ -147,13 +147,54 @@ const NFValidator = (() => {
     // PIS/COFINS
     if (!item.imposto?.pis)    erros.push(`Item ${n}: Grupo PIS obrigatório`);
     if (!item.imposto?.cofins) erros.push(`Item ${n}: Grupo COFINS obrigatório`);
+    // Gate CRT × CSOSN/CST (Fase A — rejeição 931 se cruzar). O CRT vem do
+    // emitente (nfe.emit.crt); aqui valida-se o código do item quando o CRT
+    // é conhecido (validarNFe injeta via item._crt).
+    const crtItem = item._crt ?? item.crt ?? null;
+    if (crtItem != null && String(crtItem).trim() !== '' && window.NFTaxTables?.validarCodigoICMS) {
+      const ic = item.imposto?.icms || {};
+      // Prioridade pelo regime (item pode carregar resíduo do outro campo):
+      // CRT 3 → cst; CRT 1/2 → csosn; sem CRT conhecido → cst, senão csosn.
+      const codItem = (String(crtItem) === '3' ? (ic.cst || ic.csosn) : (ic.csosn || ic.cst)) || item.csosn || '';
+      const gate = window.NFTaxTables.validarCodigoICMS(crtItem, codItem);
+      if (!gate.ok) erros.push(`Item ${n}: ${gate.erro}`);
+      // ICMS monofásico (02/15/53/61) exige campos adRem do item — SOMENTE
+      // quando o código é CST de 2 dígitos (CSOSN 102 termina em "02" mas
+      // não é monofásico; o gate acima já separou grupo csosn × cst).
+      const codRaw = String(codItem).trim();
+      const cod2 = gate.grupo === 'cst' ? codRaw.replace(/\D/g, '').padStart(2, '0').slice(-2) : '';
+      if (['02', '15', '61'].includes(cod2)) {
+        const m = item.imposto?.icms || {};
+        if (!(parseFloat(cod2 === '61' ? m.adRemICMSRet : m.adRemICMS) >= 0 && String(cod2 === '61' ? m.adRemICMSRet : m.adRemICMS ?? '').trim() !== '')) {
+          erros.push(`Item ${n}: CST ${cod2} exige alíquota adRem do ICMS no item`);
+        }
+      }
+    }
+    // PIS/COFINS CST 03 exige quantidade × alíquota (PISQtde/COFINSQtde)
+    for (const [grp, tag] of [['pis', 'PIS'], ['cofins', 'COFINS']]) {
+      const cstPC = String(item.imposto?.[grp]?.cST || '').replace(/\D/g, '').padStart(2, '0').slice(-2);
+      if (cstPC === '03') {
+        const g = item.imposto?.[grp] || {};
+        if (!(parseFloat(g.qBCProd) > 0)) erros.push(`Item ${n}: ${tag} CST 03 exige quantidade vendida (qBCProd)`);
+        if (!(parseFloat(g.vAliqProd) > 0) && !(parseFloat(g.vPIS ?? g.vCOFINS) > 0)) erros.push(`Item ${n}: ${tag} CST 03 exige alíquota por unidade (vAliqProd) ou valor`);
+      }
+      if (window.NFTaxTables?.grupoPISCOFINS && cstPC && !window.NFTaxTables.grupoPISCOFINS(cstPC)) {
+        erros.push(`Item ${n}: ${tag} CST ${cstPC} inválido (MOC: 01–99)`);
+      }
+    }
     // IBS/CBS (cStat 1115): grupo EXIGIDO em todo item (fonte: NFePHP
     // sped-nfe master — flagIBSCBS ligada por cClassTrib presente). Ausência
     // = rejeição SEFAZ, então o validador bloqueia antes de transmitir.
+    // cClassTrib: validação ESTRUTURAL oficial (IT 2024.001 — prefixo = CST),
+    // sem select obsoleto (tabela atualizada por IT no Portal NF-e).
     const gIbs = item.imposto?.ibscbs;
     if (!gIbs || !gIbs.cst || !gIbs.cClassTrib || gIbs.habilitado === false) {
       erros.push(`Item ${n}: IBS/CBS não informado (grupo <IBSCBS> obrigatório — cStat 1115). Habilite IBS/CBS na Configuração fiscal`);
     } else {
+      if (window.NFTaxTables?.validarCClassTrib) {
+        const cc = window.NFTaxTables.validarCClassTrib(gIbs.cst, gIbs.cClassTrib);
+        if (!cc.ok) erros.push(`Item ${n}: ${cc.erro}`);
+      }
       const cstIbs = String(gIbs.cst || gIbs.CST || '');
       const hasMono = !!(gIbs.mono && (gIbs.mono.ibs || gIbs.mono.cbs));
       if (hasMono && cstIbs !== '620') erros.push(`Item ${n}: monofásico (gIBSCBSMono) exige CST 620`);
@@ -265,6 +306,13 @@ const NFValidator = (() => {
     if (![55, 65].includes(parseInt(ide.mod))) erros.push('Modelo inválido (deve ser 55 ou 65)');
     if (![0, 1].includes(parseInt(ide.tpNF)))  erros.push('Tipo de operação inválido (0=Entrada, 1=Saída)');
     if (![1, 2].includes(parseInt(ide.tpAmb))) erros.push('Ambiente inválido (1=Produção, 2=Homologação)');
+    // finNFe (finalidade) e indPres (presença) — MOC Tabelas (telas referência)
+    if (ide.finNFe != null && String(ide.finNFe).trim() !== '' && !['1', '2', '3', '4'].includes(String(ide.finNFe))) {
+      erros.push('Finalidade da NF-e inválida (1=Normal, 2=Complementar, 3=Ajuste, 4=Devolução)');
+    }
+    if (ide.indPres != null && String(ide.indPres).trim() !== '' && !['0', '1', '2', '3', '4', '5', '9'].includes(String(ide.indPres))) {
+      erros.push('Indicador de presença inválido (0–5, 9)');
+    }
     if (!validarCodigoMunicipio(ide.cMunFG)) erros.push('Código IBGE do município de ocorrência obrigatório/inválido');
     // Compras governamentais (ide > gCompraGov, TCompraGov — regras da doc do schema oficial)
     const cg = ide.compraGov;
@@ -290,8 +338,10 @@ const NFValidator = (() => {
     const ideResult  = validarIde(nfe.ide);
     const emitResult = validarEmitente(nfe.emit);
     const destResult = validarDestinatario(nfe.dest);
+    // Gate CRT × código por item: o CRT é do emitente (nfe.emit.crt)
+    const crtEmit = nfe.emit?.crt ?? null;
     const itensResult = (nfe.det || []).length > 0
-      ? merge(...(nfe.det || []).map((item, i) => validarItem(item, i)))
+      ? merge(...(nfe.det || []).map((item, i) => validarItem(crtEmit != null ? { ...item, _crt: crtEmit } : item, i)))
       : fail('Nenhum item adicionado à NF-e');
     const totalResult = validarTotais(nfe.total?.ICMSTot || nfe.total, nfe.det || []);
     const transpResult = validarTransporte(nfe.transp);
