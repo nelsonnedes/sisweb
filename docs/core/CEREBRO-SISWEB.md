@@ -1290,6 +1290,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-13 — Fix stale cache (cachebusters)
+
+- **Problema:** browsers serviam versões antigas dos JS porque os `?v=` do build anterior não acompanharam os patches feitos fora do pipeline de build.
+- **Ação:** `node tools/inject-cachebusters.mjs` — regenerou os hashes SHA-256 (12 hex) de todos os `<script src="nf-*.js">` em `notas-fiscais.html`, `landing-vendas.html`, `subscription.html` com base no conteúdo atual dos arquivos.
+- **Regra:** sempre rodar `inject-cachebusters.mjs` antes de qualquer deploy que altere JS. O script só processa `<script>`, não mexe em CSS/inline.
+- **Gates:** lint + typecheck OK; `npm test` 1260/1259/0/1.
+
 ## Sessao 2026-10-13 — AUDITORIA multidisciplinar notas-fiscais.html (memória permanente)
 
 - **Escopo auditado:** Emissão/Consulta/Dashboard/Config + 10 módulos JS; fora: MDF-e/CT-e/NFC-e-65. Fontes: XSD PL_010f, MOC 4.00, NFePHP master, Portal NF-e + IT 2024.001/2025.002.
