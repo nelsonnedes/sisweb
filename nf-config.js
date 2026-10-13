@@ -74,11 +74,10 @@ const NFConfigService = (() => {
         cst: '99',
         aliquota: 0,
       },
-      difal: {
-        habilitado: false,
-        aliquotaFCP: 0,
-        partilhaUF: 60, // % UF destino (2024: 100%)
-      },
+      // A14: DIFAL/partilha NÃO implementado no builder (sem ICMSUFDest).
+      // Config removida para não induzir a erro — partilha exige tabela de
+      // alíquotas internas por UF de destino (futura Onda 3b). Se algum dia
+      // for reativado, voltar com: difal: { habilitado, aliquotaFCP, partilhaUF }.
       // Reforma Tributária (LC 214/2025 — NT 2024.002 / schema PL_010f)
       // Default HABILITADO e neutro (CST 000/cClassTrib 000001/alíq. 0):
       // a SEFAZ exige <IBSCBS> em todo item (cStat 1115 se ausente).
@@ -117,6 +116,10 @@ const NFConfigService = (() => {
       endpointNuvem: null,
     },
     municipiosNFSe: [], // [{ codigoIBGE, nome, uf, aliquotaISS, provedor }]
+    // A15: responsável técnico do XML (infRespTec) — CNPJ da software-house
+    respTec: {
+      cnpj: '', xContato: '', email: '', fone: '',
+    },
     vigencias: [],      // Histórico de configurações para auditoria
     updatedAt: null,
     createdAt: null,
@@ -269,16 +272,21 @@ const NFConfigService = (() => {
   }
 
   // ─── Obter alíquota ICMS para operação ───────────────────────────────────
-  function calcularICMS(config, ufOrigem, ufDestino, valorProduto) {
+  // opts.importado (A11): mercadoria importada (conteúdo >40%) → 4% na
+  // interestadual (Res. Senado 13/2012). Retrocompatível (opts opcional).
+  function calcularICMS(config, ufOrigem, ufDestino, valorProduto, opts = {}) {
     const imp = config.impostos || {};
     const icms = imp.icms || {};
     const regime = config.empresa.regime;
     const isInterestadual = ufOrigem !== ufDestino;
+    const importado = opts.importado === true || icms.importado === true;
     const aliquota = isInterestadual
-      ? aliquotaInterestadual(ufOrigem, ufDestino, icms.importado === true)
+      ? aliquotaInterestadual(ufOrigem, ufDestino, importado)
       : (icms.aliquotaInterna || 0);
 
-    if (regime === 'simplesNacional') {
+    // A3: CRT 1 (SN) e CRT 2 (excesso sublimite) usam tags CSOSN — sem
+    // destaque de vBC/vICMS nos totais (antes o excesso caía no ramo normal).
+    if (regime === 'simplesNacional' || regime === 'simplesExcesso') {
       // SN geralmente não destaca ICMS — CST 102 ou CSOSN adequado
       return {
         cst: null,
@@ -300,6 +308,7 @@ const NFConfigService = (() => {
       csosn: null,
       orig: '0',
       modBC: icms.modalidadeBC || '3',
+      pRedBC: reducao > 0 ? reducao : undefined, // A12: CST 20/51 exige redução
       vBC: round2(vBC),
       pICMS: aliquota,
       vICMS: round2(vICMS),

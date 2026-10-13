@@ -1328,7 +1328,7 @@
                 </div>
                 <div class="form-group" style="max-width:170px">
                   <label for="nfFinNFe">Finalidade:</label>
-                  <select id="nfFinNFe" title="finNFe — 4=Devolução">
+                  <select id="nfFinNFe" title="finNFe — 4=Devolução" onchange="try{document.getElementById('nfNFrefGroup').hidden=(this.value==='1')}catch(_){}">
                     <option value="1" selected>1 — Normal</option>
                     <option value="2">2 — Complementar</option>
                     <option value="3">3 — Ajuste</option>
@@ -1347,6 +1347,10 @@
                     <option value="9">9 — Outros (não presencial)</option>
                   </select>
                 </div>
+                <div class="form-group" style="max-width:230px" id="nfNFrefGroup" hidden>
+                  <label for="nfNFref">Chave NF-e referenciada:</label>
+                  <input type="text" id="nfNFref" maxlength="44" inputmode="numeric" placeholder="44 dígitos (finNFe 2/3/4)" title="Obrigatória quando Finalidade ≠ Normal">
+                </div>
               </div>
             </div>
 
@@ -1355,11 +1359,11 @@
               <div class="form-row">
                 <div class="form-group">
                   <label for="nfCliente">Cliente: *</label>
-                   <div class="nf-customer-picker" style="display:flex;gap:8px;align-items:center;">
+                  <div class="nf-customer-picker" style="display:flex;gap:8px;align-items:center;">
                     <input type="text" id="nfClienteBusca" placeholder="Buscar cliente..."
                       style="flex:1;min-width:120px"
                       oninput="nfFiltrarClientesSelect(this.value)">
-                    <select id="nfCliente" required style="flex:2">
+                    <select id="nfCliente" required style="flex:2" onchange="nfAtualizarIndIEDest()">
                       <option value="">Selecione um cliente...</option>
                     </select>
                     <button type="button" onclick="openNewClientModal()" class="btn btn-primary btn-small nf-cust-btn"
@@ -1375,6 +1379,14 @@
                 <div class="form-group">
                   <label for="nfClienteCnpj">CNPJ/CPF:</label>
                   <input type="text" id="nfClienteCnpj" readonly>
+                </div>
+                <div class="form-group" style="max-width:190px">
+                  <label for="nfIndIEDest">Contribuinte ICMS:</label>
+                  <select id="nfIndIEDest" title="indIEDest — 1=Contribuinte (exige IE), 2=Isento, 9=Não contribuinte">
+                    <option value="9">9 — Não contribuinte</option>
+                    <option value="1">1 — Contribuinte ICMS</option>
+                    <option value="2">2 — Contribuinte isento</option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label for="nfClienteUf">UF Dest.:</label>
@@ -1583,6 +1595,30 @@
                     <label for="itemCSOSNCad">CSOSN/CST:</label>
                     <select id="itemCSOSNCad" title="Opções filtradas pelo regime (CRT) da empresa"></select>
                   </div>
+                  <div class="form-group" style="max-width:110px">
+                    <label for="itemCESTCad">CEST:</label>
+                    <input type="text" id="itemCESTCad" maxlength="7" inputmode="numeric" placeholder="7 díg." title="Código Especificador ST — obrigatório com ST (A10)">
+                  </div>
+                  <div class="form-group" style="max-width:90px">
+                    <label for="itemOrigCad">Origem:</label>
+                    <select id="itemOrigCad" title="Origem da mercadoria (MOC)">
+                      <option value="0">0-Nacional</option>
+                      <option value="1">1-Estr.import.direta</option>
+                      <option value="2">2-Estr.merc.interno</option>
+                      <option value="3">3-Nac.imp.&gt;40%</option>
+                      <option value="4">4-Nac.PPB</option>
+                      <option value="5">5-Nac.imp.≤40%</option>
+                      <option value="6">6-Estr.s/similar</option>
+                      <option value="7">7-Estr.MI s/similar</option>
+                      <option value="8">8-Nac.imp.&gt;70%</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="max-width:110px;justify-content:flex-end;">
+                    <label for="itemImportadoCad">&nbsp;</label>
+                    <label style="font-size:12px;display:flex;gap:6px;align-items:center;" title="A11: conteúdo de importação >40% → alíquota interestadual 4%">
+                      <input type="checkbox" id="itemImportadoCad" style="width:auto;"> Importado (4%)
+                    </label>
+                  </div>
                   <div class="form-group" style="justify-content:flex-end;">
                     <label>&nbsp;</label>
                     <button type="button" onclick="adicionarItemNF()" class="btn btn-success">
@@ -1622,6 +1658,30 @@
                   <div class="form-group" style="max-width:110px">
                     <label for="itemCSOSN">CSOSN/CST:</label>
                     <select id="itemCSOSN" title="Opções filtradas pelo regime (CRT) da empresa"></select>
+                  </div>
+                  <div class="form-group" style="max-width:110px">
+                    <label for="itemCEST">CEST:</label>
+                    <input type="text" id="itemCEST" maxlength="7" inputmode="numeric" placeholder="7 díg." title="Código Especificador ST — obrigatório com ST (A10)">
+                  </div>
+                  <div class="form-group" style="max-width:90px">
+                    <label for="itemOrig">Origem:</label>
+                    <select id="itemOrig" title="Origem da mercadoria (MOC)">
+                      <option value="0">0-Nacional</option>
+                      <option value="1">1-Estr.import.direta</option>
+                      <option value="2">2-Estr.merc.interno</option>
+                      <option value="3">3-Nac.imp.&gt;40%</option>
+                      <option value="4">4-Nac.PPB</option>
+                      <option value="5">5-Nac.imp.≤40%</option>
+                      <option value="6">6-Estr.s/similar</option>
+                      <option value="7">7-Estr.MI s/similar</option>
+                      <option value="8">8-Nac.imp.&gt;70%</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="max-width:110px;justify-content:flex-end;">
+                    <label for="itemImportado">&nbsp;</label>
+                    <label style="font-size:12px;display:flex;gap:6px;align-items:center;" title="A11: conteúdo de importação >40% → alíquota interestadual 4%">
+                      <input type="checkbox" id="itemImportado" style="width:auto;"> Importado (4%)
+                    </label>
                   </div>
                   <div class="form-group" style="justify-content:flex-end;">
                     <label>&nbsp;</label>
@@ -1682,7 +1742,7 @@
               <div class="form-row">
                 <div class="form-group">
                   <label for="nfFormaPag">Forma de Pagamento:</label>
-                  <select id="nfFormaPag">
+                  <select id="nfFormaPag" onchange="try{document.getElementById('nfCardGroup').hidden=!['03','04'].includes(this.value)}catch(_){}">
                     <option value="01">Dinheiro</option>
                     <option value="17">PIX</option>
                     <option value="03">Cartão de Crédito</option>
@@ -1692,9 +1752,32 @@
                     <option value="99">Outros</option>
                   </select>
                 </div>
+                <div class="form-group" id="nfCardGroup" hidden>
+                  <label>Cartão (tPag 03/04):</label>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <select id="nfCardTpIntegra" title="Tipo de integração" style="max-width:130px">
+                      <option value="2">2 — Não TEF</option>
+                      <option value="1">1 — TEF</option>
+                    </select>
+                    <input id="nfCardCnpj" maxlength="18" placeholder="CNPJ credenciadora" style="max-width:170px">
+                    <input id="nfCardBand" maxlength="20" placeholder="Bandeira" style="max-width:120px">
+                    <input id="nfCardAut" maxlength="20" placeholder="Autorização" style="max-width:130px">
+                  </div>
+                </div>
                 <div class="form-group">
                   <label for="nfInfoAdic">Informações Adicionais:</label>
                   <input type="text" id="nfInfoAdic" placeholder="Observações da nota..." maxlength="500" autocomplete="off">
+                </div>
+              </div>
+              <div class="form-row" id="nfParcelasGroup">
+                <div class="form-group" style="flex:1">
+                  <label>Parcelas (cobrança — opcional):</label>
+                  <div id="nfParcelasLista" style="font-size:13px;color:var(--sw-text-2);">À vista (sem parcelas).</div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:flex-end;">
+                    <input id="nfParcVenc" type="date" title="Vencimento" style="max-width:160px">
+                    <input id="nfParcValor" inputmode="decimal" placeholder="Valor R$" style="max-width:130px">
+                    <button type="button" class="btn btn-secondary btn-small" onclick="nfAdicionarParcela()">+ Parcela</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2129,6 +2212,35 @@
             </div><!-- cfg-panel-body -->
           </div><!-- panelNaturezas -->
 
+          <!-- ══ 3b. Responsável Técnico (infRespTec — A15) ═══════════════ -->
+          <div class="cfg-panel" id="panelRespTec">
+            <div class="cfg-panel-header" onclick="cfgTogglePanel('panelRespTec')">
+              <h3><i class="fas fa-laptop-code"></i> Responsável Técnico (XML)</h3>
+              <i class="fas fa-chevron-down cfg-panel-chevron"></i>
+            </div>
+            <div class="cfg-panel-body">
+            <p style="color: var(--sw-text-2);font-size:12px;margin-bottom:10px;">Dados da software-house no XML (infRespTec). Preencha para incluir no documento fiscal.</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cfgRespTecCnpj">CNPJ:</label>
+                <input type="text" id="cfgRespTecCnpj" maxlength="18" placeholder="00.000.000/0001-00">
+              </div>
+              <div class="form-group">
+                <label for="cfgRespTecContato">Contato:</label>
+                <input type="text" id="cfgRespTecContato" maxlength="60" placeholder="Nome do contato">
+              </div>
+              <div class="form-group">
+                <label for="cfgRespTecEmail">E-mail:</label>
+                <input type="email" id="cfgRespTecEmail" maxlength="60" placeholder="suporte@empresa.com">
+              </div>
+              <div class="form-group">
+                <label for="cfgRespTecFone">Fone:</label>
+                <input type="text" id="cfgRespTecFone" maxlength="14" placeholder="(11) 99999-9999">
+              </div>
+            </div>
+            </div><!-- cfg-panel-body -->
+          </div><!-- panelRespTec -->
+
           <!-- ══ 4. Certificado Digital ════════════════════════════ -->
           <div class="cfg-panel" id="panelCert">
             <div class="cfg-panel-header" onclick="cfgTogglePanel('panelCert')">
@@ -2247,6 +2359,10 @@
                 <input type="number" id="cfgIcmsAliq" step="0.01" min="0" max="30" placeholder="0">
               </div>
               <div class="form-group">
+                <label for="cfgReducaoBC">Redução BC ICMS (%):</label>
+                <input type="number" id="cfgReducaoBC" step="0.01" min="0" max="100" placeholder="0" title="A12: base de cálculo reduzida (CST 20/51/70)">
+              </div>
+              <div class="form-group">
                 <label for="cfgCSOSN">CSOSN (Simples Nacional — CRT 1/2):</label>
                 <select id="cfgCSOSN">
                   <option value="102">102 – Tributada SN sem crédito</option>
@@ -2325,6 +2441,10 @@
               <div class="form-group">
                 <label for="cfgIbsCbsHabilitado">Habilitar IBS/CBS na NF-e</label>
                 <span class="cfg-check-wrap"><input type="checkbox" id="cfgIbsCbsHabilitado"></span>
+              </div>
+              <div class="form-group">
+                <label for="cfgIndDoacao">Operação de doação:</label>
+                <span class="cfg-check-wrap" title="TTribNFe indDoacao=1"><input type="checkbox" id="cfgIndDoacao"></span>
               </div>
               <div class="form-group">
                 <label for="cfgIbsCbsCst">CST IBS/CBS:</label>
@@ -2697,11 +2817,17 @@
       const ibscbs = imp.ibscbs || {};
       const isCfg  = imp.is || {};
       set('cfgIbsCbsCst', ibscbs.cst || '');
+      set('cfgRespTecCnpj', cfg.respTec?.cnpj || '');
+      set('cfgRespTecContato', cfg.respTec?.xContato || '');
+      set('cfgRespTecEmail', cfg.respTec?.email || '');
+      set('cfgRespTecFone', cfg.respTec?.fone || '');
       set('cfgIbsCbsCClassTrib', ibscbs.cClassTrib || '');
       set('cfgIbsAliqUF', ibscbs.pIBSUF || 0);
       set('cfgIbsAliqMun', ibscbs.pIBSMun || 0);
       set('cfgCbsAliq', ibscbs.pCBS || 0);
       { const el = document.getElementById('cfgIbsCbsHabilitado'); if (el) el.checked = !!ibscbs.habilitado; }
+      { const el = document.getElementById('cfgIndDoacao'); if (el) el.checked = ibscbs.indDoacao === '1'; }
+      { const el = document.getElementById('cfgReducaoBC'); if (el) el.value = imp.icms?.reducaoBC || 0; }
       set('cfgIsCst', isCfg.cstIS || '');
       set('cfgIsCClassTrib', isCfg.cClassTribIS || '');
       set('cfgIsAliq', isCfg.pIS || 0);
@@ -3070,12 +3196,19 @@
           cfopPadrao: g('cfgCfopPadrao') || '5102',
           naturezaOperacao: g('cfgNatOp') || 'Venda de Mercadoria',
         },
+        respTec: {
+          cnpj: g('cfgRespTecCnpj').replace(/\D/g, ''),
+          xContato: g('cfgRespTecContato'),
+          email: g('cfgRespTecEmail'),
+          fone: g('cfgRespTecFone').replace(/\D/g, ''),
+        },
         impostos: {
-          icms: { csosn: g('cfgCSOSN'), cst: g('cfgIcmsCst') || '00', aliquotaInterna: parseFloat(g('cfgIcmsAliq')) || 0 },
+          icms: { csosn: g('cfgCSOSN'), cst: g('cfgIcmsCst') || '00', aliquotaInterna: parseFloat(g('cfgIcmsAliq')) || 0, reducaoBC: parseFloat(document.getElementById('cfgReducaoBC')?.value) || 0 },
           pis:  { cst: g('cfgPisCst'), aliquota: parseFloat(g('cfgPisAliq')) || 0.65 },
           cofins: { cst: g('cfgCofinsCst'), aliquota: parseFloat(g('cfgCofinsAliq')) || 3.00 },
           ibscbs: {
             habilitado: !!document.getElementById('cfgIbsCbsHabilitado')?.checked,
+            indDoacao: document.getElementById('cfgIndDoacao')?.checked ? '1' : undefined,
             cst: g('cfgIbsCbsCst').replace(/\D/g, '').slice(0, 3),
             cClassTrib: g('cfgIbsCbsCClassTrib').replace(/\D/g, '').slice(0, 6),
             pIBSUF: parseFloat(g('cfgIbsAliqUF')) || 0,
@@ -3331,6 +3464,10 @@
       const cfop    = document.getElementById('itemCFOP')?.value || '5102';
       const un      = document.getElementById('itemUN')?.value || 'UN';
       const csosn   = document.getElementById('itemCSOSN')?.value || '102';
+      const cestMan = (document.getElementById('itemCEST')?.value || '').replace(/\D/g, '');
+      const origMan = document.getElementById('itemOrig')?.value || '0';
+      const cestLeg = (document.getElementById('itemCEST')?.value || '').replace(/\D/g, '');
+      const origLeg = document.getElementById('itemOrig')?.value || '0';
 
       if (!prodId)           return mostrarAlertaEmissao('⚠️ Selecione um produto', 'warn');
       if (!(qtd > 0))        return mostrarAlertaEmissao('⚠️ Quantidade deve ser maior que zero', 'warn');
@@ -3353,10 +3490,10 @@
       const codNatLeg = (natLeg?.csosn || '').trim();
       const cfopEffLeg = (cfopNatLeg && /^[1-9]\d{3}$/.test(cfopNatLeg)) ? cfopNatLeg : cfop;
       const csosnEffLeg = codNatLeg || csosn;
-      let imposto = { icms: { csosn: csosnEffLeg, orig: 0 }, pis: { cST: '07' }, cofins: { cST: '07' } };
+      let imposto = { icms: { csosn: csosnEffLeg, orig: origLeg, }, pis: { cST: '07' }, cofins: { cST: '07' } };
       try {
         const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: csosnEffLeg, orig: 0 };
+        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: csosnEffLeg, orig: origLeg, };
         const crtLeg = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
         if (String(crtLeg) === '3' && /^[0-9]{2}$/.test(csosnEffLeg)) imposto.icms.cst = csosnEffLeg;
         const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
@@ -3376,6 +3513,7 @@
         cProd:  prodId,
         xProd:  nomeProd,
         ncm, cfop: cfopEffLeg, uCom: un, uTrib: un,
+        cest: cestLeg || undefined,
         qCom:   qtd, vUnCom: vUnit, vProd: total, imposto,
         csosn: csosnEffLeg,
       };
@@ -3445,7 +3583,7 @@
         cofins: item.imposto?.cofins || { cST: '07' },
       };
       try {
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: item.csosn || '102', orig: 0 };
+        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total, { importado: !!item.importado }), csosn: item.csosn || '102', orig: item.imposto?.icms?.orig ?? 0 };
         const crtRec = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
         if (String(crtRec) === '3' && /^[0-9]{2}$/.test(item.csosn || '')) imposto.icms.cst = item.csosn;
         const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
@@ -3621,7 +3759,7 @@
         cnpj:    isCNPJ ? cnpjCpf : '',
         cpf:     !isCNPJ ? cnpjCpf : '',
         ie,
-        indIEDest: ie ? (isCNPJ ? 1 : 9) : 9,
+        indIEDest: document.getElementById('nfIndIEDest')?.value || (ie ? (isCNPJ ? 1 : 9) : 9),
         endereco: {
           logradouro: document.getElementById('nfClienteEndereco')?.value.split(',')[0]?.trim() || 'N/A',
           numero:     document.getElementById('nfClienteEndereco')?.value.split(',')[1]?.trim() || 'S/N',
@@ -4094,20 +4232,38 @@
       const dhEmi = Number.isNaN(dhEmiDate.getTime()) ? new Date().toISOString() : dhEmiDate.toISOString();
       const total = calcularTotalFormNF();
       // Rascunho preserva o tPag escolhido (antes forçava 90 e a seleção se perdia).
-      const tPag = document.getElementById('nfFormaPag')?.value || '01';
+      // A17/A16 usam tPagForm (nfFormaPag) — tPag legado removido (duplicidade).
+      const tPagForm = document.getElementById('nfFormaPag')?.value || '01';
       // YA03-30 (cStat 904): tPag 90/91 (sem pagamento) com vPag<>0 → rejeição SEFAZ.
       // Zera e avisa; se houver cobrança, o usuário deve selecionar o meio real.
       // (Não bloqueia: operação sem cobrança com vNF>0 e tPag 90 é legítima.)
-      let vPag = (options.rascunho || tPag === '90' || tPag === '91') ? 0 : total.total;
-      if (!options.rascunho && (tPag === '90' || tPag === '91') && Number(total.total) > 0) {
+      let vPag = (options.rascunho || tPagForm === '90' || tPagForm === '91') ? 0 : total.total;
+      if (!options.rascunho && (tPagForm === '90' || tPagForm === '91') && Number(total.total) > 0) {
         vPag = 0;
         notifyUser('⚠️ Forma "Sem Pagamento" selecionada: valor do pagamento zerado (regra SEFAZ 904). Se houver cobrança, selecione o meio real (Dinheiro, PIX, Cartão…).');
       }
       const tpNFRaw = parseInt(document.getElementById('nfTipo')?.value, 10);
+      // A17: cartão (tPag 03/04) + A16: parcelas (cobr/dup)
+      const cardForm = ['03', '04'].includes(tPagForm)
+        ? {
+            tpIntegra: document.getElementById('nfCardTpIntegra')?.value || '2',
+            CNPJ: (document.getElementById('nfCardCnpj')?.value || '').replace(/\D/g, ''),
+            tBand: (document.getElementById('nfCardBand')?.value || '').trim(),
+            cAut: (document.getElementById('nfCardAut')?.value || '').trim(),
+          }
+        : undefined;
+      const cobrForm = _parcelasNF.length ? { dup: _parcelasNF.map((p) => ({ ...p })) } : undefined;
+      // A4: NFref visível quando finalidade ≠ Normal
+      try {
+        const finSel = document.getElementById('nfFinNFe')?.value || '1';
+        const gRef = document.getElementById('nfNFrefGroup');
+        if (gRef) gRef.hidden = finSel === '1';
+      } catch (_) {}
       return {
         tpNF: Number.isFinite(tpNFRaw) ? tpNFRaw : 1,
         finNFe: document.getElementById('nfFinNFe')?.value || '1',
         indPres: document.getElementById('nfIndPres')?.value || '0',
+        NFref: (document.getElementById('nfNFref')?.value || '').replace(/\D/g, ''),
         serie: document.getElementById('nfSerie')?.value || nfeCfg.serie || '1',
         dhEmi,
         natOp: document.getElementById('nfNatOp')?.value || nfeCfg.naturezaOperacao || 'Venda de Mercadoria',
@@ -4117,7 +4273,8 @@
         infAdic: montarInfoAdicionalNF(document.getElementById('nfInfoAdic')?.value || ''),
         desconto: total.desconto,
         frete: total.frete,
-        pag: [{ tPag, vPag }],
+        pag: [{ tPag: tPagForm, vPag, ...(cardForm ? { card: cardForm } : {}) }],
+        cobr: cobrForm,
         dest,
       };
     }
@@ -4309,6 +4466,14 @@
         const result = window.NFValidator.validarNFe(nfeData);
         if (!result.valid) alerts.errors.push(...result.errors);
       }
+      // A17: cartão (tPag 03/04) sem autorização — aviso (TEF dispensa em
+      // alguns fluxos; sem evidência de RV bloqueante nos artefatos do repo).
+      try {
+        const pag0 = Array.isArray(nfeData.pag) ? nfeData.pag[0] : null;
+        if (['03', '04'].includes(String(pag0?.tPag || '')) && !String(pag0?.card?.cAut || '').trim()) {
+          alerts.warnings.push('Pagamento com cartão sem código de autorização (cAut) — confira o comprovante.');
+        }
+      } catch (_) {}
 
       return alerts;
     }
@@ -4379,6 +4544,16 @@
             ${reviewLineNF('Produtos', fmtMoedaForm(total.vProd || 0))}
             ${reviewLineNF('Frete', fmtMoedaForm(total.vFrete || nfeData.frete || 0))}
             ${reviewLineNF('Total', fmtMoedaForm(total.vNF || 0))}
+          </div>
+          <div class="nf-review-card">
+            <h4>Fiscal por item (A9)</h4>
+            ${(nfeData.det || []).map((it, idx) => {
+              const im = it.imposto || {};
+              const codIcms = im.icms?.cst || im.icms?.csosn || it.csosn || '—';
+              const fisco = `CFOP ${it.cfop || '—'} · ICMS ${codIcms} · PIS/COFINS ${im.pis?.cST || '—'}/${im.cofins?.cST || '—'}`
+                + (im.ibscbs?.cst ? ` · IBS/CBS ${im.ibscbs.cst}/${im.ibscbs.cClassTrib || '—'}` : ' · IBS/CBS ausente');
+              return reviewLineNF(`#${idx + 1} ${String(it.xProd || '').slice(0, 28)}`, fisco);
+            }).join('') || reviewLineNF('Itens', 'nenhum')}
           </div>
           <div class="nf-review-card">
             <h4>Transporte</h4>
@@ -5877,10 +6052,11 @@ renderizarVolumesNF();
       }
       const csosnEffMan = codNatMan || csosn;
       const cfopEffMan = (cfopNatMan && /^[1-9]\d{3}$/.test(cfopNatMan)) ? cfopNatMan : cfop;
-      let imposto = { icms: { csosn: csosnEffMan, orig: 0 }, pis: { cST: '07' }, cofins: { cST: '07' } };
+      let imposto = { icms: { csosn: csosnEffMan, orig: origMan, }, pis: { cST: '07' }, cofins: { cST: '07' } };
       try {
         const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: csosnEffMan, orig: 0 };
+        const importadoMan = !!document.getElementById('itemImportado')?.checked;
+        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total, { importado: importadoMan }), csosn: csosnEffMan, orig: origMan, };
         const crtMan = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
         if (String(crtMan) === '3' && /^[0-9]{2}$/.test(csosnEffMan)) imposto.icms.cst = csosnEffMan;
         const pc = window.NFConfigService.calcularPISCOFINS(cfg, total);
@@ -5900,6 +6076,8 @@ renderizarVolumesNF();
         cProd:  'MANUAL_' + Date.now(),
         xProd:  nome,
         ncm, cfop: cfopEffMan, uCom: un, uTrib: un,
+        cest: cestMan || undefined,
+        importado: !!document.getElementById('itemImportado')?.checked || undefined,
         qCom: qtd, vUnCom: vUnit, vProd: total, imposto, csosn: csosnEffMan,
       };
       _itensNF.push(item);
@@ -5924,6 +6102,8 @@ renderizarVolumesNF();
       const cfop    = document.getElementById('itemCFOPCad')?.value || '5102';
       const un      = document.getElementById('itemUNCad')?.value || 'UN';
       const csosn   = document.getElementById('itemCSOSNCad')?.value || '102';
+      const cestCad = (document.getElementById('itemCESTCad')?.value || '').replace(/\D/g, '');
+      const origCad = document.getElementById('itemOrigCad')?.value || '0';
 
       if (!prodId)           return mostrarAlertaEmissao('⚠️ Selecione um produto', 'warn');
       if (!(qtd > 0))        return mostrarAlertaEmissao('⚠️ Quantidade deve ser maior que zero', 'warn');
@@ -5949,10 +6129,11 @@ renderizarVolumesNF();
       }
       const csosnEff = codNat || csosn;
       const cfopEff = (cfopNat && /^[1-9]\d{3}$/.test(cfopNat)) ? cfopNat : cfop;
-      let imposto = { icms: { csosn: csosnEff, orig: 0 }, pis: { cST: '07' }, cofins: { cST: '07' } };
+      let imposto = { icms: { csosn: csosnEff, orig: origCad, }, pis: { cST: '07' }, cofins: { cST: '07' } };
       try {
         const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total), csosn: csosnEff, orig: 0 };
+        const importadoCad = !!document.getElementById('itemImportadoCad')?.checked;
+        imposto.icms = { ...window.NFConfigService.calcularICMS(cfg, ufOrig, ufDest, total, { importado: importadoCad }), csosn: csosnEff, orig: origCad, };
         // Regime Normal (CRT 3): o código do campo/natureza é CST, não CSOSN
         const crtItem = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
         if (String(crtItem) === '3' && /^[0-9]{2}$/.test(csosnEff)) imposto.icms.cst = csosnEff;
@@ -5972,6 +6153,8 @@ renderizarVolumesNF();
         cProd:  prodId,
         xProd:  nomeProd,
         ncm, cfop: cfopEff, uCom: un, uTrib: un,
+        cest: cestCad || undefined,
+        importado: !!document.getElementById('itemImportadoCad')?.checked || undefined,
         qCom: qtd, vUnCom: vUnit, vProd: total, imposto, csosn: csosnEff,
       };
       _itensNF.push(item);
@@ -6056,6 +6239,51 @@ renderizarVolumesNF();
       } catch (_) {}
     }
     window.nfAplicarNatOp = nfAplicarNatOp;
+
+    // ─── Parcelas da cobrança (A16 — cobr/dup) ─────────────────────────────
+    let _parcelasNF = [];
+    function nfAdicionarParcela() {
+      const venc = document.getElementById('nfParcVenc')?.value || '';
+      const valor = parseMoeda(document.getElementById('nfParcValor')?.value);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(venc)) return mostrarAlertaEmissao('⚠️ Informe o vencimento da parcela', 'warn');
+      if (!(valor > 0)) return mostrarAlertaEmissao('⚠️ Informe o valor da parcela', 'warn');
+      _parcelasNF.push({ nDup: String(_parcelasNF.length + 1).padStart(3, '0'), dVenc: venc, vDup: Math.round(valor * 100) / 100 });
+      document.getElementById('nfParcValor').value = '';
+      nfRenderizarParcelas();
+      invalidarRevisaoNF();
+    }
+    window.nfAdicionarParcela = nfAdicionarParcela;
+    function nfRemoverParcela(i) {
+      _parcelasNF.splice(i, 1);
+      _parcelasNF.forEach((p, idx) => { p.nDup = String(idx + 1).padStart(3, '0'); });
+      nfRenderizarParcelas();
+      invalidarRevisaoNF();
+    }
+    window.nfRemoverParcela = nfRemoverParcela;
+    function nfRenderizarParcelas() {
+      const box = document.getElementById('nfParcelasLista');
+      if (!box) return;
+      box.innerHTML = _parcelasNF.length
+        ? _parcelasNF.map((p, i) => `<div style="display:flex;gap:8px;align-items:center;margin-top:4px;">`
+          + `<span style="flex:1;">${p.nDup} — venc. ${String(p.dVenc).split('-').reverse().join('/')} — ${fmtMoedaForm(p.vDup)}</span>`
+          + `<button type="button" class="btn btn-danger btn-small" onclick="nfRemoverParcela(${i})">×</button></div>`).join('')
+        : 'À vista (sem parcelas).';
+    }
+
+    // A7: indIEDest explícito (1=contribuinte exige IE, 2=isento, 9=não
+    // contribuinte). Default pela presença de IE (regra anterior mantida).
+    function nfAtualizarIndIEDest() {
+      try {
+        const opt = document.getElementById('nfCliente')?.selectedOptions?.[0];
+        const doc = (document.getElementById('nfClienteCnpj')?.value || '').replace(/\D/g, '');
+        const ie = (opt?.dataset?.ie || '').trim();
+        const sel = document.getElementById('nfIndIEDest');
+        if (!sel) return;
+        sel.value = ie ? (doc.length === 14 ? '1' : '9') : (sel.value || '9');
+        if (!['1', '2', '9'].includes(sel.value)) sel.value = '9';
+      } catch (_) {}
+    }
+    window.nfAtualizarIndIEDest = nfAtualizarIndIEDest;
 
     // ─── Filtro em tempo real no campo de busca de cliente ─
     let _clientesNFTodos = [];

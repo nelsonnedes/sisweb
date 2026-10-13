@@ -144,6 +144,12 @@ const NFValidator = (() => {
     } else if (!cnpjLimpo && cpfLimpo && !validarCPF(cpfLimpo)) {
       erros.push('CPF do destinatário inválido');
     }
+    // A7: indIEDest explícito — 1 exige IE; 2/9 sem IE obrigatória
+    const indIE = String(dest.indIEDest ?? '9');
+    if (!['1', '2', '9'].includes(indIE)) erros.push('indIEDest inválido (1=Contribuinte, 2=Isento, 9=Não contribuinte)');
+    if (indIE === '1' && !String(dest.ie || '').replace(/\D/g, '')) {
+      erros.push('Destinatário contribuinte (indIEDest=1) exige Inscrição Estadual');
+    }
     if (!dest.nome || dest.nome.trim().length < 2) erros.push('Nome/Razão Social do destinatário obrigatório');
     if (!dest.endereco?.logradouro) erros.push('Logradouro do destinatário obrigatório');
     if (!dest.endereco?.municipio)  erros.push('Município do destinatário obrigatório');
@@ -179,6 +185,10 @@ const NFValidator = (() => {
     // emitente (nfe.emit.crt); aqui valida-se o código do item quando o CRT
     // é conhecido (validarNFe injeta via item._crt).
     const crtItem = item._crt ?? item.crt ?? null;
+    // Código fiscal do item independente de CRT (2 díg.=CST, 3 díg.=CSOSN)
+    const icRaw = item.imposto?.icms || {};
+    const codRawItem = String(icRaw.cst || icRaw.csosn || item.csosn || '').trim();
+    const isCST2 = /^[0-9]{2}$/.test(codRawItem);
     if (crtItem != null && String(crtItem).trim() !== '' && window.NFTaxTables?.validarCodigoICMS) {
       const ic = item.imposto?.icms || {};
       // Prioridade pelo regime (item pode carregar resíduo do outro campo):
@@ -195,6 +205,21 @@ const NFValidator = (() => {
         const m = item.imposto?.icms || {};
         if (!(parseFloat(cod2 === '61' ? m.adRemICMSRet : m.adRemICMS) >= 0 && String(cod2 === '61' ? m.adRemICMSRet : m.adRemICMS ?? '').trim() !== '')) {
           erros.push(`Item ${n}: CST ${cod2} exige alíquota adRem do ICMS no item`);
+        }
+      }
+    }
+    // A12: CST com redução (20/51/70) exige percentual de redução — vale
+    // mesmo sem CRT conhecido (regra do código, não do regime).
+    if (isCST2 && ['20', '51', '70'].includes(codRawItem)) {
+      const m = item.imposto?.icms || {};
+      if (!(parseFloat(m.pRedBC) > 0)) erros.push(`Item ${n}: CST ${codRawItem} exige redução de BC (pRedBC > 0) na configuração ou no item`);
+    }
+    // A10: CST/CSOSN com ST exige CEST no item (vale sem CRT conhecido).
+    {
+      const stCodes = ['10', '30', '60', '70', '201', '202', '203', '500'];
+      if (stCodes.includes(codRawItem)) {
+        if (!/^[0-9]{7}$/.test(String(item.cest || '').replace(/\D/g, ''))) {
+          erros.push(`Item ${n}: operação com ST exige CEST (7 dígitos) no item`);
         }
       }
     }
@@ -357,6 +382,12 @@ const NFValidator = (() => {
     if (ide.indPres != null && String(ide.indPres).trim() !== '' && !['0', '1', '2', '3', '4', '5', '9'].includes(String(ide.indPres))) {
       erros.push('Indicador de presença inválido (0–5, 9)');
     }
+    // A4: finNFe 2/3/4 exige NFref (chave 44 dígitos do documento referenciado)
+    if (['2', '3', '4'].includes(String(ide.finNFe))) {
+      const refs = Array.isArray(ide.NFref) ? ide.NFref : (ide.NFref ? [ide.NFref] : []);
+      const okRef = refs.some((r) => /^[0-9]{44}$/.test(String(r).replace(/\D/g, '')));
+      if (!okRef) erros.push(`Finalidade ${ide.finNFe} exige chave de acesso (44 dígitos) da NF-e referenciada (NFref)`);
+    }
     if (!validarCodigoMunicipio(ide.cMunFG)) erros.push('Código IBGE do município de ocorrência obrigatório/inválido');
     // Compras governamentais (ide > gCompraGov, TCompraGov — regras da doc do schema oficial)
     const cg = ide.compraGov;
@@ -382,6 +413,15 @@ const NFValidator = (() => {
     const ideResult  = validarIde(nfe.ide);
     const emitResult = validarEmitente(nfe.emit);
     const destResult = validarDestinatario(nfe.dest);
+    // A5: finNFe=4 (devolução) exige impostoDevol por item (builder emite
+    // default pDevol=100; aqui garante presença para não sair incompleto)
+    const devResult = String(nfe.ide?.finNFe) === '4'
+      ? merge(...(nfe.det || []).map((item, i) => {
+          const d = item?.imposto?.devol;
+          const temDevol = d ? (d.pDevol != null || d.vIPIDevol != null) : true; // default 100 cobre
+          return temDevol ? ok() : fail(`Item ${i + 1}: devolução sem percentual (imposto.devol.pDevol)`);
+        }))
+      : ok();
     // Gate CRT × código por item: o CRT é do emitente (nfe.emit.crt)
     const crtEmit = nfe.emit?.crt ?? null;
     const itensResult = (nfe.det || []).length > 0
@@ -389,7 +429,7 @@ const NFValidator = (() => {
       : fail('Nenhum item adicionado à NF-e');
     const totalResult = validarTotais(nfe.total?.ICMSTot || nfe.total, nfe.det || []);
     const transpResult = validarTransporte(nfe.transp);
-    return merge(ideResult, emitResult, destResult, itensResult, totalResult, transpResult);
+    return merge(ideResult, emitResult, destResult, devResult, itensResult, totalResult, transpResult);
   }
 
   // ─── Validar configuração antes de emitir ─────────────────────────────────

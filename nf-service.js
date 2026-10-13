@@ -159,6 +159,8 @@ const NFService = (() => {
       status: 'rascunho',
       dataEmissao: dhEmi.slice(0, 10),
       natOpId: formData.natOpId || '',
+      // A15: responsável técnico (infRespTec) — da config fiscal
+      respTec: cfg.respTec && String(cfg.respTec.cnpj || '').replace(/\D/g, '').length === 14 ? { ...cfg.respTec } : undefined,
       ide: {
         mod:        55,
         serie,
@@ -227,6 +229,7 @@ const NFService = (() => {
       }),
       transp: normalizarTransporte(formData, idDestFinal),
       pag:    formData.pag || [{ tPag: '01', vPag: 0 }],
+      cobr:   formData.cobr || undefined,
       infAdic: formData.infAdic || '',
       desconto: parseFloat(formData.desconto) || 0,
       frete:    parseFloat(formData.frete)    || 0,
