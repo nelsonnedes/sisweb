@@ -1290,6 +1290,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-xml-builder.js`, `tests/nf-xml-compact.test.mjs`. Hosting publicado.
 - **Gates:** `npm test` 1147/0/1.
 
+## Sessao 2026-10-13 — AUDITORIA multidisciplinar notas-fiscais.html (memória permanente)
+
+- **Escopo auditado:** Emissão/Consulta/Dashboard/Config + 10 módulos JS; fora: MDF-e/CT-e/NFC-e-65. Fontes: XSD PL_010f, MOC 4.00, NFePHP master, Portal NF-e + IT 2024.001/2025.002.
+- **Críticos confirmados:** A1 edit-CSOSN descartado; A2 xNome poluído ("—doc"); A3 CRT2 como normal; A4 finNFe 2/3/4 sem NFref; A5 sem impostoDevol; A6 placeholders N/A-S/N-00000000 no XML; A7 sem indIEDest=2; A8 tipo×tpNF; A9 revisão sem códigos; A10 sem CEST; A11 sem orig/importado; A12 ST sem parâmetros; A13 sem FCP; A14 difal morto; A15 sem infRespTec; A16 sem cobr/dup; A17 sem card; A18 texto IBPT×vTotTrib; A19 filtro sem erro_envio; A20 doc transportadora silencioso; A21 CFOP regex ×4; A22 UF ×3; A23 monolito 6.700 linhas; A24 motores sem volante (dhSaiEnt/indDoacao/ALCZFM-UI); A25 PIS crédito só via regra.
+- **Decisão usuário:** executar Ondas 1→4 nesta ordem.
+- **Padrão de gates por onda:** lint + typecheck + npm test + XSD + deploy hosting + commit.
+
 ## Sessao 2026-10-13 — Garantia natureza→item + Fase B (regras) + Fase C
 
 - **Garantia (pré-requisito do usuário):** todo item carrega CFOP/CSOSN-CST da natureza — `nfAplicarNatOp` preenche manual+Cad (sempre, não só se vazio) + `nfNatOpId`; `autoPreencherPorProduto` não sobrescreve com CFOP do produto quando há natureza; 3 modos de adicionar item reconciliam + fix CRT3 (campo ia para `csosn` e o `cst` ficava no default 00 — agora `icms.cst` recebe o código); `recalcularImpostosItemNF` reconcilia; `buildNFeFromForm` aplica natureza por item na emissão.

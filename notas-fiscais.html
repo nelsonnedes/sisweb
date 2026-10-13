@@ -1770,6 +1770,7 @@
                 <option value="autorizada">Autorizada</option>
                 <option value="aguardando">Aguardando SEFAZ</option>
                 <option value="rejeitada">Rejeitada</option>
+                <option value="erro_envio">Erro de envio</option>
                 <option value="cancelada">Cancelada</option>
                 <option value="inutilizada">Inutilizada</option>
               </select>
@@ -2385,7 +2386,7 @@
               </div>
             </div>
             <hr style="border:none;border-top:1px solid var(--sw-border);margin:16px 0;">
-            <p style="color: var(--sw-text-2) ;font-size:12px;margin-bottom:10px;">Lei da Transparência (12.741/2012) — valores aproximados de tributos (IBPT). Informe os percentuais por NCM (ou um valor médio da empresa); aparecem em "Dados Adicionais" e no <vTotTrib>.</p>
+            <p style="color: var(--sw-text-2) ;font-size:12px;margin-bottom:10px;">Lei da Transparência (12.741/2012) — valores aproximados de tributos (IBPT). Informe os percentuais por NCM (ou um valor médio da empresa); aparecem em "Dados Adicionais" (infCpl). O campo <vTotTrib> do XML é omitido por decisão anti-cStat-685 (soma validada pela SEFAZ).</p>
             <div class="form-row">
               <div class="form-group">
                 <label for="cfgIbptFederal">IBPT Federais (%):</label>
@@ -3541,6 +3542,13 @@
       item.vProd = qtd * vUnit;
       item.csosn = csosn;
       item.imposto = recalcularImpostosItemNF(item);
+      // A1: se a natureza prevaleceu sobre o código digitado, avisa (nunca
+      // descarta edição fiscal em silêncio).
+      try {
+        if (item.csosn !== csosn) {
+          notifyUser(`⚠️ CSOSN/CST ajustado para ${item.csosn} (natureza da operação prevalece).`);
+        }
+      } catch (_) {}
       invalidarRevisaoNF();
       renderizarItensNF();
       atualizarTotaisNF();
@@ -3577,6 +3585,20 @@
     }
 
     // ─── Montar objeto dest a partir do select de cliente ─
+    // Nome fiscal do destinatário (A2): NUNCA usar opt.text (contém " — doc"
+    // após busca). Fonte: dataset.nome → cadastro → fallback sem sufixo.
+    function nfNomeDestinatarioLimpo(opt, cnpjCpf) {
+      try {
+        const d = (opt?.dataset?.nome || '').trim();
+        if (d) return d;
+        if (typeof _clientesNFTodos !== 'undefined' && Array.isArray(_clientesNFTodos)) {
+          const cli = _clientesNFTodos.find(c => String(c.cnpj || c.cpf || '').replace(/\D/g, '') === cnpjCpf);
+          const n = cli ? (cli.nome || cli.name || cli.razao || cli.razaoSocial || '') : '';
+          if (String(n).trim()) return String(n).trim();
+        }
+      } catch (_) {}
+      return String(opt?.text || '').split(' — ').slice(0, -1).join(' — ').trim() || String(opt?.text || '').trim();
+    }
     function montarDestFromForm() {
       const sel = document.getElementById('nfCliente');
       const opt = sel?.options[sel.selectedIndex];
@@ -3595,7 +3617,7 @@
         } catch (_) {}
       }
       return {
-        nome:    opt.text,
+        nome:    nfNomeDestinatarioLimpo(opt, cnpjCpf),
         cnpj:    isCNPJ ? cnpjCpf : '',
         cpf:     !isCNPJ ? cnpjCpf : '',
         ie,
@@ -4137,6 +4159,13 @@
       }
 
       if (step === 'transporte' && window.NFValidator?.validarTransporte) {
+        // A20: documento da transportadora preenchido mas inválido (≠14/11
+        // dígitos) sumiria em silêncio no XML — barra aqui com mensagem.
+        const docT = (document.getElementById('nfTranspDoc')?.value || '').replace(/\D/g, '');
+        const nomeT = (document.getElementById('nfTranspNome')?.value || '').trim();
+        if ((nomeT || docT) && docT && docT.length !== 14 && docT.length !== 11) {
+          return failStep('⚠️ Documento do transportador inválido: informe CNPJ (14 dígitos) ou CPF (11 dígitos)', ['nfTranspDoc']);
+        }
         const result = window.NFValidator.validarTransporte(montarTransporteFromForm());
         if (!result.valid) {
           const volumeError = result.errors.some((msg) => /^Volume \d+:/i.test(msg));
@@ -6004,6 +6033,26 @@ renderizarVolumesNF();
           const g = window.NFTaxTables.validarCodigoICMS(crt, nat.csosn);
           if (!g.ok) notifyUser('⚠️ Natureza "' + nat.descricao + '": ' + g.erro);
         }
+      // A8: tipo da natureza × tpNF — natureza de entrada com tpNF saída
+      // (ou vice-versa) gera CFOP/natureza incoerentes. Sugere o ajuste.
+      try {
+        const tipoNat = (nat.tipo || '').toLowerCase();
+        const tpAtual = document.getElementById('nfTipo')?.value;
+        const esperado = tipoNat === 'entrada' ? '0' : (tipoNat === 'saida' ? '1' : '');
+        if (esperado && tpAtual && tpAtual !== esperado) {
+          const rotulo = esperado === '0' ? 'Entrada (0)' : 'Saída (1)';
+          if (typeof window.confirmDialog === 'function') {
+            window.confirmDialog({
+              title: 'Tipo de operação divergente',
+              message: `A natureza "${nat.descricao}" é de ${tipoNat}, mas o Tipo de Operação está ${tpAtual === '0' ? 'Entrada (0)' : 'Saída (1)'}. Ajustar para ${rotulo}?`,
+              confirmLabel: 'Ajustar',
+              cancelLabel: 'Manter',
+            }).then((ok) => { if (ok) { document.getElementById('nfTipo').value = esperado; } }).catch(() => {});
+          } else {
+            document.getElementById('nfTipo').value = esperado;
+            notifyUser(`Tipo de operação ajustado para ${rotulo} (natureza de ${tipoNat}).`);
+          }
+        }
       } catch (_) {}
     }
     window.nfAplicarNatOp = nfAplicarNatOp;
@@ -6028,6 +6077,7 @@ renderizarVolumesNF();
         const nome = c.nome || c.name || 'Cliente';
         const doc  = c.cnpj || c.cpf || '';
         opt.textContent = doc ? `${nome} — ${doc}` : nome;
+        opt.dataset.nome   = nome;
         opt.dataset.cnpj   = c.cnpj   || '';
         opt.dataset.cpf    = c.cpf    || '';
         opt.dataset.ie     = nfClienteValor(c, 'ie', 'inscricaoEstadual', 'ieDest', 'ie_dest', 'inscricao_estadual') || '';
@@ -6062,7 +6112,7 @@ renderizarVolumesNF();
       if (opt) {
         return {
           id,
-          nome: opt.text || '',
+          nome: nfNomeDestinatarioLimpo(opt, String(opt.dataset.cnpj || opt.dataset.cpf || '').replace(/\D/g, '')) || opt.text || '',
           cnpj: opt.dataset.cnpj || '',
           cpf: opt.dataset.cpf || '',
           endereco: { uf: opt.dataset.uf || '', bairro: opt.dataset.bairro || '', cep: opt.dataset.cep || '' },

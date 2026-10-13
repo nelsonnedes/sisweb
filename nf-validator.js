@@ -92,7 +92,23 @@ const NFValidator = (() => {
     return parseInt(n[43]) === dv;
   }
 
-  // ─── Validar emitente ──────────────────────────────────────────────────────
+  // ─── Placeholders fictícios (A6): N/A, S/N, CEP zerado — irregulares em DFe
+  function rejeitarPlaceholder(valor, rotulo) {
+    const v = String(valor ?? '').trim().toUpperCase();
+    if (!v || v === 'N/A' || v === 'NA' || v === 'S/N' || v === 'SN' || v === '...' || v === '-') {
+      return `${rotulo} inválido (preencha o cadastro — placeholders como "N/A" não valem em NF-e)`;
+    }
+    return '';
+  }
+  function rejeitarCepFicticio(cep, rotulo) {
+    const d = String(cep || '').replace(/\D/g, '');
+    if (!d) return `${rotulo} obrigatório`;
+    if (/^0+$/.test(d) || /^(\d)\1+$/.test(d)) return `${rotulo} inválido (CEP fictício não vale em NF-e)`;
+    if (d.length !== 8) return `${rotulo} deve ter 8 dígitos`;
+    return '';
+  }
+
+  // ─── Validar emitente ─────────────────────────────────────────────────────
   function validarEmitente(emit) {
     const erros = [];
     if (!emit) { erros.push('Dados do emitente não configurados'); return fail(erros); }
@@ -104,6 +120,12 @@ const NFValidator = (() => {
     if (!validarCodigoMunicipio(emit.endereco?.codigoMunicipio)) erros.push('Código IBGE do município do emitente obrigatório/inválido');
     if (!emit.endereco?.uf || !/^[A-Z]{2}$/.test(emit.endereco.uf)) erros.push('UF do emitente inválida');
     if (!emit.endereco?.cep || !validarCEP(emit.endereco.cep)) erros.push('CEP do emitente inválido');
+    // A6: placeholders fictícios (N/A, S/N, CEP zerado) não valem em DFe
+    for (const [v, r] of [[emit.endereco?.logradouro, 'Logradouro do emitente'], [emit.endereco?.numero, 'Número do emitente'], [emit.endereco?.municipio, 'Município do emitente']]) {
+      const m = rejeitarPlaceholder(v, r);
+      if (m) erros.push(m);
+    }
+    { const m = rejeitarCepFicticio(emit.endereco?.cep, 'CEP do emitente'); if (m) erros.push(m); }
     if (!emit.ie && emit.crt !== 1) erros.push('Inscrição Estadual do emitente obrigatória (regime normal)');
     if (!emit.crt || ![1, 2, 3].includes(emit.crt)) erros.push('CRT do emitente inválido (1=SN, 2=SN excesso, 3=Normal)');
     return erros.length ? fail(erros) : ok();
@@ -128,6 +150,12 @@ const NFValidator = (() => {
     if (!validarCodigoMunicipio(dest.endereco?.codigoMunicipio)) erros.push('Código IBGE do município do destinatário obrigatório/inválido');
     if (!dest.endereco?.uf || !/^[A-Z]{2}$/.test(dest.endereco.uf)) erros.push('UF do destinatário inválida');
     if (!dest.endereco?.cep || !validarCEP(dest.endereco.cep)) erros.push('CEP do destinatário inválido');
+    // A6: placeholders fictícios (N/A, S/N, CEP zerado) não valem em DFe
+    for (const [v, r] of [[dest.nome, 'Nome do destinatário'], [dest.endereco?.logradouro, 'Logradouro do destinatário'], [dest.endereco?.numero, 'Número do destinatário'], [dest.endereco?.municipio, 'Município do destinatário']]) {
+      const m = rejeitarPlaceholder(v, r);
+      if (m) erros.push(m);
+    }
+    { const m = rejeitarCepFicticio(dest.endereco?.cep, 'CEP do destinatário'); if (m) erros.push(m); }
     return erros.length ? fail(erros) : ok();
   }
 
