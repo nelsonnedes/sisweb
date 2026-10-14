@@ -46,6 +46,13 @@ Executar o roadmap da auditoria (sessão cont. 9), na ordem: 1º integridade →
 - `npm test`: 1393 total / 1392 pass / 0 fail / 1 skip (skip = emulator esperado)
 - `npm run build:hosting`: OK (543 arquivos)
 
+## Deploy (devops, sob ordem expressa)
+- [ ] Commit dossiê + push
+- [ ] `firebase deploy --only hosting`
+- [ ] `firebase deploy --only database`
+- [ ] `firebase deploy --only functions:` estoqueAplicarMovimento, setUserAccessStatus, nf_assinarXML, nf_enviarSEFAZ, nf_consultarNFe, nf_reservarNumero, nf_cancelarNFe, nf_cartaCorrecaoNFe, nf_eventoRTC, nf_inutilizarNumeracao, mdfe_consultar, mdfe_emitir, mdfe_encerrar
+- [ ] Verificação pós-deploy + teste vivo MDF-e/NF-e em homologação
+
 ## Deferido com motivo
 - Unificação massiva `formatCurrency/formatDate/máscaras` (×20 cópias) e `calcularVolumeTora/PCT` (×7): troca de call-sites em 9+ arquivos com risco de regressão visual/fiscal; exige 1 story por módulo com validação em tela. Testes-ouro travam o comportamento atual.
 - `prettier`: mantido — usado por `.aiox-core/**/code-quality-improver.js` (achado anterior "não provada" corrigido).

@@ -1635,3 +1635,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Dossiê registrado na story (§5a, 7 itens, nenhum codado):** DIFAL ausente (`nf-config.js:84-87`); FCP-ST zerado (`nf-xml-builder.js:634-635`); sem `cBenef`/RICMS-PA; sem contingência (`tpEmis` fixo); cCredPres só formato; TZ −03:00 hardcoded (4 pontos; base PA correta); prazo cancel com mecanismo pronto e valor null.
 - **Debt:** `shortcut:`/`ponytail:` = 0 em código (único hit é esta própria nota histórica).
 - **Tree:** 30 modificados + 5 deletados + 9 novos (story + 8 testes); sem commit/sem push (aguardando ordem; deploy só @devops).
+
+## Sessao 2026-10-14 (cont. 12) — AUDITORIA COMPLETA: dossiê documental P1–P9 (zero código)
+
+- **Arquivo:** `docs/auditoria/AUDITORIA-COMPLETA-SISWEB.md` — inventário técnico + documental, 9 relatórios (funcionamento/evidência/fontes/classificação/riscos/plano), 5 matrizes, plano em 10 etapas. Escopo D1: PA/MT/RO/AC/AM/AP/MA. D4 cBenef só arquitetura futura; sem NCM automático; transparência só percentual médio.
+- **Fontes (4 frentes paralelas, só oficiais):** SVRS/AM/MT/SVAN + SVC-RS + MOC 7.0 (I e III) + EC87/LC190/Conv236/NT2015.003 + Ajuste 07/05 + NT2011/007 + NT2018.004 + NT2011/003 + Lei 12.876/2013 + IT 2025.002 v1.70 + Lei 12.741/2012 + Dec 8.264/2014 + INs IBAMA 21/2014, 16/2022, 3/2025 + Dec PA 2.596/2022 + NT 2014.004.
+- **NÃO VERIFICADO (não usar sem confirmar):** PA/RO/AC/AP↔SVRS e SVC; endpoints SVC-RS v4; Informe RFB unificação SVAN; prazo CC-e 720h; tags integrais ICMSUFDest; FCP por UF; vedação total 00000000; 703 no MOC em texto; GF fora de PA/MT; webservice fiscal-ambiental.
+- **Achados que viram condição de lançamento:** 1 DOF : 1 NF (IN 21/2014 art.35); GF-PA exige chave NF-e; cancel 24h + 155 fora de prazo + substituição 168h; sem tag DOF/GF no MOC (só `infCpl`/`infAdic`); IBPT opcional; TZ lei fecha mapa (PA/AP/MA −03; MT/RO/leste-AM −04; AC/oeste-AM −05).
