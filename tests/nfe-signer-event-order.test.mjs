@@ -54,6 +54,23 @@ test('NFe e eventoMDFe: último filho da raiz (comportamento preservado)', () =>
   assert.match(assinarSimulado(f, evt, 'infEvento').resultado, /<\/infEvento><Signature\/><\/eventoMDFe>/);
 });
 
+test('irmão com filho de MESMO nome aninhado: Signature depois do irmão (não dentro)', () => {
+  const f = loadInsertIndex();
+  const xml = '<evento xmlns="http://www.portalfiscal.inf.br/nfe"><infEvento Id="ID1101111"><chNFe>1</chNFe></infEvento><det><det>ninho</det></det></evento>';
+  const { idx, resultado } = assinarSimulado(f, xml, 'infEvento');
+  assert.ok(idx >= 0, 'encontrou posição');
+  assert.match(resultado, /<\/det><\/det><Signature\/><\/evento>/);
+  assert.doesNotMatch(resultado, /<det><Signature\/>/, 'Signature NÃO pode ficar dentro do irmão');
+});
+
+test('irmão com ">" em atributo: parser não quebra', () => {
+  const f = loadInsertIndex();
+  const xml = '<evento xmlns="http://www.portalfiscal.inf.br/nfe"><infEvento Id="ID1101111"><chNFe>1</chNFe></infEvento><obs compara="a>b">x</obs></evento>';
+  const { idx, resultado } = assinarSimulado(f, xml, 'infEvento');
+  assert.ok(idx >= 0, 'encontrou posição mesmo com > em atributo');
+  assert.match(resultado, /<\/obs><Signature\/><\/evento>/);
+});
+
 test('cancelamento: falha NÃO muda o status da nota (segue autorizada p/ retry)', () => {
   assert.doesNotMatch(nfFunctions, /status:\s+ret\.autorizada \? 'cancelada' : 'erro_cancelamento'/);
   assert.match(nfFunctions, /const patchCancel = ret\.autorizada/);

@@ -285,6 +285,21 @@ window.ModalListaRomaneiosPCT = (function() {
     let realtimeStarting = false;
     let realtimeRetryCount = 0;
 
+    function stopRealtimeRomaneiosPct() {
+        try { if (typeof realtimeUnsubscribe === 'function') realtimeUnsubscribe(); } catch (_) {}
+        realtimeUnsubscribe = null;
+        realtimeStarting = false;
+    }
+
+    // Logout/troca de tenant sem reload: o listener é do tenant anterior —
+    // encerra junto com a sessão (antes entregava dado cruzado).
+    try {
+        const __svc = window.firebaseService || window.FirebaseService;
+        if (__svc && typeof __svc.registerSessionTeardown === 'function') {
+            __svc.registerSessionTeardown(stopRealtimeRomaneiosPct);
+        }
+    } catch (_) {}
+
     // 📡 Listener realtime para manter lista sincronizada entre PCs
     async function setupRealtimeRomaneiosPct() {
         try {
@@ -1223,6 +1238,7 @@ window.ModalListaRomaneiosPCT = (function() {
     }
     
     function closeModal() {
+        stopRealtimeRomaneiosPct();
         const modal = document.getElementById(CONFIG.modalId);
         if (modal) {
             modal.style.display = "none";

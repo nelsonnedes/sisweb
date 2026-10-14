@@ -1790,6 +1790,23 @@ exports.setUserAccessStatus = https.onCall(async (data, context) => {
     if (status === 'blocked') updatePayload.accountStatus = 'blocked';
     if (status === 'active' || status === 'trial_active') updatePayload.accountStatus = 'active';
     const syncResult = await applyUserPatchAcrossScopes(targetUid, updatePayload, {});
+    // Bloqueio/reativação efetivos imediatos nas rules: .write exige
+    // active != false e os .read agora também — sem marcar o nó, token ainda
+    // válido (até 1h) + nó existente mantinham acesso ao tenant após o bloqueio.
+    // Só atualiza se o nó existir (sem criar stub para membro já removido).
+    if ((status === 'blocked' || status === 'active' || status === 'trial_active') && syncResult.companyId) {
+        try {
+            const memberRef = admin.database().ref(`companies/${syncResult.companyId}/users/${targetUid}`);
+            const memberSnap = await memberRef.get();
+            if (memberSnap && memberSnap.exists()) {
+                await memberRef.update(status === 'blocked'
+                    ? { active: false, adminActive: false, updatedAt: new Date().toISOString(), updatedBy: callerUid }
+                    : { active: true, updatedAt: new Date().toISOString(), updatedBy: callerUid });
+            }
+        } catch (memberErr) {
+            console.warn('[setUserAccessStatus] Falha ao sincronizar active do membro:', memberErr);
+        }
+    }
     // Atualizar claims + revogar tokens para efeito imediato
     try {
         const userRecord = await admin.auth().getUser(targetUid);
@@ -6928,6 +6945,7 @@ exports.financeRegisterPayment = financeFunctions.financeRegisterPayment;
 exports.financeDeletePayment = financeFunctions.financeDeletePayment;
 exports.financeSyncCompra = financeFunctions.financeSyncCompra;
 exports.financeSyncVenda = financeFunctions.financeSyncVenda;
+exports.estoqueAplicarMovimento = financeFunctions.estoqueAplicarMovimento;
 
 const sentryFunctions = require('./sentry-functions');
 sentryFunctions.configure({ isCallerSuperAdmin });

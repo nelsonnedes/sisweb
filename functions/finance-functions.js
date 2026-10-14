@@ -2294,6 +2294,212 @@ function configure(options = {}) {
     configuredSuperAdminResolver = options.isCallerSuperAdmin;
 }
 
+// ---------------------------------------------------------------------------
+// Baixa de estoque atômica (aprovação de venda) — 1a do roadmap da auditoria.
+// O cliente calcula os movimentos em dry-run (sem mutar nada) e o servidor
+// valida-e-deduz dentro de transaction por produto: sem saldo => fail-closed
+// (failed-precondition SALDO_INSUFICIENTE), nunca clamp silencioso. Espelha a
+// matemática do cliente (vendas.js: aplicarBaixaSerrado/aplicarBaixaManual)
+// para a reversão continuar exata; idempotência por registro de movimento.
+// ---------------------------------------------------------------------------
+const ESTOQUE_MOVEMENT_KINDS = new Set(['baixa', 'estorno']);
+const ESTOQUE_MOVEMENT_MODES = new Set(['serrado', 'manual']);
+const ESTOQUE_MOVEMENT_BASES = new Set(['vol', 'pecas', 'est']);
+const MAX_ESTOQUE_MOVEMENTS = 200;
+const ESTOQUE_EPS = 0.001;
+const ESTOQUE_CLAIM_TAKEOVER_MS = 10 * 60 * 1000;
+
+function numEstoque(value) {
+    const n = typeof value === 'number' ? value : parseFloat(value);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function r3Estoque(value) {
+    return Math.round(numEstoque(value) * 1000) / 1000;
+}
+
+function r2Estoque(value) {
+    return Math.round(numEstoque(value) * 100) / 100;
+}
+
+function hasEstoqueField(value) {
+    return value !== undefined && value !== null && value !== '';
+}
+
+function normalizeEstoqueMovement(raw, index) {
+    const label = `movimentos[${index}]`;
+    if (!isPlainObject(raw)) {
+        throw new FinanceValidationError(`${label} deve ser um objeto.`);
+    }
+    const produtoId = normalizePathSegment(raw.produtoId, `${label}.produtoId`);
+    const modo = String(raw.modo || '').trim().toLowerCase();
+    if (!ESTOQUE_MOVEMENT_MODES.has(modo)) {
+        throw new FinanceValidationError(`${label}.modo deve ser "serrado" ou "manual".`);
+    }
+    const base = String(raw.base || '').trim().toLowerCase();
+    if (!ESTOQUE_MOVEMENT_BASES.has(base)) {
+        throw new FinanceValidationError(`${label}.base deve ser "vol", "pecas" ou "est".`);
+    }
+    if (modo === 'manual' && base !== 'est') {
+        throw new FinanceValidationError(`${label}: modo manual usa base "est".`);
+    }
+    if (modo === 'serrado' && base === 'est') {
+        throw new FinanceValidationError(`${label}: modo serrado usa base "vol" ou "pecas".`);
+    }
+    const quantidade = r3Estoque(raw.quantidade);
+    if (!(quantidade > 0)) {
+        throw new FinanceValidationError(`${label}.quantidade deve ser positiva.`);
+    }
+    const f = numEstoque(raw.f);
+    if (!(f >= 0) || !(f < 1)) {
+        throw new FinanceValidationError(`${label}.f deve ser o fator proporcional (0 <= f < 1).`);
+    }
+    const consumirSrc = isPlainObject(raw.consumir) ? raw.consumir : {};
+    const consumir = {
+        vol: r3Estoque(consumirSrc.vol),
+        pecas: r3Estoque(consumirSrc.pecas),
+        est: r3Estoque(consumirSrc.est),
+    };
+    if (consumir.vol < 0 || consumir.pecas < 0 || consumir.est < 0) {
+        throw new FinanceValidationError(`${label}.consumir não aceita valores negativos.`);
+    }
+    if (modo === 'serrado' && base === 'vol' && !(consumir.vol > 0)) {
+        throw new FinanceValidationError(`${label}: base "vol" exige consumir.vol positivo.`);
+    }
+    if (modo === 'serrado' && base === 'pecas' && !(consumir.pecas > 0)) {
+        throw new FinanceValidationError(`${label}: base "pecas" exige consumir.pecas positivo.`);
+    }
+    if (modo === 'manual' && !(consumir.est > 0)) {
+        throw new FinanceValidationError(`${label}: modo manual exige consumir.est positivo.`);
+    }
+    return { produtoId, modo, base, quantidade, f, consumir };
+}
+
+function normalizeEstoqueMovementRequest(data) {
+    if (!isPlainObject(data)) {
+        throw new FinanceValidationError('Payload do movimento de estoque é inválido.');
+    }
+    const operationId = normalizeOperationId(data.operationId);
+    const kind = String(data.kind || '').trim().toLowerCase();
+    if (!ESTOQUE_MOVEMENT_KINDS.has(kind)) {
+        throw new FinanceValidationError('kind deve ser "baixa" ou "estorno".');
+    }
+    const pedidoId = normalizePathSegment(data.pedidoId, 'pedidoId');
+    const permitirNegativo = data.permitirNegativo === true;
+    const legacy = data.legacy === true;
+    let baseOpId = null;
+    if (kind === 'estorno' && !legacy) {
+        if (data.baseOpId === undefined || data.baseOpId === null || String(data.baseOpId).trim() === '') {
+            throw new FinanceValidationError('baseOpId é obrigatório no estorno (aponta a baixa original).');
+        }
+        baseOpId = normalizeOperationId(data.baseOpId);
+    }
+    let movimentos = [];
+    if (kind === 'baixa' || legacy) {
+        if (!Array.isArray(data.movimentos) || data.movimentos.length === 0) {
+            throw new FinanceValidationError('movimentos é obrigatório e não pode ser vazio.');
+        }
+        if (data.movimentos.length > MAX_ESTOQUE_MOVEMENTS) {
+            throw new FinanceValidationError(`movimentos excede o máximo de ${MAX_ESTOQUE_MOVEMENTS} itens.`);
+        }
+        movimentos = data.movimentos.map((item, index) => normalizeEstoqueMovement(item, index));
+    } else if (data.movimentos !== undefined) {
+        throw new FinanceValidationError('movimentos do estorno vêm do registro da baixa original.');
+    }
+    return { operationId, kind, pedidoId, baseOpId, legacy, permitirNegativo, movimentos };
+}
+
+// Espelha vendas.js aplicarBaixaSerrado (dir=-1) sobre os valores ATUAIS do
+// banco. Retorna { status:'ok', product } ou { status:'abort', reason, ... }.
+// Sem clamp silencioso: sem saldo => insufficient (fail-closed).
+function applyEstoqueBaixa(current, mov, nowIso, skipValidation = false) {
+    if (!isPlainObject(current)) {
+        return { status: 'abort', reason: 'not-found' };
+    }
+    if (mov.modo === 'manual') {
+        const est = numEstoque(current.estoque);
+        if (!skipValidation && !(r3Estoque(est) + ESTOQUE_EPS >= mov.consumir.est)) {
+            return { status: 'abort', reason: 'insufficient', disponivel: r3Estoque(est), pedido: mov.consumir.est };
+        }
+        return {
+            status: 'ok',
+            product: { ...current, estoque: Math.max(0, r3Estoque(est - mov.consumir.est)), updated: nowIso },
+        };
+    }
+    const vol0 = numEstoque(current.volumeM3) || numEstoque(current.estoque);
+    const pecas0 = numEstoque(current.pecas);
+    const baseAtual = mov.base === 'pecas' ? pecas0 : vol0;
+    const pedidoBase = mov.base === 'pecas' ? mov.consumir.pecas : mov.consumir.vol;
+    if (!skipValidation && !(r3Estoque(baseAtual) + ESTOQUE_EPS >= r3Estoque(pedidoBase))) {
+        return { status: 'abort', reason: 'insufficient', disponivel: r3Estoque(baseAtual), pedido: r3Estoque(pedidoBase) };
+    }
+    const next = { ...current };
+    next.pecas = Math.max(0, Math.round(pecas0 * mov.f));
+    const volNovo = r3Estoque(vol0 * mov.f);
+    if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volNovo;
+    next.estoque = volNovo;
+    if (hasEstoqueField(current.metrosLineares)) {
+        next.metrosLineares = Math.max(0, r2Estoque(numEstoque(current.metrosLineares) * mov.f));
+    }
+    next.updated = nowIso;
+    return { status: 'ok', product: next };
+}
+
+// Inverso exato da baixa (fator 1/f sobre os valores atuais). Sem validação:
+// estorno só devolve. Também corrige o over-restore do revert M3 do cliente
+// antigo (somava o pedido e ainda reescalava por f — quadrático).
+function applyEstoqueEstorno(current, mov, nowIso) {
+    if (!isPlainObject(current)) {
+        return { status: 'abort', reason: 'not-found' };
+    }
+    // Consumo total (f=0, estoque zerado): sem base para inverter — devolve
+    // absoluto. Exato na dimensão base; ml de migração legada pode divergir.
+    if (!(mov.f > 0)) {
+        if (mov.modo === 'manual') {
+            return {
+                status: 'ok',
+                product: { ...current, estoque: r3Estoque(numEstoque(current.estoque) + mov.consumir.est), updated: nowIso },
+            };
+        }
+        const next = { ...current };
+        next.pecas = Math.max(0, Math.round(numEstoque(current.pecas) + mov.consumir.pecas));
+        const volAbs = r3Estoque((numEstoque(current.volumeM3) || numEstoque(current.estoque)) + mov.consumir.vol);
+        if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volAbs;
+        next.estoque = volAbs;
+        next.updated = nowIso;
+        return { status: 'ok', product: next };
+    }
+    const fInv = 1 / mov.f;
+    if (mov.modo === 'manual') {
+        return {
+            status: 'ok',
+            product: { ...current, estoque: r3Estoque(numEstoque(current.estoque) + mov.consumir.est), updated: nowIso },
+        };
+    }
+    const next = { ...current };
+    next.pecas = Math.max(0, Math.round(numEstoque(current.pecas) * fInv));
+    const vol0 = numEstoque(current.volumeM3) || numEstoque(current.estoque);
+    const volNovo = r3Estoque(vol0 * fInv);
+    if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volNovo;
+    next.estoque = volNovo;
+    if (hasEstoqueField(current.metrosLineares)) {
+        next.metrosLineares = Math.max(0, r2Estoque(numEstoque(current.metrosLineares) * fInv));
+    }
+    next.updated = nowIso;
+    return { status: 'ok', product: next };
+}
+
+function publicEstoqueValues(produtoId, saved) {
+    const out = { produtoId };
+    if (!isPlainObject(saved)) return out;
+    if (typeof saved.pecas === 'number') out.pecas = saved.pecas;
+    if (typeof saved.volumeM3 === 'number') out.volumeM3 = saved.volumeM3;
+    if (typeof saved.estoque === 'number') out.estoque = saved.estoque;
+    if (typeof saved.metrosLineares === 'number') out.metrosLineares = saved.metrosLineares;
+    if (typeof saved.updated === 'string') out.updated = saved.updated;
+    return out;
+}
+
 function createHandlers(options = {}) {
     const database = options.database || (() => admin.database());
     const HttpsError = options.HttpsError || functionsV1.https.HttpsError;
@@ -2545,6 +2751,167 @@ function createHandlers(options = {}) {
         });
     }
 
+    async function estoqueAplicarMovimento(data, context) {
+        return runAuthorized(context, async (db, access) => {
+            let request;
+            try {
+                request = normalizeEstoqueMovementRequest(data);
+            } catch (error) {
+                throwInputAsHttps(error);
+            }
+            const nowIso = now();
+            const root = `companies/${access.companyId}`;
+            const recordRef = db.ref(`${root}/estoque/movimentos/${request.operationId}`);
+            const claimDoc = {
+                status: 'em_processamento',
+                kind: request.kind,
+                pedidoId: request.pedidoId,
+                permitirNegativo: request.permitirNegativo,
+                createdAt: nowIso,
+                createdBy: access.uid,
+            };
+            // 1. Claim idempotente: só o primeiro заявку; repetição retorna o cache.
+            let seen = null;
+            const claim = await recordRef.transaction((current) => {
+                if (current !== null && current !== undefined) {
+                    seen = current;
+                    return undefined;
+                }
+                return claimDoc;
+            });
+            if (!claim.committed) {
+                const done = isPlainObject(seen) ? seen : null;
+                if (done && done.status === 'aplicado') {
+                    return {
+                        success: true,
+                        idempotent: true,
+                        operationId: request.operationId,
+                        valores: Array.isArray(done.valores) ? done.valores : [],
+                    };
+                }
+                // Claim abandonada (crash sem resultado): takeover após o TTL.
+                const age = done && done.status === 'em_processamento' && done.createdAt
+                    ? Date.parse(nowIso) - Date.parse(done.createdAt)
+                    : NaN;
+                if (Number.isFinite(age) && age > ESTOQUE_CLAIM_TAKEOVER_MS) {
+                    const take = await recordRef.transaction((current) => (
+                        isPlainObject(current) && current.status === 'em_processamento' ? claimDoc : undefined
+                    ));
+                    if (take.committed) {
+                        seen = null;
+                    } else {
+                        throw new HttpsError('aborted', 'Movimento de estoque em processamento. Tente novamente em instantes.');
+                    }
+                } else {
+                    throw new HttpsError('aborted', 'Movimento de estoque em processamento. Tente novamente em instantes.');
+                }
+            }
+            // 2. Estorno resolve os movimentos a partir do registro de origem.
+            // Inverte o efeito registrado: baixa=>devolve; estorno=>rededuz
+            // (compensa um estorno anterior). Legado reverte baixa do código
+            // antigo (sem registro) com os movimentos enviados.
+            let movimentos = request.movimentos;
+            let direcao = request.kind === 'baixa' ? 'deduzir' : 'devolver';
+            let permitirNegativoEfetivo = request.permitirNegativo === true;
+            if (request.kind === 'estorno' && !request.legacy) {
+                const baseSnap = await db.ref(`${root}/estoque/movimentos/${request.baseOpId}`).get();
+                const base = baseSnap && baseSnap.exists() ? baseSnap.val() : null;
+                if (!isPlainObject(base) || base.status !== 'aplicado' || !Array.isArray(base.movimentos) || base.movimentos.length === 0) {
+                    try { await recordRef.remove(); } catch (_) {}
+                    throw new HttpsError('not-found', 'Movimento original não encontrado para estorno.');
+                }
+                movimentos = base.movimentos;
+                const baseEfeito = base.efeito === 'devolveu' ? 'devolveu' : 'deduziu';
+                direcao = baseEfeito === 'deduziu' ? 'devolver' : 'deduzir';
+                permitirNegativoEfetivo = base.permitirNegativo === true;
+            }
+            const efeitoFinal = direcao === 'deduzir' ? 'deduziu' : 'devolveu';
+            // 3. Aplica por produto (transaction valida-e-deduz); falha no meio
+            // compensa o já aplicado em ordem reversa e libera o claim p/ retry.
+            const applied = [];
+            const valores = [];
+            try {
+                for (const mov of movimentos) {
+                    const ref = db.ref(`${root}/produtos/${mov.produtoId}`);
+                    valores.push(await transactEstoqueProduto(
+                        ref,
+                        mov,
+                        { direcao, permitirNegativo: permitirNegativoEfetivo },
+                        nowIso,
+                    ));
+                    applied.push(mov);
+                }
+            } catch (error) {
+                await compensarEstoqueAplicado(db, root, applied, direcao, nowIso);
+                try { await recordRef.remove(); } catch (_) {}
+                throw error;
+            }
+            await recordRef.update({
+                status: 'aplicado',
+                efeito: efeitoFinal,
+                permitirNegativo: permitirNegativoEfetivo,
+                movimentos,
+                valores,
+                appliedAt: nowIso,
+            });
+            return { success: true, idempotent: false, operationId: request.operationId, valores };
+        });
+    }
+
+    async function transactEstoqueProduto(ref, mov, opts, nowIso) {
+        const direcao = opts && opts.direcao === 'devolver' ? 'devolver' : 'deduzir';
+        const skipValidation = direcao === 'deduzir' && opts && opts.permitirNegativo === true;
+        const attempt = (current) => {
+            // Tenant com permitirNegativo explícito: ainda usa transaction
+            // (atomicidade + idempotência + registro), mas sem a trava de
+            // insuficiência — política explícita do tenant, registrada no claim.
+            const decision = direcao === 'deduzir'
+                ? applyEstoqueBaixa(current, mov, nowIso, skipValidation)
+                : applyEstoqueEstorno(current, mov, nowIso);
+            return decision.status === 'ok' ? decision.product : undefined;
+        };
+        const tx = await ref.transaction(attempt);
+        if (tx && tx.committed) {
+            const saved = tx.snapshot && typeof tx.snapshot.val === 'function' ? tx.snapshot.val() : null;
+            return publicEstoqueValues(mov.produtoId, saved);
+        }
+        const fresh = await ref.get();
+        const current = fresh && fresh.exists() ? fresh.val() : null;
+        const decision = direcao === 'deduzir'
+            ? applyEstoqueBaixa(current, mov, nowIso, skipValidation)
+            : applyEstoqueEstorno(current, mov, nowIso);
+        if (decision.status === 'abort' && decision.reason === 'insufficient') {
+            throw new HttpsError(
+                'failed-precondition',
+                `SALDO_INSUFICIENTE:${mov.produtoId}:disponivel=${decision.disponivel}:pedido=${decision.pedido}`,
+            );
+        }
+        if (decision.status === 'abort') {
+            throw new HttpsError('not-found', `Produto ${mov.produtoId} não encontrado no estoque.`);
+        }
+        throw new HttpsError('aborted', `Conflito de concorrência no produto ${mov.produtoId}. Tente novamente.`);
+    }
+
+    async function compensarEstoqueAplicado(db, root, applied, direcao, nowIso) {
+        for (let i = applied.length - 1; i >= 0; i--) {
+            const mov = applied[i];
+            try {
+                const ref = db.ref(`${root}/produtos/${mov.produtoId}`);
+                await ref.transaction((current) => {
+                    const inverse = direcao === 'deduzir'
+                        ? applyEstoqueEstorno(current, mov, nowIso)
+                        : applyEstoqueBaixa(current, mov, nowIso);
+                    return inverse.status === 'ok' ? inverse.product : undefined;
+                });
+            } catch (error) {
+                console.error('Falha ao compensar movimento de estoque (reconciliação manual necessária)', {
+                    produtoId: mov.produtoId,
+                    error: error && error.message ? error.message : String(error),
+                });
+            }
+        }
+    }
+
     async function financeUpdateAccount(data, context) {
         return runAuthorized(context, async (db, access) => {
             let request;
@@ -2784,6 +3151,7 @@ function createHandlers(options = {}) {
         financeCreateAccounts,
         financeSyncCompra,
         financeSyncVenda,
+        estoqueAplicarMovimento,
         financeUpdateAccount,
         financeDeleteAccount,
         financeUpdatePaymentReceipt,
@@ -2799,6 +3167,7 @@ exports.financeNextSequence = functionsV1.https.onCall(handlers.financeNextSeque
 exports.financeCreateAccounts = functionsV1.https.onCall(handlers.financeCreateAccounts);
 exports.financeSyncCompra = functionsV1.https.onCall(handlers.financeSyncCompra);
 exports.financeSyncVenda = functionsV1.https.onCall(handlers.financeSyncVenda);
+exports.estoqueAplicarMovimento = functionsV1.https.onCall(handlers.estoqueAplicarMovimento);
 exports.financeUpdateAccount = functionsV1.https.onCall(handlers.financeUpdateAccount);
 exports.financeDeleteAccount = functionsV1.https.onCall(handlers.financeDeleteAccount);
 exports.financeUpdatePaymentReceipt = functionsV1.https.onCall(handlers.financeUpdatePaymentReceipt);
@@ -2823,6 +3192,8 @@ exports.__test = {
     createHandlers,
     currentFinancialState,
     expectedStateMatches,
+    applyEstoqueBaixa,
+    applyEstoqueEstorno,
     getTodayISODateInTimeZone,
     todayDayNumber,
     isInactiveAccessRecord,
@@ -2836,6 +3207,7 @@ exports.__test = {
     normalizeAccountDeleteRequest,
     normalizePurchaseSyncRequest,
     normalizeSaleSyncRequest,
+    normalizeEstoqueMovementRequest,
     buildCanonicalSaleAccount,
     normalizeReceiptUpdateRequest,
     normalizeSequenceRequest,

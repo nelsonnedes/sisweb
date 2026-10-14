@@ -199,7 +199,8 @@ test('Onda E2: restante do codigo vivo usa confirmDialog', async (t) => {
 
   await t.test('excecoes documentadas: morto/vendor/metodo/interceptor', () => {
     // Arquivos mortos ou vendor mantidos fora do escopo E2.
-    for (const f of ['compras_legacy.js', 'limpar_direto.js', 'firebase/sdk/firebase-auth.js',
+    // (compras_legacy.js removido em 2026-10-14: morto provado, zero <script> ativo.)
+    for (const f of ['limpar_direto.js', 'firebase/sdk/firebase-auth.js',
       'src/components/ui/romaneio-table.js']) {
       assert.ok(fs.existsSync(f), `excecao documentada ainda existe: ${f}`);
     }
@@ -218,7 +219,7 @@ test('Onda F: source-level sem alert() nativo (excecoes documentadas)', async (t
       'marqueting', 'scripts', 'tests', '.aiox-core', '.claude', '.codex',
       'hosting-dist', '.codex-worktrees'];
     const excecoes = ['bookmarklet_hibrido.js', 'correcao_bookmarklet.js',
-      'corrigir_vendas_romaneios.js', 'migrateToFirebase.js'];
+      'corrigir_vendas_romaneios.js'];
     const achados = [];
     const varrer = (dir) => {
       for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {

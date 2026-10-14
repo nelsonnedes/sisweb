@@ -27,6 +27,17 @@
   }
 
   /**
+   * CFOP canônico (NFTaxTables via NFValidator). Centraliza os 3 usos deste
+   * módulo para não divergir do validador de entrada (4xxx/8xxx/9xxx rejeitados).
+   */
+  function cfopCanonicoValido(cfop) {
+    const cfopD = String(cfop || '').trim();
+    if (window.NFValidator?.validarCFOP) return window.NFValidator.validarCFOP(cfopD);
+    if (window.NFTaxTables?.validarCFOP) return window.NFTaxTables.validarCFOP(cfopD);
+    return /^[123567]\d{3}$/.test(cfopD);
+  }
+
+  /**
    * Valida dados brutos de entrada de item (comum ao modo manual, cadastrado e edição).
    * @returns {{ valid: boolean, erro?: string }}
    */
@@ -37,7 +48,7 @@
     const ncmVal = validarNCM(ncm);
     if (!ncmVal.valid) return ncmVal;
     const cfopD = String(cfop || '').trim();
-    const cfopValido = window.NFTaxTables?.validarCFOP ? window.NFTaxTables.validarCFOP(cfopD) : /^[1-9]\d{3}$/.test(cfopD);
+    const cfopValido = cfopCanonicoValido(cfopD);
     if (!cfopValido) return { valid: false, erro: 'CFOP inválido (ex: 5102, 6102)' };
     return { valid: true };
   }
@@ -76,7 +87,7 @@
     const cfopNat = (nat?.cfopPadrao || '').trim();
     const codNat = (nat?.csosn || '').trim();
 
-    let cfopEff = (cfopNat && /^[1-9]\d{3}$/.test(cfopNat)) ? cfopNat : cfop;
+    let cfopEff = (cfopNat && cfopCanonicoValido(cfopNat)) ? cfopNat : cfop;
     let csosnEff = codNat || csosn;
 
     const item = {
@@ -161,7 +172,7 @@
     const cfopNat = (nat?.cfopPadrao || '').trim();
     const codNat = (nat?.csosn || '').trim();
 
-    if (cfopNat && /^[1-9]\d{3}$/.test(cfopNat)) item.cfop = cfopNat;
+    if (cfopNat && cfopCanonicoValido(cfopNat)) item.cfop = cfopNat;
     const codEff = codNat || item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst || '102';
     item.csosn = codEff;
 

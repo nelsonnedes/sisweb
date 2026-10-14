@@ -905,7 +905,7 @@ function unwrapCallableResult(result) {
 }
 
 function requiresAuthenticatedCallable(functionName) {
-    return /^(nf_|finance(?:[A-Z_]|$)|superAdminMfa|recordAdminAccessDenied|sentry|validatePartnerCode|claimPartnerAccount|linkPartnerReferral|getMyPartnerStatus|getMyPartnerDashboard|sendBillingReminder|getPartnersAdmin|getPartnerDetailAdmin|setPartnerConfig|markCommissionPaid|bulkMarkCommissionPaid|adminLinkReferral|deletePartnerAdmin)/.test(String(functionName || '').trim());
+    return /^(nf_|finance(?:[A-Z_]|$)|estoque(?:[A-Z_]|$)|superAdminMfa|recordAdminAccessDenied|sentry|validatePartnerCode|claimPartnerAccount|linkPartnerReferral|getMyPartnerStatus|getMyPartnerDashboard|sendBillingReminder|getPartnersAdmin|getPartnerDetailAdmin|setPartnerConfig|markCommissionPaid|bulkMarkCommissionPaid|adminLinkReferral|deletePartnerAdmin)/.test(String(functionName || '').trim());
 }
 
 async function getCallableIdToken(user, forceRefresh = false) {
@@ -1042,6 +1042,7 @@ function getTenantId() {
 function setTenantId(id) {
     try {
         if (typeof window !== 'undefined') {
+            const previous = window.appTenantId ? String(window.appTenantId) : null;
             const raw = id ? String(id).trim() : '';
             if (!raw || raw.includes('/')) {
                 window.appTenantId = null;
@@ -1061,6 +1062,17 @@ function setTenantId(id) {
             ]);
             window.appTenantId = blocked.has(raw.toLowerCase()) ? null : raw;
             authPerfTenant(window.appTenantId);
+            // Troca real de tenant sem reload: listeners do tenant anterior
+            // (registry + módulos registrados) morreriam só no unload — que
+            // aqui não acontece. Encerra antes que entreguem dado cruzado.
+            if (previous && window.appTenantId && previous !== window.appTenantId) {
+                try { runSessionTeardowns(); } catch (_) {}
+                try { unsubscribeAllRealtimeSubscriptions(); } catch (_) {}
+                try {
+                    const svc = window.firebaseManager;
+                    if (svc && typeof svc.cleanup === 'function') svc.cleanup();
+                } catch (_) {}
+            }
         }
     } catch (_) {}
 }
@@ -4037,6 +4049,8 @@ window.firebaseService = {
     getCompanyProfileForReport: getCompanyProfileForReport,
     getNamespacedPath: getNamespacedPath,
     namespaceUpdates: namespaceUpdates,
+    registerSessionTeardown: registerSessionTeardown,
+    runSessionTeardowns: runSessionTeardowns,
     createCompanyOnboarding: createCompanyOnboarding,
     setCompanyClaim: setCompanyClaim,
     syncMyAdminClaims: syncMyAdminClaims,
@@ -4609,11 +4623,23 @@ export const authService = {
     
     // Logout
     async logout() {
+        // Encerra listeners ANTES do signOut: após a saída, os callbacks
+        // perderiam permissão e, pior, um listener do tenant/usuário anterior
+        // seguiria vivo numa troca sem reload. Ordem: teardowns + registry,
+        // depois signOut e limpeza de chaves (users/roles alimentam o menu).
+        try { runSessionTeardowns(); } catch (_) {}
+        try { unsubscribeAllRealtimeSubscriptions(); } catch (_) {}
+        try {
+            const svc = window.firebaseManager;
+            if (svc && typeof svc.cleanup === 'function') svc.cleanup();
+        } catch (_) {}
         try {
             await signOut(auth);
             try {
                 localStorage.removeItem('currentUser');
                 localStorage.removeItem('persistentUser');
+                localStorage.removeItem('users');
+                localStorage.removeItem('roles');
                 localStorage.removeItem('auth');
                 localStorage.removeItem('siswebAuthSession');
             } catch (_) {}
@@ -4809,6 +4835,8 @@ export {
     getCompanyProfileForReport,
     subscribe,
     unsubscribeAllRealtimeSubscriptions,
+    registerSessionTeardown,
+    runSessionTeardowns,
     createCompanyOnboarding,
     setCompanyClaim,
     syncMyAdminClaims,
@@ -4936,6 +4964,24 @@ function unsubscribeAllRealtimeSubscriptions() {
     return count;
 }
 
+// Teardowns de sessão: módulos com listeners fora do registro central
+// (ex.: modal PCT, manager da folha) registram aqui sua limpeza; logout e
+// troca de tenant executam tudo (defensivo: nunca lança).
+const __sessionTeardowns = new Set();
+
+function registerSessionTeardown(fn) {
+    if (typeof fn === 'function') __sessionTeardowns.add(fn);
+    return () => { try { __sessionTeardowns.delete(fn); } catch (_) {} };
+}
+
+function runSessionTeardowns() {
+    let count = 0;
+    __sessionTeardowns.forEach((fn) => {
+        try { if (typeof fn === 'function') { fn(); count += 1; } } catch (_) {}
+    });
+    return count;
+}
+
 async function sendSubscriptionEmail(payload) {
     try {
         const data = payload && typeof payload === 'object' ? payload : {};
@@ -4959,6 +5005,8 @@ const initializeGlobalFirebaseService = () => {
         serverTimestamp: getServerTimestamp,
         subscribe,
         unsubscribeAllRealtimeSubscriptions,
+        registerSessionTeardown,
+        runSessionTeardowns,
         authService,
         authPersistenceReady,
         authReadyPromise,

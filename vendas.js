@@ -2692,7 +2692,31 @@ async function salvarPedido(event) {
                 console.log(`🧹 Removidos ${dupKeys.length} registro(s) duplicado(s) com número ${pedidoData.numero}`);
             }
         } catch (e) { console.warn('Falha ao checar duplicados por número:', e); }
-        
+
+        // Estoque atômico via servidor ANTES de salvar (fail-closed): entrar ou
+        // permanecer no conferido deduz primeiro; sem saldo/erro => bloqueia o
+        // save e nada é persistido. A saída do conferido reverte DEPOIS do save
+        // (fail-loud, retry idempotente). baixaOpAplicada ancora a compensação
+        // se o save falhar após a dedução.
+        let baixaOpAplicada = null;
+        const prevAprov = (window.pedidos || []).find(p => p && String(p.id) === String(editandoPedidoId || '')) || null;
+        const eraConferidoPre = !!(prevAprov && typeof statusRomaneioConferido === 'function' && statusRomaneioConferido(prevAprov.status));
+        const ehConferidoPre = typeof statusRomaneioConferido === 'function' && statusRomaneioConferido(statusNext);
+        try {
+            if (ehConferidoPre) {
+                if (eraConferidoPre) {
+                    await reverterBaixaPedido(prevAprov);
+                }
+                pedidoData.estoqueBaixaSeq = (Number(prevAprov && prevAprov.estoqueBaixaSeq) || 0) + 1;
+                const bx = await baixarEstoquePorAprovacao(pedidoData);
+                baixaOpAplicada = (bx && bx.operationId) || null;
+            }
+        } catch (e) {
+            LoadingManager.hide();
+            try { ToastManager.error(mensagemErroBaixaEstoque(e), 'Estoque', 8000); } catch (_) {}
+            return;
+        }
+
         // Salvar pedido
         // Se já existe, atualizar. Se não, adicionar.
         // Snapshot para rollback: se o servidor não confirmar, a memória volta
@@ -2842,28 +2866,25 @@ async function salvarPedido(event) {
             return;
         }
 
-        // Estoque: ponto único na APROVAÇÃO (entrar/sair do conferido).
-        // Criação nunca muta estoque (evita duplo-desconto e dado não persistido).
-
-        // Baixa/reversão automática ao ENTRAR/SAIR do conjunto conferido
-        // (aprovado/entregue/faturado/finalizado). Idempotente por estado:
-        // novo-aprovado deduz; pendente→aprovado deduz; aprovado→aprovado com
-        // itens trocados reverte o anterior e deduz o atual; aprovado→
-        // pendente/cancelado reverte. Usa helper canônico statusRomaneioConferido.
-        try {
-            if (salvouServidor && typeof statusRomaneioConferido === 'function') {
-                const prev = (backupPedidos || []).find(p => String(p.id) === String(editandoPedidoId || ''));
-                const eraConferido = !!(prev && statusRomaneioConferido(prev.status));
-                const ehConferido = statusRomaneioConferido(statusNext);
-                if (eraConferido) {
-                    try { await reverterBaixaPedido(prev); } catch (e) { console.warn('Falha ao reverter baixa anterior (segue):', e); }
-                }
-                if (ehConferido) {
-                    try { await baixarEstoquePorAprovacao(pedidoData); } catch (e) { console.warn('Falha na baixa automática do estoque (não bloqueia o save):', e); }
-                }
+        // Estoque: ENTRADA aplicada antes do save (fail-closed, bloco acima).
+        // Se o save falhou após a dedução, compensa com o estorno idempotente
+        // da baixa recém-aplicada. A SAÍDA do conferido reverte aqui, após o
+        // save confirmado (fail-loud: erro avisa em 8s, retry é seguro).
+        if (!salvouServidor && baixaOpAplicada) {
+            try {
+                await reverterMovimentoEstoqueServidor(baixaOpAplicada, (pedidoData && pedidoData.id) || '');
+            } catch (ce) {
+                console.error('Falha ao compensar baixa após save recusado (reconciliação manual necessária):', ce);
+                try { ToastManager.error('O pedido não foi salvo e a baixa NÃO pôde ser desfeita sozinha — confira o estoque antes de tentar de novo.', 'Estoque', 8000); } catch (_) {}
             }
-        } catch (e) {
-            console.warn('Falha na baixa automática do estoque (não bloqueia o save):', e);
+        }
+        if (salvouServidor && eraConferidoPre && !ehConferidoPre) {
+            try {
+                await reverterBaixaPedido(prevAprov);
+            } catch (e) {
+                console.error('Falha ao reverter baixa de saída do conferido (retry seguro):', e);
+                try { ToastManager.error(mensagemErroBaixaEstoque(e) + ' O pedido foi salvo; o estorno pode ser repetido.', 'Estoque', 8000); } catch (_) {}
+            }
         }
 
         LoadingManager.hide();
@@ -3128,18 +3149,38 @@ async function gerarContasReceberFinanceiro(pedido) {
 
 // Baixa automática do estoque na APROVAÇÃO/ENTREGA (ponto único):
 // ver baixarEstoquePorAprovacao / reverterBaixaPedido abaixo.
-// Best-effort: avisa sem bloquear; idempotência por estado (era/é conferido).
-// Ponto único de BAIXA de estoque (entra no conferido: aprovado/entregue/
-// faturado/finalizado). Deduz do produto EXATO (produtoId) na dimensão da
-// unidade do item; legado sem produtoId usa match romaneio+dims (serrado).
-// Manuais via aplicarBaixaManual. Persiste os tocados.
+// Fail-closed: a baixa roda no SERVIDOR (transaction valida-e-deduz) ANTES do
+// save; sem saldo ou erro => a aprovação bloqueia e nada é salvo. Estorno de
+// saída é idempotente (retry seguro). Ponto único de BAIXA de estoque (entra
+// no conferido: aprovado/entregue/faturado/finalizado). Deduz do produto
+// EXATO (produtoId) na dimensão da unidade do item; legado sem produtoId usa
+// match romaneio+dims (serrado). Manuais via converterQtdManual. Espelha na
+// memória só os valores canônicos devolvidos pelo servidor.
 async function baixarEstoquePorAprovacao(pedido) {
-    const tocados = await aplicarMovimentoEstoquePedido(pedido, -1);
-    if (tocados.length === 0) return { baixados: 0, volumeTotal: 0 };
-    const volumeTotal = tocados.reduce((s, t) => s + (t.volUsado || 0), 0);
-    try { atualizarSelectProdutos(); } catch (_) {}
-    try { ToastManager.success(`Baixa automática: ${volumeTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ em ${tocados.length} produto(s)`, 'Estoque'); } catch (_) {}
-    return { baixados: tocados.length, volumeTotal };
+    // Fail-closed: SEM_SALDO ou erro de rede/server lança (a aprovação bloqueia).
+    const calc = aplicarMovimentoEstoquePedido(pedido, -1);
+    if (calc.movimentos.length === 0) return { baixados: 0, volumeTotal: 0, operationId: null };
+    const svc = window.firebaseService;
+    if (!svc || typeof svc.callFunction !== 'function') {
+        throw new Error('ESTOQUE_OFFLINE: sincronização de estoque indisponível.');
+    }
+    const seq = Number((pedido && pedido.estoqueBaixaSeq) || 0) || 1;
+    const operationId = 'baixa-' + sanearIdOperacaoEstoque(pedido && pedido.id, 'ped') + '-' + seq;
+    const res = await svc.callFunction('estoqueAplicarMovimento', {
+        operationId,
+        kind: 'baixa',
+        pedidoId: String((pedido && pedido.id) ?? ''),
+        permitirNegativo: !!((window.VendasConfig || {}).permitirEstoqueNegativo),
+        movimentos: calc.movimentos,
+    });
+    if (!res || res.success !== true) {
+        throw new Error('Baixa de estoque não confirmada pelo servidor.');
+    }
+    if (pedido && typeof pedido === 'object') pedido.estoqueBaixaOp = operationId;
+    aplicarValoresEstoqueServidor(res.valores);
+    const volumeTotal = calc.movimentos.reduce((s, m) => s + (Number(m.consumir && m.consumir.vol) || 0), 0);
+    try { ToastManager.success(`Baixa automática: ${volumeTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ em ${calc.movimentos.length} produto(s)`, 'Estoque'); } catch (_) {}
+    return { baixados: calc.movimentos.length, volumeTotal, operationId };
 }
 
 // Alias legado (compatibilidade).
@@ -3147,20 +3188,103 @@ async function baixarEstoqueSerradoPorAprovacao(pedido) {
     return baixarEstoquePorAprovacao(pedido);
 }
 
-// Reversão simétrica (sai do conferido: excluir pedido conferido ou editar
-// para pendente/cancelado). Soma de volta na mesma dimensão. Silenciosa.
+// Reversão via servidor (sai do conferido: excluir pedido conferido ou editar
+// para pendente/cancelado). Idempotente pelo operationId: retry seguro.
+// Com registro (pedido.estoqueBaixaOp) inverte exato; legado (baixa do código
+// antigo) recalcula em melhor esforço de migração.
 async function reverterBaixaPedido(pedido) {
-    const tocados = await aplicarMovimentoEstoquePedido(pedido, 1);
-    try { atualizarSelectProdutos(); } catch (_) {}
-    return tocados;
+    const svc = window.firebaseService;
+    if (!svc || typeof svc.callFunction !== 'function') {
+        throw new Error('ESTOQUE_OFFLINE: sincronização de estoque indisponível.');
+    }
+    const pedidoId = String((pedido && pedido.id) ?? '');
+    const baixaOp = pedido && pedido.estoqueBaixaOp ? String(pedido.estoqueBaixaOp) : '';
+    if (baixaOp) {
+        return reverterMovimentoEstoqueServidor(baixaOp, pedidoId);
+    }
+    const calc = aplicarMovimentoEstoquePedido(pedido, -1, { falharSemSaldo: false });
+    if (calc.movimentos.length === 0) return { success: true, idempotent: true, operationId: null, valores: [] };
+    const seq = Number((pedido && pedido.estoqueBaixaSeq) || 0) || 1;
+    const operationId = 'estorno-leg-' + sanearIdOperacaoEstoque(pedidoId, 'ped') + '-' + seq + '-' + hashMovimentosEstoque(calc.movimentos);
+    const res = await svc.callFunction('estoqueAplicarMovimento', {
+        operationId,
+        kind: 'estorno',
+        legacy: true,
+        pedidoId,
+        movimentos: calc.movimentos.map(m => ({ ...m, f: m.f > 0 ? m.f : 0 })),
+    });
+    if (!res || res.success !== true) {
+        throw new Error('Estorno de estoque não confirmado pelo servidor.');
+    }
+    aplicarValoresEstoqueServidor(res.valores);
+    return res;
 }
 
-// Núcleo compartilhado: dir -1 baixa, +1 reverte. Retorna [{produto, volUsado}].
-async function aplicarMovimentoEstoquePedido(pedido, dir) {
+// Estorna um movimento registrado (baixa ou estorno anterior). Idempotente:
+// repetir o mesmo operationId retorna o cache sem reaplicar.
+async function reverterMovimentoEstoqueServidor(baixaOpId, pedidoId) {
+    const svc = window.firebaseService;
+    if (!svc || typeof svc.callFunction !== 'function') {
+        throw new Error('ESTOQUE_OFFLINE: sincronização de estoque indisponível.');
+    }
+    const operationId = 'estorno-' + sanearIdOperacaoEstoque(baixaOpId, 'op');
+    const res = await svc.callFunction('estoqueAplicarMovimento', {
+        operationId,
+        kind: 'estorno',
+        pedidoId: String(pedidoId ?? ''),
+        baseOpId: String(baixaOpId),
+    });
+    if (!res || res.success !== true) {
+        throw new Error('Estorno de estoque não confirmado pelo servidor.');
+    }
+    aplicarValoresEstoqueServidor(res.valores);
+    return res;
+}
+
+// Núcleo compartilhado (dry-run PURO): calcula os movimentos de estoque do
+// pedido SEM mutar window.produtos e SEM persistir. A aplicação é SEMPRE no
+// servidor (callable estoqueAplicarMovimento: valida-e-deduz em transaction,
+// fail-closed sem saldo, idempotente por operationId).
+// dir -1 = baixa, +1 = revert (só no caminho legado, sem registro).
+// Retorna { movimentos, semSaldo }; com falharSemSaldo, pedido maior que o
+// disponível lança SEM_SALDO (a aprovação bloqueia antes de salvar).
+function aplicarMovimentoEstoquePedido(pedido, dir, opts) {
+    const falharSemSaldo = !opts || opts.falharSemSaldo !== false;
     const itens = Array.isArray(pedido && pedido.itens) ? pedido.itens : [];
-    if (itens.length === 0) return [];
+    if (itens.length === 0) return { movimentos: [], semSaldo: [] };
     const num = (v) => parseFloat(v) || 0;
-    const tocados = [];
+    const r3 = (v) => Math.round(num(v) * 1000) / 1000;
+    const movimentos = [];
+    const semSaldo = [];
+    const pedidoEmBase = (qtd, unidadeItem, base) => {
+        const q = num(qtd);
+        if (base === 'pecas') {
+            return normalizarUnidadeMedida(unidadeItem) === 'DZ' ? q * 12 : q;
+        }
+        return q;
+    };
+    const empurrarSerrado = (alvo, qtd, unidadeItem) => {
+        const volAntes = num(alvo.volumeM3) || num(alvo.estoque);
+        const pecasAntes = num(alvo.pecas);
+        const r = razaoBaixaSerrado(alvo, qtd, unidadeItem);
+        const base = r.base === 'pecas' ? 'pecas' : 'vol';
+        const pedidoBase = pedidoEmBase(qtd, unidadeItem, base);
+        const disponivel = base === 'pecas' ? pecasAntes : volAntes;
+        if (pedidoBase > disponivel + 1e-9) {
+            semSaldo.push(nomeExibicaoProduto(alvo));
+            return false;
+        }
+        const razao = disponivel > 0 ? Math.min(1, pedidoBase / disponivel) : 0;
+        movimentos.push({
+            produtoId: String(alvo.id),
+            modo: 'serrado',
+            base,
+            quantidade: r3(pedidoBase),
+            f: 1 - razao,
+            consumir: { vol: r3(volAntes * razao), pecas: r3(pecasAntes * razao), est: 0 },
+        });
+        return true;
+    };
     for (const it of itens) {
         if (!it || typeof it !== 'object' || isCarregoItem(it)) continue;
         const qtd = num(it.quantidade) || 0;
@@ -3171,23 +3295,28 @@ async function aplicarMovimentoEstoquePedido(pedido, dir) {
         try {
             if (it.produtoId) alvo = (window.produtos || []).find(p => p && String(p.id) === String(it.produtoId)) || null;
         } catch (_) { alvo = null; }
-        if (alvo && typeof temDimsSerrado === 'function' && temDimsSerrado(alvo) && typeof aplicarBaixaSerrado === 'function') {
-            const volAntes = num(alvo.volumeM3) || num(alvo.estoque);
-            const res = aplicarBaixaSerrado(alvo, qtd, unidadeItem, dir);
-            if (dir < 0 && !(res.razao > 0)) {
-                try { ToastManager.warning(`Sem saldo: ${nomeExibicaoProduto(alvo)} (pedido ${pedido.numero || ''})`, 'Estoque', 6000); } catch (_) {}
-                continue;
-            }
-            tocados.push({ produto: alvo, volUsado: dir < 0 ? (Math.round(volAntes * (res.razao || 0) * 1000) / 1000) : 0 });
+        if (alvo && typeof temDimsSerrado === 'function' && temDimsSerrado(alvo) && typeof razaoBaixaSerrado === 'function') {
+            empurrarSerrado(alvo, qtd, unidadeItem);
             continue;
         }
-        if (alvo && typeof aplicarBaixaManual === 'function') {
-            try { aplicarBaixaManual(alvo, qtd, unidadeItem, dir); } catch (_) { continue; }
-            tocados.push({ produto: alvo, volUsado: 0 });
+        if (alvo && typeof converterQtdManual === 'function') {
+            const qtdConv = converterQtdManual(alvo, qtd, unidadeItem);
+            if (qtdConv > num(alvo.estoque) + 1e-9) {
+                semSaldo.push(nomeExibicaoProduto(alvo));
+                continue;
+            }
+            movimentos.push({
+                produtoId: String(alvo.id),
+                modo: 'manual',
+                base: 'est',
+                quantidade: r3(qtdConv),
+                f: 1,
+                consumir: { vol: 0, pecas: 0, est: r3(qtdConv) },
+            });
             continue;
         }
         if (dir > 0) continue;
-        // 2) legado sem produtoId: match romaneio+dims (só serrado)
+        // 2) legado sem produtoId: match romaneio+dims (só serrado, só baixa)
         const rids = [];
         [it.origemId, it.romaneioId].forEach(v => {
             const s = String(v || '').trim();
@@ -3209,29 +3338,81 @@ async function aplicarMovimentoEstoquePedido(pedido, dir) {
             alvo2 = candidatos.slice().sort((a, b) => (num(b.estoque) - num(a.estoque)))[0];
         }
         if (!alvo2) continue;
-        const volAntes2 = num(alvo2.volumeM3) || num(alvo2.estoque);
-        const res2 = aplicarBaixaSerrado(alvo2, qtd, unidadeItem, -1);
-        if (!(res2.razao > 0)) {
-            try { ToastManager.warning(`Sem saldo: ${nomeExibicaoProduto(alvo2)} (pedido ${pedido.numero || ''})`, 'Estoque', 6000); } catch (_) {}
-            continue;
-        }
-        tocados.push({ produto: alvo2, volUsado: Math.round(volAntes2 * (res2.razao || 0) * 1000) / 1000 });
+        empurrarSerrado(alvo2, qtd, unidadeItem);
     }
-    if (tocados.length === 0) return [];
+    if (semSaldo.length > 0 && falharSemSaldo) {
+        const err = new Error('SEM_SALDO:' + String(semSaldo[0] || ''));
+        err.code = 'SEM_SALDO';
+        err.productName = String(semSaldo[0] || '');
+        err.products = semSaldo.slice();
+        throw err;
+    }
+    return { movimentos, semSaldo };
+}
+
+// Sanitiza id para operationId ([A-Za-z0-9_-]{8,128} no servidor).
+function sanearIdOperacaoEstoque(value, fallback) {
+    const s = String(value === undefined || value === null ? '' : value).replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
+    return s || String(fallback || 'op');
+}
+
+function hashMovimentosEstoque(movimentos) {
     try {
-        if (window.firebaseService && typeof window.firebaseService.saveToFirebase === 'function') {
-            const ops = tocados.map(t => window.firebaseService.saveToFirebase('produtos', String(t.produto.id), t.produto));
-            await Promise.allSettled(ops);
-        } else if (typeof saveData === 'function') {
-            __rvSaveDataRemoteOk = false;
-            await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
+        const s = JSON.stringify((movimentos || []).map(m => [m.produtoId, m.modo, m.base, m.quantidade, m.f]));
+        let h = 5381;
+        for (let i = 0; i < s.length; i++) h = (((h << 5) + h) + s.charCodeAt(i)) | 0;
+        return (h >>> 0).toString(16);
+    } catch (_) { return '0'; }
+}
+
+function mensagemErroBaixaEstoque(e) {
+    try {
+        if (e && e.code === 'SEM_SALDO') {
+            return 'Estoque insuficiente para "' + String(e.productName || '') + '". Recarregue para ver o saldo atual e ajuste o pedido — nada foi salvo.';
+        }
+        const code = String((e && e.code) || '');
+        const msg = String((e && e.message) || '');
+        if (code === 'failed-precondition' || msg.indexOf('SALDO_INSUFICIENTE') !== -1) {
+            return 'Estoque insuficiente (outro usuário pode ter vendido junto). Nada foi salvo — recarregue e tente de novo.';
+        }
+        if (code === 'not-found' || code === 'NOT_FOUND') {
+            return 'Produto do pedido não existe mais no estoque. Nada foi salvo.';
+        }
+        if (code === 'aborted') {
+            return 'Conflito de concorrência no estoque. Nada foi salvo — tente novamente.';
+        }
+        if (code === 'unauthenticated' || code === 'permission-denied') {
+            return 'Sessão expirada ou sem permissão. Faça login novamente — nada foi salvo.';
+        }
+        if (/ESTOQUE_OFFLINE|Failed to fetch|Network|network/i.test(msg)) {
+            return 'Sem conexão com o servidor de estoque. Nada foi salvo — tente quando estiver online.';
+        }
+        return 'Não foi possível dar baixa no estoque (' + (msg || 'erro desconhecido') + '). Nada foi salvo.';
+    } catch (_) {
+        return 'Não foi possível dar baixa no estoque. Nada foi salvo.';
+    }
+}
+
+// Aplica na memória os valores canônicos devolvidos pelo servidor (a escrita
+// autoritativa já aconteceu lá — aqui é só espelho + invalidação de cache).
+function aplicarValoresEstoqueServidor(valores) {
+    try {
+        if (Array.isArray(valores)) {
+            for (const v of valores) {
+                if (!v || typeof v !== 'object') continue;
+                const alvo = (window.produtos || []).find(p => p && String(p.id) === String(v.produtoId));
+                if (!alvo) continue;
+                for (const k of ['pecas', 'volumeM3', 'estoque', 'metrosLineares', 'updated']) {
+                    if (v[k] !== undefined) alvo[k] = v[k];
+                }
+            }
         }
     } catch (_) {}
     try {
         const svcInv = window.firebaseService || window.FirebaseService;
         if (svcInv && typeof svcInv.invalidateReadCacheForPath === 'function') svcInv.invalidateReadCacheForPath('produtos');
     } catch (_) {}
-    return tocados;
+    try { atualizarSelectProdutos(); } catch (_) {}
 }
 
 // Funções de listagem de pedidos
@@ -4098,13 +4279,18 @@ async function excluirPedido(pedidoId) {
         } catch (_) { backupEstoqueVenda = null; }
         if (pedido) {
             // Reverter estoque SOMENTE se o pedido tinha baixa (era conferido);
-            // pendente nunca consumiu — reverter inflaria.
+            // pendente nunca consumiu — reverter inflaria. Fail-closed: sem o
+            // estorno confirmado, a exclusão aborta (retry idempotente).
             try {
                 const eraConferido = typeof statusRomaneioConferido === 'function' && statusRomaneioConferido(pedido.status);
                 if (eraConferido && typeof reverterBaixaPedido === 'function') {
                     await reverterBaixaPedido(pedido);
                 }
-            } catch (_) {}
+            } catch (e) {
+                try { LoadingManager.hide(); } catch (_) {}
+                try { ToastManager.error(mensagemErroBaixaEstoque(e) + ' Exclusão cancelada.', 'Estoque', 8000); } catch (_) {}
+                return;
+            }
             
             // Remover contas a receber relacionadas (fail-closed: sem confirmação, aborta)
             const vinculadas = await carregarContasReceberVinculadasPedidoVenda(pedido);
@@ -4568,7 +4754,7 @@ function aplicarBaixaSerrado(p, quantidade, unidade, dir) {
 }
 
 // Manual: converte dentro da família peça (DZ×12, PC/UN×1); resto cego (legado).
-function aplicarBaixaManual(p, quantidade, unidadeItem, dir) {
+function converterQtdManual(p, quantidade, unidadeItem) {
     const fam = (u) => {
         const n = normalizarUnidadeMedida(u);
         if (n === 'DZ') return 12;
@@ -4580,6 +4766,11 @@ function aplicarBaixaManual(p, quantidade, unidadeItem, dir) {
         const fi = fam(unidadeItem), fp = fam(p && p.unidade);
         if (fi && fp) qtd = qtd * fi / fp;
     } catch (_) {}
+    return qtd;
+}
+
+function aplicarBaixaManual(p, quantidade, unidadeItem, dir) {
+    const qtd = converterQtdManual(p, quantidade, unidadeItem);
     const est = parseFloat(p.estoque) || 0;
     p.estoque = dir > 0 ? (est + qtd) : Math.max(0, est - qtd);
     try { p.updated = new Date().toISOString(); } catch (_) {}

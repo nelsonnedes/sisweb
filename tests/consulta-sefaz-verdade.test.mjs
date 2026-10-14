@@ -37,8 +37,8 @@ test('parseSefazResponse: default = último cStat (autorização preservada); fi
 
 test('backend: consulta MDF-e deriva a verdade (encerrado/cancelado/autorizado) sem sobrescrever o documento', () => {
   assert.match(mdfeFunctions, /parseSefazResponse\(response\.body, \['100', '101', '150'\], \{ first: true \}\)/);
-  assert.match(mdfeFunctions, /const tpEventoMatch = bodyConsulta\.match\(\/<tpEvento>\(110111\|110112\)<\\\/tpEvento>\/\);/);
-  assert.match(mdfeFunctions, /tpEventoMatch\[1\] === '110112' \? 'encerrado' : 'cancelado'/);
+  assert.match(mdfeFunctions, /const tpEvento = extrairConteudoTag\(bodyConsulta, 'tpEvento'\);/);
+  assert.match(mdfeFunctions, /tpEvento === '110112' \? 'encerrado' : 'cancelado'/);
   assert.match(mdfeFunctions, /ultimaConsultaSefaz: \{/);
   assert.match(mdfeFunctions, /const statusDerivado = situacao === 'encerrado' \? 'encerrado'/);
   assert.doesNotMatch(mdfeFunctions, /updateMdfe\(tenantId, mdfeId, \{ cStat: result\.cStat, xMotivo: result\.xMotivo, protocolo: result\.nProt/, 'consulta não sobrescreve cStat/xMotivo do documento');
@@ -47,9 +47,34 @@ test('backend: consulta MDF-e deriva a verdade (encerrado/cancelado/autorizado) 
 
 test('backend: consulta NF-e usa first + detecta cancelamento no procEventoNFe', () => {
   assert.match(nfFunctions, /parseSefazResponse\(resp\.body, \['100', '150'\], \{ first: true \}\)/);
-  assert.match(nfFunctions, /const temEventoCancelamento = \/<tpEvento>110111<\\\/tpEvento>\/\.test\(bodyConsulta\);/);
+  assert.match(nfFunctions, /const temEventoCancelamento = \['110111'\]\.includes\(extrairConteudoTag\(bodyConsulta, 'tpEvento'\)\);/);
   assert.match(nfFunctions, /const cancelada = temEventoCancelamento && \['135', '155', '101'\]\.includes\(cStatEventoCancel\);/);
   assert.match(nfFunctions, /cancelada,\s*\n\s*situacao,/);
+});
+
+function loadTagHelpers() {
+  const wanted = ['extrairConteudoTag', 'extrairBlocoTag'];
+  const context = {};
+  for (const name of wanted) {
+    const match = nfFunctions.match(new RegExp(`function ${name}\\(body, localName\\) \\{[\\s\\S]*?\\n\\}`));
+    assert.ok(match, `${name} não encontrada`);
+    vm.runInNewContext(`${match[0]}; this.${name} = ${name};`, context);
+  }
+  return context;
+}
+
+test('extrairConteudoTag: prefixo ns, xmlns e tag lisa', () => {
+  const { extrairConteudoTag, extrairBlocoTag } = loadTagHelpers();
+  assert.equal(extrairConteudoTag('<tpEvento>110112</tpEvento>', 'tpEvento'), '110112');
+  assert.equal(extrairConteudoTag('<ns2:tpEvento>110112</ns2:tpEvento>', 'tpEvento'), '110112');
+  assert.equal(extrairConteudoTag('<tpEvento xmlns="http://www.portalfiscal.inf.br/mdfe">110111</tpEvento>', 'tpEvento'), '110111');
+  assert.equal(extrairConteudoTag('<outra>1</outra>', 'tpEvento'), '');
+  assert.equal(extrairConteudoTag('', 'tpEvento'), '');
+  const bloco = extrairBlocoTag(
+    '<retConsSitMDFe><ns:retEventoMDFe><infEvento><cStat>135</cStat></infEvento></ns:retEventoMDFe></retConsSitMDFe>',
+    'retEventoMDFe',
+  );
+  assert.equal(extrairConteudoTag(bloco, 'cStat'), '135');
 });
 
 test('cliente MDF-e: feedback de execução + Situação real (não o cStat do evento)', () => {

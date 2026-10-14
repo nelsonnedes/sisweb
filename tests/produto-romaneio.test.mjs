@@ -235,6 +235,7 @@ test('baixa por unidade: UN→peças, M³→volume, ML→ml, DZ→×12', () => {
   vm.runInContext(extract('dimensoesEstoqueSerrado'), sbU);
   vm.runInContext(extract('razaoBaixaSerrado'), sbU);
   vm.runInContext(extract('aplicarBaixaSerrado'), sbU);
+  vm.runInContext(extract('converterQtdManual'), sbU);
   vm.runInContext(extract('aplicarBaixaManual'), sbU);
   const norm = sbU.normalizarUnidadeMedida;
   assert.equal(norm('UN'), 'UN');
@@ -298,10 +299,14 @@ test('estoque ponto-único na aprovação: deduz ao entrar, reverte ao sair', ()
   // Save usa era/é conferido com helper canônico (vale p/ novo e edição)
   assert.ok(/eraConferido/.test(src) && /ehConferido/.test(src), 'lógica era/é conferido existe');
   assert.ok(/statusRomaneioConferido\(statusNext\)/.test(src), 'usa helper canônico no save');
-  assert.ok(/await reverterBaixaPedido\(prev\)/.test(src), 'reverte anterior antes de deduzir atual');
+  assert.ok(/await reverterBaixaPedido\(prevAprov\)/.test(src), 'reverte anterior antes de deduzir atual');
   assert.ok(/await baixarEstoquePorAprovacao\(pedidoData\)/.test(src), 'deduz atual ao entrar');
-  // Manual também deduz na aprovação (antes só serrado)
-  assert.ok(/aplicarBaixaManual\(alvo, qtd, unidadeItem, dir\)/.test(src), 'manual deduz na aprovação');
+  // Baixa atômica no servidor: dry-run puro + callable fail-closed (sem save direto)
+  assert.ok(/estoqueAplicarMovimento/.test(src), 'baixa via callable servidor');
+  assert.ok(/converterQtdManual\(alvo, qtd, unidadeItem\)/.test(src), 'manual usa conversor puro no dry-run');
+  const baixaBody = src.slice(src.indexOf('async function baixarEstoquePorAprovacao('), src.indexOf('// Alias legado'));
+  assert.ok(!/saveToFirebase\('produtos'/.test(baixaBody), 'baixa sem escrita direta de produtos');
+  assert.ok(/callFunction\('estoqueAplicarMovimento'/.test(baixaBody), 'baixa confirma no servidor');
   // Legado sem produtoId preservado (match romaneio+dims)
   assert.ok(/legado sem produtoId/.test(src), 'fallback legado documentado');
   // Delete: reverte SOMENTE se era conferido (pendente nunca consumiu)

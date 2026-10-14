@@ -295,6 +295,19 @@ function financeMoneyToCents(value) {
     return Math.round(parsed * 100);
 }
 
+// Somador canônico em centavos p/ totais e normalizações (mesma base do
+// servidor via moneyToCents): 0.1+0.2 fecha exato, sem deriva de 1 centavo.
+function somarValoresCents(valores) {
+    const lista = Array.isArray(valores) ? valores : [valores];
+    let total = 0;
+    for (const v of lista) total += financeMoneyToCents(v);
+    return total;
+}
+
+function centsParaValor(cents) {
+    return (Number(cents) || 0) / 100;
+}
+
 function buildFinanceExpectedState(conta) {
     const source = conta && typeof conta === 'object' ? conta : {};
     const history = Array.isArray(source.historicosPagamento) ? source.historicosPagamento : [];
@@ -2509,19 +2522,19 @@ async function imprimirTabela(tipo) {
             const hojeTs = getTodayStartTimestampLocal();
             items = base.filter(it => sel.includes(String(it.id))).map(conta => {
                 const copia = { ...conta };
-                const valorOriginal = parseCurrencyValue(copia.valorOriginal ?? copia.valor);
-                const storedRestante = typeof copia.valorRestante !== 'undefined' && copia.valorRestante !== null ? parseCurrencyValue(copia.valorRestante) : -1;
-                let valorPago = parseCurrencyValue(copia.valorPago ?? 0);
+                const valorOriginal = centsParaValor(financeMoneyToCents(copia.valorOriginal ?? copia.valor));
+                const storedRestante = typeof copia.valorRestante !== 'undefined' && copia.valorRestante !== null ? centsParaValor(financeMoneyToCents(copia.valorRestante)) : -1;
+                let valorPago = centsParaValor(financeMoneyToCents(copia.valorPago ?? 0));
                 if (Array.isArray(copia.historicosPagamento)) {
-                    valorPago = copia.historicosPagamento.reduce((s, h) => s + parseCurrencyValue(h.valor), 0);
+                    valorPago = centsParaValor(somarValoresCents(copia.historicosPagamento.map(h => h && h.valor)));
                 }
-                const pagoCents = Math.round(valorPago * 100);
-                const valorRestante = (storedRestante >= 0) ? storedRestante : Math.max(0, Math.round(valorOriginal * 100) - pagoCents) / 100;
+                const pagoCents = financeMoneyToCents(valorPago);
+                const valorRestante = (storedRestante >= 0) ? storedRestante : Math.max(0, financeMoneyToCents(valorOriginal) - pagoCents) / 100;
                 copia.valorOriginal = valorOriginal;
                 copia.valorPago = valorPago;
                 copia.valorRestante = valorRestante;
                 let sNorm = (copia.status || 'pendente').toLowerCase();
-                if (Math.round(valorRestante * 100) === 0) sNorm = 'pago';
+                if (financeMoneyToCents(valorRestante) === 0) sNorm = 'pago';
                 else if (pagoCents > 0) sNorm = 'parcial';
                 else if (sNorm === 'pendente') {
                     const ts = getContaVencimentoTimestamp(copia);
@@ -3360,22 +3373,22 @@ async function atualizarDashboard() {
 
     const contasPagarPendentes = contasPagar.filter(isContaAbertaFluxo);
     
-    // Calcular valores considerando pagamentos parciais
-    let totalReceber = contasReceberPendentes.reduce((total, conta) => {
+    // Calcular valores considerando pagamentos parciais (soma em centavos)
+    let totalReceber = centsParaValor(contasReceberPendentes.reduce((total, conta) => {
         // Para contas parciais, usar valor restante; para outras, valor total
-        const valorRestante = conta.status === 'parcial' ? 
-            (conta.valorRestante || (conta.valor - (conta.valorPago || 0))) : 
+        const valorRestante = conta.status === 'parcial' ?
+            (conta.valorRestante || centsParaValor(financeMoneyToCents(conta.valor) - financeMoneyToCents(conta.valorPago || 0))) :
             (conta.valor || 0);
-        return total + valorRestante;
-    }, 0);
-    
-    let totalPagar = contasPagarPendentes.reduce((total, conta) => {
+        return total + financeMoneyToCents(valorRestante);
+    }, 0));
+
+    let totalPagar = centsParaValor(contasPagarPendentes.reduce((total, conta) => {
         // Para contas parciais, usar valor restante; para outras, valor total
-        const valorRestante = conta.status === 'parcial' ? 
-            (conta.valorRestante || (conta.valor - (conta.valorPago || 0))) : 
+        const valorRestante = conta.status === 'parcial' ?
+            (conta.valorRestante || centsParaValor(financeMoneyToCents(conta.valor) - financeMoneyToCents(conta.valorPago || 0))) :
             (conta.valor || 0);
-        return total + valorRestante;
-    }, 0);
+        return total + financeMoneyToCents(valorRestante);
+    }, 0));
 
     try {
         const snap = window.financeSnapshot;
@@ -3822,6 +3835,8 @@ async function salvarContaReceber(event) {
                 valorRestante: valorRestanteEdit, // ✅ Recalcular restante com base em valorPago
                 dataEmissao: normalizeDateISOInput(dataEmissao) || '',
                 dataVencimento: vencISO,
+                // Competência preservada da original; sem ela, emissão/vencimento.
+                dataCompetencia: contaOriginal.dataCompetencia || normalizeDateISOInput(dataEmissao) || vencISO,
                 status: statusCalc, // ✅ Recalcular status com base em vencimento e pagamentos
                 categoria: categoriaLabel,
                 tipo: tipoKey,
@@ -3946,6 +3961,8 @@ async function salvarContaReceber(event) {
                 valorRestante: valorParcela, // ✅ NOVO: Valor restante a receber
                 dataEmissao: normalizeDateISOInput(dataEmissao) || '',
                 dataVencimento: dataParcela,
+                // Competência contábil: emissão quando houver, senão vencimento.
+                dataCompetencia: normalizeDateISOInput(dataEmissao) || dataParcela,
                 status: 'pendente',
                     categoria: categoriaLabel,
                 tipo: tipoKey,
@@ -4228,6 +4245,8 @@ async function salvarContaPagar(event) {
                 valorRestante: valorParcela,
                 dataEmissao: normalizeDateISOInput(dataEmissao) || '',
                 dataVencimento: dataParcela,
+                // Competência contábil: emissão quando houver, senão vencimento.
+                dataCompetencia: normalizeDateISOInput(dataEmissao) || dataParcela,
                 status: 'pendente',
                 categoria: categoriaKey,
                 tipo: tipoKey,
@@ -4646,19 +4665,19 @@ async function carregarTabelaReceber(filtro = {}) {
         } catch (_) {}
         conta.jurosTipo = normalizeJurosTipoKey(conta.jurosTipo);
         conta.jurosTaxa = parseJurosTaxa(conta.jurosTaxa || 0);
-        const valorOriginal = parseCurrencyValue(conta.valorOriginal ?? conta.valor);
-        let valorPago = parseCurrencyValue(conta.valorPago ?? 0);
+        const valorOriginal = centsParaValor(financeMoneyToCents(conta.valorOriginal ?? conta.valor));
+        let valorPago = centsParaValor(financeMoneyToCents(conta.valorPago ?? 0));
         if (Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0) {
-            const somaHistoricos = conta.historicosPagamento.reduce((sum, h) => sum + parseCurrencyValue(h.valor), 0);
+            const somaHistoricos = centsParaValor(somarValoresCents(conta.historicosPagamento.map(h => h && h.valor)));
             if (somaHistoricos > valorPago) valorPago = somaHistoricos;
         }
         // ✅ Calcular em centavos para evitar erro de ponto flutuante
-        const originalCents = Math.round(valorOriginal * 100);
-        const pagoCents = Math.round(valorPago * 100);
-        const restanteStored = parseCurrencyValue(conta.valorRestante);
-        const restanteLegacy = Math.max(0, originalCents - pagoCents) / 100;
-        const restanteBase = Number.isFinite(restanteStored) && restanteStored >= 0 ? restanteStored : restanteLegacy;
-        const restanteCents = Math.round(Math.max(0, restanteBase) * 100);
+        const originalCents = financeMoneyToCents(valorOriginal);
+        const pagoCents = financeMoneyToCents(valorPago);
+        // ausente => 0 (mesma semântica anterior: parse de indefinido era 0)
+        const restanteStoredCents = financeMoneyToCents(conta.valorRestante);
+        const restanteLegacyCents = Math.max(0, originalCents - pagoCents);
+        const restanteCents = Math.max(0, (Number.isFinite(restanteStoredCents) && restanteStoredCents >= 0 ? restanteStoredCents : restanteLegacyCents));
         const valorRestante = restanteCents / 100;
         conta.valorOriginal = originalCents / 100;
         conta.valorPago = pagoCents / 100;
@@ -4879,6 +4898,9 @@ async function carregarTabelaReceber(filtro = {}) {
                     ${((Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0) || statusNorm === 'parcial' || statusNorm === 'pago' || (conta.valorPago && conta.valorPago > 0) || !!conta.dataPagamento) ? `
                         <button onclick="verHistoricoPagamentos(${accountIdArg}, 'receber')" class="btn btn-warning btn-small" style="min-width: 28px;" title="Histórico de Pagamentos">
                             <i class="fas fa-history"></i>
+                        </button>
+                        <button onclick="estornarConta(${accountIdArg}, 'receber')" class="btn btn-warning btn-small" style="min-width: 28px;" title="Estornar (cria contrapartida, preserva a original)">
+                            <i class="fas fa-undo"></i>
                         </button>
                     ` : ''}
                     <button onclick="${primaryAttachmentUrl ? `openFinanceAttachment(${attachmentArg})` : `abrirModalAnexos(${accountIdArg}, 'receber')`}" class="btn btn-info btn-small" style="min-width: 28px;" title="${primaryAttachmentUrl ? 'Ver Anexo' : 'Anexar arquivo'}">
@@ -5149,6 +5171,9 @@ async function carregarTabelaPagar(filtro = {}) {
                     ${temHistorico || statusNorm === 'parcial' || statusNorm === 'pago' ? `
                         <button onclick="verHistoricoPagamentos(${accountIdArg}, 'pagar')" class="btn btn-warning btn-small" style="min-width: 28px;" title="Histórico de Pagamentos">
                             <i class="fas fa-history"></i>
+                        </button>
+                        <button onclick="estornarConta(${accountIdArg}, 'pagar')" class="btn btn-warning btn-small" style="min-width: 28px;" title="Estornar (cria contrapartida, preserva a original)">
+                            <i class="fas fa-undo"></i>
                         </button>
                     ` : ''}
                     <button onclick="${primaryAttachmentUrl ? `openFinanceAttachment(${attachmentArg})` : `abrirModalAnexos(${accountIdArg}, 'pagar')`}" class="btn btn-info btn-small" style="min-width: 28px;" title="${primaryAttachmentUrl ? 'Ver Anexo' : 'Anexar arquivo'}">
@@ -7344,6 +7369,75 @@ async function reativarBotaoRomaneio(romaneioId, tipo = 'tl') {
 }
 
 // Função para excluir conta
+// Estorno com contrapartida: conta com movimento (paga/parcial) NÃO é
+// deletada — cria-se o lançamento inverso vinculado (estornoDe). Sem
+// movimento, use Excluir. Fail-closed via createFinanceAccountsAuthoritative.
+async function estornarConta(id, tipo) {
+    const normalizedType = tipo === 'receber' ? 'receber' : 'pagar';
+    const inverso = normalizedType === 'receber' ? 'pagar' : 'receber';
+    try {
+        const target = normalizedType === 'receber' ? contasReceber : contasPagar;
+        const conta = (target || []).find(c => String(c && c.id) === String(id));
+        if (!conta) {
+            mostrarNotificacao('Conta não encontrada para estorno.', 'warning');
+            return;
+        }
+        const temMovimento = (Array.isArray(conta.historicosPagamento) && conta.historicosPagamento.length > 0)
+            || ['pago', 'parcial'].includes(String(conta.status || '').toLowerCase())
+            || financeMoneyToCents(conta.valorPago || 0) > 0
+            || !!conta.dataPagamento;
+        if (!temMovimento) {
+            mostrarNotificacao('Conta sem movimento — use Excluir em vez de Estornar.', 'warning');
+            return;
+        }
+        const valorCents = financeMoneyToCents(conta.valorOriginal ?? conta.valor);
+        if (!(valorCents > 0)) {
+            mostrarNotificacao('Conta sem valor para estornar.', 'warning');
+            return;
+        }
+        const rotulo = `${normalizedType === 'receber' ? 'recebimento' : 'pagamento'} "${conta.descricao || conta.id}"`;
+        if (!await confirmDialog({
+            title: 'Estornar conta',
+            message: `Criar lançamento inverso (conta a ${inverso}) de ${formatCurrency(valorCents / 100)} referente ao ${rotulo}? A conta original é preservada.`,
+            danger: true,
+            confirmLabel: 'Estornar',
+        })) return;
+        const hoje = getTodayISODateLocal();
+        const parceiro = normalizedType === 'receber'
+            ? { cliente: conta.cliente || '', clienteId: conta.clienteId || '' }
+            : { fornecedor: conta.fornecedor || conta.cliente || '', fornecedorId: conta.fornecedorId || conta.clienteId || '' };
+        const inversa = {
+            id: generateUniqueId(inverso === 'receber' ? 'CR' : 'CP'),
+            ...parceiro,
+            descricao: `Estorno — ${conta.descricao || conta.id}`,
+            valor: valorCents / 100,
+            valorOriginal: valorCents / 100,
+            valorRestante: valorCents / 100,
+            dataEmissao: hoje,
+            dataVencimento: hoje,
+            dataCompetencia: hoje,
+            status: 'pendente',
+            categoria: conta.categoria || 'outros',
+            tipo: inverso,
+            origem: 'estorno',
+            origemId: '',
+            pedidoNumero: conta.pedidoNumero || '',
+            estornoDe: { tipo: normalizedType, id: String(conta.id) },
+            motivoEstorno: 'Estorno com contrapartida via tela do financeiro',
+            observacoes: `Contrapartida do ${rotulo}.`,
+            created: new Date().toISOString(),
+        };
+        await createFinanceAccountsAuthoritative(inverso, [inversa], createFinanceOperationId('estorno'));
+        if (normalizedType === 'receber') { try { carregarTabelaReceber(); } catch (_) {} } else { try { carregarTabelaPagar(); } catch (_) {} }
+        try { atualizarDashboard(); } catch (_) {}
+        try { await atualizarSnapshotMensal(); } catch (_) {}
+        mostrarNotificacao('Estorno criado com sucesso (contrapartida pendente)!', 'success');
+    } catch (error) {
+        console.error('❌ Erro ao estornar conta:', error);
+        mostrarNotificacao((error && error.message) || 'Erro ao estornar conta. Tente novamente.', 'error');
+    }
+}
+
 async function excluirConta(id, tipo) {
     const normalizedType = tipo === 'receber' ? 'receber' : 'pagar';
     const accountId = String(id);

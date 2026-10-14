@@ -112,6 +112,37 @@ test('modulos operacionais exigem membership ao escrever (brecha fechada)', () =
   }
 });
 
+test('todo .read com membership no tenant exige active != false (bloqueado não lê)', () => {
+  const rules = JSON.parse(read('database.rules.json')).rules;
+  const checked = [];
+  const walk = (node, path) => {
+    if (!node || typeof node !== 'object') return;
+    for (const [key, value] of Object.entries(node)) {
+      if (key === '.read' && typeof value === 'string' && value.includes("users/' + auth.uid).exists()")) {
+        checked.push(path);
+        assert.match(
+          value,
+          /\/active'\)\.val\(\) != false/,
+          `${path || '(raiz do tenant)'}: membro com active:false não pode ler`,
+        );
+      } else if (value && typeof value === 'object') {
+        walk(value, `${path}/${key}`);
+      }
+    }
+  };
+  walk(rules.companies.$companyId, 'companies/$companyId');
+  assert.ok(checked.length >= 30, `esperava dezenas de reads com membership (achados: ${checked.length})`);
+});
+
+test('setUserAccessStatus marca active/adminActive no nó do membro (efeito imediato nas rules)', () => {
+  const source = read('functions/index.js');
+  const block = blockBetween(source, 'exports.setUserAccessStatus', 'exports.fullUserCleanup');
+  assert.match(block, /companies\/\$\{syncResult\.companyId\}\/users\/\$\{targetUid\}/);
+  assert.match(block, /active: false, adminActive: false/);
+  assert.match(block, /\{ active: true, updatedAt/);
+  assert.match(block, /memberSnap && memberSnap\.exists\(\)/, 'sem criar stub para membro removido');
+});
+
 test('SuperAdmin em Functions depende de allowlist e nao de marcador em RTDB', () => {
   const source = read('functions/index.js');
   const isCallerBlock = blockBetween(source, 'async function isCallerSuperAdmin', 'async function assertSuperAdmin');

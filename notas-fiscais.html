@@ -4669,6 +4669,31 @@ renderizarVolumesNF();
           nfMostrarDetalheStatus(result.id, { cStat: result.cStat, xMotivo: result.xMotivo, descricao: result.descricao, status: result.status });
         }
       } catch(e) {
+        // Opt-in IBS/CBS neutro: primeira emissão com default exige ciência
+        // explícita (passivo contábil se o contribuinte não for neutro de fato).
+        // Registra na config fiscal do tenant e tenta de novo UMA vez.
+        if (e && e.code === 'IBS_NEUTRO_CONFIRMACAO' && !confirmarEmissao.__ibsNeutroRetry) {
+          try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirmar e Emitir'; }
+          const ok = await confirmDialog({
+            title: 'IBS/CBS neutro (CST 000)',
+            message: 'A config fiscal desta empresa nunca definiu IBS/CBS: a NF-e sairá com IBS/CBS NEUTRO (CST 000, cClassTrib 000001, alíquotas 0). Se a empresa for contribuinte real do IBS/CBS, a apuração ficará zerada. Confirmar a emissão assim mesmo?',
+            confirmLabel: 'Emitir com IBS/CBS neutro',
+            danger: true,
+          });
+          if (!ok) return mostrarAlertaEmissao('⚠️ Emissão cancelada: defina o IBS/CBS na config fiscal ou confirme o neutro.', 'warn');
+          try {
+            const cfg = window.NFService.getConfig() || {};
+            cfg.impostos = cfg.impostos || {};
+            cfg.impostos.ibscbs = { ...(cfg.impostos.ibscbs || {}), neutroConfirmado: true, neutroCienciaEm: new Date().toISOString() };
+            await window.NFService.salvarConfig(cfg);
+          } catch (se) {
+            return mostrarAlertaEmissao('❌ Não foi possível registrar a confirmação: ' + (se?.message || se), 'erro');
+          }
+          confirmarEmissao.__ibsNeutroRetry = true;
+          try { return await confirmarEmissao(senha); }
+          finally { confirmarEmissao.__ibsNeutroRetry = false; }
+        }
         mostrarAlertaEmissao('❌ ' + e.message, 'erro');
       } finally {
         try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
@@ -5668,8 +5693,25 @@ renderizarVolumesNF();
         : null;
       if (!just) return;
       if (just.trim().length < 15) return notifyUser('Justificativa deve ter pelo menos 15 caracteres');
+      // Prazo: decorrido desde dhAutorizacao vs limite da config do tenant
+      // (fail-fast local; o backend revalida de forma autoritativa antes da
+      // SEFAZ). Sem limite configurado, só informa o decorrido.
+      let prazoInfoTxt = '';
+      try {
+        const tidPre = obterTenantIdNF();
+        const cfgPre = (window.NFService && typeof window.NFService.getConfig === 'function' && window.NFService.getConfig()) || {};
+        const limitePre = cfgPre && cfgPre.prazosFiscais ? cfgPre.prazosFiscais.cancNFeHoras : null;
+        const notaPre = (tidPre && window.NFStorage && typeof window.NFStorage.carregarNF === 'function')
+          ? await window.NFStorage.carregarNF(tidPre, 55, nfId).catch(() => null)
+          : null;
+        if (notaPre && window.NFConfigService && typeof window.NFConfigService.avaliarPrazoEvento === 'function') {
+          const av = window.NFConfigService.avaliarPrazoEvento(notaPre.dhAutorizacao || notaPre.dhRecbto, limitePre);
+          if (av.excedido) return notifyUser(`Prazo de cancelamento excedido (autorizada ${window.NFConfigService.formatarDecorridoHoras(av.decorridoHoras)}, limite configurado: ${limitePre}h).`, 'error');
+          if (!av.semReferencia && av.decorridoHoras != null) prazoInfoTxt = ` (autorizada ${window.NFConfigService.formatarDecorridoHoras(av.decorridoHoras)})`;
+        }
+      } catch (_) {}
       const senha = (typeof window.promptDialog === 'function')
-        ? await window.promptDialog({ title: 'Senha do certificado A1', message: 'Informe a senha do certificado A1 para assinar o evento de cancelamento.', placeholder: 'Senha do certificado A1', confirmLabel: 'Cancelar NF-e', cancelLabel: 'Voltar', inputType: 'password', autoComplete: 'current-password', icon: 'fas fa-lock' })
+        ? await window.promptDialog({ title: 'Senha do certificado A1', message: 'Informe a senha do certificado A1 para assinar o evento de cancelamento.' + prazoInfoTxt, placeholder: 'Senha do certificado A1', confirmLabel: 'Cancelar NF-e', cancelLabel: 'Voltar', inputType: 'password', autoComplete: 'current-password', icon: 'fas fa-lock' })
         : null;
       if (!senha) return;
       // Trava anti-duplo-envio + feedback (espelha CC-e/Inutilização: SEFAZ não tolera repetição).

@@ -424,7 +424,11 @@ const NFNaturezas = (() => {
       cstIBS: g('natRegraCSTIBS').replace(/\D/g, '') || undefined,
       cClassTrib: g('natRegraCClassTrib').replace(/\D/g, '') || undefined,
     };
-    if (!/^[1-9]\d{3}$/.test(r.cfop)) { try { notifyUser('CFOP da regra inválido (ex.: 6102)'); } catch (_) {} return; }
+    // CFOP canônico (NFTaxTables via NFValidator; 4xxx/8xxx/9xxx rejeitados).
+    const cfopOk = window.NFValidator?.validarCFOP
+      ? window.NFValidator.validarCFOP(r.cfop)
+      : (window.NFTaxTables?.validarCFOP ? window.NFTaxTables.validarCFOP(r.cfop) : /^[123567]\d{3}$/.test(r.cfop));
+    if (!cfopOk) { try { notifyUser('CFOP da regra inválido (ex.: 6102)'); } catch (_) {} return; }
     if (r.codigo && !/^[0-9]{2,3}$/.test(r.codigo)) { try { notifyUser('Código ICMS da regra inválido (CSOSN 3 dígitos ou CST 2 dígitos)'); } catch (_) {} return; }
     if (r.cClassTrib && !/^\d{6}$/.test(r.cClassTrib)) { try { notifyUser('cClassTrib da regra: 6 dígitos'); } catch (_) {} return; }
     if (r.cstIBS && r.cClassTrib && r.cClassTrib.slice(0, 3) !== r.cstIBS) { try { notifyUser('cClassTrib incompatível com o CST da regra (prefixo = CST)'); } catch (_) {} return; }

@@ -48,6 +48,13 @@ const NFConfigService = (() => {
       cscId: '',     // ID token QR Code
       cscToken: '',  // Token CSC para QR Code
     },
+    // Prazos de eventos fiscais (horas desde a autorização). null = sem
+    // bloqueio (só informa o decorrido). PREENCHA conforme MOC/NT vigente
+    // antes de ativar — nenhum valor aqui é regra oficial.
+    prazosFiscais: {
+      cancNFeHoras: null,
+      ccNFeHoras: null,
+    },
     impostos: {
       // Defaults aplicados ao criar novo item — ajustável por produto
       icms: {
@@ -369,6 +376,13 @@ const NFConfigService = (() => {
     // config parcial sem o flag). Só retorna null quando AMBOS estão vazios.
     const hasTrib = String(g.cst || '').trim() !== '' && String(g.cClassTrib || '').trim() !== '';
     if (!g.habilitado && !hasTrib) return null;
+    // Proveniência do neutro: valores padrão (CST 000/cClassTrib 000001/
+    // alíquotas 0) SEM confirmação explícita do tenant => defaultNeutro.
+    // A emissão exige opt-in (confirmDialog na NF-e) e grava a ciência na
+    // config (neutroConfirmado). Sem inventar regra: só marca a origem.
+    const neutro = String(g.cst || '000').trim() === '000'
+      && String(g.cClassTrib || '000001').trim() === '000001'
+      && !(Number(g.pIBSUF) > 0) && !(Number(g.pIBSMun) > 0) && !(Number(g.pCBS) > 0);
     const out = {
       habilitado: true,
       cst: g.cst || '000',
@@ -378,6 +392,7 @@ const NFConfigService = (() => {
       pCBS: Number(g.pCBS) || 0,
       vBC: round2(valorProduto),
     };
+    if (neutro && g.neutroConfirmado !== true) out.defaultNeutro = true;
     if (Number(g.pRedAliq) > 0) out.pRedAliq = Number(g.pRedAliq);
     if (Number(g.pDif) > 0) out.pDif = Number(g.pDif);
     if (g.credPresOper && g.credPresOper.cCredPres) out.credPresOper = { ...g.credPresOper };
@@ -405,8 +420,13 @@ const NFConfigService = (() => {
     };
   }
 
-  // ─── Validar CNPJ ──────────────────────────────────────────────────────────
+  // ─── Validar CNPJ (canônico em NFValidator; delega em runtime) ─────────────
   function validarCNPJ(cnpj) {
+    try {
+      if (typeof window !== 'undefined' && window.NFValidator && typeof window.NFValidator.validarCNPJ === 'function') {
+        return window.NFValidator.validarCNPJ(cnpj);
+      }
+    } catch (_) {}
     const n = String(cnpj || '').replace(/\D/g, '');
     if (n.length !== 14 || /^(\d)\1+$/.test(n)) return false;
     const calc = (s, w) => {
@@ -423,8 +443,13 @@ const NFConfigService = (() => {
     return parseInt(n[12]) === d1 && parseInt(n[13]) === d2;
   }
 
-  // ─── Validar CPF ───────────────────────────────────────────────────────────
+  // ─── Validar CPF (canônico em NFValidator; delega em runtime) ──────────────
   function validarCPF(cpf) {
+    try {
+      if (typeof window !== 'undefined' && window.NFValidator && typeof window.NFValidator.validarCPF === 'function') {
+        return window.NFValidator.validarCPF(cpf);
+      }
+    } catch (_) {}
     const n = String(cpf || '').replace(/\D/g, '');
     if (n.length !== 11 || /^(\d)\1+$/.test(n)) return false;
     const calc = (s, len) => {
@@ -509,6 +534,27 @@ const NFConfigService = (() => {
     return c;
   }
 
+  // ─── Prazo de eventos (cancel/CC): decorrido desde a autorização ──────────
+  // Matemática pura, sem regra fiscal embutida: o LIMITE vem da config do
+  // tenant (prazosFiscais, null = sem bloqueio). Gêmea no backend
+  // (avaliarPrazoEventoFiscal em nf-functions.js) — manter sincronizadas.
+  function avaliarPrazoEvento(autorizadaEmIso, limiteHoras, agoraMs) {
+    const ref = Date.parse(String(autorizadaEmIso || ''));
+    if (!Number.isFinite(ref)) return { decorridoHoras: null, excedido: false, semReferencia: true };
+    const agora = Number.isFinite(agoraMs) ? agoraMs : Date.now();
+    const decorridoHoras = Math.max(0, (agora - ref) / 3600000);
+    const limite = Number(limiteHoras);
+    if (!Number.isFinite(limite) || limite <= 0) return { decorridoHoras, excedido: false, semReferencia: false };
+    return { decorridoHoras, excedido: decorridoHoras > limite, semReferencia: false };
+  }
+
+  function formatarDecorridoHoras(decorridoHoras) {
+    if (!Number.isFinite(decorridoHoras)) return 'período desconhecido';
+    if (decorridoHoras < 1) return `há ${Math.max(1, Math.round(decorridoHoras * 60))} min`;
+    if (decorridoHoras < 48) return `há ${Math.floor(decorridoHoras)}h${Math.round((decorridoHoras % 1) * 60)}min`;
+    return `há ${Math.floor(decorridoHoras / 24)} dias`;
+  }
+
   // ─── API pública ──────────────────────────────────────────────────────────
   return {
     loadConfig,
@@ -523,6 +569,8 @@ const NFConfigService = (() => {
     calcularIBSCBS,
     calcularIS,
     ajustarCFOP,
+    avaliarPrazoEvento,
+    formatarDecorridoHoras,
     validarCNPJ,
     validarCPF,
     formatarCNPJ,

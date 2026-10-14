@@ -943,7 +943,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         const manager = getFirebaseManager();
         window.firebaseManager = manager;
-        
+
+        // Logout/troca de tenant sem reload: os listeners são do tenant
+        // anterior — cleanup junto com a sessão (antes entregava dado cruzado).
+        try {
+            const __svc = window.firebaseService || window.FirebaseService;
+            if (__svc && typeof __svc.registerSessionTeardown === 'function' && manager && typeof manager.cleanup === 'function') {
+                __svc.registerSessionTeardown(() => { try { manager.cleanup(); } catch (_) {} });
+            }
+        } catch (_) {}
+
         console.log('✅ Firebase Connection Manager disponível globalmente');
     }, 500);
 });

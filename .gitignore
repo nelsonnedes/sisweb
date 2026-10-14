@@ -105,3 +105,16 @@ logs-*.md
 
 # PWA icon backups gerados do favicon
 assets/icons/*.bak
+
+# Artefatos locais fora da dist publicada (hosting-dist via hosting-files.json)
+# - Esquemas oficiais de referencia (vendored em tests/schemas/nfe/)
+/Esquemas XML/
+# - Rascunhos de marketing/lab (fora do hosting)
+/marqueting/
+# - Prompt local do auditor fiscal (referencia local do skill)
+/Auditor.md
+# - Templates de mockup avulsos
+assets/mockup_*.png
+# - Cache Python
+__pycache__/
+*.py[cod]

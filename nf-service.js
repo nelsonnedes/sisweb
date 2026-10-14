@@ -275,6 +275,7 @@ const NFService = (() => {
       habilitado: true, cst: '000', cClassTrib: '000001',
       pIBSUF: 0, pIBSMun: 0, pCBS: 0,
       vBC: parseFloat(item.vProd || item.total) || 0,
+      defaultNeutro: true,
     };
     return imposto;
   }
@@ -309,11 +310,22 @@ const NFService = (() => {
     //    rejeitada/erro_envio (sem vínculo na SEFAZ — sem protocolo de
     //    autorização; MOC: numeração só se consome no uso fiscal). Rascunho e
     //    nota nova reservam número atômico no backend como antes.
+    // Opt-in IBS/CBS neutro ANTES de consumir número: itens com defaultNeutro
+    // (config nunca confirmada) exigem ciência explícita do emitente — sem ela,
+    // a emissão bloqueia aqui e nenhum número é consumido.
+    const usaNeutroDefault = Array.isArray(nfeData.det)
+      && nfeData.det.some(d => d && d.imposto && d.imposto.ibscbs && d.imposto.ibscbs.defaultNeutro === true);
+    const neutroConfirmadoCfg = !!(_config && _config.impostos && _config.impostos.ibscbs && _config.impostos.ibscbs.neutroConfirmado);
+    if (usaNeutroDefault && !neutroConfirmadoCfg) {
+      const err = new Error('IBS_NEUTRO_CONFIRMACAO');
+      err.code = 'IBS_NEUTRO_CONFIRMACAO';
+      throw err;
+    }
     const stReenvio = String(nfeData.status || '').toLowerCase();
     if ((stReenvio === 'rejeitada' || stReenvio === 'erro_envio') && nfeData.numero && nfeData.ide?.nNF) {
       // Reenvio: mantém numero/ide.nNF/id — atualiza o MESMO registro.
     } else {
-      const numero = await window.NFStorage.incrementarNumero(_tenantId, 55);
+      const numero = await window.NFStorage.incrementarNumero(_tenantId, 55, nfeData?.ide?.serie);
       nfeData.numero = String(numero).padStart(9, '0');
       nfeData.ide.nNF = numero;
     }

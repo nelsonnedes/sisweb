@@ -129,18 +129,34 @@ const NFStorage = (() => {
     return new TextDecoder('utf-8').decode(buffer);
   }
 
+  // ─── Série do contador (gêmea de normalizeSerieFiscal no backend) ─────────
+  function normalizarSerieContador(serie) {
+    const n = parseInt(serie, 10);
+    if (!Number.isFinite(n) || n < 0 || n > 999) return '1';
+    return String(n);
+  }
+
   // ─── Carregar próximo número de NF ───────────────────────────────────────
-  async function getProximoNumero(tenantId, modelo = 55) {
+  async function getProximoNumero(tenantId, modelo = 55, serie) {
     const modKey = modelo == 65 ? 'nfce' : modelo == 'nfse' ? 'nfse' : 'nfe';
-    const path   = configPath(tenantId, `numeros/${modKey}`);
+    const serieKey = normalizarSerieContador(serie);
+    const path   = configPath(tenantId, `numeros/${modKey}/${serieKey}`);
     const result = await fb().loadFromFirebase(path);
-    return parseInt(result?.data?.proximoNumero || result?.data) || 1;
+    const n = parseInt(result?.data?.proximoNumero ?? result?.data) || 0;
+    if (n > 0) return n;
+    // Migração: série 1 herda o contador legado em numeros/{modKey}.
+    if (serieKey === '1') {
+      const leg = await fb().loadFromFirebase(configPath(tenantId, `numeros/${modKey}`));
+      return parseInt(leg?.data?.proximoNumero ?? leg?.data) || 1;
+    }
+    return 1;
   }
 
   // ─── Salvar número inicial direto no contador (sem Cloud Function) ────
-  async function salvarNumeroInicial(tenantId, modelo, numero) {
+  async function salvarNumeroInicial(tenantId, modelo, numero, serie) {
     const modKey = modelo == 65 ? 'nfce' : modelo == 'nfse' ? 'nfse' : 'nfe';
-    const path   = configPath(tenantId, `numeros/${modKey}`);
+    const serieKey = normalizarSerieContador(serie);
+    const path   = configPath(tenantId, `numeros/${modKey}/${serieKey}`);
     await fb().saveToFirebase(path, null, {
       proximoNumero: Number(numero) || 1,
       updatedAt: new Date().toISOString(),
@@ -148,21 +164,22 @@ const NFStorage = (() => {
   }
 
   // ─── Incrementar próximo número (atômico via backend, fallback local) ────
-  async function incrementarNumero(tenantId, modelo = 55) {
+  async function incrementarNumero(tenantId, modelo = 55, serie) {
     const modKey = modelo == 65 ? 'nfce' : modelo == 'nfse' ? 'nfse' : 'nfe';
+    const serieKey = normalizarSerieContador(serie);
     // Numeração oficial reservada em transação no servidor (evita duplicidade).
     try {
       if (window.firebaseService?.callFunction) {
-        const res = await window.firebaseService.callFunction('nf_reservarNumero', { tenantId, modelo });
+        const res = await window.firebaseService.callFunction('nf_reservarNumero', { tenantId, modelo, serie: serieKey });
         const numero = parseInt(res?.numero, 10);
         if (Number.isFinite(numero) && numero > 0) return numero;
       }
     } catch (e) {
       console.warn('[NFStorage] Reserva atômica indisponível, usando contador local:', e?.message || e);
     }
-    const atual  = await getProximoNumero(tenantId, modelo);
+    const atual  = await getProximoNumero(tenantId, modelo, serieKey);
     const proximo = atual + 1;
-    const path = configPath(tenantId, `numeros/${modKey}`);
+    const path = configPath(tenantId, `numeros/${modKey}/${serieKey}`);
     await fb().saveToFirebase(path, null, {
       proximoNumero: proximo,
       updatedAt: new Date().toISOString(),

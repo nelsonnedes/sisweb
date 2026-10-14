@@ -1605,3 +1605,33 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
   - Selects Cliente/Fornecedor: acompanhados do campo **"Buscar Cliente/Fornecedor"**
     na mesma linha (padrão `notas-fiscais.html` "Dados do Destinatário"), com o
     select ajustado p/ não desordenar o formulário.
+
+## Sessao 2026-10-14 (cont. 9) — Auditoria completa SISWEB modo Ponytail ultra (somente leitura, nada implementado)
+
+- **Método:** perfil auditor ativo (precedência Constitution > Auditor.md > Cérebro > Zen > Ponytail); 6 frentes paralelas read-only (mapa, auth/tenant, fiscal, operação, duplicação/perf, review do 410e17e). Proibições respeitadas: nenhum código tocado.
+- **Críticos (não implementar sem story):** (1) baixa de estoque read-modify-write sem transaction (`vendas.js:4523-4559`) + venda->financeiro atômico mas venda->estoque best-effort (`vendas.js:2853-2866`) — venda pode cobrar sem baixar; (2) RTDB `.read` sem checar `active`/subscription (`database.rules.json:13,17,60`) — ex-membro lê tenant; (3) logout não dá unsubscribe (`firebaseService.js:4611-4622` vs `:4924`) — listener vaza entre usuários/tenants; (4) senha A1 trafega por chamada HTTPS (`nf-service.js:329+355`) — avaliar sessão curta/token; (5) IBS/CBS default neutro habilitado (`nf-config.js:82-93`) — risco passivo contábil, exigir opt-in.
+- **Review 410e17e (55 arqs, sem push): BLOQUEAR push** até corrigir regex rígida de tpEvento (`functions/mdfe-functions.js` ~consulta) + `findSignatureInsertIndex` ingênuo (`functions/nf-functions.js`); resto Médio/Baixo. Tree na época: `M .gitignore` (viés declarado).
+- **Dívida:** `shortcut:`/`ponytail:` = 0 hits; mortos provados ~1534 linhas (compras_legacy.js, migrateToFirebase.js, verificacao-final-sistema.js, server.js, index.js/openai) + ~180 linhas de helpers clonados (formatCurrency/Data ×9, volumeTora ×4, volumePCT ×3, CPF/CNPJ ×2). Manter: `src/utils/formatters.js`, `tora-geometry-utils.js`, `modules/*`, `nf-validator.js`.
+- **NÃO VERIFICADO (exige MOC/NT/SEFA-PA antes de codar):** prazos cancelamento/inutilização, DIFAL/FCP-ST, benefícios PA, contingência, cCredPres semântico, TZ -03:00 hardcoded.
+- **Padrão novo:** fiscal sem fonte oficial = marcar NÃO VERIFICADO, nunca propor valor de alíquota/prazo/benefício.
+
+## Sessao 2026-10-14 (cont. 10) — Roadmap da auditoria EXECUTADO (1a→4b, nada pendente de código)
+
+- **1a estoque atômico:** callable `estoqueAplicarMovimento` (`functions/finance-functions.js`) — dry-run puro no cliente (`aplicarMovimentoEstoquePedido` não muta mais), transaction valida-e-deduz por produto, fail-closed `SALDO_INSUFICIENTE` (nunca clamp), idempotência por `operationId` (`baixa-{pedido}-{seq}` / `estorno-{op}` + takeover de claim após 10min), compensação reversa em falha parcial, estorno inverte exato (corrige over-restore quadrático do revert M3 antigo). Save bloqueia antes de persistir; saída do conferido reverte fail-loud; delete fail-closed. Trava: `tests/estoque-baixa-atomica.test.mjs` (9).
+- **1b rules:** 42 `.read` sob `companies/$companyId` com gate `active != false` (ausente passa — sem backfill obrigatório); `setUserAccessStatus/blocked` marca `active:false+adminActive:false` no nó (só se existir), reativação marca `active:true`. Trava: `security-rbac-multitenant` (+2 testes).
+- **1c logout:** `unsubscribeAll()+runSessionTeardowns()` ANTES do `signOut` + remove `users/roles`; `setTenantId` limpa em troca real; modal PCT (`stopRealtimeRomaneiosPct` + close desinscreve) e manager da folha (`cleanup`) registrados em `registerSessionTeardown`. Trava: `tests/logout-limpeza-sessao.test.mjs` (4).
+- **2a/2b desbloqueio 410e17e:** `extrairConteudoTag/BlocoTag` (tolera `ns2:`/xmlns) nas 3 consultas; `findSignatureInsertIndex` reescrito como parser próprio (aspas + profundidade + comentários); dedupe `SOAP_ACTION_METHOD`. Travas: `consulta-sefaz-verdade` (+1), `nfe-signer-event-order` (+2).
+- **2c IBS neutro:** `calcularIBSCBS` marca `defaultNeutro` (sem `neutroConfirmado`); `emitirNFe` lança `IBS_NEUTRO_CONFIRMACAO` ANTES da reserva; UI confirma via `confirmDialog` e grava `neutroConfirmado+neutroCienciaEm` na config (retry único). Trava: `tests/nfe-ibs-neutro-optin.test.mjs` (3).
+- **2d prazo:** `prazosFiscais:{cancNFeHoras:null,ccNFeHoras:null}` (null = sem bloqueio, preencher pelo MOC/NT); gêmeas `avaliarPrazoEvento`/`avaliarPrazoEventoFiscal`; backend bloqueia `failed-precondition PRAZO_EXCEDIDO` antes do PFX; cliente pré-checa antes da senha. Trava: `tests/nfe-prazo-cancel.test.mjs` (4).
+- **2e série:** `numeros/{modKey}/{serie}` com seed do legado p/ série 1 (sem recomeçar do 1); cliente propaga `ide.serie`. Trava: `tests/nfe-numeracao-serie.test.mjs` (4).
+- **3a contábil:** `somarValoresCents/centsParaValor` nos 4 pontos de soma/normalização; `estornarConta` cria contrapartida (`estornoDe`, nunca deleta, sem movimento usa Excluir) + botões nas duas tabelas; `dataCompetencia` (emissão senão vencimento) em criação/edição/estorno. Trava: `tests/finance-contabil-estorno.test.mjs` (4).
+- **4a mortos:** deletados `compras_legacy.js`, `verificacao-final-sistema.js`, `migrateToFirebase.js`, `server.js`, `index.js`; manifesto −2 (build 543 OK); `package.json` −`express` −`openai` (**`prettier` MANTIDO** — usado por `.aiox-core/**/code-quality-improver.js`; corrigir auditoria que o deu como não-provado).
+- **4b canônico:** `nf-config` CNPJ/CPF delegam ao `NFValidator`; CFOP canônico (`/^[123567]$/`) em `nf-itens` (3 usos via `cfopCanonicoValido`) + `nf-naturezas`; testes-ouro Smalian/PCT (`tests/madeira-geometria-ouro.test.mjs`). Unificação massiva de formatters adiada (1 story por módulo).
+- **Gates:** lint OK, typecheck OK, test 1393/1392/0/1, build:hosting OK. **Deploy rules/functions NÃO executado** (só @devops; Constitution II).
+- **Story:** `docs/stories/2026-10-14-execucao-roadmap-auditoria.md` (checklist + file list + deferidos).
+
+## Sessao 2026-10-14 (cont. 11) — 5a dossiê MOC/NT/SEFA-PA + verificação final
+
+- **Dossiê registrado na story (§5a, 7 itens, nenhum codado):** DIFAL ausente (`nf-config.js:84-87`); FCP-ST zerado (`nf-xml-builder.js:634-635`); sem `cBenef`/RICMS-PA; sem contingência (`tpEmis` fixo); cCredPres só formato; TZ −03:00 hardcoded (4 pontos; base PA correta); prazo cancel com mecanismo pronto e valor null.
+- **Debt:** `shortcut:`/`ponytail:` = 0 em código (único hit é esta própria nota histórica).
+- **Tree:** 30 modificados + 5 deletados + 9 novos (story + 8 testes); sem commit/sem push (aguardando ordem; deploy só @devops).

@@ -637,6 +637,27 @@ function normalizeSeqEvento(value, fallback = 1) {
   return seq;
 }
 
+// Decorrido desde a autorização p/ eventos (cancel/CC). Matemática pura — o
+// LIMITE vem da config do tenant (prazosFiscais, null = sem bloqueio, pois
+// nenhum valor aqui é regra oficial). Gêmea do cliente (avaliarPrazoEvento
+// em nf-config.js) — manter sincronizadas.
+function avaliarPrazoEventoFiscal(autorizadaEmIso, limiteHoras, agoraMs) {
+  const ref = Date.parse(String(autorizadaEmIso || ''));
+  if (!Number.isFinite(ref)) return { decorridoHoras: null, excedido: false, semReferencia: true };
+  const agora = Number.isFinite(agoraMs) ? agoraMs : Date.now();
+  const decorridoHoras = Math.max(0, (agora - ref) / 3600000);
+  const limite = Number(limiteHoras);
+  if (!Number.isFinite(limite) || limite <= 0) return { decorridoHoras, excedido: false, semReferencia: false };
+  return { decorridoHoras, excedido: decorridoHoras > limite, semReferencia: false };
+}
+
+function formatarDecorridoHorasFiscal(decorridoHoras) {
+  if (!Number.isFinite(decorridoHoras)) return 'período desconhecido';
+  if (decorridoHoras < 1) return `há ${Math.max(1, Math.round(decorridoHoras * 60))} min`;
+  if (decorridoHoras < 48) return `há ${Math.floor(decorridoHoras)}h${Math.round((decorridoHoras % 1) * 60)}min`;
+  return `há ${Math.floor(decorridoHoras / 24)} dias`;
+}
+
 // ─── Descriptografar PFX salvo no Firebase (AES-GCM + PBKDF2) ────────────
 async function descriptografarPFXdoStorage(tenantId, uid, senha) {
   const db = admin.database();
@@ -705,6 +726,25 @@ function buildSignedHashForm(sentForm, tagName, namespace) {
   return sentForm.replace(new RegExp(`^<${tagName}`, 'i'), `<${tagName} xmlns="${namespace}"`);
 }
 
+// Extração tolerante a prefixo/namespace (a SEFAZ varia conforme o lote —
+// ex.: <ns2:tpEvento> ou tag com xmlns; regex rígida lia "indefinida" num
+// MDF-e encerrado e permitia reencerramento). Autocontidas p/ extração em teste.
+function extrairConteudoTag(body, localName) {
+    const pattern = new RegExp(
+        `<(?:[A-Za-z_][\\w:.-]*:)?${localName}(?:\\s[^>]*)?>([^<]*)<\\/(?:[A-Za-z_][\\w:.-]*:)?${localName}>`,
+    );
+    const m = String(body || '').match(pattern);
+    return m ? m[1] : '';
+}
+
+function extrairBlocoTag(body, localName) {
+    const pattern = new RegExp(
+        `<(?:[A-Za-z_][\\w:.-]*:)?${localName}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[A-Za-z_][\\w:.-]*:)?${localName}>`,
+    );
+    const m = String(body || '').match(pattern);
+    return m ? m[1] : '';
+}
+
 // Índice onde a <Signature> deve ser inserida: ANTES do fechamento do PAI do
 // elemento assinado (após eventuais irmãos completos — ex.: infMDFeSupl).
 // O leiaute DFe exige a Signature como último filho do PAI:
@@ -712,25 +752,89 @@ function buildSignedHashForm(sentForm, tagName, namespace) {
 //  - MDF-e: depois de infMDFeSupl (antes de </MDFe>)
 //  - NFe/inut: último filho da raiz.
 // Retorna -1 quando não encontra (chamador usa fallback legado).
+// Parser próprio (sem indexOf no fechamento): respeita aspas em atributos
+// (">" dentro de atributo não quebra) e conta profundidade em irmãos de
+// mesmo nome aninhados. Autocontida p/ extração em teste (sem helpers externos).
 function findSignatureInsertIndex(xml, fromIdx) {
-  let i = fromIdx;
-  while (i < xml.length) {
-    const rest = xml.slice(i);
-    const leading = rest.match(/^\s*/)[0].length;
-    const at = i + leading;
-    const chunk = xml.slice(at);
-    const closeM = chunk.match(/^<\/([A-Za-z][\w:.-]*)>/);
-    if (closeM) return at;
-    const openM = chunk.match(/^<([A-Za-z][\w:.-]*)([^>]*?)(\/?)>/);
-    if (!openM) return -1;
-    const tagEnd = at + openM[0].length;
-    if (openM[3] === '/') { i = tagEnd; continue; } // irmão auto-fechado
-    const closeTag = `</${openM[1]}>`;
-    const closeIdx = xml.indexOf(closeTag, tagEnd);
-    if (closeIdx < 0) return -1;
-    i = closeIdx + closeTag.length;
-  }
-  return -1;
+    function fimTag(i) {
+        let aspas = null;
+        for (let k = i + 1; k < xml.length; k++) {
+            const c = xml[k];
+            if (aspas) {
+                if (c === aspas) aspas = null;
+                continue;
+            }
+            if (c === '"' || c === "'") { aspas = c; continue; }
+            if (c === '>') return k + 1;
+        }
+        return -1;
+    }
+    function nomeTag(abertura, inicio, fim) {
+        const m = abertura.slice(inicio, fim).match(/^\s*([A-Za-z_][\w:.-]*)/);
+        return m ? m[1] : '';
+    }
+    function pularElemento(inicio, nome) {
+        let profundidade = 1;
+        let k = inicio;
+        while (k < xml.length && profundidade > 0) {
+            const lt = xml.indexOf('<', k);
+            if (lt < 0) return -1;
+            if (xml.startsWith('<!--', lt)) {
+                const fim = xml.indexOf('-->', lt + 4);
+                if (fim < 0) return -1;
+                k = fim + 3;
+                continue;
+            }
+            if (xml.startsWith('</', lt)) {
+                const fim = fimTag(lt);
+                if (fim < 0) return -1;
+                if (nomeTag(xml, lt + 2, fim - 1) === nome) profundidade--;
+                k = fim;
+                continue;
+            }
+            if (xml.startsWith('<?', lt) || xml.startsWith('<!', lt)) {
+                const fim = fimTag(lt);
+                if (fim < 0) return -1;
+                k = fim;
+                continue;
+            }
+            const fim = fimTag(lt);
+            if (fim < 0) return -1;
+            const interno = xml.slice(lt + 1, fim - 1);
+            const autoFechada = /\/\s*$/.test(interno);
+            if (!autoFechada && nomeTag(xml, lt + 1, fim - 1) === nome) profundidade++;
+            k = fim;
+        }
+        return profundidade === 0 ? k : -1;
+    }
+    let i = fromIdx;
+    while (i < xml.length) {
+        while (i < xml.length && /\s/.test(xml[i])) i++;
+        if (i >= xml.length) return -1;
+        if (xml[i] !== '<') return -1;
+        if (xml.startsWith('</', i)) return i;
+        if (xml.startsWith('<!--', i)) {
+            const fim = xml.indexOf('-->', i + 4);
+            if (fim < 0) return -1;
+            i = fim + 3;
+            continue;
+        }
+        if (xml.startsWith('<?', i) || xml.startsWith('<!', i)) {
+            const fim = fimTag(i);
+            if (fim < 0) return -1;
+            i = fim;
+            continue;
+        }
+        const fim = fimTag(i);
+        if (fim < 0) return -1;
+        const interno = xml.slice(i + 1, fim - 1);
+        if (/\/\s*$/.test(interno)) { i = fim; continue; }
+        const nome = nomeTag(xml, i + 1, fim - 1);
+        if (!nome) return -1;
+        i = pularElemento(fim, nome);
+        if (i < 0) return -1;
+    }
+    return -1;
 }
 
 function assinarXMLcomForge(xmlStr, pfxBuffer, senha, options = {}) {
@@ -834,12 +938,9 @@ ${signedInfo}\
 const SOAP_ACTION_METHOD = {
   NfeConsultaProtocolo4: 'nfeConsultaNF', // catálogo NFePHP wsnfe (SVRS): method=nfeConsultaNF
   NFeAutorizacao4:       'nfeAutorizacaoLote',
-  NfeAutorizacao4:       'nfeAutorizacaoLote',
   NFeRetAutorizacao4:    'nfeRetAutorizacaoLote',
   NFeRecepcaoEvento4:    'nfeRecepcaoEvento',
-  NfeRecepcaoEvento4:    'nfeRecepcaoEvento',
   NFeInutilizacao4:      'nfeInutilizacaoNF',
-  NfeInutilizacao4:      'nfeInutilizacaoNF',
 };
 // Namespace da action/envelope = campo "operation" do WSDL (catálogo NFePHP
 // wsnfe_4.00_mod55.xml, bloco SVRS): em geral coincide com o serviço lógico,
@@ -1162,29 +1263,55 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CLOUD FUNCTION 2b: nf_reservarNumero
-// Reserva o próximo número NF-e em transação atômica (evita duplicidade)
-// ═══════════════════════════════════════════════════════════════════════════
+// Reserva o próximo número NF-e em transação atômica (evita duplicidade),
+// POR SÉRIE: contador em numeros/{modKey}/{serie}. Migração: o contador
+// legado em numeros/{modKey} (série única antiga) semeia a série 1 uma única
+// vez — sem isso, a série 1 recomeçaria do 1 e duplicaria notas já emitidas.
+// Gêmea de teste: aplicarReservaNumero (extraível por vm).
+function normalizeSerieFiscal(raw) {
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 0 || n > 999) return '1';
+  return String(n);
+}
+
+function aplicarReservaNumero(current, seedProximo, nowIso) {
+  const cur = current && typeof current === 'object' ? current : {};
+  const atual = Number(cur.proximoNumero);
+  if (Number.isFinite(atual) && atual >= 1) {
+    return { ...cur, proximoNumero: Math.floor(atual) + 1, updatedAt: nowIso };
+  }
+  const seed = Number(seedProximo);
+  const base = Number.isFinite(seed) && seed >= 1 ? Math.floor(seed) : 1;
+  return { proximoNumero: base + 1, updatedAt: nowIso };
+}
+
 exports.nf_reservarNumero = onFiscalCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação obrigatória');
   }
-  const { tenantId: rawTenantId, modelo } = data || {};
+  const { tenantId: rawTenantId, modelo, serie: rawSerie } = data || {};
   const tenantId = sanitizePathSegment(rawTenantId, 'tenantId');
   await assertTenantAccess(context, tenantId);
 
   const modKey = String(modelo) === '65' ? 'nfce' : (String(modelo) === 'nfse' ? 'nfse' : 'nfe');
-  const ref = admin.database().ref(`companies/${tenantId}/fiscal/config/numeros/${modKey}`);
+  const serieKey = normalizeSerieFiscal(rawSerie);
+  const ref = admin.database().ref(`companies/${tenantId}/fiscal/config/numeros/${modKey}/${serieKey}`);
 
-  const tx = await ref.transaction((current) => {
-    const cur = current && typeof current === 'object' ? current : {};
-    const atual = Number(cur.proximoNumero) || 1;
-    return { ...cur, proximoNumero: atual + 1, updatedAt: new Date().toISOString() };
-  });
+  let seedProximo = 1;
+  if (serieKey === '1') {
+    try {
+      const leg = await admin.database().ref(`companies/${tenantId}/fiscal/config/numeros/${modKey}/proximoNumero`).get().catch(() => null);
+      const n = leg && leg.exists() ? Number(leg.val()) : NaN;
+      if (Number.isFinite(n) && n >= 1) seedProximo = Math.floor(n);
+    } catch (_) {}
+  }
+
+  const tx = await ref.transaction((current) => aplicarReservaNumero(current, seedProximo, new Date().toISOString()));
   if (!tx.committed) {
     throw new functions.https.HttpsError('aborted', 'Não foi possível reservar a numeração da NF-e.');
   }
   const value = tx.snapshot.val() || {};
-  return { numero: (Number(value.proximoNumero) || 1) - 1 };
+  return { numero: (Number(value.proximoNumero) || 1) - 1, serie: serieKey };
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1247,12 +1374,10 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
 
     // Verdade da situação: a consulta de uma NF-e cancelada devolve o cStat do
     // retorno principal (100 = autorizada) + o evento 110111 no procEventoNFe.
+    // Extração tolerante a prefixo/namespace (mesmo caso do MDF-e).
     const bodyConsulta = String(resp.body || '');
-    const temEventoCancelamento = /<tpEvento>110111<\/tpEvento>/.test(bodyConsulta);
-    const cStatEventoCancel = (() => {
-      const m = bodyConsulta.match(/<retEvento[\s\S]*?<cStat>(\d+)<\/cStat>/);
-      return m ? m[1] : '';
-    })();
+    const temEventoCancelamento = ['110111'].includes(extrairConteudoTag(bodyConsulta, 'tpEvento'));
+    const cStatEventoCancel = extrairConteudoTag(extrairBlocoTag(bodyConsulta, 'retEvento'), 'cStat');
     const cancelada = temEventoCancelamento && ['135', '155', '101'].includes(cStatEventoCancel);
     const situacao = cancelada ? 'cancelada' : (ret.autorizada ? 'autorizada' : 'indefinida');
 
@@ -1354,6 +1479,27 @@ exports.nf_cancelarNFe = onFiscalCall(async (data, context) => {
   const modKey = modelo == 65 ? 'nfce' : 'nfe';
   const db     = admin.database();
   const dhEvento = toFiscalDateTime();
+  // Prazo de cancelamento: decorrido desde dhAutorizacao vs limite da config
+  // do tenant (prazosFiscais.cancNFeHoras; null = sem bloqueio). Antes do PFX
+  // e da SEFAZ — poupa a ida quando já estourado.
+  try {
+    const cfgPrazo = await loadFiscalConfig(db, tenantId);
+    const limiteCanc = cfgPrazo && cfgPrazo.prazosFiscais ? cfgPrazo.prazosFiscais.cancNFeHoras : null;
+    if (Number(limiteCanc) > 0) {
+      const notaSnap = await db.ref(`companies/${tenantId}/fiscal/notas/${modKey}/${nfId}`).get().catch(() => null);
+      const nota = notaSnap && notaSnap.exists() ? notaSnap.val() : null;
+      const avaliacao = avaliarPrazoEventoFiscal(nota && (nota.dhAutorizacao || nota.dhRecbto), limiteCanc);
+      if (avaliacao.excedido) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          `PRAZO_EXCEDIDO: NF-e autorizada ${formatarDecorridoHorasFiscal(avaliacao.decorridoHoras)} (limite configurado: ${limiteCanc}h). Confira o prazo no MOC/NT vigente.`,
+        );
+      }
+    }
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    functions.logger.warn(`[nf_cancelarNFe] checagem de prazo indisponível (segue sem bloquear): ${(e && e.message) || e}`);
+  }
   const cnpj     = requireCnpj(cnpjEmit);
   const cUF      = resolveCUF({ chave: chaveNFe });
   const seq      = normalizeSeqEvento(nSeqEvento, 1);
@@ -2094,4 +2240,6 @@ exports.__mdfeInternals = {
   parseSefazResponse,
   stripXmlDecl,
   toFiscalDateTime,
+  extrairConteudoTag,
+  extrairBlocoTag,
 };

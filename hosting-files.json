@@ -292,7 +292,6 @@
   "commerce-responsive.css",
   "commerce-responsive.js",
   "company.html",
-  "compras_legacy.js",
   "compras.html",
   "compras.js",
   "config.example.js",
@@ -542,6 +541,5 @@
   "utils.js",
   "validation-system.js",
   "vendas.html",
-  "vendas.js",
-  "verificacao-final-sistema.js"
+  "vendas.js"
 ]

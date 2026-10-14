@@ -18,6 +18,8 @@ const {
   parseSefazResponse,
   stripXmlDecl,
   toFiscalDateTime,
+  extrairConteudoTag,
+  extrairBlocoTag,
 } = nf.__mdfeInternals;
 
 const MDFe_ENDPOINTS = {
@@ -233,14 +235,13 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
   }
   // Situação real: eventos vinculados no procEventoMDFe (110112 encerramento /
   // 110111 cancelamento) definem se o documento está Encerrado/Cancelado.
-  const tpEventoMatch = bodyConsulta.match(/<tpEvento>(110111|110112)<\/tpEvento>/);
-  const cStatEvento = (() => {
-    const m = bodyConsulta.match(/<retEventoMDFe[\s\S]*?<cStat>(\d+)<\/cStat>/);
-    return m ? m[1] : '';
-  })();
+  // Extração tolerante a prefixo/namespace: resposta com <ns2:tpEvento>
+  // voltava "indefinida" e permitia reencerramento.
+  const tpEvento = extrairConteudoTag(bodyConsulta, 'tpEvento');
+  const cStatEvento = extrairConteudoTag(extrairBlocoTag(bodyConsulta, 'retEventoMDFe'), 'cStat');
   const eventoOk = ['135', '136', '155', '101'].includes(cStatEvento);
-  const situacao = (tpEventoMatch && eventoOk)
-    ? (tpEventoMatch[1] === '110112' ? 'encerrado' : 'cancelado')
+  const situacao = ((tpEvento === '110111' || tpEvento === '110112') && eventoOk)
+    ? (tpEvento === '110112' ? 'encerrado' : 'cancelado')
     : (['100', '150'].includes(result.cStat) ? 'autorizado'
       : (result.cStat === '217' ? 'nao_encontrado' : 'indefinida'));
   const statusDerivado = situacao === 'encerrado' ? 'encerrado'
@@ -256,7 +257,7 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
       cStat: result.cStat,
       xMotivo: result.xMotivo,
       situacao,
-      tpEvento: tpEventoMatch ? tpEventoMatch[1] : '',
+      tpEvento,
       cStatEvento,
       em: new Date().toISOString(),
     },
@@ -268,7 +269,7 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
     cStat: result.cStat,
     xMotivo: result.xMotivo,
     protocolo: result.nProt,
-    tpEvento: tpEventoMatch ? tpEventoMatch[1] : '',
+    tpEvento,
     cStatEvento,
   };
 });
