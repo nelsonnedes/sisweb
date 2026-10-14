@@ -1256,11 +1256,13 @@
             };
         </script>
 
+        <!-- Alerta global (visível em TODAS as abas): resultado de emissão,
+             consulta SEFAZ, cancelamento e eventos. Antes ficava dentro da aba
+             Emissão e a Consulta não o exibia (regressão reportada). -->
+        <div id="emissaoAlerta" style="display:none;padding:10px 14px;border-radius:6px;margin-bottom:14px;font-weight:600;"></div>
+
         <!-- Aba Emissão -->
         <div id="emissao" class="tab-content active">
-
-          <!-- Alerta emissão -->
-          <div id="emissaoAlerta" style="display:none;padding:10px 14px;border-radius:6px;margin-bottom:14px;font-weight:600;"></div>
 
           <form id="nfForm">
             <div class="nf-stepper" id="nfStepper" aria-label="Etapas da emissão de NF-e">
@@ -1601,6 +1603,15 @@
                 </label>
               </div>
 
+              <!-- Produto Cadastrado (Fiscais): ao autorizar, os itens desta NF-e
+                   entram no catálogo do tenant (companies/{tenant}/estoqueProdutos)
+                   com NCM, dados fiscais e o Vl.Unit. (pauta) — qualquer tpNF/natureza. -->
+              <label style="display:flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer;margin-bottom:12px;">
+                <input type="checkbox" id="nfRegistrarProdutosFiscais" checked
+                  title="Ao autorizar, os itens desta NF-e são salvos no catálogo com NCM, dados fiscais e o Vl.Unit. digitado (pauta)">
+                <span>🗂️ Produto Cadastrado (Fiscais) — salvar itens emitidos no catálogo</span>
+              </label>
+
               <!-- Seção: Produto Cadastrado (fica oculta por padrão) -->
               <div id="nfSecaoProdutoCadastrado" class="nf-produto-section" style="display:none;background:var(--sw-surface);border:1px solid var(--sw-border);border-radius:6px;padding:12px;margin-bottom:12px;">
                  <div class="form-row nf-product-entry-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px;">
@@ -1754,7 +1765,6 @@
                   </tbody>
             </table>
            </div>
-           <div id="paginacaoConsultaNF" class="nf-pagination-bar"></div>
          </div>
 
             <!-- TOTAIS + PAGAMENTO -->
@@ -1838,24 +1848,7 @@
                   <i class="fas fa-lock-open"></i> Confirmar revisão e informar senha
                 </button>
               </div>
-            </div>
-
-            <!-- Senha do certificado (só aparece após a revisão) -->
-            <div id="certSenhaBox" class="form-section nf-step-panel" data-nf-step="revisao" style="display:none;border-color:var(--sw-warning);background:color-mix(in srgb, var(--sw-warning) 12%, transparent);">
-              <h3><i class="fas fa-lock"></i> Autenticação do Certificado Digital</h3>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="emissaoSenhaA1">Senha do Certificado A1:</label>
-                  <input type="password" id="emissaoSenhaA1" placeholder="Senha para assinar o XML" autocomplete="current-password">
-                </div>
-                <div class="form-group" style="justify-content:flex-end;">
-                  <label>&nbsp;</label>
-                  <button type="button" onclick="confirmarEmissao()" class="btn btn-success" id="btnConfirmarEmissao">
-                    <i class="fas fa-paper-plane"></i> Confirmar e Emitir
-                  </button>
-                </div>
               </div>
-            </div>
 
             <div class="button-group nf-form-actions">
               <div class="button-group nf-step-actions" style="margin-top:0;">
@@ -1935,6 +1928,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginacaoConsultaNF" class="nf-pagination-bar"></div>
         </div>
 
         <!-- Aba Dashboard -->
@@ -2618,7 +2612,7 @@
             normalizeCompanyProfileForReport,
             getCompanyProfileForReport,
             resolveAuthenticatedTenant
-        } from './firebaseService.js?v=b41e25b5e148';
+        } from './firebaseService.js?v=678c8a6de062';
         window.firebaseService = {
             ...(window.firebaseService || {}),
             loadFromFirebase,
@@ -2665,19 +2659,19 @@
     <!-- node-forge: necessário para extrair metadados do certificado .pfx no browser -->
     <script src="https://unpkg.com/node-forge@1.3.1/dist/forge.min.js"></script>
     <script src="nf-cert.js?v=b522cff21ec4"></script>
-    <script src="nf-validator.js?v=20aa6077ef41"></script>
+    <script src="nf-validator.js?v=12b53cfd2df2"></script>
     <script src="nf-tax-tables.js?v=3d160df3c943"></script>
-    <script src="nf-itens.js?v=afab1f685315"></script>
-    <script src="nf-xml-builder.js?v=a6ccbf9d5447"></script>
+    <script src="nf-itens.js?v=f4da7db25215"></script>
+    <script src="nf-xml-builder.js?v=fe5dc0dfa092"></script>
     <script src="nf-fiscal-events.js?v=4a67d0a21c7c"></script>
-    <script src="nf-storage.js?v=cc82a5d5be97"></script>
-    <script src="nf-service.js?v=bbf88e3685ef"></script>
+    <script src="nf-storage.js?v=53866e33ac5d"></script>
+    <script src="nf-service.js?v=30c157266084"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="nf-dashboard.js?v=3c7aac3519cc"></script>
     <!-- Novos módulos Fase 0 -->
-    <script src="nf-naturezas.js?v=309948114bd3"></script>
+    <script src="nf-naturezas.js?v=d50eef83e564"></script>
     <script src="nf-preferencias.js?v=b5a49347dcd0"></script>
-    <script src="nf-produtos-nf.js?v=08faac0d22ff"></script>
+    <script src="nf-produtos-nf.js?v=7de147980e14"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
@@ -3426,7 +3420,12 @@
 
     function preencherDataEmissaoPadraoNF() {
       const dtEl = document.getElementById('nfDataEmissao');
-      if (dtEl && !dtEl.value) dtEl.value = new Date().toISOString().slice(0, 10);
+      if (dtEl && !dtEl.value) {
+        // Data LOCAL do emitente (nunca a data UTC — na virada de dia UTC×local
+        // o default UTC gerava dhEmi futuro → cStat 703).
+        const agora = new Date();
+        dtEl.value = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      }
     }
 
     // ─── Selects CSOSN/CST por regime (Fase A — gate CRT×código) ──────────
@@ -3474,16 +3473,12 @@
       document.getElementById('nfFrete')?.addEventListener('input', atualizarTotaisNF);
       document.getElementById('nfModFrete')?.addEventListener('change', atualizarEstadoTransporteNF);
       document.getElementById('nfForm')?.addEventListener('input', (event) => {
-        if (event.target?.id !== 'emissaoSenhaA1') {
-          limparErroCampoNF(event.target?.id);
-          invalidarRevisaoNF();
-        }
+        limparErroCampoNF(event.target?.id);
+        invalidarRevisaoNF();
       });
       document.getElementById('nfForm')?.addEventListener('change', (event) => {
-        if (event.target?.id !== 'emissaoSenhaA1') {
-          limparErroCampoNF(event.target?.id);
-          invalidarRevisaoNF();
-        }
+        limparErroCampoNF(event.target?.id);
+        invalidarRevisaoNF();
       });
       atualizarEstadoTransporteNF();
       renderizarVolumesNF();
@@ -3597,7 +3592,8 @@
       const vUnit = parseMoeda(document.getElementById('nfEditItemValor')?.value);
       const csosn = (document.getElementById('nfEditItemCSOSN')?.value || '102').trim();
       if (!nome) return mostrarAlertaEmissao('⚠️ Informe o nome do produto', 'warn');
-      if (ncm.length !== 8) return mostrarAlertaEmissao('⚠️ NCM deve ter 8 dígitos', 'warn');
+      const ncmValEdit = window.NFItens?.validarNCM ? window.NFItens.validarNCM(ncm) : { valid: ncm.length === 8 && !/^0{8}$/.test(ncm), erro: 'NCM deve ter 8 dígitos' };
+      if (!ncmValEdit.valid) return mostrarAlertaEmissao('⚠️ ' + ncmValEdit.erro, 'warn');
       if (!/^[1-9]\d{3}$/.test(cfop)) return mostrarAlertaEmissao('⚠️ CFOP inválido', 'warn');
       if (!(qtd > 0)) return mostrarAlertaEmissao('⚠️ Quantidade deve ser maior que zero', 'warn');
       if (!(vUnit > 0)) return mostrarAlertaEmissao('⚠️ Valor unitário inválido', 'warn');
@@ -3644,7 +3640,7 @@
         warn: 'background:color-mix(in srgb, var(--sw-warning) 18%, transparent);color:inherit;border:1px solid var(--sw-warning);',
         ok:   'background:color-mix(in srgb, var(--sw-success) 18%, transparent);color:inherit;border:1px solid var(--sw-success);',
       };
-      el.style.cssText = `display:block;padding:10px 14px;border-radius:6px;margin-bottom:14px;font-weight:600;${estilos[tipo]||estilos.erro}`;
+      el.style.cssText = `display:block;padding:10px 14px;border-radius:6px;margin-bottom:14px;font-weight:600;white-space:pre-line;${estilos[tipo]||estilos.erro}`;
       el.textContent = msg;
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -4088,8 +4084,6 @@
       _notaEmCurso = null;
       _revisaoFiscalStatus = { errors: [], warnings: [] };
       _nfResumoStatusOverride = null;
-      const senhaBox = document.getElementById('certSenhaBox');
-      if (senhaBox) senhaBox.style.display = 'none';
       const resumo = document.getElementById('nfReviewResumo');
       const alertas = document.getElementById('nfReviewAlertas');
       if (resumo) resumo.innerHTML = '<div class="nf-review-alert warn">Clique em Revisar NF-e para montar a prévia fiscal.</div>';
@@ -4158,9 +4152,17 @@
     function coletarFormDataNF(dest, options = {}) {
       const cfg = window.NFService?.getConfig?.() || {};
       const nfeCfg = cfg.nfe || {};
-      const dataInput = document.getElementById('nfDataEmissao')?.value || new Date().toISOString().slice(0, 10);
+      const agoraLocal = new Date();
+      const hojeLocalIso = new Date(agoraLocal.getTime() - agoraLocal.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      const dataInput = document.getElementById('nfDataEmissao')?.value || hojeLocalIso;
+      // Hoje → instante atual com tolerância de 60s (dhEmi alguns segundos no
+      // passado absorve skew de relógio da SEFAZ — prática comum dos emissores;
+      // o meio-dia fixo anterior gerava futuro para emissões antes das 12h →
+      // cStat 703). Data passada → meio-dia local.
       const dhEmiDate = new Date(`${dataInput}T12:00:00`);
-      const dhEmi = Number.isNaN(dhEmiDate.getTime()) ? new Date().toISOString() : dhEmiDate.toISOString();
+      const dhEmi = dataInput === hojeLocalIso
+        ? new Date(agoraLocal.getTime() - 60000).toISOString()
+        : (Number.isNaN(dhEmiDate.getTime()) ? agoraLocal.toISOString() : dhEmiDate.toISOString());
       const total = calcularTotalFormNF();
       // Rascunho preserva o tPag escolhido (antes forçava 90 e a seleção se perdia).
       // A17/A16 usam tPagForm (nfFormaPag) — tPag legado removido (duplicidade).
@@ -4316,10 +4318,6 @@
       document.querySelectorAll('.nf-step-panel[data-nf-step]').forEach((panel) => {
         panel.hidden = panel.dataset.nfStep !== step;
       });
-      if (step !== 'revisao') {
-        const senhaBox = document.getElementById('certSenhaBox');
-        if (senhaBox) senhaBox.style.display = 'none';
-      }
       atualizarStepperNF();
       const currentPanel = document.querySelector(`.nf-step-panel[data-nf-step="${step}"]`);
       currentPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -4570,9 +4568,7 @@
         }
         renderizarRevisaoFiscal(_notaEmCurso);
         irParaEtapaNF('revisao');
-        const senhaBox = document.getElementById('certSenhaBox');
-        if (senhaBox) senhaBox.style.display = 'none';
-        mostrarAlertaEmissao('✅ Prévia fiscal montada. Confira a revisão antes de informar a senha.', 'ok');
+        mostrarAlertaEmissao('✅ Prévia fiscal montada. Confira a revisão e clique em "Confirmar revisão e informar senha".', 'ok');
       } catch (error) {
         mostrarAlertaEmissao('❌ Erro ao montar revisão fiscal: ' + error.message, 'erro');
       }
@@ -4587,24 +4583,24 @@
         renderizarAlertasRevisaoNF(_revisaoFiscalStatus);
         return mostrarAlertaEmissao('⚠️ Corrija os erros da revisão fiscal antes de emitir.');
       }
-      const box = document.getElementById('certSenhaBox');
-      if (box) {
-        box.hidden = false;
-        box.style.display = 'block';
-      }
-      const senha = document.getElementById('emissaoSenhaA1');
-      if (senha) senha.focus();
-      box?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Senha via modal central — MESMO padrão do "Consultar SEFAZ" (sem campo
+      // inline na página). A revisão já foi validada; cancelar o modal aborta.
+      const senha = await solicitarSenhaA1NF('Senha do certificado A1', {
+        message: 'Informe a senha do certificado A1 para emitir e transmitir a NF-e.',
+        confirmLabel: 'Emitir',
+      });
+      if (!senha) return;
       ocultarAlertaEmissao();
+      await confirmarEmissao(senha);
     }
 
-    // ─── Confirmar emissão com senha ──────────────────────
-    async function confirmarEmissao() {
-      const senha = document.getElementById('emissaoSenhaA1')?.value;
+    // ─── Confirmar emissão com senha (recebida do modal central) ──────────
+    async function confirmarEmissao(senhaParam) {
+      const senha = typeof senhaParam === 'string' ? senhaParam : '';
       if (!senha) return mostrarAlertaEmissao('⚠️ Informe a senha do certificado A1');
       if (!_notaEmCurso) return mostrarAlertaEmissao('❌ Dados da NF-e perdidos. Refaça.');
 
-      const btn = document.getElementById('btnConfirmarEmissao');
+      const btn = document.getElementById('btnLiberarSenhaEmissao');
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Emitindo...'; }
       mostrarAlertaEmissao('⏳ Gerando XML e enviando à SEFAZ...', 'warn');
       try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Emitindo NF-e...'); } catch (_) {}
@@ -4614,8 +4610,27 @@
         const result = await window.NFService.emitirNFe(_notaEmCurso, senha);
         const danfeData = _notaEmCurso ? { ..._notaEmCurso, status: result.status, nProt: result.nProt || '', chave: result.chave || _notaEmCurso.chave } : null;
         const autorizada = result.status === 'autorizada';
+        // Produto Cadastrado (Fiscais): NF-e autorizada grava os itens no catálogo
+        // do tenant (companies/{tenant}/estoqueProdutos) — qualquer tpNF/natureza.
+        // FIRE-AND-FORGET: nunca bloqueia o fluxo/alerta da emissão (sem await).
+        const registrarProdutosFiscais = document.getElementById('nfRegistrarProdutosFiscais')?.checked !== false;
+        if (autorizada && registrarProdutosFiscais && _notaEmCurso && window.NFProdutosNF?.registrarProdutosDaNota) {
+          const notaParaCatalogo = _notaEmCurso;
+          try {
+            window.NFProdutosNF.registrarProdutosDaNota(notaParaCatalogo, obterTenantIdNF())
+              .then((reg) => {
+                if (reg && (reg.criados || reg.atualizados) && typeof notifyUser === 'function') {
+                  notifyUser(`${reg.criados} produto(s) novo(s) e ${reg.atualizados} atualizado(s) no catálogo fiscal.`);
+                }
+              })
+              .catch((regErr) => {
+                console.warn('[NF-e] Cadastro automático de produtos falhou:', regErr?.message || regErr);
+              });
+          } catch (regErr) {
+            console.warn('[NF-e] Cadastro automático de produtos falhou:', regErr?.message || regErr);
+          }
+        }
         mostrarAlertaEmissao(`${autorizada ? '✅' : '⚠️'} NF-e ${result.numero} — ${String(result.status).toUpperCase()}: ${result.msg}`, autorizada ? 'ok' : 'erro');
-        document.getElementById('certSenhaBox').style.display = 'none';
         _notaEmCurso = null;
         _itensNF = [];
         _volumesNF = [];
@@ -4742,6 +4757,19 @@ renderizarVolumesNF();
     }
     window.nfConsultaMudarPagina = nfConsultaMudarPagina;
 
+    // Invalidação do cache de LEITURA após operações feitas no BACKEND (Admin
+    // SDK): sem isso a Consulta re-lê o snapshot anterior e a nota cancelada
+    // continua na lista filtrada até um reload completo da página.
+    function nfInvalidarCacheConsulta(tid) {
+      try {
+        const svc = window.firebaseService;
+        if (svc && typeof svc.invalidateReadCacheForPath === 'function' && tid) {
+          svc.invalidateReadCacheForPath(`companies/${tid}/fiscal/notas/nfe`);
+          svc.invalidateReadCacheForPath(`companies/${tid}/fiscal/notas`);
+        }
+      } catch (_) {}
+    }
+
     async function consultarNotas(resetPage = true) {
       const tbody = document.getElementById('notasTable');
       if (!tbody) return;
@@ -4850,6 +4878,9 @@ renderizarVolumesNF();
         cancelada:  ['🚫 Cancelada',  'danger'],
         inutilizada:['⛔ Inutilizada','text-3'],
         erro_envio: ['⚠️ Erro',       'warning'],
+        // Falha no EVENTO de cancelamento: a nota segue AUTORIZADA na SEFAZ
+        // (permite nova tentativa) — não confundir com rejeição da nota.
+        erro_cancelamento: ['⚠️ Erro cancelamento', 'warning'],
       };
       tbody.innerHTML = notas.map(n => {
         const [label, tok] = statusMap[n.status] || ['❓ '+n.status, 'info'];
@@ -4870,7 +4901,7 @@ renderizarVolumesNF();
             <button class="btn btn-success btn-small" onclick="clonarNotaNF('${n.id}')" title="Clonar nota"><i class="fas fa-copy"></i></button>
             ${n.status==='autorizada' ? `<button class="btn btn-warning btn-small" onclick="abrirModalCartaCorrecaoNF('${n.id}','${n.chave || ''}')" title="Carta de Correção"><i class="fas fa-file-signature"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-info btn-small" onclick="abrirModalEventoRTCNF('${n.id}','${n.chave || ''}')" title="Evento RTC (conciliação IBS/CBS)"><i class="fas fa-balance-scale"></i></button>` : ''}
-            ${n.status==='autorizada' ? `<button class="btn btn-danger btn-small" onclick="iniciarCancelamento('${n.id}','${n.chave}','${n.nProt||''}')" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
+            ${['autorizada','erro_cancelamento'].includes(n.status) ? `<button class="btn btn-danger btn-small" onclick="iniciarCancelamento('${n.id}','${n.chave}','${n.nProt||''}')" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
             ${['rascunho','rejeitada','erro_envio'].includes(n.status) ? `<button class="btn btn-warning btn-small" onclick="editarRascunho('${n.id}')" title="${n.status==='rascunho' ? 'Editar' : 'Corrigir e reenviar'}"><i class="fas fa-edit"></i></button>` : ''}
             ${n.status==='rascunho' ? `<button class="btn btn-danger btn-small" onclick="excluirRascunhoNF('${n.id}')" title="Excluir rascunho"><i class="fas fa-trash"></i></button>` : ''}
             ${(n.status==='aguardando' || n.status==='erro_envio') ? `<button class="btn btn-primary btn-small" onclick="consultarStatusSefazNF('${n.id}')" title="Consultar status na SEFAZ"><i class="fas fa-sync-alt"></i></button>` : ''}
@@ -5192,10 +5223,6 @@ renderizarVolumesNF();
           <label for="nfCceTexto">Correção *</label>
           <textarea id="nfCceTexto" rows="5" maxlength="1000" placeholder="Descreva a correção fiscal permitida..." style="width:100%;resize:vertical;"></textarea>
         </div>
-        <div class="form-group">
-          <label for="nfCceSenha">Senha do certificado A1 *</label>
-          <input type="password" id="nfCceSenha" autocomplete="off">
-        </div>
         <div id="nfFiscalEventMsg" style="display:none"></div>`;
       document.getElementById('nfFiscalEventFooter').innerHTML = `
         <button type="button" class="btn btn-secondary" onclick="fecharModalEventoFiscalNF()">Cancelar</button>
@@ -5286,9 +5313,13 @@ renderizarVolumesNF();
       const nfId = document.getElementById('nfCceId')?.value || '';
       const chave = document.getElementById('nfCceChave')?.value || '';
       const correcao = (document.getElementById('nfCceTexto')?.value || '').trim();
-      const senhaA1 = document.getElementById('nfCceSenha')?.value || '';
       if (correcao.length < 15) return setEventoFiscalMsg('A correção deve ter pelo menos 15 caracteres.', 'warn');
-      if (!senhaA1) return setEventoFiscalMsg('Informe a senha do certificado A1.', 'warn');
+      // Senha via modal central (mesmo padrão do Consultar SEFAZ)
+      const senhaA1 = await solicitarSenhaA1NF('Senha do certificado A1', {
+        message: 'Informe a senha do certificado A1 para enviar a Carta de Correção (CC-e).',
+        confirmLabel: 'Enviar CC-e',
+      });
+      if (!senhaA1) return;
       __nfEventoInFlight = true;
       const __cceBtn = __nfEventoBtn('enviarCartaCorrecaoNF', true, 'Enviando...');
       try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Enviando CC-e à SEFAZ...'); } catch (_) {}
@@ -5308,8 +5339,6 @@ renderizarVolumesNF();
         setEventoFiscalMsg(data?.autorizada ? 'CC-e autorizada pela SEFAZ.' : (data?.xMotivo || 'Evento enviado, confira o retorno.'), data?.autorizada ? 'ok' : 'warn');
         consultarNotas();
         try { await carregarHistoricoCCeNF(nfId); } catch (_) {}
-        const senhaEl = document.getElementById('nfCceSenha');
-        if (senhaEl) senhaEl.value = '';
         __nfEventoFim(__cceBtn);
       } catch (e) {
         setEventoFiscalMsg(`CC-e não enviada: ${e.message || e}. Verifique se a Cloud Function nf_cartaCorrecaoNFe já foi implantada.`, 'erro');
@@ -5348,10 +5377,6 @@ renderizarVolumesNF();
           <div class="form-group"><label for="nfRtcAutor">Autor *</label><select id="nfRtcAutor"></select></div>
         </div>
         <div id="nfRtcCampos"></div>
-        <div class="form-group">
-          <label for="nfRtcSenha">Senha do certificado A1 *</label>
-          <input type="password" id="nfRtcSenha" autocomplete="off">
-        </div>
         <div id="nfFiscalEventMsg" style="display:none"></div>`;
       document.getElementById('nfFiscalEventFooter').innerHTML = `
         <button type="button" class="btn btn-secondary" onclick="fecharModalEventoFiscalNF()">Cancelar</button>
@@ -5510,13 +5535,17 @@ renderizarVolumesNF();
       const chave = document.getElementById('nfRtcChave')?.value || '';
       const cOrgaoAutor = (document.getElementById('nfRtcOrgao')?.value || '').trim();
       const tpAutor = document.getElementById('nfRtcAutor')?.value;
-      const senhaA1 = document.getElementById('nfRtcSenha')?.value || '';
       if (!/^[0-9]{2}$/.test(cOrgaoAutor)) return setEventoFiscalMsg('UF autora: código IBGE com 2 dígitos (ex.: 15=PA).', 'warn');
-      if (!senhaA1) return setEventoFiscalMsg('Informe a senha do certificado A1.', 'warn');
       const payload = { cOrgaoAutor, tpAutor, verAplic: 'Sisweb 1.0', scalar: __nfRtcScalar(), itens: __nfRtcItens };
       try {
         window.NFRtcEvents.buildDetEvento(cur.tp, payload); // pré-validação local
       } catch (e) { return setEventoFiscalMsg('Evento inválido: ' + (e?.message || e), 'warn'); }
+      // Senha via modal central (mesmo padrão do Consultar SEFAZ)
+      const senhaA1 = await solicitarSenhaA1NF('Senha do certificado A1', {
+        message: 'Informe a senha do certificado A1 para enviar o evento RTC à SEFAZ.',
+        confirmLabel: 'Enviar evento',
+      });
+      if (!senhaA1) return;
       __nfEventoInFlight = true;
       const btn = __nfEventoBtn('enviarEventoRTCNF', true, 'Enviando...');
       try { if (window.SiswebLoading?.show) window.SiswebLoading.show('Enviando evento RTC à SEFAZ...'); } catch (_) {}
@@ -5532,8 +5561,6 @@ renderizarVolumesNF();
         setEventoFiscalMsg(data?.autorizada ? `Evento ${cur.tp} autorizado pela SEFAZ.` : (data?.xMotivo || 'Evento enviado, confira o retorno.'), data?.autorizada ? 'ok' : 'warn');
         consultarNotas();
         try { await carregarHistoricoRTCNF(nfId); } catch (_) {}
-        const senhaEl = document.getElementById('nfRtcSenha');
-        if (senhaEl) senhaEl.value = '';
         __nfRtcItens = []; __nfRtcDrawItens();
         __nfEventoFim(btn);
       } catch (e) {
@@ -5558,10 +5585,6 @@ renderizarVolumesNF();
           <label for="nfInutJust">Justificativa *</label>
           <textarea id="nfInutJust" rows="4" maxlength="255" placeholder="Justificativa com no mínimo 15 caracteres..." style="width:100%;resize:vertical;"></textarea>
         </div>
-        <div class="form-group">
-          <label for="nfInutSenha">Senha do certificado A1 *</label>
-          <input type="password" id="nfInutSenha" autocomplete="off">
-        </div>
         <div id="nfFiscalEventMsg" style="display:none"></div>`;
       document.getElementById('nfFiscalEventFooter').innerHTML = `
         <button type="button" class="btn btn-secondary" onclick="fecharModalEventoFiscalNF()">Cancelar</button>
@@ -5577,10 +5600,14 @@ renderizarVolumesNF();
       const numeroInicial = parseInt(document.getElementById('nfInutInicio')?.value, 10);
       const numeroFinal = parseInt(document.getElementById('nfInutFim')?.value, 10);
       const justificativa = (document.getElementById('nfInutJust')?.value || '').trim();
-      const senhaA1 = document.getElementById('nfInutSenha')?.value || '';
       if (!(serie > 0 && numeroInicial > 0 && numeroFinal >= numeroInicial)) return setEventoFiscalMsg('Informe uma série e faixa de numeração válidas.', 'warn');
       if (justificativa.length < 15) return setEventoFiscalMsg('A justificativa deve ter pelo menos 15 caracteres.', 'warn');
-      if (!senhaA1) return setEventoFiscalMsg('Informe a senha do certificado A1.', 'warn');
+      // Senha via modal central (mesmo padrão do Consultar SEFAZ)
+      const senhaA1 = await solicitarSenhaA1NF('Senha do certificado A1', {
+        message: 'Informe a senha do certificado A1 para enviar a inutilização à SEFAZ.',
+        confirmLabel: 'Enviar inutilização',
+      });
+      if (!senhaA1) return;
       __nfEventoInFlight = true;
       const __inutBtn = __nfEventoBtn('enviarInutilizacaoNF', true, 'Enviando...');
       try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Enviando inutilização à SEFAZ...'); } catch (_) {}
@@ -5620,6 +5647,8 @@ renderizarVolumesNF();
             }
           } catch (_) {}
         }
+        // Inutilização grava no backend — invalidar cache p/ Consulta refletir
+        nfInvalidarCacheConsulta(obterTenantIdNF());
         consultarNotas();
         __nfEventoFim(__inutBtn);
       } catch (e) {
@@ -5662,6 +5691,9 @@ renderizarVolumesNF();
         });
         if (data?.cancelada) notifyUser('✅ NF-e cancelada com sucesso!', 'success');
         else notifyUser(`⚠️ ${data?.xMotivo || 'Evento enviado, confira o retorno.'}`, 'warning');
+        // O cancelamento é gravado no BACKEND (Admin SDK): invalidar o cache de
+        // leitura para o filtro refletir o novo status imediatamente.
+        nfInvalidarCacheConsulta(tid);
         consultarNotas();
       } catch(e) { notifyUser('Erro no cancelamento: ' + (e?.message || e), 'error'); }
       finally {
@@ -5853,14 +5885,16 @@ renderizarVolumesNF();
     // ─── Consultar status na SEFAZ (aguardando/erro_envio) ───
     // Padrão grandes sistemas: registro intermediário tem ação de refresh,
     // nunca beco sem saída. Requer senha A1 (assinatura da consulta).
-    function solicitarSenhaA1NF(titulo = 'Senha do certificado A1') {
+    function solicitarSenhaA1NF(titulo = 'Senha do certificado A1', opts = {}) {
+      const mensagem = opts.message || 'Informe a senha do certificado A1 para consultar a SEFAZ.';
+      const rotuloOk = opts.confirmLabel || 'Consultar';
       // Preferência: promptDialog central (CSS garantido + input dentro de <form>).
       if (typeof window.promptDialog === 'function') {
         return window.promptDialog({
           title: titulo,
-          message: 'Informe a senha do certificado A1 para consultar a SEFAZ.',
+          message: mensagem,
           placeholder: 'Senha do certificado A1',
-          confirmLabel: 'Consultar',
+          confirmLabel: rotuloOk,
           cancelLabel: 'Cancelar',
           icon: 'fas fa-lock'
         });
@@ -5883,7 +5917,7 @@ renderizarVolumesNF();
           h.textContent = titulo;
           const p = document.createElement('p');
           p.style.cssText = 'margin:0 0 18px;font-size:14px;line-height:1.5;';
-          p.textContent = 'Informe a senha do certificado A1 para consultar a SEFAZ.';
+          p.textContent = mensagem;
           const form = document.createElement('form');
           form.setAttribute('autocomplete', 'off');
           const inp = document.createElement('input');
@@ -5903,7 +5937,7 @@ renderizarVolumesNF();
             return b;
           };
           const btnCancel = mkBtn('Cancelar', false);
-          const btnOk = mkBtn('Consultar', true);
+          const btnOk = mkBtn(rotuloOk, true);
           const done = (v) => { try { overlay.remove(); } catch (_) {} resolve(v); };
           btnCancel.onclick = () => done(null);
           form.addEventListener('submit', (ev) => { ev.preventDefault(); done(inp.value || null); });
@@ -5932,19 +5966,31 @@ renderizarVolumesNF();
         const senha = await solicitarSenhaA1NF();
         if (!senha) return;
         try { if (window.SiswebLoading?.show) window.SiswebLoading.show('Consultando SEFAZ...'); } catch (_) {}
+        mostrarAlertaEmissao('⏳ Consultando a NF-e na SEFAZ — aguardando retorno...', 'warn');
         const ambiente = (nf?.ide?.tpAmb === 1 || nf?.tpAmb === 1) ? 'producao' : 'homologacao';
         const res = await window.firebaseService.callFunction('nf_consultarNFe',
           { tenantId: tid, chave: nf.chave, senhaA1: senha, ambiente });
-        if (res && res.autorizada) {
+        // Mensagem do TOPO com a verdade real da SEFAZ (persistente — paridade MDF-e)
+        const cStat = res?.cStat || '';
+        const motivo = res?.descricao || res?.xMotivo || 'sem retorno definitivo da SEFAZ.';
+        const situacaoTxt = res?.cancelada
+          ? 'CANCELADA (evento 110111 registrado na SEFAZ)'
+          : (res?.autorizada ? 'AUTORIZADA' : 'NÃO AUTORIZADA / NÃO CONSTA (veja cStat)');
+        if (res?.autorizada) {
           await window.NFStorage.salvarNF(tid, { ...nf, id: nfId, status: 'autorizada',
             nProt: res.nProt || nf.nProt || '', xMotivo: res.xMotivo || '' });
-          notifyUser(`✅ NF-e autorizada! Protocolo: ${res.nProt || '—'}`);
+          mostrarAlertaEmissao(`NF-e ${nf.numero || ''} — Consulta SEFAZ: cStat ${cStat} — ${motivo}\nSituação real: ${situacaoTxt}\nProtocolo: ${res.nProt || '—'}`, 'ok');
+        } else if (res?.cancelada) {
+          // A verdade da consulta prevalece: evento de cancelamento registrado
+          await window.NFStorage.salvarNF(tid, { ...nf, id: nfId, status: 'cancelada',
+            cStatCancelamento: res.cStatEventoCancelamento || cStat,
+            xMotivoCancelamento: 'Cancelamento confirmado na consulta SEFAZ',
+            dataCancelamento: nf.dataCancelamento || new Date().toISOString() });
+          mostrarAlertaEmissao(`NF-e ${nf.numero || ''} — Consulta SEFAZ: cStat ${cStat} — ${motivo}\nSituação real: ${situacaoTxt}`, 'warn');
         } else {
-          const cStat = res?.cStat || '';
-          const motivo = res?.descricao || res?.xMotivo || 'sem retorno definitivo da SEFAZ.';
           await window.NFStorage.salvarNF(tid, { ...nf, id: nfId,
-            ultimaConsultaSefaz: { cStat, xMotivo: motivo, em: new Date().toISOString() } });
-          notifyUser(`SEFAZ (cStat ${cStat || '?'}) — ${motivo}`, 'error');
+            ultimaConsultaSefaz: { cStat, xMotivo: motivo, situacao: res?.situacao || 'indefinida', em: new Date().toISOString() } });
+          mostrarAlertaEmissao(`NF-e ${nf.numero || ''} — Consulta SEFAZ: cStat ${cStat || '?'} — ${motivo}\nSituação real: ${situacaoTxt}`, 'erro');
         }
         await consultarNotas();
       } catch (e) {
@@ -5987,7 +6033,7 @@ renderizarVolumesNF();
 
       const v = window.NFItens?.validarEntradaItem
         ? window.NFItens.validarEntradaItem({ nome, qtd, vUnit, ncm, cfop })
-        : { valid: !!nome && qtd > 0 && vUnit > 0 && ncm.length === 8 && /^[1-9]\d{3}$/.test(cfop) };
+        : { valid: !!nome && qtd > 0 && vUnit > 0 && ncm.length === 8 && !/^0{8}$/.test(ncm) && /^[1-9]\d{3}$/.test(cfop) };
       if (!v.valid) return mostrarAlertaEmissao('⚠️ ' + (v.erro || 'Campos do item inválidos'), 'warn');
 
       const cfg = window.NFService?.getConfig?.() || {};
@@ -6035,7 +6081,7 @@ renderizarVolumesNF();
 
       const v = window.NFItens?.validarEntradaItem
         ? window.NFItens.validarEntradaItem({ nome: nomeProd, qtd, vUnit, ncm, cfop })
-        : { valid: !!nomeProd && qtd > 0 && vUnit > 0 && ncm.length === 8 && /^[1-9]\d{3}$/.test(cfop) };
+        : { valid: !!nomeProd && qtd > 0 && vUnit > 0 && ncm.length === 8 && !/^0{8}$/.test(ncm) && /^[1-9]\d{3}$/.test(cfop) };
       if (!v.valid) return mostrarAlertaEmissao('⚠️ ' + (v.erro || 'Campos do item inválidos'), 'warn');
 
       const cfg = window.NFService?.getConfig?.() || {};
@@ -6102,6 +6148,33 @@ renderizarVolumesNF();
         const el = document.getElementById(fid);
         if (el && nat.cfopPadrao) el.value = nat.cfopPadrao;
       });
+      // Finalidade da natureza (ex.: devoluções = finNFe 4): aplica no select e
+      // dispara change p/ revelar o grupo NFref (chave referenciada obrigatória
+      // — CFOP de devolução sem finNFe 4/retorno é rejeitado pela SEFAZ, cStat 328)
+      // Finalidade da natureza: aplica finNFe (ex.: devoluções = 4) OU reseta
+      // para 1 quando a natureza não define — sem o reset, o 4 residual da
+      // devolução anterior quebrava a próxima nota (cStat 327: CFOP inválido
+      // para NF de devolução). change revela/oculta o grupo NFref.
+      try {
+        const finEl = document.getElementById('nfFinNFe');
+        if (finEl) {
+          const finNat = String(nat.finNFe || '1');
+          if (finNat !== finEl.value) {
+            finEl.value = finNat;
+            finEl.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      } catch (_) {}
+      // Devolução (finNFe 4): SEFAZ exige tPag 90 "Sem Pagamento" (cStat 871)
+      try {
+        if (String(nat.finNFe || '') === '4') {
+          const pagEl = document.getElementById('nfFormaPag');
+          if (pagEl && pagEl.value !== '90') {
+            pagEl.value = '90';
+            pagEl.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      } catch (_) {}
       aplicaCodigo('itemCSOSN');
       aplicaCodigo('itemCSOSNCad');
       try {
@@ -6474,6 +6547,17 @@ renderizarVolumesNF();
               if (window.NFProdutosNF) {
                 window.NFProdutosNF.carregar(tid0).then(() => {
                   window.NFProdutosNF.popularSelectCadastrados();
+                });
+              }
+              // Preferência: cadastro automático de produtos (Fiscais) na emissão
+              const chkRegProd = document.getElementById('nfRegistrarProdutosFiscais');
+              if (chkRegProd) {
+                try {
+                  const prefRegProd = localStorage.getItem(`nf_cadastro_produtos_fiscais_${tid0}`);
+                  if (prefRegProd === '0') chkRegProd.checked = false;
+                } catch (_) {}
+                chkRegProd.addEventListener('change', () => {
+                  try { localStorage.setItem(`nf_cadastro_produtos_fiscais_${tid0}`, chkRegProd.checked ? '1' : '0'); } catch (_) {}
                 });
               }
               // Auto-carregar dados da Empresa (Emitente) do company.html

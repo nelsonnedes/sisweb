@@ -43,10 +43,13 @@ const NFValidator = (() => {
     return calc(n, 9) === parseInt(n[9]) && calc(n, 10) === parseInt(n[10]);
   }
 
-  // ─── NCM (8 dígitos numéricos) ─────────────────────────────────────────────
+  // ─── NCM (8 dígitos numéricos; 00000000 genérico é recusado p/ mercadoria) ─
+  // A tabela TIPI oficial não é versionada no app — a validação é apenas
+  // estrutural + bloqueio do placeholder. Não há checagem semântica inventada.
   function validarNCM(ncm) {
     const n = String(ncm || '').replace(/\D/g, '');
-    return n.length === 8;
+    if (n.length !== 8) return false;
+    return !/^0+$/.test(n);
   }
 
   // ─── CFOP (A21: centralizado em NFTaxTables, entradas 1/2/3, saídas 5/6/7) 
@@ -101,13 +104,21 @@ const NFValidator = (() => {
     }
     return '';
   }
-  function rejeitarCepFicticio(cep, rotulo) {
-    const d = String(cep || '').replace(/\D/g, '');
-    if (!d) return `${rotulo} obrigatório`;
-    if (/^0+$/.test(d) || /^(\d)\1+$/.test(d)) return `${rotulo} inválido (CEP fictício não vale em NF-e)`;
-    if (d.length !== 8) return `${rotulo} deve ter 8 dígitos`;
-    return '';
-  }
+      function rejeitarCepFicticio(cep, rotulo) {
+        const d = String(cep || '').replace(/\D/g, '');
+        if (!d) return `${rotulo} obrigatório`;
+        if (/^0+$/.test(d) || /^(\d)\1+$/.test(d)) return `${rotulo} inválido (CEP fictício não vale em NF-e)`;
+        if (d.length !== 8) return `${rotulo} deve ter 8 dígitos`;
+        return '';
+      }
+      // Campo numero do endereço: "S/N"/"SN" (sem número predial) é a forma
+      // legítima — não é placeholder fictício. Demais valores seguem a regra
+      // geral (N/A, ..., - e vazio são barrados).
+      function rejeitarNumeroEndereco(valor, rotulo) {
+        const v = String(valor ?? '').trim().toUpperCase();
+        if (v === 'SN' || v === 'S/N') return '';
+        return rejeitarPlaceholder(valor, rotulo);
+      }
 
   // ─── Validar emitente ─────────────────────────────────────────────────────
   function validarEmitente(emit) {
@@ -121,11 +132,13 @@ const NFValidator = (() => {
     if (!validarCodigoMunicipio(emit.endereco?.codigoMunicipio)) erros.push('Código IBGE do município do emitente obrigatório/inválido');
     if (!emit.endereco?.uf || !/^[A-Z]{2}$/.test(emit.endereco.uf)) erros.push('UF do emitente inválida');
     if (!emit.endereco?.cep || !validarCEP(emit.endereco.cep)) erros.push('CEP do emitente inválido');
-    // A6: placeholders fictícios (N/A, S/N, CEP zerado) não valem em DFe
-    for (const [v, r] of [[emit.endereco?.logradouro, 'Logradouro do emitente'], [emit.endereco?.numero, 'Número do emitente'], [emit.endereco?.municipio, 'Município do emitente']]) {
-      const m = rejeitarPlaceholder(v, r);
-      if (m) erros.push(m);
-    }
+        // A6: placeholders fictícios (N/A, S/N, CEP zerado) não valem em DFe —
+        // exceto "S/N" no numero, que é a forma legitima de imóvel sem número.
+        for (const [v, r] of [[emit.endereco?.logradouro, 'Logradouro do emitente'], [emit.endereco?.municipio, 'Município do emitente']]) {
+          const m = rejeitarPlaceholder(v, r);
+          if (m) erros.push(m);
+        }
+        { const m = rejeitarNumeroEndereco(emit.endereco?.numero, 'Número do emitente'); if (m) erros.push(m); }
     { const m = rejeitarCepFicticio(emit.endereco?.cep, 'CEP do emitente'); if (m) erros.push(m); }
     if (!emit.ie && emit.crt !== 1) erros.push('Inscrição Estadual do emitente obrigatória (regime normal)');
     if (!emit.crt || ![1, 2, 3].includes(emit.crt)) erros.push('CRT do emitente inválido (1=SN, 2=SN excesso, 3=Normal)');
@@ -157,11 +170,13 @@ const NFValidator = (() => {
     if (!validarCodigoMunicipio(dest.endereco?.codigoMunicipio)) erros.push('Código IBGE do município do destinatário obrigatório/inválido');
     if (!dest.endereco?.uf || !/^[A-Z]{2}$/.test(dest.endereco.uf)) erros.push('UF do destinatário inválida');
     if (!dest.endereco?.cep || !validarCEP(dest.endereco.cep)) erros.push('CEP do destinatário inválido');
-    // A6: placeholders fictícios (N/A, S/N, CEP zerado) não valem em DFe
-    for (const [v, r] of [[dest.nome, 'Nome do destinatário'], [dest.endereco?.logradouro, 'Logradouro do destinatário'], [dest.endereco?.numero, 'Número do destinatário'], [dest.endereco?.municipio, 'Município do destinatário']]) {
-      const m = rejeitarPlaceholder(v, r);
-      if (m) erros.push(m);
-    }
+        // A6: placeholders fictícios (N/A, S/N, CEP zerado) não valem em DFe —
+        // exceto "S/N" no numero, que é a forma legitima de imóvel sem número.
+        for (const [v, r] of [[dest.nome, 'Nome do destinatário'], [dest.endereco?.logradouro, 'Logradouro do destinatário'], [dest.endereco?.municipio, 'Município do destinatário']]) {
+          const m = rejeitarPlaceholder(v, r);
+          if (m) erros.push(m);
+        }
+        { const m = rejeitarNumeroEndereco(dest.endereco?.numero, 'Número do destinatário'); if (m) erros.push(m); }
     { const m = rejeitarCepFicticio(dest.endereco?.cep, 'CEP do destinatário'); if (m) erros.push(m); }
     return erros.length ? fail(erros) : ok();
   }
@@ -171,7 +186,12 @@ const NFValidator = (() => {
     const n = index + 1;
     const erros = [];
     if (!item.xProd || item.xProd.trim().length < 1) erros.push(`Item ${n}: Descrição do produto obrigatória`);
-    if (!item.ncm  || !validarNCM(item.ncm))          erros.push(`Item ${n}: NCM inválido (${item.ncm}) — deve ter 8 dígitos`);
+    if (!item.ncm || !validarNCM(item.ncm)) {
+      const ncmDigits = String(item.ncm || '').replace(/\D/g, '');
+      erros.push(/^0{8}$/.test(ncmDigits)
+        ? `Item ${n}: NCM 00000000 é genérico — informe o NCM real da mercadoria`
+        : `Item ${n}: NCM inválido (${item.ncm}) — deve ter 8 dígitos`);
+    }
     if (!item.cfop || !validarCFOP(item.cfop))         erros.push(`Item ${n}: CFOP inválido (${item.cfop})`);
     if (!item.uCom || item.uCom.trim().length < 1)     erros.push(`Item ${n}: Unidade comercial obrigatória`);
     if (!(parseFloat(item.qCom) > 0))                  erros.push(`Item ${n}: Quantidade deve ser maior que zero`);

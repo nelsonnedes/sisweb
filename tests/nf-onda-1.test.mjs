@@ -31,6 +31,13 @@ test('A6: placeholders fictícios barrados (N/A, S/N, CEP zerado)', () => {
   const r3 = V.validarDestinatario(destBase({ nome: '  ' }));
   assert.match(r3.errors.join('|'), /preencha o cadastro|obrigatório/);
   assert.equal(V.validarDestinatario(destBase()).valid, true);
+  // "S/N" no numero = imóvel sem número predial (forma legítima); N/A segue barrado.
+  const r4 = V.validarDestinatario(destBase({ endereco: { ...destBase().endereco, numero: 'S/N' } }));
+  assert.equal(r4.valid, true, 'S/N no numero é legítimo');
+  const r5 = V.validarDestinatario(destBase({ endereco: { ...destBase().endereco, numero: 'N/A' } }));
+  assert.equal(r5.valid, false, 'N/A no numero continua barrado');
+  const r6 = V.validarDestinatario(destBase({ endereco: { ...destBase().endereco, logradouro: 'S/N' } }));
+  assert.equal(r6.valid, false, 'S/N no logradouro continua barrado');
 });
 
 test('A19: filtro da Consulta lista erro_envio', () => {

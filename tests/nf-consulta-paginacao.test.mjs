@@ -7,9 +7,23 @@ import fs from 'node:fs';
 // filtrar — mesmo padrão do estoque (estoque.js renderizarPaginacaoPadrao).
 const html = fs.readFileSync('notas-fiscais.html', 'utf8');
 
-test('container de paginação existe após a tabela', () => {
+test('container de paginação existe após a tabela de notas (dentro da Consulta)', () => {
   assert.match(html, /<tbody id="notasTable">/, 'tbody mantido');
   assert.match(html, /<div id="paginacaoConsultaNF" class="nf-pagination-bar"><\/div>/, 'container após a tabela');
+  // Única ocorrência + DEPOIS da tabela de notas: a barra ficava dentro da aba
+  // Itens (Emissão) e desaparecia da Consulta (regressão reportada em produção).
+  const ocorrencias = (html.match(/id="paginacaoConsultaNF"/g) || []).length;
+  assert.equal(ocorrencias, 1, 'container único');
+  assert.ok(
+    html.indexOf('id="notasTable"') < html.indexOf('id="paginacaoConsultaNF"'),
+    'barra da Consulta vem depois da tabela de notas',
+  );
+  const posItens = html.indexOf('id="itensContainer"');
+  const posBar = html.indexOf('id="paginacaoConsultaNF"');
+  const posConsulta = html.indexOf('id="consulta" class="tab-content"') >= 0 ? html.indexOf('id="consulta" class="tab-content"') : html.indexOf('id="consulta"');
+  assert.ok(posConsulta < posBar, 'barra dentro da aba Consulta');
+  assert.ok(posBar < html.indexOf('id="dashboard"'), 'barra antes da aba Dashboard');
+  assert.ok(posItens < posConsulta, 'sanidade: aba Itens (Emissão) antes da Consulta');
 });
 
 test('opções 10/25/50/100 com default 25 e preferência por tenant+usuário', () => {

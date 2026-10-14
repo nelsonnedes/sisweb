@@ -72,10 +72,23 @@ const NFXmlBuilder = (() => {
     return r < 2 ? 0 : 11 - r;
   }
 
+  // ─── Data/hora fiscal (TDateTimeUTC, offset -03:00, sem milissegundos) ────
+  // Converte o INSTANTE recebido para a hora de Brasília ANTES de rotular
+  // -03:00. Rotular UTC como -03:00 empurra +3h no futuro → cStat 703
+  // ("Data-Hora de Emissão posterior ao horário de recebimento"; mesma classe
+  // do fix M3 do MDF-e). Idempotente para entradas já em -03:00.
+  function toBrasiliaDateTime(value) {
+    if (!value) return '';
+    const t = new Date(value).getTime();
+    if (!Number.isFinite(t)) return '';
+    return new Date(t - 3 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, '-03:00');
+  }
+
   // ─── Gerar chave NF-e (44 dígitos) ────────────────────────────────────────
   function gerarChave(emit, ide) {
     const cuf  = getCUF(emit.endereco?.uf || 'SP').padStart(2, '0');
-    const aamm = new Date(ide.dhEmi).toISOString().slice(2, 7).replace('-', '');
+    // AAMM da chave = ano/mês LOCAL de emissão (mesma base do dhEmi do XML)
+    const aamm = toBrasiliaDateTime(ide.dhEmi).slice(2, 7).replace('-', '');
     const cnpj = String(emit.cnpj || '').replace(/\D/g, '').padStart(14, '0');
     const mod  = String(ide.mod  || 55).padStart(2, '0');
     const serie= String(ide.serie || 1).padStart(3, '0');
@@ -104,9 +117,9 @@ const NFXmlBuilder = (() => {
 
   function buildIde(ide, chaveInfo) {
     // TDateTimeUTC: sem milissegundos, offset -03:00 (validado no schema oficial)
-    const dhEmi = ide.dhEmi ? new Date(ide.dhEmi).toISOString().replace(/\.\d{3}Z$/, '-03:00') : '';
+    const dhEmi = toBrasiliaDateTime(ide.dhEmi);
     // dhSaiEnt (Fase C, opcional): data/hora da saída ou entrada da mercadoria
-    const dhSaiEnt = ide.dhSaiEnt ? new Date(ide.dhSaiEnt).toISOString().replace(/\.\d{3}Z$/, '-03:00') : '';
+    const dhSaiEnt = toBrasiliaDateTime(ide.dhSaiEnt);
     // A4: NFref — finNFe 2/3/4 exige documento referenciado (MOC)
     const refs = Array.isArray(ide.NFref) ? ide.NFref : (ide.NFref ? [ide.NFref] : []);
     const nfrefXml = refs.map((r) => String(r || '').replace(/\D/g, '').slice(0, 44))
@@ -557,7 +570,10 @@ const NFXmlBuilder = (() => {
     const pDevol = d?.pDevol != null && String(d.pDevol).trim() !== '' ? parseFiscalNumber(d.pDevol) : 100;
     const vIPIDevol = d?.vIPIDevol != null && String(d.vIPIDevol).trim() !== ''
       ? parseFiscalNumber(d.vIPIDevol) : parseFiscalNumber(item?.imposto?.ipi?.vIPI);
-    return `<impostoDevol><pDevol>${num(pDevol, 4)}</pDevol><vIPIDevol>${num(vIPIDevol)}</vIPIDevol></impostoDevol>`;
+    // Leiaute 4.00 (leiauteNFe_v4.00.xsd): vIPIDevol fica DENTRO de <IPI>
+    // (impostoDevol > pDevol + IPI > vIPIDevol) — sem o wrapper a SEFAZ
+    // rejeitava com cStat 225.
+    return `<impostoDevol><pDevol>${num(pDevol, 2)}</pDevol><IPI><vIPIDevol>${num(vIPIDevol)}</vIPIDevol></IPI></impostoDevol>`;
   }
   function buildDet(item, nItem, crt, finNFe) {
     const imp = item.imposto || {};

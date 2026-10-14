@@ -51,9 +51,13 @@ const NFStorage = (() => {
       updatedAt: new Date().toISOString(),
       createdAt: nfData.createdAt || new Date().toISOString(),
     };
-    // saveToFirebase(path, key, data) — key=id cria subnó
+    // saveToFirebase(path, key, data) — key=id cria subnó. Fail-closed: um
+    // {success:false} sem throw significava NF transmitida SEM registro salvo.
     try {
-      await fb().saveToFirebase(modeloPath(tenantId, modelo), id, payload);
+      const res = await fb().saveToFirebase(modeloPath(tenantId, modelo), id, payload);
+      if (res && res.success === false) {
+        throw mapWriteError(new Error(res.error || 'Falha ao salvar NF no servidor'), 'gravar a NF-e');
+      }
     } catch (e) { throw mapWriteError(e, 'gravar a NF-e'); }
     return { id, path: `${modeloPath(tenantId, modelo)}/${id}`, payload };
   }
@@ -64,7 +68,10 @@ const NFStorage = (() => {
       const atual = await carregarNF(tenantId, modelo, nfId) || {};
       const merged = { ...atual, ...extras, status, id: nfId, updatedAt: new Date().toISOString() };
       // key=nfId → set em colecao/nfId com o objeto completo (não apaga campos)
-      await fb().saveToFirebase(modeloPath(tenantId, modelo), nfId, merged);
+      const res = await fb().saveToFirebase(modeloPath(tenantId, modelo), nfId, merged);
+      if (res && res.success === false) {
+        throw new Error(res.error || 'Falha ao atualizar NF no servidor');
+      }
     } catch (e) { throw mapWriteError(e, 'atualizar a NF-e'); }
   }
 

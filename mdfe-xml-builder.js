@@ -71,8 +71,8 @@ const MdfeXmlBuilder = (() => {
         return `<emit><CNPJ>${cnpj}</CNPJ><IE>${ie}</IE><xNome>${esc(emit.razaoSocial)}</xNome>`
             + (emit.nomeFantasia ? `<xFant>${esc(emit.nomeFantasia)}</xFant>` : '')
             + `<enderEmit><xLgr>${esc(address.logradouro)}</xLgr><nro>${esc(address.numero || 'S/N')}</nro>`
-            + `<xBairro>${esc(address.bairro || 'Centro')}</xBairro><cMun>${requireCode(address.codigoMunicipio, 'Municipio do emitente')}</cMun>`
-            + `<xMun>${esc(address.municipio)}</xMun><UF>${esc(address.uf)}</UF><CEP>${digits(address.cep)}</CEP></enderEmit></emit>`;
+        + `<xBairro>${esc(address.bairro || 'Centro')}</xBairro><cMun>${requireCode(address.codigoMunicipio, 'Municipio do emitente')}</cMun>`
+        + `<xMun>${esc(address.municipio)}</xMun><UF>${esc(address.uf)}</UF></enderEmit></emit>`;
     }
 
     function buildDocuments(documents, cityCode, cityName) {
@@ -112,19 +112,48 @@ const MdfeXmlBuilder = (() => {
         const destinoCode = requireCode(data.codigoMunicipioDescarregamento, 'Municipio de descarregamento');
         const totalValue = Number(data.valorTotal || 0).toFixed(2);
         const totalWeight = Number(data.pesoTotal || 0).toFixed(4);
-        const serie = digits(data.serie).padStart(3, '0').slice(-3);
-        const nMDF = digits(number).padStart(9, '0').slice(-9);
+        // UFs intermediárias do percurso (infPercurso) — obrigatórias quando a
+        // UFFim não é limítrofe da UFIni (cStat 663). O grupo REPETE por UF
+        // (0-25 ocorrências, uma <UFPer> em cada — PL_MDFe_300b; vários UFPer
+        // no mesmo grupo é 215). UFs válidas, sem repetir e sem UFIni/UFFim.
+        const ufIniNorm = String(data.ufInicio || '').trim().toUpperCase();
+        const ufFimNorm = String(data.ufFim || '').trim().toUpperCase();
+        const ufsPercurso = [...new Set((Array.isArray(data.percursoUfs) ? data.percursoUfs : [])
+            .map((u) => String(u || '').trim().toUpperCase())
+            .filter((u) => /^[A-Z]{2}$/.test(u) && cUF(u) && u !== ufIniNorm && u !== ufFimNorm))]
+            .slice(0, 25);
+        const infPercurso = ufsPercurso.length
+            ? ufsPercurso.map((u) => `<infPercurso><UFPer>${u}</UFPer></infPercurso>`).join('')
+            : '';
+        // QR Code do MDF-e (NT 2025.001 / PL_MDFe_300b — obrigatório, cStat
+        // 480): URL de consulta com a chave e o ambiente. Formato do schema:
+        // https?://...?chMDFe=<44>&tpAmb=<1|2>(&sign=...)? — &sign só p/
+        // contingência (não usada na emissão normal). No XML o & vai como
+        // &amp; (texto resolve para & ao ler); & cru quebra a boa-formação.
+        const tpAmb = data.tpAmb === 1 ? 1 : 2;
+        const qrCodMDFe = `https://dfe-portal.svrs.rs.gov.br/mdfe/qrCode?chMDFe=${keyInfo.chave}&amp;tpAmb=${tpAmb}`;
+        // TSerie/TNF (MDF-e 3.00) NÃO aceitam zero à esquerda nas tags
+        // serie/nMDF (cStat 215 comprovado) — a chave continua com padding em buildKey.
+        const serieIde = String(digits(data.serie) || '1').replace(/^0+(?=\d)/, '');
+        const nMDF = String(digits(number) || '1').replace(/^0+(?=\d)/, '');
 
-        const ide = `<ide><cUF>${cUF(ufEmit)}</cUF><tpAmb>${data.tpAmb === 1 ? 1 : 2}</tpAmb><tpEmit>1</tpEmit><mod>58</mod>`
-            + `<serie>${serie}</serie><nMDF>${nMDF}</nMDF><cMDF>${keyInfo.cMDF}</cMDF><cDV>${keyInfo.cDV}</cDV>`
+        // tpEmit: 1=Prestador de Serviço de Transporte (SEFAZ exige seguro de
+        // carga — cStat 698), 2=Transportador de Carga Própria (caso do
+        // emitente industrial). Default 2; 1/2/3 aceitos passthrough.
+        const tpEmit = [1, 2, 3].includes(Number(data.tpEmit)) ? Number(data.tpEmit) : 2;
+        const ide = `<ide><cUF>${cUF(ufEmit)}</cUF><tpAmb>${data.tpAmb === 1 ? 1 : 2}</tpAmb><tpEmit>${tpEmit}</tpEmit><mod>58</mod>`
+            + `<serie>${serieIde}</serie><nMDF>${nMDF}</nMDF><cMDF>${keyInfo.cMDF}</cMDF><cDV>${keyInfo.cDV}</cDV>`
             + `<modal>1</modal><dhEmi>${localDateTime(data.dataEmissao)}</dhEmi><tpEmis>1</tpEmis><procEmi>0</procEmi>`
             + `<verProc>Sisweb</verProc><UFIni>${esc(data.ufInicio)}</UFIni><UFFim>${esc(data.ufFim)}</UFFim>`
             + `<infMunCarrega><cMunCarrega>${origemCode}</cMunCarrega><xMunCarrega>${esc(data.municipioCarregamento)}</xMunCarrega></infMunCarrega>`
-            + `</ide>`;
+            + `${infPercurso}</ide>`;
         const total = `<tot><qNFe>${data.documentos.length}</qNFe><vCarga>${totalValue}</vCarga><cUnid>01</cUnid><qCarga>${totalWeight}</qCarga></tot>`;
+        // infMDFeSupl é filho de MDFe (irmão de infMDFe, como no NFC-e) —
+        // NÃO pertence a infMDFe (cStat 215 comprovado; PL_MDFe_300b).
+        const infMDFeSupl = `<infMDFeSupl><qrCodMDFe>${qrCodMDFe}</qrCodMDFe></infMDFeSupl>`;
         const xml = `<?xml version="1.0" encoding="UTF-8"?><MDFe xmlns="${NS}"><infMDFe Id="MDFe${keyInfo.chave}" versao="3.00">`
             + `${ide}${buildEmit(emit)}${buildModal(data)}${buildDocuments(data.documentos, destinoCode, data.municipioDescarregamento)}${total}`
-            + `</infMDFe></MDFe>`;
+            + `</infMDFe>${infMDFeSupl}</MDFe>`;
         return { xml, chave: keyInfo.chave, numero: nMDF };
     }
 

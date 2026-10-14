@@ -2119,6 +2119,25 @@ async function getAll(path) {
 }
 
 // ✅ FUNÇÃO PARA SALVAR DADOS NO FIREBASE
+// Undefined em QUALQUER profundidade quebra o set() do RTDB ("value argument
+// contains undefined") — a gravação inteira falhava e o erro era engolido no
+// catch (return {success:false}). Remover recursivamente ANTES de escrever:
+// vale para det[]/imposto{} das NF-e, respTec/cobr e demais payloads fiscais.
+function deepStripUndefined(value) {
+    if (Array.isArray(value)) {
+        return value.map((item) => (item === undefined ? null : deepStripUndefined(item)));
+    }
+    if (value && typeof value === 'object' && Object.prototype.toString.call(value) !== '[object Date]') {
+        const out = {};
+        Object.keys(value).forEach((k) => {
+            if (value[k] === undefined) return;
+            out[k] = deepStripUndefined(value[k]);
+        });
+        return out;
+    }
+    return value;
+}
+
 async function saveToFirebase(path, key, data, options) {
     try {
         console.log('🔥 Salvando dados no Firebase');
@@ -2152,6 +2171,10 @@ async function saveToFirebase(path, key, data, options) {
                     : normalizeSpeciesItem(data);
             }
         }
+
+        // Fail-safe sistêmico: remover undefined profundos ANTES de qualquer
+        // ramo de escrita (o set() do RTDB rejeita e a gravação sumia em silêncio).
+        data = deepStripUndefined(data);
         
         // ✅ SANITIZAÇÃO DE SEGURANÇA (CRÍTICO)
         // Garante que a regra .validate "newData.hasChild('numero')" seja satisfeita

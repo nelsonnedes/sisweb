@@ -12,6 +12,7 @@
  *   popularSelectCadastrados()      → preenche #nfProdCadSelect
  *   autoPreencherPorProduto(prodId) → preenche NCM, CFOP, UN, Valor
  *   getById(id)                     → produto do cache
+ *   registrarProdutosDaNota(nfe, tenantId) → cadastro fiscal pós-autorização
  */
 
 const NFProdutosNF = (() => {
@@ -30,25 +31,19 @@ const NFProdutosNF = (() => {
   async function carregar(tenantId) {
     _tenantId = tenantId;
     _produtos = [];
+    if (!tenantId) return _produtos;
     try {
-      // Tentar path principal do estoque multi-tenant
-      const paths = [
-        `tenants/${tenantId}/estoque`,
-        `tenants/${tenantId}/produtos`,
-      ];
-      for (const path of paths) {
-        const result = await fb().loadFromFirebase(path);
-        if (result && result.success && result.data) {
-          const arr = Array.isArray(result.data)
-            ? result.data
-            : Object.values(result.data || {});
-          if (arr.length > 0) {
-            _produtos = arr.filter(p => p && (p.nome || p.name || p.descricao));
-            console.log(`[NFProdutosNF] ${_produtos.length} produtos carregados de "${path}"`);
-            break;
-          }
-        }
-      }
+      // Path canônico do estoque multi-tenant — o MESMO gravado pelo módulo
+      // Estoque (SiswebData/saveDataProdutos): companies/{tenant}/estoqueProdutos.
+      // (P2: o path legado tenants/... nunca recebia escrita e divergia do real.)
+      const path = `companies/${tenantId}/estoqueProdutos`;
+      const result = await fb().loadFromFirebase(path);
+      const data = result && result.data !== undefined ? result.data : result;
+      const arr = Array.isArray(data)
+        ? data
+        : (data && typeof data === 'object' ? Object.values(data) : []);
+      _produtos = arr.filter(p => p && typeof p === 'object' && (p.nome || p.name || p.descricao));
+      console.log(`[NFProdutosNF] ${_produtos.length} produtos carregados de "${path}"`);
     } catch (e) {
       console.warn('[NFProdutosNF] Erro ao carregar produtos:', e.message);
     }
@@ -240,8 +235,104 @@ const NFProdutosNF = (() => {
   // ─── Listar todos ─────────────────────────────────────────────────────────
   function listar() { return _produtos; }
 
+  // ─── Registro automático dos produtos emitidos (cadastro fiscal) ─────────
+  // Chamado após NF-e AUTORIZADA: grava cada item no catálogo canônico do
+  // tenant (companies/{tenantId}/estoqueProdutos) com dados fiscais, NCM e
+  // o valor da pauta — que é o Vl.Unit. digitado na aba Itens da nota.
+  // Independe de tpNF (entrada/saída), natureza ou regime. Dedupe: id/código
+  // do produto ou nome normalizado — existente recebe merge SÓ de campos
+  // fiscais/preço (nunca sobrescreve estoque, quantidade ou preço médio).
+  function normalizarNomeProduto(valor) {
+    return String(valor == null ? '' : valor)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  async function registrarProdutosDaNota(nfeData, tenantId) {
+    const tid = String(tenantId || _tenantId || '').trim();
+    const itens = Array.isArray(nfeData?.det) ? nfeData.det : [];
+    if (!tid || !itens.length) return { criados: 0, atualizados: 0, ignorados: itens.length };
+    const path = `companies/${tid}/estoqueProdutos`;
+    const result = await fb().loadFromFirebase(path);
+    const data = result && result.data !== undefined ? result.data : result;
+    const lista = Array.isArray(data)
+      ? data.slice()
+      : (data && typeof data === 'object' ? Object.values(data) : []);
+    const agora = new Date().toISOString();
+    let criados = 0;
+    let atualizados = 0;
+    let ignorados = 0;
+
+    itens.forEach((item) => {
+      const nome = String(item?.xProd || '').trim();
+      if (!nome) { ignorados += 1; return; }
+      const cProd = String(item?.cProd || '').trim();
+      const chaveNome = normalizarNomeProduto(nome);
+      // Vl.Unit. da aba Itens = valor da pauta do produto.
+      const valorPauta = parseFloat(item.vUnCom || item.valorUnitario) || 0;
+      const existente = lista.find((p) => p && typeof p === 'object' && (
+        (cProd && (String(p.id) === cProd || String(p.codigo || '') === cProd))
+        || normalizarNomeProduto(p.nome || p.descricao) === chaveNome));
+      const fiscal = {
+        ncm: String(item.ncm || ''),
+        cfop: String(item.cfop || ''),
+        cst: String(item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst || ''),
+        origem: String(item.imposto?.icms?.orig ?? item.orig ?? '0'),
+        cest: String(item.cest || ''),
+        unidade: String(item.uCom || item.unidade || 'UN').toUpperCase(),
+        importado: !!item.importado,
+        valorPauta: valorPauta > 0 ? valorPauta : null,
+        ultimaNota: {
+          numero: String(nfeData?.numero || ''),
+          serie: String(nfeData?.ide?.serie || ''),
+          chave: String(nfeData?.chave || ''),
+          dataEmissao: String(nfeData?.dataEmissao || ''),
+          tpNF: Number(nfeData?.ide?.tpNF ?? 1),
+        },
+        atualizadoEm: agora,
+      };
+      if (existente) {
+        existente.fiscal = { ...(existente.fiscal || {}), ...fiscal };
+        existente.ncm = fiscal.ncm || existente.ncm || '';
+        existente.cfopPadrao = fiscal.cfop || existente.cfopPadrao || '';
+        existente.unidade = fiscal.unidade || existente.unidade || 'UN';
+        if (valorPauta > 0) existente.precoVenda = valorPauta;
+        existente.ultimaAtualizacao = agora;
+        atualizados += 1;
+      } else {
+        lista.push({
+          id: 'PROD_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
+          nome,
+          categoria: 'Geral',
+          unidade: fiscal.unidade || 'UN',
+          quantidade: 0,
+          precoMedio: 0,
+          precoVenda: valorPauta > 0 ? valorPauta : 0,
+          ncm: fiscal.ncm,
+          cfopPadrao: fiscal.cfop,
+          origemCadastro: 'nfe',
+          fiscal,
+          criadoEm: agora,
+          ultimaAtualizacao: agora,
+        });
+        criados += 1;
+      }
+    });
+
+    if (criados || atualizados) {
+      const res = await fb().saveToFirebase(path, null, lista);
+      if (res && res.success === false) throw new Error(res.error || 'Falha ao salvar o catálogo de produtos.');
+      _produtos = lista.filter(p => p && typeof p === 'object' && (p.nome || p.name || p.descricao));
+      try { popularSelectCadastrados(); } catch (_) {}
+    }
+    return { criados, atualizados, ignorados };
+  }
+
   // ─── API pública ──────────────────────────────────────────────────────────
-  return { carregar, alterarTipoProduto, popularSelectCadastrados, autoPreencherPorProduto, getById, listar, getFiscal, setFiscal, carregarFiscal, aplicarFiscalProduto };
+  return { carregar, alterarTipoProduto, popularSelectCadastrados, autoPreencherPorProduto, getById, listar, getFiscal, setFiscal, carregarFiscal, aplicarFiscalProduto, registrarProdutosDaNota };
 })();
 
 window.NFProdutosNF = NFProdutosNF;

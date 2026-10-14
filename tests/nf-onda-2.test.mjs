@@ -54,12 +54,13 @@ test('A4: NFref após verProc; finNFe 2/3/4 exige chave 44 díg.', () => {
   assert.ok(html.includes('id="nfNFref"'), 'campo da chave referenciada existe');
 });
 
-test('A5: impostoDevol com finNFe=4 (default pDevol=100 + IPI)', () => {
+test('A5: impostoDevol com finNFe=4 (default pDevol=100 + IPI/vIPIDevol — leiaute 4.00)', () => {
   const it = itemBase({ cst: '00' });
   it.imposto.ipi = { cST: '00', vBC: 100, pIPI: 5, vIPI: 5 };
   const n = nfeBase([it], 3, { finNFe: '4', NFref: ['35260111222333000181550010000000011000000001'] });
   const xml = B.buildNFeXML(n).xml;
-  assert.match(xml, /<impostoDevol><pDevol>100\.0000<\/pDevol><vIPIDevol>5\.00<\/vIPIDevol><\/impostoDevol><vItem>/);
+  // TDec_0302Max100 (2 casas) + vIPIDevol DENTRO de <IPI> (cStat 225 corrigido)
+  assert.match(xml, /<impostoDevol><pDevol>100\.00<\/pDevol><IPI><vIPIDevol>5\.00<\/vIPIDevol><\/IPI><\/impostoDevol><vItem>/);
   const r = V.validarNFe(n);
   assert.equal(r.valid, true, JSON.stringify(r.errors));
 });

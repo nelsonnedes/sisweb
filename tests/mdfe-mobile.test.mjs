@@ -49,8 +49,10 @@ test('MDF-e gera XML modelo 58 com codigo IBGE e documentos vinculados', () => {
   assert.match(builder, /<cMunCarrega>\$\{origemCode\}<\/cMunCarrega>/);
   assert.match(builder, /<chNFe>\$\{key\}<\/chNFe>/);
   assert.match(js, /obterCodigoMunicipioIBGE/);
-  assert.match(html, /id="mdfeSenhaA1"/);
-  assert.match(html, /id="mdfeSenhaA1Encerramento"/);
+  // Senha A1 no modal central (padrão NF-e) — campos inline removidos
+  assert.doesNotMatch(html, /id="mdfeSenhaA1"/);
+  assert.doesNotMatch(html, /id="mdfeSenhaA1Encerramento"/);
+  assert.match(js, /function mdfeSolicitarSenhaA1\(opts = \{\}\)/);
 });
 
 test('builder MDF-e produz chave de 44 dígitos e XML mínimo válido', () => {

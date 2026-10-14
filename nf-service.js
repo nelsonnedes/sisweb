@@ -157,7 +157,9 @@ const NFService = (() => {
       modelo: 55,
       numero: String(numero).padStart(9, '0'),
       status: 'rascunho',
-      dataEmissao: dhEmi.slice(0, 10),
+      // dataEmissao = data LOCAL do emitente (o slice do instante UTC gerava
+      // dia seguinte entre 21h–00h local — exibição/MDF-e mostravam data errada)
+      dataEmissao: new Date(new Date(dhEmi).getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10),
       natOpId: formData.natOpId || '',
       // A15: responsável técnico (infRespTec) — da config fiscal
       respTec: cfg.respTec && String(cfg.respTec.cnpj || '').replace(/\D/g, '').length === 14 ? { ...cfg.respTec } : undefined,
@@ -172,6 +174,13 @@ const NFService = (() => {
         tpImp:      nfeCfg.tpImp   || '1',
         tpAmb,
         finNFe:     formData.finNFe || 1,
+        // A4: finNFe 2/3/4 exige NFref — coletor entrega formData.NFref (chave
+        // digitada); a ponte para ide.NFref (array) é feita aqui (antes, o campo
+        // era coletado mas nunca chegava ao objeto validado/emitido).
+        NFref:      (() => {
+          const ref = String(formData.NFref || '').replace(/\D/g, '');
+          return ref.length === 44 ? [ref] : [];
+        })(),
         // 696: operação com Não Contribuinte (indIEDest 9) exige consumidor final (indFinal 1)
         indFinal:   formData.indFinal ?? (String(formData.dest?.indIEDest) === '9' ? 1 : 0),
         indPres:    formData.indPres  || 0,
@@ -242,7 +251,8 @@ const NFService = (() => {
     const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
     const icmsCalc = window.NFConfigService.calcularICMS(
       cfg, ufOrig, ufDest || ufOrig,
-      parseFloat(item.vProd || item.total) || 0
+      parseFloat(item.vProd || item.total) || 0,
+      { importado: !!item.importado }
     );
     const pisCofins = window.NFConfigService.calcularPISCOFINS(
       cfg, parseFloat(item.vProd || item.total) || 0

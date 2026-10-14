@@ -25,11 +25,11 @@ const NFNaturezas = (() => {
   const NATUREZAS_PADRAO = [
     { id: 'nat_venda_merc',   descricao: 'Venda de Mercadoria',          cfopPadrao: '5102', tipo: 'saida',   csosn: '102', ativo: true, regras: [] },
     { id: 'nat_venda_prod',   descricao: 'Venda de Produção Própria',    cfopPadrao: '5101', tipo: 'saida',   csosn: '102', ativo: true, regras: [] },
-    { id: 'nat_devol_compra', descricao: 'Devolução de Compra',          cfopPadrao: '5202', tipo: 'saida',   csosn: '102', ativo: true, regras: [] },
+    { id: 'nat_devol_compra', descricao: 'Devolução de Compra',          cfopPadrao: '5202', tipo: 'saida',   csosn: '102', finNFe: '4', ativo: true, regras: [] },
     { id: 'nat_remessa',      descricao: 'Remessa para Industrialização',cfopPadrao: '5501', tipo: 'saida',   csosn: '400', ativo: true, regras: [] },
     { id: 'nat_transfer',     descricao: 'Transferência de Mercadoria',  cfopPadrao: '5151', tipo: 'saida',   csosn: '102', ativo: true, regras: [] },
     { id: 'nat_compra_merc',  descricao: 'Compra de Mercadoria',         cfopPadrao: '1102', tipo: 'entrada', csosn: '102', ativo: true, regras: [] },
-    { id: 'nat_devol_venda',  descricao: 'Devolução de Venda',           cfopPadrao: '1202', tipo: 'entrada', csosn: '102', ativo: true, regras: [] },
+    { id: 'nat_devol_venda',  descricao: 'Devolução de Venda',           cfopPadrao: '1202', tipo: 'entrada', csosn: '102', finNFe: '4', ativo: true, regras: [] },
     { id: 'nat_brinde',       descricao: 'Remessa em Bonificação/Brinde',cfopPadrao: '5910', tipo: 'saida',   csosn: '400', ativo: true, regras: [] },
   ];
 

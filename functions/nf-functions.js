@@ -696,6 +696,43 @@ async function descriptografarPFXdoStorage(tenantId, uid, senha) {
 }
 
 // ─── Assinar XML com RSA-SHA1 (XMLDSIG — exigido pela SEFAZ) ─────────────
+// Forma do DIGEST (C14N aproximada): a forma enviada + o xmlns herdado da raiz
+// renderizado no elemento assinado quando ele não declara o próprio namespace.
+// NF-e usa o default (nfe); MDF-e passa o seu via options.namespace — o digest
+// precisa do namespace REAL do documento (cStat 297 se divergir).
+function buildSignedHashForm(sentForm, tagName, namespace) {
+  if (new RegExp(`^<${tagName}[^>]*\\sxmlns=`, 'i').test(sentForm)) return sentForm;
+  return sentForm.replace(new RegExp(`^<${tagName}`, 'i'), `<${tagName} xmlns="${namespace}"`);
+}
+
+// Índice onde a <Signature> deve ser inserida: ANTES do fechamento do PAI do
+// elemento assinado (após eventuais irmãos completos — ex.: infMDFeSupl).
+// O leiaute DFe exige a Signature como último filho do PAI:
+//  - evento NF-e: dentro de <evento> (irmão de infEvento) — NÃO na raiz envEvento
+//  - MDF-e: depois de infMDFeSupl (antes de </MDFe>)
+//  - NFe/inut: último filho da raiz.
+// Retorna -1 quando não encontra (chamador usa fallback legado).
+function findSignatureInsertIndex(xml, fromIdx) {
+  let i = fromIdx;
+  while (i < xml.length) {
+    const rest = xml.slice(i);
+    const leading = rest.match(/^\s*/)[0].length;
+    const at = i + leading;
+    const chunk = xml.slice(at);
+    const closeM = chunk.match(/^<\/([A-Za-z][\w:.-]*)>/);
+    if (closeM) return at;
+    const openM = chunk.match(/^<([A-Za-z][\w:.-]*)([^>]*?)(\/?)>/);
+    if (!openM) return -1;
+    const tagEnd = at + openM[0].length;
+    if (openM[3] === '/') { i = tagEnd; continue; } // irmão auto-fechado
+    const closeTag = `</${openM[1]}>`;
+    const closeIdx = xml.indexOf(closeTag, tagEnd);
+    if (closeIdx < 0) return -1;
+    i = closeIdx + closeTag.length;
+  }
+  return -1;
+}
+
 function assinarXMLcomForge(xmlStr, pfxBuffer, senha, options = {}) {
   // Compactar ANTES de assinar: a assinatura cobre exatamente os bytes enviados
   // (SEFAZ rejeita whitespace entre tags — cStat 588 — e valida a assinatura).
@@ -743,10 +780,8 @@ function assinarXMLcomForge(xmlStr, pfxBuffer, senha, options = {}) {
   const sentForm = rawElement
     .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&gt;/g, '>')
     .replace(/<([A-Za-z][\w:.-]*)([^>]*)\/>/g, '<$1$2></$1>');
-  let hashForm = sentForm;
-  if (!new RegExp(`^<${tagName}[^>]*\\sxmlns=`, 'i').test(hashForm)) {
-    hashForm = hashForm.replace(new RegExp(`^<${tagName}`, 'i'), `<${tagName} xmlns="http://www.portalfiscal.inf.br/nfe"`);
-  }
+  const namespace = options.namespace || 'http://www.portalfiscal.inf.br/nfe';
+  const hashForm = buildSignedHashForm(sentForm, tagName, namespace);
 
   // SHA-1 da forma canônica
   const md = forge.md.sha1.create();
@@ -777,9 +812,19 @@ ${signedInfo}\
 <KeyInfo><X509Data><X509Certificate>${certB64}</X509Certificate></X509Data></KeyInfo>\
 </Signature>`;
 
-  // Injetar Signature logo após o elemento fiscal assinado, usando a FORMA
-  // ENVIADA (sem xmlns redundante). Replacer-function evita interpretar `$`.
-  const xmlAssinado = xmlStr.replace(signedElementMatch[0], () => `${sentForm}${signature}`);
+  // Documento final usa a FORMA ENVIADA (sem xmlns redundante, entidades
+  // normalizadas — C14N). Replacer-function evita interpretar `$`.
+  const xmlComSentForm = xmlStr.replace(signedElementMatch[0], () => sentForm);
+  // Injetar Signature como ÚLTIMO filho do PAI do elemento assinado (ver
+  // findSignatureInsertIndex): evento NF-e dentro de <evento> (não no envEvento
+  // — sem isso a SEFAZ rejeita "Falha no schema XML (em envEvento/evento[1])");
+  // MDF-e após infMDFeSupl; NFe/inut no fim da raiz. O Reference cobre apenas o
+  // elemento assinado — a posição da Signature não altera o digest.
+  const idxElementEnd = xmlComSentForm.indexOf(sentForm) + sentForm.length;
+  const idxInsert = idxElementEnd > sentForm.length ? findSignatureInsertIndex(xmlComSentForm, idxElementEnd) : -1;
+  const xmlAssinado = idxInsert >= 0
+    ? xmlComSentForm.slice(0, idxInsert) + signature + xmlComSentForm.slice(idxInsert)
+    : xmlComSentForm.replace(sentForm, () => `${sentForm}${signature}`);
   return xmlAssinado;
 }
 
@@ -787,7 +832,7 @@ ${signedInfo}\
 // SOAP 1.2 exige a "action" no Content-Type; a SEFAZ rejeita sem ela
 // ("Unable to handle request without a valid action parameter").
 const SOAP_ACTION_METHOD = {
-  NfeConsultaProtocolo4: 'nfeConsulta',
+  NfeConsultaProtocolo4: 'nfeConsultaNF', // catálogo NFePHP wsnfe (SVRS): method=nfeConsultaNF
   NFeAutorizacao4:       'nfeAutorizacaoLote',
   NfeAutorizacao4:       'nfeAutorizacaoLote',
   NFeRetAutorizacao4:    'nfeRetAutorizacaoLote',
@@ -796,9 +841,17 @@ const SOAP_ACTION_METHOD = {
   NFeInutilizacao4:      'nfeInutilizacaoNF',
   NfeInutilizacao4:      'nfeInutilizacaoNF',
 };
+// Namespace da action/envelope = campo "operation" do WSDL (catálogo NFePHP
+// wsnfe_4.00_mod55.xml, bloco SVRS): em geral coincide com o serviço lógico,
+// mas a consulta é "NFeConsultaProtocolo4" (F maiúsculo). Evidência ao vivo:
+// SOAP Fault "action not recognized" até o par operation/method exato.
+const SOAP_ACTION_NS = {
+  NfeConsultaProtocolo4: 'NFeConsultaProtocolo4',
+};
 function soapActionFor(servico) {
   const method = SOAP_ACTION_METHOD[servico];
-  return method ? `http://www.portalfiscal.inf.br/nfe/wsdl/${servico}/${method}` : '';
+  const ns = SOAP_ACTION_NS[servico] || servico;
+  return method ? `http://www.portalfiscal.inf.br/nfe/wsdl/${ns}/${method}` : '';
 }
 
 // Remove a declaração <?xml ...?> (não pode aparecer embutida dentro de outro XML).
@@ -812,12 +865,13 @@ function compactXml(xml) {
 }
 
 function buildSoapEnvelope(servico, xmlNFe, versaoQrNfe = '4.00', cUF = '35') {
+  const ns = SOAP_ACTION_NS[servico] || servico;
   return `<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:nfe="http://www.portalfiscal.inf.br/nfe/wsdl/${servico}">
-  <soap:Header><nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${servico}">
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:nfe="http://www.portalfiscal.inf.br/nfe/wsdl/${ns}">
+  <soap:Header><nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${ns}">
     <cUF>${cUF}</cUF><cVersao>${versaoQrNfe}</cVersao>
   </nfeCabecMsg></soap:Header>
-  <soap:Body><nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${servico}">${xmlNFe}</nfeDadosMsg></soap:Body>
+  <soap:Body><nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/${ns}">${xmlNFe}</nfeDadosMsg></soap:Body>
 </soap:Envelope>`;
 }
 
@@ -934,15 +988,22 @@ function descreverCStat(cStat) {
 }
 
 // ─── Parsear retorno SEFAZ (extrai cStat e xMotivo) ──────────────────────
-function parseSefazResponse(xmlResp, successCodes = ['100', '150']) {
+// opts.first: pega o cStat do RETORNO PRINCIPAL (consSit*) — que é o PRIMEIRO
+// do documento; o ÚLTIMO pode pertencer a um evento/protocolo interno (ex.:
+// consulta de NF-e/MDF-e encerrado/cancelado devolvia 135 do evento de
+// encerramento em vez do 100 do documento). Default 'last' preserva o
+// comportamento de autorização (protNFe/protMDFe = status final do lote).
+function parseSefazResponse(xmlResp, successCodes = ['100', '150'], opts = {}) {
   const xml = String(xmlResp || '');
   const cStatMatches = Array.from(xml.matchAll(/<cStat>(\d+)<\/cStat>/g)).map((m) => m[1]);
   const xMotivoMatches = Array.from(xml.matchAll(/<xMotivo>([^<]+)<\/xMotivo>/g)).map((m) => m[1]);
   const nProtMatch  = xml.match(/<nProt>(\d+)<\/nProt>/);
   const chNFeMatch  = xml.match(/<chNFe>(\d+)<\/chNFe>/);
   const dhRecbtoMatch = xml.match(/<dhRecbto>([^<]+)<\/dhRecbto>/);
-  const cStat = cStatMatches.length ? cStatMatches[cStatMatches.length - 1] : '999';
-  const xMotivo = xMotivoMatches.length ? xMotivoMatches[xMotivoMatches.length - 1] : 'Resposta não parseada';
+  const cStatPick = opts.first ? 0 : cStatMatches.length - 1;
+  const cStat = cStatMatches.length ? cStatMatches[cStatPick] : '999';
+  const cStatIdxX = opts.first ? 0 : xMotivoMatches.length - 1;
+  const xMotivo = xMotivoMatches.length ? xMotivoMatches[Math.max(0, Math.min(cStatIdxX, xMotivoMatches.length - 1))] : 'Resposta não parseada';
   return {
     cStat,
     xMotivo,
@@ -1145,17 +1206,55 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
 
   try {
     const pfxBuffer = await descriptografarPFXdoStorage(tenantId, uid, senhaA1);
-    const consultaXml = `<consSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.01"><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><xServ>CONSULTAR</xServ><chNFe>${chave}</chNFe></consSitNFe>`;
+    const consultaXml = `<consSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><xServ>CONSULTAR</xServ><chNFe>${chave}</chNFe></consSitNFe>`;
 
     const cUF = resolveCUF({ chave });
     const url  = getEndpoint('NfeConsultaProtocolo4', env);
-    const soap = buildSoapEnvelope('NfeConsultaProtocolo4', consultaXml, '4.00', cUF);
-    const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NfeConsultaProtocolo4'));
-    const ret  = parseSefazResponse(resp.body);
+    // As actions do asmx SVRS de consulta variam de nome entre versões do WSDL
+    // (SOAP Fault "action not recognized" em 05/2026 para NfeConsultaProtocolo4
+    // E NfeConsulta4). Auto-descoberta com fallback ORDENADO: usa a primeira
+    // que o servidor reconhecer (Fault "not recognized" → próxima). A vencedora
+    // é registrada no log para fixação definitiva.
+    const baseAction = soapActionFor('NfeConsultaProtocolo4');
+    const alternativas = [
+      baseAction,
+      'http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4/nfeConsultaNF',
+      'http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsultaProtocolo4/nfeConsulta',
+      'http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsulta4/nfeConsulta',
+    ].filter((a, i, arr) => a && arr.indexOf(a) === i);
+    let resp = null;
+    let actionUsada = '';
+    const faultsTentados = [];
+    for (const action of alternativas) {
+      const soap = buildSoapEnvelope('NfeConsultaProtocolo4', consultaXml, '4.00', cUF);
+      const tentativa = await postSefaz(url, soap, pfxBuffer, senhaA1, action);
+      actionUsada = action;
+      resp = tentativa;
+      const body = String(tentativa.body || '');
+      const naoReconhecida = tentativa.status === 500 && /action .* was not recognized/i.test(body);
+      if (!naoReconhecida) break;
+      faultsTentados.push(action);
+    }
+    if (faultsTentados.length) {
+      functions.logger.warn(`[nf_consultarNFe] Actions não reconhecidas: ${faultsTentados.join(' | ')}`);
+    }
+    functions.logger.info(`[nf_consultarNFe] action usada: ${actionUsada}`);
+    const ret  = parseSefazResponse(resp.body, ['100', '150'], { first: true });
 
     if (ret.cStat === '999') {
       functions.logger.warn(`[nf_consultarNFe] Resposta não parseada | HTTP ${resp.status} | chave=${chave} | body: ${String(resp.body || '').slice(0, 800)}`);
     }
+
+    // Verdade da situação: a consulta de uma NF-e cancelada devolve o cStat do
+    // retorno principal (100 = autorizada) + o evento 110111 no procEventoNFe.
+    const bodyConsulta = String(resp.body || '');
+    const temEventoCancelamento = /<tpEvento>110111<\/tpEvento>/.test(bodyConsulta);
+    const cStatEventoCancel = (() => {
+      const m = bodyConsulta.match(/<retEvento[\s\S]*?<cStat>(\d+)<\/cStat>/);
+      return m ? m[1] : '';
+    })();
+    const cancelada = temEventoCancelamento && ['135', '155', '101'].includes(cStatEventoCancel);
+    const situacao = cancelada ? 'cancelada' : (ret.autorizada ? 'autorizada' : 'indefinida');
 
     return {
       cStat:   ret.cStat,
@@ -1163,6 +1262,13 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
       descricao: descreverCStat(ret.cStat) || ret.xMotivo || '',
       nProt:   ret.nProt,
       autorizada: ret.autorizada,
+      cancelada,
+      situacao,
+      cStatEventoCancelamento: cancelada ? cStatEventoCancel : '',
+      // Diagnóstico quando a resposta não foi interpretada (mesmo padrão do
+      // erroMsg do MDF-e) — evita caçar logs de runtime.
+      ...(ret.cStat === '999' ? { httpStatus: resp.status, respostaSefaz: bodyConsulta.slice(0, 1500) } : {}),
+      actionUsada,
     };
   } catch (e) {
     functions.logger.error('[nf_consultarNFe] Erro:', (e && e.message) || e, (e && e.stack) || '');
@@ -1283,17 +1389,26 @@ exports.nf_cancelarNFe = onFiscalCall(async (data, context) => {
     const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeRecepcaoEvento4'));
     const ret  = parseSefazResponse(resp.body, ['135', '136', '155']);
 
-    // Atualizar status no Firebase
-    await updateFiscalNote(db, tenantId, modKey, nfId, {
-      status:               ret.autorizada ? 'cancelada' : 'erro_cancelamento',
-      cStatCancelamento:    ret.cStat,
-      xMotivoCancelamento:  ret.xMotivo,
-      dataCancelamento:     new Date().toISOString(),
-      justificativaCancelamento: justificativa,
-      xmlCancelamentoRetorno: ret.xmlRetorno,
-      nSeqEventoCancelamento: seq,
-      updatedAt:            new Date().toISOString(),
-    });
+    // Falha NÃO muda o status da nota: sem evento registrado ela segue
+    // AUTORIZADA na SEFAZ (permite nova tentativa). Só sucesso vira 'cancelada'.
+    const patchCancel = ret.autorizada
+      ? {
+          status:               'cancelada',
+          cStatCancelamento:    ret.cStat,
+          xMotivoCancelamento:  ret.xMotivo,
+          dataCancelamento:     new Date().toISOString(),
+          justificativaCancelamento: justificativa,
+          xmlCancelamentoRetorno: ret.xmlRetorno,
+          nSeqEventoCancelamento: seq,
+          updatedAt:            new Date().toISOString(),
+        }
+      : {
+          erroCancelamento:     `cStat ${ret.cStat}: ${ret.xMotivo || 'SEFAZ não registrou o evento de cancelamento'}`,
+          cStatCancelamento:    ret.cStat,
+          xMotivoCancelamento:  ret.xMotivo,
+          updatedAt:            new Date().toISOString(),
+        };
+    await updateFiscalNote(db, tenantId, modKey, nfId, patchCancel);
 
     return {
       cancelada: ret.autorizada,
@@ -1977,4 +2092,6 @@ exports.__mdfeInternals = {
   assinarXMLcomForge,
   postSefaz,
   parseSefazResponse,
+  stripXmlDecl,
+  toFiscalDateTime,
 };

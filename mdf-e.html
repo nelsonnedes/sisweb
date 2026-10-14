@@ -334,6 +334,93 @@
             color: #856404;
         }
 
+        .status-importado {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        /* Alerta persistente no topo (paridade com a NF-e) */
+        #emissaoAlertaMdfe {
+            margin: 0 0 14px;
+            position: relative;
+        }
+        #emissaoAlertaMdfe .sw-msg-close {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font-size: 16px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        /* Barra de paginação da Consulta (mesmo padrão da NF-e/estoque) */
+        .nf-pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .nf-pagination-bar:empty { display: none; }
+        .nf-pagination-bar .pagination-size-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--sw-text-2);
+            font-size: 13px;
+            margin-right: auto;
+        }
+        .nf-pagination-bar .pagination-size-control select {
+            width: auto;
+            min-width: 76px;
+            height: 34px;
+            padding: 4px 8px;
+            font-size: 13px;
+            color: var(--sw-text-1);
+            background: var(--sw-surface);
+            border: 1px solid var(--sw-border);
+            border-radius: 6px;
+        }
+        .nf-pagination-bar .pagination-page-buttons {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .nf-pagination-bar .pagination-page-buttons button {
+            min-width: 34px;
+            height: 34px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sw-text-1);
+            background: var(--sw-surface);
+            border: 1px solid var(--sw-border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .nf-pagination-bar .pagination-page-buttons button:hover:not(:disabled) {
+            border-color: var(--sw-brand);
+            color: var(--sw-brand);
+        }
+        .nf-pagination-bar .pagination-page-buttons button.active {
+            background: var(--sw-brand);
+            border-color: var(--sw-brand);
+            color: #fff;
+        }
+        .nf-pagination-bar .pagination-page-buttons button:disabled {
+            opacity: .45;
+            cursor: default;
+        }
+        .nf-pagination-bar .pagination-total-info {
+            font-size: 12px;
+            color: var(--sw-text-2);
+        }
+
         .search-box {
             width: 100%;
             max-width: 300px;
@@ -435,6 +522,101 @@
 
         .close:hover {
             color: var(--sw-text-1) ;
+        }
+
+        .mdfe-import-hint {
+            color: var(--sw-text-2);
+            font-size: 12px;
+            margin: 4px 0 10px;
+        }
+
+        .mdfe-import-filtro {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .mdfe-import-lista {
+            max-height: 46vh;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 14px;
+        }
+
+        .mdfe-import-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .mdfe-import-row:last-child {
+            border-bottom: none;
+        }
+
+        .mdfe-import-row:hover {
+            background-color: var(--sw-surface-2) ;
+        }
+
+        .mdfe-import-row.is-disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .mdfe-import-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+        }
+
+        .mdfe-import-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .mdfe-import-info > span {
+            font-size: 13px;
+        }
+
+        .mdfe-import-info small {
+            color: var(--sw-text-2);
+            font-size: 12px;
+        }
+
+        .mdfe-import-chave {
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .mdfe-import-valores {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .mdfe-import-valores em {
+            font-size: 11px;
+            color: var(--sw-text-2);
+        }
+
+        .mdfe-import-sempeso {
+            color: #856404;
+            font-weight: 600;
+        }
+
+        .mdfe-import-vazio {
+            padding: 18px;
+            text-align: center;
+            color: var(--sw-text-2);
         }
 
         .number-cell {
@@ -583,6 +765,10 @@
             <i class="fas fa-truck"></i> MDF-e - Manifesto de Documentos Fiscais
         </h1>
 
+        <!-- Alerta persistente (igual ao da NF-e): resultado de emissão/consulta/
+             encerramento fica visível no topo até o usuário fechar. -->
+        <div id="emissaoAlertaMdfe" hidden></div>
+
         <div class="tabs">
             <button class="tab active" onclick="showTab('emissao', this)">
                 <i class="fas fa-plus"></i> Emissão
@@ -610,7 +796,7 @@
                         </div>
                         <div class="form-group">
                             <label for="mdfeSerie">Série:</label>
-                            <input type="text" id="mdfeSerie" value="1">
+                            <input type="text" id="mdfeSerie" value="1" autocomplete="off">
                         </div>
                         <div class="form-group">
                             <label for="mdfeDataEmissao">Data/Hora de Emissão:</label>
@@ -650,15 +836,18 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="mdfeTpEmit">Tipo de Emitente:</label>
+                            <select id="mdfeTpEmit" title="2=Carga própria (seguro não exigido pelo fisco); 1=Prestador de serviço de transporte (SEFAZ exige seguro de carga — cStat 698)">
+                                <option value="2" selected>2 — Transportador de Carga Própria</option>
+                                <option value="1">1 — Prestador de Serviço de Transporte</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="mdfeAmbiente">Ambiente SEFAZ:</label>
                             <select id="mdfeAmbiente">
                                 <option value="homologacao" selected>Homologação</option>
                                 <option value="producao">Produção</option>
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="mdfeSenhaA1">Senha do certificado A1:</label>
-                            <input type="password" id="mdfeSenhaA1" autocomplete="new-password" placeholder="Usada somente nesta emissão">
                         </div>
                     </div>
                 </div>
@@ -666,6 +855,10 @@
                 <div class="form-section percurso-section">
                     <h3><i class="fas fa-route"></i> Percurso</h3>
                     <div class="form-row">
+                        <div class="form-group">
+                            <label for="mdfePercursoUfs">UFs do Percurso:</label>
+                            <input type="text" id="mdfePercursoUfs" placeholder="ex: TO ou MA,TO" title="UFs intermediárias quando a UF de fim não é limítrofe da UF de início (cStat 663). Separe por vírgula, na ordem do trajeto.">
+                        </div>
                         <div class="form-group">
                             <label for="percursoUfFim">UF de Fim:</label>
                             <select id="percursoUfFim" required>
@@ -771,6 +964,13 @@
                                 <i class="fas fa-plus"></i> Adicionar
                             </button>
                         </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button type="button" onclick="abrirImportacaoNFe()" class="btn btn-primary">
+                                <i class="fas fa-file-import"></i> Importar da NF-e
+                            </button>
+                            <small class="mdfe-import-hint">Importa chaves, valores, pesos, percurso e placa das NF-e autorizadas.</small>
+                        </div>
                     </div>
 
                     <div class="table-container">
@@ -852,6 +1052,7 @@
                     </tbody>
                 </table>
             </div>
+            <div id="paginacaoConsultaMdfe" class="nf-pagination-bar"></div>
         </div>
 
         <!-- Aba Encerramento -->
@@ -878,12 +1079,6 @@
                     <div class="form-group">
                         <label for="protocoloEncerramento">Protocolo de Encerramento:</label>
                         <input type="text" id="protocoloEncerramento" placeholder="Será gerado automaticamente" readonly>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="mdfeSenhaA1Encerramento">Senha do certificado A1:</label>
-                        <input type="password" id="mdfeSenhaA1Encerramento" autocomplete="new-password" placeholder="Usada somente no encerramento">
                     </div>
                 </div>
                 <div class="button-group">
@@ -933,6 +1128,27 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mdfeImportModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mdfeImportTitulo">
+        <div class="modal-content">
+            <span class="close" role="button" tabindex="0" aria-label="Fechar" onclick="fecharImportacaoNFe()">&times;</span>
+            <h2 id="mdfeImportTitulo"><i class="fas fa-file-import"></i> Importar dados das NF-e</h2>
+            <p class="mdfe-import-hint">Somente NF-e autorizadas da empresa. Selecione as notas que compõem este manifesto.</p>
+            <input type="text" id="mdfeImportBusca" class="mdfe-import-filtro" placeholder="Buscar por número, destinatário, município ou chave..." oninput="filtrarImportacaoNFe()">
+            <div id="mdfeImportLista" class="mdfe-import-lista"></div>
+            <div class="button-group">
+                <button type="button" class="btn btn-primary" onclick="selecionarTodasImportacaoNFe()">
+                    <i class="fas fa-check-double"></i> Selecionar todas
+                </button>
+                <button type="button" class="btn btn-success" id="mdfeImportConfirmar" onclick="confirmarImportacaoNFe()">
+                    <i class="fas fa-file-import"></i> Importar 0 NF-e
+                </button>
+                <button type="button" class="btn btn-danger" onclick="fecharImportacaoNFe()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
             </div>
         </div>
     </div>
@@ -1239,15 +1455,15 @@
     </script>
     <script type="module">
         // Importar firebaseService e disponibilizar globalmente
-        import { authService, isFirebaseOperational } from './firebaseService.js?v=b41e25b5e148';
+        import { authService, isFirebaseOperational } from './firebaseService.js?v=678c8a6de062';
         
         // Disponibilizar firebaseService globalmente
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational };
         
         console.log("✅ firebaseService carregado no mdf-e.html");
     </script>
-    <script src="mdfe-xml-builder.js?v=5f468745ae5d"></script>
-    <script src="mdf-e.js?v=730c8f87f196"></script>
+    <script src="mdfe-xml-builder.js?v=33c694b3bf29"></script>
+    <script src="mdf-e.js?v=813f5d9de3ea"></script>
     <script src="js/sisweb-loading.js?v=b693454010f9"></script>
 </body>
 </html>

@@ -16,6 +16,8 @@ const {
   assinarXMLcomForge,
   postSefaz,
   parseSefazResponse,
+  stripXmlDecl,
+  toFiscalDateTime,
 } = nf.__mdfeInternals;
 
 const MDFe_ENDPOINTS = {
@@ -37,6 +39,23 @@ const UF_CODES = {
   PE: '26', PI: '22', RJ: '33', RN: '24', RS: '43', RO: '11', RR: '14', SC: '42',
   SP: '35', SE: '28', TO: '17',
 };
+
+const MDFE_NS = 'http://www.portalfiscal.inf.br/mdfe';
+
+// SOAP 1.2: a operação dos web services MDF-e/SVRS viaja no parâmetro
+// `action` do Content-Type — mesmo mecanismo homologado da NF-e
+// (soapActionFor em nf-functions.js). Operações dos WSDLs SVRS:
+// MDFeRecepcaoSinc/mdfeRecepcao, MDFeConsulta/mdfeConsulta,
+// MDFeRecepcaoEvento/mdfeRecepcaoEvento.
+const MDFE_SOAP_ACTIONS = {
+  MDFeRecepcaoSinc: 'http://www.portalfiscal.inf.br/mdfe/wsdl/MDFeRecepcaoSinc/mdfeRecepcao',
+  MDFeConsulta: 'http://www.portalfiscal.inf.br/mdfe/wsdl/MDFeConsulta/mdfeConsulta',
+  MDFeRecepcaoEvento: 'http://www.portalfiscal.inf.br/mdfe/wsdl/MDFeRecepcaoEvento/mdfeRecepcaoEvento',
+};
+
+function mdfeSoapAction(service) {
+  return MDFE_SOAP_ACTIONS[service] || '';
+}
 
 function onMdfeCall(handler) {
   return functions.https.onCall(async (requestOrData, maybeContext) => {
@@ -169,13 +188,22 @@ exports.mdfe_emitir = onMdfeCall(async (data, context) => {
 
   try {
     const pfx = await descriptografarPFXdoStorage(tenantId, access.uid, senhaA1);
-    const signedXml = assinarXMLcomForge(xml, pfx, senhaA1, { tagName: 'infMDFe', idPrefix: 'MDFe' });
-    const payload = `<enviMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="3.00"><idLote>${Date.now()}</idLote><indSinc>1</indSinc>${signedXml}</enviMDFe>`;
-    const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeRecepcaoSinc, mdfeSoap('MDFeRecepcaoSinc', payload, cUF), pfx, senhaA1);
+    const signedXml = assinarXMLcomForge(xml, pfx, senhaA1, { tagName: 'infMDFe', idPrefix: 'MDFe', namespace: MDFE_NS });
+    // MDFeRecepcaoSinc (SVRS): o conteúdo do <mdfeDadosMsg> é o MDF-e SEM a
+    // declaração <?xml?> e SEM wrapper enviMDFe, comprimido em gzip e
+    // codificado em base64 — exigência do serviço síncrono. Referência
+    // homologada: NFePHP sped-mdfe Tools::sefazEnviaLote (indSinc=1 →
+    // base64_encode(gzencode($sxml))). O envio cru gerava HTTP 400 vazio.
+    const payload = require('zlib').gzipSync(Buffer.from(stripXmlDecl(signedXml), 'utf8')).toString('base64');
+    const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeRecepcaoSinc, mdfeSoap('MDFeRecepcaoSinc', payload, cUF), pfx, senhaA1, mdfeSoapAction('MDFeRecepcaoSinc'));
     const result = parseSefazResponse(response.body, ['100', '150']);
+    const respostaNaoParseada = result.cStat === '999';
+    if (respostaNaoParseada) {
+      functions.logger.warn(`[mdfe_emitir] Resposta não parseada | HTTP ${response.status} | body: ${String(response.body || '').slice(0, 1200)}`);
+    }
     const status = result.autorizada ? 'autorizado' : 'rejeitado';
     const xmlStoragePath = await persistXml(tenantId, mdfeId, signedXml);
-    await updateMdfe(tenantId, mdfeId, { status, chaveAcesso: key, cStat: result.cStat, xMotivo: result.xMotivo, protocolo: result.nProt, xmlStoragePath, enviadoEm: new Date().toISOString() });
+    await updateMdfe(tenantId, mdfeId, { status, chaveAcesso: key, cStat: result.cStat, xMotivo: result.xMotivo, protocolo: result.nProt, xmlStoragePath, enviadoEm: new Date().toISOString(), ...(respostaNaoParseada ? { erroMsg: `HTTP ${response.status}: ${String(response.body || '').slice(0, 600)}` } : {}) });
     return { status, autorizada: result.autorizada, chaveAcesso: key, cStat: result.cStat, xMotivo: result.xMotivo, protocolo: result.nProt };
   } catch (error) {
     await updateMdfe(tenantId, mdfeId, { status: 'erro_envio', chaveAcesso: key, erroMsg: error.message }).catch(() => {});
@@ -195,10 +223,54 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
   const env = environment(data.ambiente);
   const pfx = await descriptografarPFXdoStorage(tenantId, access.uid, senhaA1);
   const payload = `<consSitMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="3.00"><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><xServ>CONSULTAR</xServ><chMDFe>${key}</chMDFe></consSitMDFe>`;
-  const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeConsulta, mdfeSoap('MDFeConsulta', payload, key.slice(0, 2)), pfx, senhaA1);
-  const result = parseSefazResponse(response.body, ['100', '101', '150']);
-  await updateMdfe(tenantId, mdfeId, { cStat: result.cStat, xMotivo: result.xMotivo, protocolo: result.nProt, chaveAcesso: key });
-  return { autorizada: result.autorizada, cStat: result.cStat, xMotivo: result.xMotivo, protocolo: result.nProt };
+  const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeConsulta, mdfeSoap('MDFeConsulta', payload, key.slice(0, 2)), pfx, senhaA1, mdfeSoapAction('MDFeConsulta'));
+  // Retorno PRINCIPAL da consulta = primeiro cStat (o último pode ser do
+  // evento vinculado — ex.: MDF-e encerrado devolvia 135 em vez de 100).
+  const result = parseSefazResponse(response.body, ['100', '101', '150'], { first: true });
+  const bodyConsulta = String(response.body || '');
+  if (result.cStat === '999') {
+    functions.logger.warn(`[mdfe_consultar] Resposta não parseada | HTTP ${response.status} | body: ${bodyConsulta.slice(0, 1200)}`);
+  }
+  // Situação real: eventos vinculados no procEventoMDFe (110112 encerramento /
+  // 110111 cancelamento) definem se o documento está Encerrado/Cancelado.
+  const tpEventoMatch = bodyConsulta.match(/<tpEvento>(110111|110112)<\/tpEvento>/);
+  const cStatEvento = (() => {
+    const m = bodyConsulta.match(/<retEventoMDFe[\s\S]*?<cStat>(\d+)<\/cStat>/);
+    return m ? m[1] : '';
+  })();
+  const eventoOk = ['135', '136', '155', '101'].includes(cStatEvento);
+  const situacao = (tpEventoMatch && eventoOk)
+    ? (tpEventoMatch[1] === '110112' ? 'encerrado' : 'cancelado')
+    : (['100', '150'].includes(result.cStat) ? 'autorizado'
+      : (result.cStat === '217' ? 'nao_encontrado' : 'indefinida'));
+  const statusDerivado = situacao === 'encerrado' ? 'encerrado'
+    : (situacao === 'cancelado' ? 'cancelado'
+      : (situacao === 'autorizado' ? 'autorizado' : ''));
+  // O cStat/xMotivo DO DOCUMENTO não é sobrescrito pela consulta — a verdade
+  // da consulta vai em ultimaConsultaSefaz; o status é reconciliado quando a
+  // SEFAZ confirma encerramento/cancelamento/autorização.
+  await updateMdfe(tenantId, mdfeId, {
+    chaveAcesso: key,
+    ...(statusDerivado ? { status: statusDerivado } : {}),
+    ultimaConsultaSefaz: {
+      cStat: result.cStat,
+      xMotivo: result.xMotivo,
+      situacao,
+      tpEvento: tpEventoMatch ? tpEventoMatch[1] : '',
+      cStatEvento,
+      em: new Date().toISOString(),
+    },
+  });
+  return {
+    autorizada: situacao === 'autorizado' || situacao === 'encerrado',
+    cancelado: situacao === 'cancelado',
+    situacao,
+    cStat: result.cStat,
+    xMotivo: result.xMotivo,
+    protocolo: result.nProt,
+    tpEvento: tpEventoMatch ? tpEventoMatch[1] : '',
+    cStatEvento,
+  };
 });
 
 exports.mdfe_encerrar = onMdfeCall(async (data, context) => {
@@ -206,6 +278,8 @@ exports.mdfe_encerrar = onMdfeCall(async (data, context) => {
   const tenantId = sanitizePathSegment(data.tenantId, 'tenantId');
   const mdfeId = sanitizePathSegment(data.mdfeId, 'mdfeId');
   const key = requireAccessKey(data.chave);
+  const nProt = digits(data.nProt);
+  if (!/^\d{15}$/.test(nProt)) throw httpsError('invalid-argument', 'Protocolo de autorização (nProt, 15 dígitos) é obrigatório para o encerramento.');
   const cMunEnc = requireMunicipio(data.cMunEnc);
   const senhaA1 = String(data.senhaA1 || '');
   if (!senhaA1) throw httpsError('invalid-argument', 'Senha do certificado A1 é obrigatória.');
@@ -219,14 +293,17 @@ exports.mdfe_encerrar = onMdfeCall(async (data, context) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dtEnc)) throw httpsError('invalid-argument', 'Data de encerramento inválida.');
   const event = `<eventoMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="3.00"><infEvento Id="${eventId}">`
     + `<cOrgao>${key.slice(0, 2)}</cOrgao><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><CNPJ>${cnpj}</CNPJ><chMDFe>${key}</chMDFe>`
-    + `<dhEvento>${new Date().toISOString().replace('Z', '-03:00')}</dhEvento><tpEvento>110112</tpEvento><nSeqEvento>${sequence}</nSeqEvento>`
-    + `<detEvento versaoEvento="3.00"><evEncMDFe><descEvento>Encerramento</descEvento><dtEnc>${dtEnc}</dtEnc><cMunEnc>${cMunEnc}</cMunEnc></evEncMDFe></detEvento>`
+    + `<dhEvento>${toFiscalDateTime()}</dhEvento><tpEvento>110112</tpEvento><nSeqEvento>${sequence}</nSeqEvento>`
+    + `<detEvento versaoEvento="3.00"><evEncMDFe><descEvento>Encerramento</descEvento><nProt>${nProt}</nProt><dtEnc>${dtEnc}</dtEnc><cUF>${cMunEnc.slice(0, 2)}</cUF><cMun>${cMunEnc}</cMun></evEncMDFe></detEvento>`
     + `</infEvento></eventoMDFe>`;
   try {
     const pfx = await descriptografarPFXdoStorage(tenantId, access.uid, senhaA1);
-    const signedEvent = assinarXMLcomForge(event, pfx, senhaA1, { tagName: 'infEvento', idPrefix: 'ID' });
-    const payload = `<envEventoMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="3.00"><idLote>${Date.now()}</idLote>${signedEvent}</envEventoMDFe>`;
-    const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeRecepcaoEvento, mdfeSoap('MDFeRecepcaoEvento', payload, key.slice(0, 2)), pfx, senhaA1);
+    const signedEvent = assinarXMLcomForge(event, pfx, senhaA1, { tagName: 'infEvento', idPrefix: 'ID', namespace: MDFE_NS });
+    // MDFeRecepcaoEvento recebe o eventoMDFe DIRETO (sem wrapper envEventoMDFe —
+    // referência NFePHP sped-mdfe Tools::sefazEvento; o wrapper gerava cStat 215
+    // "envEventoMDFe element is not declared").
+    const payload = signedEvent;
+    const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeRecepcaoEvento, mdfeSoap('MDFeRecepcaoEvento', payload, key.slice(0, 2)), pfx, senhaA1, mdfeSoapAction('MDFeRecepcaoEvento'));
     const result = parseSefazResponse(response.body, ['135', '136', '155']);
     await updateMdfe(tenantId, mdfeId, { status: result.autorizada ? 'encerrado' : 'erro_encerramento', cStat: result.cStat, xMotivo: result.xMotivo, protocoloEncerramento: result.nProt, dataEncerramento: dtEnc, municipioEncerramento: cMunEnc });
     return { encerrado: result.autorizada, cStat: result.cStat, xMotivo: result.xMotivo, protocolo: result.nProt };

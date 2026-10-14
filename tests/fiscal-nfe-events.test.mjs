@@ -51,13 +51,18 @@ test('assinatura usa forma canônica (C14N): xmlns explícito + entidades de tex
   // O digest deve cobrir o xmlns herdado (que o bruto não tem) e expandir
   // &quot;/&apos;/&gt; como o C14N faz — senão SEFAZ retorna 297.
   // Porém o ENVIADO não pode ter xmlns redundante (cStat 587) — usa-se sentForm.
-  assert.match(nfFunctions, /xmlns="http:\/\/www\.portalfiscal\.inf\.br\/nfe"/, 'forma do digest com xmlns explícito');
+  assert.match(nfFunctions, /options\.namespace \|\| 'http:\/\/www\.portalfiscal\.inf\.br\/nfe'/, 'forma do digest com xmlns explícito (default NF-e)');
+  assert.match(nfFunctions, /xmlns="\$\{namespace\}"/, 'injeção do xmlns no digest via buildSignedHashForm');
   assert.match(nfFunctions, /sentForm/, 'forma enviada sem xmlns redundante');
   assert.match(nfFunctions, /hashForm/, 'forma do digest (canônica)');
   assert.match(nfFunctions, /replace\(\/&quot;\/g/, 'expande &quot; (C14N usa " literal)');
   assert.match(nfFunctions, /replace\(\/&apos;\/g/, 'expande &apos; (C14N usa \' literal)');
   assert.match(nfFunctions, /replace\(\/&gt;\/g/, 'expande &gt; (C14N usa > literal)');
-  assert.match(nfFunctions, /replace\(signedElementMatch\[0\], \(\) =>/, 'injeção sem interpretar $');
+  assert.match(nfFunctions, /replace\(signedElementMatch\[0\], \(\) => sentForm\)/, 'injeção sem interpretar $');
+  // Signature como último filho do PAI do elemento assinado (eventos dentro de
+  // <evento>; MDF-e após infMDFeSupl; NFe/inut no fim da raiz).
+  assert.match(nfFunctions, /findSignatureInsertIndex\(xmlComSentForm, idxElementEnd\)/);
+  assert.match(nfFunctions, /xmlComSentForm\.slice\(0, idxInsert\) \+ signature \+ xmlComSentForm\.slice\(idxInsert\)/);
   assert.match(nfFunctions, /leafCert/, 'KeyInfo com o certificado-FOLHA (casa com a chave)');
   // SignedInfo SEM self-closing: o C14N expande <x/> para <x></x> e o bruto divergiria (RSA → 297).
   assert.doesNotMatch(nfFunctions, /<CanonicalizationMethod[^>]*\/>/, 'SignedInfo sem self-closing (CanonicalizationMethod)');

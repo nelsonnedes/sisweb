@@ -16,6 +16,17 @@
   }
 
   /**
+   * Valida o NCM estruturalmente: 8 dígitos e não genérico (00000000).
+   * A tabela TIPI oficial não é versionada no app — sem validação semântica.
+   */
+  function validarNCM(ncm) {
+    const ncmD = String(ncm || '').replace(/\D/g, '');
+    if (ncmD.length !== 8) return { valid: false, erro: 'NCM deve ter 8 dígitos' };
+    if (/^0+$/.test(ncmD)) return { valid: false, erro: 'NCM 00000000 é genérico — informe o NCM real da mercadoria' };
+    return { valid: true };
+  }
+
+  /**
    * Valida dados brutos de entrada de item (comum ao modo manual, cadastrado e edição).
    * @returns {{ valid: boolean, erro?: string }}
    */
@@ -23,8 +34,8 @@
     if (!nome || !String(nome).trim()) return { valid: false, erro: 'Informe o nome do produto' };
     if (!(parseFloat(qtd) > 0)) return { valid: false, erro: 'Quantidade deve ser maior que zero' };
     if (!(parseFloat(vUnit) > 0)) return { valid: false, erro: 'Valor unitário inválido' };
-    const ncmD = String(ncm || '').replace(/\D/g, '');
-    if (ncmD.length !== 8) return { valid: false, erro: 'NCM deve ter 8 dígitos' };
+    const ncmVal = validarNCM(ncm);
+    if (!ncmVal.valid) return ncmVal;
     const cfopD = String(cfop || '').trim();
     const cfopValido = window.NFTaxTables?.validarCFOP ? window.NFTaxTables.validarCFOP(cfopD) : /^[1-9]\d{3}$/.test(cfopD);
     if (!cfopValido) return { valid: false, erro: 'CFOP inválido (ex: 5102, 6102)' };
@@ -193,6 +204,7 @@
   }
 
   const api = {
+    validarNCM,
     validarEntradaItem,
     criarItemFiscal,
     recalcularImpostosItem,

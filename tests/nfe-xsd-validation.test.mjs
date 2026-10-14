@@ -59,6 +59,11 @@ function buildXml(opts = {}) {
     det, transp: { modFrete: 9 }, pag: [{ tPag: '01', vPag: 100 }], infAdic: '', desconto: 0, frete: 0,
   };
   if (opts.compraGov) nfe.ide.compraGov = opts.compraGov;
+  // Devolução (finNFe=4): NFref obrigatória + impostoDevol automático do builder
+  if (opts.devol) {
+    nfe.ide.finNFe = '4';
+    nfe.ide.NFref = ['1'.repeat(44)];
+  }
   nfe.total = B.calcularTotais(nfe.det, 0, 0);
   return B.buildNFeXML(nfe).xml.replace('</infNFe>', `</infNFe>${SIGNATURE}`);
 }
@@ -72,6 +77,9 @@ test('NF-e gerada é válida contra o XSD oficial (nfe_v4.00.xsd)', { skip: !val
   });
   await t.test('com gRed/gDif/gCredPresOper (avançados)', async () => {
     await assert.doesNotReject(() => validator.validateXML(buildXml({ adv: true }), XSD));
+  });
+  await t.test('devolução: finNFe=4 + NFref + impostoDevol (pDevol/IPI/vIPIDevol)', async () => {
+    await assert.doesNotReject(() => validator.validateXML(buildXml({ devol: true }), XSD));
   });
   await t.test('gTransfCred (CST 800)', async () => {
     await assert.doesNotReject(() => validator.validateXML(buildXml({ ibscbs: { habilitado: true, cst: '800', cClassTrib: '800001', transfCred: { vIBS: 10, vCBS: 5 } } }), XSD));
