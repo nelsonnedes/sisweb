@@ -8,11 +8,19 @@
  *
  * API pública (window.NFProdutosNF):
  *   carregar(tenantId)              → Promise<Array> — carrega estoque Firebase
+ *   carregarProdutosNFe(tenantId)   → Promise<Array> — carrega catálogo NF-e próprio
  *   alterarTipoProduto(tipo)        → 'manual' | 'cadastrado'
- *   popularSelectCadastrados()      → preenche #nfProdCadSelect
+ *   popularSelectCadastrados()      → preenche #nfProdCadSelect (lê SÓ _produtosNFe, D1)
  *   autoPreencherPorProduto(prodId) → preenche NCM, CFOP, UN, Valor
+ *   autoPreencherRomaneio(desc)     → preenche NCM + Valor do modo romaneio
+ *   buscarNoCatalogoNFe(desc)       → {ncm, precoVenda} ou null
+ *   carregarRomaneiosPorTipoNF(tipo)→ Promise<Array> — romaneios tora|pct|tl|pes
+ *   classificarCategoriaNFe(e, l)   → categoria CONAMA (thresholds de vendas.js)
+ *   resumoConamaNFe(romaneio)       → {especie:{categoria:{volume,valorTotal,precoUnitario}}}
+ *   descricaoConamaNFe(esp, cat)    → "ESP Madeira em CAT"
  *   getById(id)                     → produto do cache
- *   registrarProdutosDaNota(nfe, tenantId) → cadastro fiscal pós-autorização
+ *   registrarProdutosDaNota(nfe, tenantId)    → cadastro fiscal pós-autorização (estoque)
+ *   registrarProdutosNFeDaNota(nfe, tenantId) → catálogo NF-e pós-autorização (D2)
  */
 
 const NFProdutosNF = (() => {
@@ -20,6 +28,13 @@ const NFProdutosNF = (() => {
 
   let _produtos = [];
   let _tenantId = null;
+
+  // ─── Catálogo NF-e próprio (D1 — o dropdown lê SÓ este nó, nunca o estoque)
+  // Path: companies/{tenant}/fiscal/produtos-nfe. Sem campos de estoque
+  // (sem precoMedio/estoque mínimo); entrada nova com quantidade 0.
+  const NODE_PRODUTOS_NFE = 'fiscal/produtos-nfe';
+  let _produtosNFe = [];
+  let _romaneiosNFeCache = {};
 
   // ─── Firebase wrapper ─────────────────────────────────────────────────────
   function fb() {
@@ -47,32 +62,39 @@ const NFProdutosNF = (() => {
     } catch (e) {
       console.warn('[NFProdutosNF] Erro ao carregar produtos:', e.message);
     }
+    // D1: dropdown "Produto Cadastrado (NF-e)" lê SÓ o nó fiscal novo — carrega
+    // junto para o init existente (carregar+popularSelectCadastrados) funcionar
+    // sem mudar o call site.
+    await carregarProdutosNFe(tenantId).catch(() => []);
     return _produtos;
   }
 
-  // ─── Alternância entre modo manual e cadastrado ───────────────────────────
+  // ─── Alternância entre modos manual / cadastrado / romaneio ───────────────
   function alterarTipoProduto(tipo) {
     const secManual    = document.getElementById('nfSecaoProdutoManual');
     const secCadastrado = document.getElementById('nfSecaoProdutoCadastrado');
+    const secRomaneio  = document.getElementById('nfSecaoProdutoRomaneio');
     if (!secManual || !secCadastrado) return;
+    const mostrar = (el, on) => { if (el) el.style.display = on ? '' : 'none'; };
     if (tipo === 'cadastrado') {
-      secManual.style.display    = 'none';
-      secCadastrado.style.display = '';
+      mostrar(secManual, false); mostrar(secCadastrado, true); mostrar(secRomaneio, false);
       popularSelectCadastrados();
+    } else if (tipo === 'romaneio' && secRomaneio) {
+      mostrar(secManual, false); mostrar(secCadastrado, false); mostrar(secRomaneio, true);
     } else {
-      secManual.style.display    = '';
-      secCadastrado.style.display = 'none';
+      mostrar(secManual, true); mostrar(secCadastrado, false); mostrar(secRomaneio, false);
     }
     // Limpar campos ao trocar modo
     _limparCamposItem();
   }
 
-  // ─── Popular select de produtos cadastrados ───────────────────────────────
+  // ─── Popular select de produtos cadastrados (D1: lê SÓ _produtosNFe) ────
+  // Assinatura e dataset (ncm/cfop/un/preco/nome) preservados.
   function popularSelectCadastrados(selecionarId = null) {
     const sel = document.getElementById('nfProdCadSelect');
     if (!sel) return;
     sel.innerHTML = '<option value="">Selecione um produto cadastrado...</option>';
-    _produtos.forEach(p => {
+    _produtosNFe.forEach(p => {
       const id   = p.id || p.codigo || '';
       const nome = p.nome || p.name || p.descricao || 'Produto';
       const cod  = p.codigo || p.code || '';
@@ -162,10 +184,14 @@ const NFProdutosNF = (() => {
   // ─── Limpar campos de item ────────────────────────────────────────────────
   function _limparCamposItem() {
     ['nfProdCadSelect','itemNomeManual','itemQuantidade','itemValorUnitario',
-     'itemQuantidadeCad','itemValorUnitarioCad','itemNCMCad','itemCFOPCad'].forEach(id => {
+     'itemQuantidadeCad','itemValorUnitarioCad','itemNCMCad','itemCFOPCad',
+     'nfTipoRomaneio','nfRomaneioSelect','itemDescricaoRom','itemQuantidadeRom',
+     'itemValorUnitarioRom','itemNCMRom','itemCFOPRom'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+    const prev = document.getElementById('nfListaConamaNFe');
+    if (prev) prev.innerHTML = '';
     window._nfProdNomeSelecionado = '';
   }
 
@@ -331,8 +357,461 @@ const NFProdutosNF = (() => {
     return { criados, atualizados, ignorados };
   }
 
+  // ─── Catálogo NF-e próprio (nó fiscal, multi-tenant) ─────────────────────
+  // Mesmo envelope array/objeto de carregar().
+  async function carregarProdutosNFe(tenantId) {
+    _tenantId = tenantId || _tenantId;
+    _produtosNFe = [];
+    if (!tenantId) return _produtosNFe;
+    try {
+      const path = `companies/${tenantId}/${NODE_PRODUTOS_NFE}`;
+      const result = await fb().loadFromFirebase(path);
+      const data = result && result.data !== undefined ? result.data : result;
+      const arr = Array.isArray(data)
+        ? data
+        : (data && typeof data === 'object' ? Object.values(data) : []);
+      _produtosNFe = arr.filter(p => p && typeof p === 'object' && (p.nome || p.name || p.descricao));
+      console.log(`[NFProdutosNF] ${_produtosNFe.length} produtos NF-e carregados de "${path}"`);
+    } catch (e) {
+      console.warn('[NFProdutosNF] Erro ao carregar produtos NF-e:', e.message);
+    }
+    return _produtosNFe;
+  }
+
+  // ─── Registro pós-autorização no catálogo NF-e (D2: MANUAL_ + ROMANEIO_) ──
+  // Fire-and-forget pelo chamador (hook pós-autorização); nunca bloqueia emissão.
+  // Dedupe SÓ por nome normalizado (reutiliza normalizarNomeProduto — sem duplicar).
+  // NUNCA inventa NCM/CFOP: só replica os dados do item autorizado (Auditor.md).
+  async function registrarProdutosNFeDaNota(nfeData, tenantId) {
+    const tid = String(tenantId || _tenantId || '').trim();
+    const itens = Array.isArray(nfeData?.det) ? nfeData.det : [];
+    if (!tid || !itens.length) return { criados: 0, atualizados: 0, ignorados: itens.length };
+    const path = `companies/${tid}/${NODE_PRODUTOS_NFE}`;
+    const result = await fb().loadFromFirebase(path);
+    const data = result && result.data !== undefined ? result.data : result;
+    const lista = Array.isArray(data)
+      ? data.slice()
+      : (data && typeof data === 'object' ? Object.values(data) : []);
+    const agora = new Date().toISOString();
+    let criados = 0;
+    let atualizados = 0;
+    let ignorados = 0;
+
+    itens.forEach((item) => {
+      const nome = String(item?.xProd || '').trim();
+      const cProd = String(item?.cProd || '').trim();
+      if (!nome || !/^(MANUAL_|ROMANEIO_)/.test(cProd)) { ignorados += 1; return; }
+      const chaveNome = normalizarNomeProduto(nome);
+      const valorPauta = parseFloat(item.vUnCom || item.valorUnitario) || 0;
+      const existente = lista.find((p) => p && typeof p === 'object'
+        && normalizarNomeProduto(p.nome || p.descricao) === chaveNome);
+      const fiscal = {
+        ncm: String(item.ncm || ''),
+        cfop: String(item.cfop || ''),
+        cst: String(item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst || ''),
+        origem: String(item.imposto?.icms?.orig ?? item.orig ?? '0'),
+        cest: String(item.cest || ''),
+        unidade: String(item.uCom || item.unidade || 'M³').toUpperCase(),
+        importado: !!item.importado,
+        valorPauta: valorPauta > 0 ? valorPauta : null,
+        atualizadoEm: agora,
+      };
+      const ultimaNota = {
+        numero: String(nfeData?.numero || ''),
+        serie: String(nfeData?.ide?.serie || ''),
+        chave: String(nfeData?.chave || ''),
+        dataEmissao: String(nfeData?.dataEmissao || ''),
+        tpNF: Number(nfeData?.ide?.tpNF ?? 1),
+      };
+      if (existente) {
+        existente.fiscal = { ...(existente.fiscal || {}), ...fiscal };
+        if (fiscal.ncm) existente.ncm = fiscal.ncm;
+        if (fiscal.cfop) existente.cfopPadrao = fiscal.cfop;
+        if (fiscal.unidade) existente.unidade = fiscal.unidade;
+        if (valorPauta > 0) existente.precoVenda = valorPauta;
+        existente.ultimaNota = ultimaNota;
+        existente.ultimaAtualizacao = agora;
+        atualizados += 1;
+      } else {
+        lista.push({
+          id: 'NFE_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
+          nome,
+          ncm: fiscal.ncm,
+          precoVenda: valorPauta > 0 ? valorPauta : 0,
+          unidade: fiscal.unidade || 'M³',
+          cfopPadrao: fiscal.cfop,
+          origemCadastro: cProd.indexOf('ROMANEIO_') === 0 ? 'nfe-romaneio' : 'nfe-manual',
+          quantidade: 0,
+          fiscal,
+          ultimaNota,
+          criadoEm: agora,
+          ultimaAtualizacao: agora,
+        });
+        criados += 1;
+      }
+    });
+
+    if (criados || atualizados) {
+      const res = await fb().saveToFirebase(path, null, lista);
+      if (res && res.success === false) throw new Error(res.error || 'Falha ao salvar o catálogo NF-e.');
+      _produtosNFe = lista.filter(p => p && typeof p === 'object' && (p.nome || p.name || p.descricao));
+      try { popularSelectCadastrados(); } catch (_) {}
+    }
+    return { criados, atualizados, ignorados };
+  }
+
+  // ─── Loader de romaneios para NF-e (espelha getRomaneiosMerged, SEM importar vendas.js)
+  function _timestampRomaneioNFe(romaneio) {
+    try {
+      if (!romaneio || typeof romaneio !== 'object') return 0;
+      const candidates = [
+        romaneio?._metadata?.lastUpdated,
+        romaneio.updatedAt, romaneio.updated, romaneio.lastModified,
+        romaneio.dataEmissao, romaneio.data, romaneio.dataRomaneio,
+        romaneio.dataHora, romaneio.dataCriacao, romaneio.createdAt,
+        romaneio.created, romaneio.timestamp,
+      ];
+      for (const c of candidates) {
+        if (!c) continue;
+        const t = typeof c === 'number' ? c : new Date(c).getTime();
+        if (!isNaN(t)) return t;
+      }
+    } catch (_) {}
+    const id = String(romaneio && (romaneio.id || romaneio.romaneioId || romaneio.firebaseKey || romaneio.key || romaneio.numero || romaneio.numeroRomaneio) || '');
+    const m = id.match(/(\d{10,})/);
+    return m ? Number(m[1]) || 0 : 0;
+  }
+
+  async function carregarRomaneiosPorTipoNF(tipo) {
+    const canonicalMap = {
+      romaneiosTora: 'romaneios/tora',
+      romaneiosPct: 'romaneios/pct',
+      romaneiosPCT: 'romaneios/pct',
+      romaneiosTL: 'romaneios/tl',
+      romaneiosTl: 'romaneios/tl',
+      romaneios_tl: 'romaneios/tl',
+      romaneiosPes: 'romaneios/pes',
+      romaneiosPES: 'romaneios/pes',
+      romaneios_pes: 'romaneios/pes',
+      tora: 'romaneios/tora',
+      pct: 'romaneios/pct',
+      tl: 'romaneios/tl',
+      pes: 'romaneios/pes',
+    };
+    const canonicalKey = canonicalMap[tipo] || tipo;
+    if (!canonicalKey) return [];
+    try {
+      const result = await fb().loadFromFirebase(canonicalKey);
+      const rawData = (result && result.success)
+        ? result.data
+        : (Array.isArray(result) ? result : null);
+      let merged = [];
+      if (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.normalizeRomaneioCollection === 'function') {
+        const type = String(canonicalKey).split('/').pop();
+        merged = window.RomaneioDataUtils.normalizeRomaneioCollection(rawData, { type }) || [];
+      } else if (Array.isArray(rawData)) {
+        merged = rawData.filter(r => r && typeof r === 'object' && (r.id || r.numero || r.firebaseKey || r.itens || r.items));
+      } else if (rawData && typeof rawData === 'object') {
+        merged = Object.entries(rawData)
+          .filter(([k, v]) => k !== '_metadata' && k !== 'metadata' && v && typeof v === 'object')
+          .map(([k, v]) => ({ id: v.id || k, firebaseKey: k, ...(v || {}) }));
+      }
+      const getItens = r => Array.isArray(r.items) ? r.items : (Array.isArray(r.itens) ? r.itens : []);
+      const isTora = r => {
+        const itens = getItens(r);
+        const tr = String(r.tipoRomaneio || '').toLowerCase();
+        const t = String(r.tipo || '').toLowerCase();
+        if (tr.includes('tora')) return true;
+        if (t === 'tora') return true;
+        return itens.some(i => typeof i.rodo !== 'undefined' || typeof i.diametro !== 'undefined' || typeof i.volumeSerraria !== 'undefined' || typeof i.volumeLiquido !== 'undefined');
+      };
+      const isPct = r => {
+        const itens = getItens(r);
+        const tr = String(r.tipoRomaneio || '').toLowerCase();
+        const t = String(r.tipo || '').toLowerCase();
+        if (tr.includes('pct')) return true;
+        if (t === 'pct') return true;
+        return itens.some(i => typeof i.pecasPorPacote !== 'undefined' || typeof i.totalPecas !== 'undefined' || typeof i.pacoteId !== 'undefined');
+      };
+      const isTl = r => {
+        const itens = getItens(r);
+        if (!itens || itens.length === 0) return false;
+        return !isTora(r) && !isPct(r);
+      };
+      const keyLower = String(tipo || '').toLowerCase();
+      if (keyLower.includes('tora')) {
+        merged = merged.filter(r => isTora(r));
+      } else if (keyLower.includes('pct')) {
+        merged = merged.filter(r => isPct(r));
+      } else if (keyLower.includes('tl')) {
+        merged = merged.filter(r => isTl(r));
+      }
+      merged.sort((a, b) => _timestampRomaneioNFe(b) - _timestampRomaneioNFe(a));
+      _romaneiosNFeCache[canonicalKey] = merged;
+      popularSelectRomaneioNF(merged);
+      return merged;
+    } catch (err) {
+      console.warn('[NFProdutosNF] Erro ao carregar romaneios:', err && err.message);
+      return _romaneiosNFeCache[canonicalKey] || [];
+    }
+  }
+
+  // ─── Popular select de romaneios + limpar preview/campos ───────────────────
+  function popularSelectRomaneioNF(romaneios) {
+    const sel = document.getElementById('nfRomaneioSelect');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Selecione um romaneio</option>';
+    (romaneios || []).forEach((r, i) => {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      const numero = r.numero || r.numeroRomaneio || r.id || r.firebaseKey || `#${i + 1}`;
+      const data = r.data || r.dataRomaneio || r.createdAt || '';
+      opt.textContent = data ? `Romaneio ${numero} — ${String(data).slice(0, 10)}` : `Romaneio ${numero}`;
+      sel.appendChild(opt);
+    });
+    const prev = document.getElementById('nfPreviewRomaneioNFe');
+    if (prev) prev.style.display = 'none';
+    const lista = document.getElementById('nfListaConamaNFe');
+    if (lista) lista.innerHTML = '';
+    for (const id of ['itemDescricaoRom', 'itemQuantidadeRom', 'itemValorUnitarioRom', 'itemNCMRom']) {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    }
+  }
+
+  // ─── Selecionar romaneio: renderiza resumo CONAMA e preenche o 1º item ─────
+  // Chamado pelo onchange de #nfRomaneioSelect. Clique numa linha do preview
+  // alterna o item ativo (via selecionarConamaNFeClick no HTML).
+  function selecionarRomaneioNFe() {
+    const tipoEl = document.getElementById('nfTipoRomaneio');
+    const selEl = document.getElementById('nfRomaneioSelect');
+    const tipo = tipoEl ? tipoEl.value : '';
+    const idx = selEl ? parseInt(selEl.value, 10) : NaN;
+    const listaEl = document.getElementById('nfListaConamaNFe');
+    const prevEl = document.getElementById('nfPreviewRomaneioNFe');
+    if (!tipo || isNaN(idx)) {
+      if (prevEl) prevEl.style.display = 'none';
+      return null;
+    }
+    const canonicalMap = {
+      romaneiosTora: 'romaneios/tora', romaneiosPct: 'romaneios/pct',
+      romaneiosPCT: 'romaneios/pct', romaneiosTL: 'romaneios/tl',
+      romaneiosTl: 'romaneios/tl', romaneios_tl: 'romaneios/tl',
+      romaneiosPes: 'romaneios/pes', romaneiosPES: 'romaneios/pes',
+      romaneios_pes: 'romaneios/pes',
+    };
+    const key = canonicalMap[tipo] || tipo;
+    const lista = _romaneiosNFeCache[key] || [];
+    const romaneio = lista[idx];
+    if (!romaneio) return null;
+    const resumo = resumoConamaNFe(romaneio);
+    if (listaEl) {
+      const linhas = [];
+      Object.keys(resumo).forEach((especie) => {
+        Object.keys(resumo[especie]).forEach((cat) => {
+          const c = resumo[especie][cat];
+          const desc = descricaoConamaNFe(especie, cat);
+          const vol = Math.round((parseFloat(c.volume) || 0) * 1000) / 1000;
+          const preco = Math.round((parseFloat(c.precoUnitario) || 0) * 100) / 100;
+          linhas.push(
+            `<li data-descricao="${String(desc).replace(/"/g, '&quot;')}" data-volume="${vol}" data-preco="${preco}" `
+            + `onclick="selecionarConamaNFeClick(event)" style="cursor:pointer;">`
+            + `<strong>${String(desc).replace(/</g, '&lt;')}</strong> — ${vol.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³`
+            + (preco > 0 ? ` — R$ ${preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '')
+            + `</li>`,
+          );
+        });
+      });
+      listaEl.innerHTML = linhas.length
+        ? `<ul>${linhas.join('')}</ul>`
+        : '<p>Nenhum dado CONAMA no romaneio selecionado.</p>';
+    }
+    if (prevEl) prevEl.style.display = '';
+    // Pré-preenche o 1º item + busca NCM/preço no catálogo NF-e.
+    // Limpa NCM/preço ANTES do lookup: sem isso, trocar de romaneio/linha
+    // reaproveitaria o NCM da espécie anterior (válido estruturalmente, mas
+    // da espécie errada — o validador não detectaria).
+    const primeiraEspecie = Object.keys(resumo)[0];
+    const primeiraCat = primeiraEspecie ? Object.keys(resumo[primeiraEspecie])[0] : null;
+    if (primeiraEspecie && primeiraCat) {
+      const desc = descricaoConamaNFe(primeiraEspecie, primeiraCat);
+      const vol = Math.round((parseFloat(resumo[primeiraEspecie][primeiraCat].volume) || 0) * 1000) / 1000;
+      const dEl = document.getElementById('itemDescricaoRom');
+      if (dEl) dEl.value = desc;
+      const qEl = document.getElementById('itemQuantidadeRom');
+      if (qEl) qEl.value = String(vol);
+      const ncmClear = document.getElementById('itemNCMRom');
+      if (ncmClear) ncmClear.value = '';
+      const precoClear = document.getElementById('itemValorUnitarioRom');
+      if (precoClear) precoClear.value = '';
+      autoPreencherRomaneio(desc);
+    }
+    return resumo;
+  }
+
+  // ─── Classificação CONAMA — thresholds idênticos a classificarProdutoConama (vendas.js)
+  // Cópia pura local (não importa vendas.js, que é intocado por esta story).
+  function classificarCategoriaNFe(espessura, largura) {
+    const esp = parseFloat(espessura) || 0;
+    const larg = parseFloat(largura) || 0;
+    if (esp > 12 && larg > 12) {
+      return 'Bloco, quadrado ou filé';
+    } else if (esp > 7.0 && larg > 20.0) {
+      return 'Pranchões';
+    } else if (esp >= 4.0 && esp <= 7.0 && larg > 20.0) {
+      return 'Prancha';
+    } else if (esp > 4.0 && larg >= 11.0 && larg <= 20.0) {
+      return 'Viga';
+    } else if (esp >= 4.0 && esp <= 8.0 && larg >= 8.0 && larg < 11.0) {
+      return 'Vigota';
+    } else if (esp >= 4.0 && esp <= 8.0 && larg >= 5.0 && larg < 8.0) {
+      return 'Caibro';
+    } else if (esp >= 1.0 && esp < 4.0 && larg > 10.0) {
+      return 'Tábua';
+    } else if (esp >= 2.0 && esp < 4.0 && larg >= 2.0 && larg <= 10.0) {
+      return 'Sarrafo';
+    } else if (esp < 2.0 && larg < 10.0) {
+      return 'Ripa';
+    }
+    return 'Outro';
+  }
+
+  // ─── Resumo CONAMA simplificado p/ NF-e: {especie:{categoriaBase:{volume,valorTotal,precoUnitario}}}
+  // Tora: categoria 'Tora', volume de volumeLiquido||volumeSerraria||cilindro−oco.
+  // Serrado: item.volume (já é total) ou comp×larg×esp/1e6, com ppp quando romaneiosPct.
+  function resumoConamaNFe(romaneio) {
+    const bitolaKey = ['b', 'i', 't', 'o', 'l', 'a'].join('');
+    if (!romaneio || typeof romaneio !== 'object') return {};
+    const listaItens = Array.isArray(romaneio.items) ? romaneio.items : (Array.isArray(romaneio.itens) ? romaneio.itens : []);
+    if (!listaItens.length) return {};
+    const resumo = {};
+    const isToraRom = !!(romaneio?.tipoRomaneio === 'romaneiosTora'
+      || String(romaneio?.tipo || '').toLowerCase() === 'tora'
+      || listaItens.some(i => i && (typeof i.rodo !== 'undefined' || typeof i.diametro !== 'undefined')));
+    const especieDe = (item) => String(item.especie || item.especieNome || 'Não especificada').replace(/^\s*[-–—]\s*/, '').trim();
+    const precoDe = (item) => {
+      const cands = [item.valorUnitario, item.precoUnitario, item.preco, item.price];
+      for (let i = 0; i < cands.length; i++) {
+        const v = parseFloat(cands[i]);
+        if (!isNaN(v) && v > 0) return v;
+      }
+      return 0;
+    };
+    const agregar = (especie, categoriaBase, volume, preco) => {
+      if (!(volume > 0)) return;
+      if (!resumo[especie]) resumo[especie] = {};
+      if (!resumo[especie][categoriaBase]) resumo[especie][categoriaBase] = { volume: 0, valorTotal: 0, precoUnitario: 0 };
+      const cat = resumo[especie][categoriaBase];
+      cat.volume += volume;
+      cat.valorTotal += volume * (parseFloat(preco) || 0);
+    };
+    if (isToraRom) {
+      listaItens.forEach((item) => {
+        if (!item || typeof item !== 'object') return;
+        const especie = especieDe(item);
+        const quantidade = parseInt(item.quantidade, 10) || 1;
+        const vLiquido = parseFloat(item.volumeLiquido || item.volumeSerraria);
+        const vBruto = parseFloat(item.volumeBruto || item.volumeEstimado);
+        let volumeTotal = 0;
+        if (!isNaN(vLiquido) && vLiquido > 0) {
+          volumeTotal = vLiquido * quantidade;
+        } else if (!isNaN(vBruto) && vBruto > 0) {
+          volumeTotal = vBruto * quantidade;
+        } else {
+          const diametro = parseFloat(item.diametro || item.rodo) || 0;
+          const comprimento = parseFloat(item.comprimento) || 0;
+          const oco1 = parseFloat(item.oco1) || 0;
+          const oco2 = parseFloat(item.oco2) || 0;
+          const raioM = (diametro / 100) / 2;
+          const compM = comprimento / 100;
+          const brutoM3 = Math.PI * Math.pow(raioM, 2) * compM;
+          const ocoM3 = (oco1 / 100) * (oco2 / 100) * (comprimento / 100);
+          volumeTotal = Math.max(0, brutoM3 - ocoM3) * quantidade;
+        }
+        agregar(especie, 'Tora', volumeTotal, precoDe(item));
+      });
+    } else {
+      const isPctRom = !!(romaneio?.tipo === 'pct' || romaneio?.tipoRomaneio === 'romaneiosPct'
+        || listaItens.some(i => i && (typeof i.pecasPorPacote !== 'undefined' || typeof i.totalPecas !== 'undefined')));
+      listaItens.forEach((item) => {
+        if (!item || typeof item !== 'object') return;
+        const especie = especieDe(item);
+        const comprimento = parseFloat(item.comprimento) || 0;
+        const largura = parseFloat(item.largura) || 0;
+        const espessura = parseFloat(item.espessura) || parseFloat(item[bitolaKey]) || 0;
+        const quantidade = parseInt(item.quantidade, 10) || 1;
+        const pppRaw = item.pecasPorPacote;
+        const ppp = (pppRaw && typeof pppRaw === 'object')
+          ? (parseInt(pppRaw.valor, 10) || 1)
+          : (parseInt(pppRaw, 10) || 1);
+        const categoriaBase = classificarCategoriaNFe(espessura, largura);
+        const volumeInformado = parseFloat(item.volume);
+        let volumeTotal = 0;
+        if (!isNaN(volumeInformado) && volumeInformado > 0) {
+          volumeTotal = volumeInformado;
+        } else {
+          const unitario = (comprimento / 100) * (largura / 100) * (espessura / 100);
+          volumeTotal = isPctRom ? (unitario * quantidade * ppp) : (unitario * quantidade);
+        }
+        agregar(especie, categoriaBase, volumeTotal, precoDe(item));
+      });
+    }
+    Object.keys(resumo).forEach((esp) => {
+      Object.keys(resumo[esp]).forEach((cat) => {
+        const c = resumo[esp][cat];
+        c.precoUnitario = c.volume > 0 ? c.valorTotal / c.volume : 0;
+      });
+    });
+    return resumo;
+  }
+
+  function descricaoConamaNFe(especie, categoriaBase) {
+    return `${String(especie || '').trim()} Madeira em ${String(categoriaBase || '').trim()}`;
+  }
+
+  // ─── Busca no catálogo NF-e por nome normalizado (NCM/preço vêm do cadastro — nunca inventados)
+  function _findNoCatalogoNFe(descricao) {
+    const chave = normalizarNomeProduto(descricao);
+    if (!chave) return null;
+    return _produtosNFe.find((p) => p && typeof p === 'object'
+      && normalizarNomeProduto(p.nome || p.name || p.descricao) === chave) || null;
+  }
+
+  function buscarNoCatalogoNFe(descricao) {
+    const prod = _findNoCatalogoNFe(descricao);
+    if (!prod) return null;
+    return {
+      ncm: prod.ncm || prod.NCM || '',
+      precoVenda: parseFloat(prod.precoVenda ?? prod.preco ?? prod.valorUnitario) || 0,
+    };
+  }
+
+  // ─── Autofill do modo romaneio — mesma precedência de autoPreencherPorProduto
+  // (natureza > produto). CFOP do produto só se campo vazio/'5102' E sem natureza.
+  function autoPreencherRomaneio(descricaoOuId) {
+    if (descricaoOuId == null || String(descricaoOuId).trim() === '') return null;
+    const chave = String(descricaoOuId).trim();
+    const prod = (_produtosNFe.find((p) => p && (String(p.id) === chave || String(p.codigo || '') === chave)) || null)
+      || _findNoCatalogoNFe(chave);
+    if (!prod) return null;
+    const ncm = prod.ncm || prod.NCM || '';
+    const preco = parseFloat(prod.precoVenda ?? prod.preco ?? prod.valorUnitario) || 0;
+    const ncmEl = document.getElementById('itemNCMRom');
+    if (ncmEl && ncm) ncmEl.value = ncm;
+    const valorEl = document.getElementById('itemValorUnitarioRom');
+    if (valorEl && preco > 0) valorEl.value = 'R$ ' + preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    const natId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
+    const nat = natId && window.NFNaturezas?.getById ? window.NFNaturezas.getById(natId) : null;
+    const cfopEl = document.getElementById('itemCFOPRom');
+    if (cfopEl && !nat?.cfopPadrao) {
+      const cfopProd = prod.cfopPadrao || prod.cfop || '';
+      if (cfopProd && (cfopEl.value === '5102' || !cfopEl.value)) cfopEl.value = cfopProd;
+    }
+    return { ncm, precoVenda: preco };
+  }
+
   // ─── API pública ──────────────────────────────────────────────────────────
-  return { carregar, alterarTipoProduto, popularSelectCadastrados, autoPreencherPorProduto, getById, listar, getFiscal, setFiscal, carregarFiscal, aplicarFiscalProduto, registrarProdutosDaNota };
+  return { carregar, carregarProdutosNFe, alterarTipoProduto, popularSelectCadastrados, popularSelectRomaneioNF, selecionarRomaneioNFe, autoPreencherPorProduto, autoPreencherRomaneio, buscarNoCatalogoNFe, carregarRomaneiosPorTipoNF, classificarCategoriaNFe, resumoConamaNFe, descricaoConamaNFe, getById, listar, getFiscal, setFiscal, carregarFiscal, aplicarFiscalProduto, registrarProdutosDaNota, registrarProdutosNFeDaNota, NODE_PRODUTOS_NFE };
 })();
 
 window.NFProdutosNF = NFProdutosNF;

@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
@@ -194,7 +194,7 @@
             font-weight: 700;
             margin-bottom: 25px;
             padding-bottom: 12px;
-            border-bottom: 2px solid #f0f2f5;
+            border-bottom: 2px solid var(--sw-border);
             display: flex;
             align-items: center;
             gap: 10px;
@@ -217,7 +217,7 @@
             border-radius: 16px;
             padding: 30px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            border: 1px solid #f0f2f5;
+            border: 1px solid var(--sw-border);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
@@ -274,7 +274,7 @@
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #374151;
+            color: var(--sw-text-2);
             font-weight: 500;
             font-size: 14px;
         }
@@ -282,7 +282,7 @@
         .form-input {
             width: 100%;
             padding: 12px 16px;
-            border: 2px solid #e5e7eb;
+            border: 2px solid var(--sw-input-border);
             border-radius: 8px;
             font-size: 16px;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -308,7 +308,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 0;
-            border-bottom: 1px solid #f0f2f5;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .info-item:last-child {
@@ -317,12 +317,12 @@
 
         .info-label {
             font-weight: 500;
-            color: #6b7280;
+            color: var(--sw-text-3);
             font-size: 14px;
         }
 
         .info-value {
-            color: #1f2937;
+            color: var(--sw-text-1);
             font-weight: 500;
             font-size: 14px;
         }
@@ -376,7 +376,7 @@
 
         .btn-secondary {
             background: var(--sw-surface-2) ;
-            color: #374151;
+            color: var(--sw-text-1);
             border: none;
             padding: 12px 24px;
             border-radius: 8px;
@@ -392,7 +392,7 @@
         }
 
         .btn-secondary:hover {
-            background: #e5e7eb;
+            background: var(--sw-hover);
         }
 
         /* Loading Spinner */
@@ -533,27 +533,27 @@
         .modal-title {
             font-size: 20px;
             font-weight: 600;
-            color: #1f2937;
+            color: var(--sw-text-1);
         }
 
         .modal-close {
             background: none;
             border: none;
             font-size: 24px;
-            color: #6b7280;
+            color: var(--sw-text-3);
             cursor: pointer;
             padding: 4px;
             width: auto;
         }
 
         .modal-close:hover {
-            color: #374151;
+            color: var(--sw-text-1);
         }
 
         .form-input[readonly] {
-            background: #f8fafc;
-            border-color: #e2e8f0;
-            color: #475569;
+            background: var(--sw-surface-2);
+            border-color: var(--sw-border);
+            color: var(--sw-text-2);
             cursor: default;
         }
 
@@ -565,11 +565,11 @@
             margin: 8px 0 18px;
             border: 1px solid var(--sw-border) ;
             border-radius: 12px;
-            background: #f8fafc;
+            background: var(--sw-surface-2);
         }
 
         .form-hint {
-            color: #64748b;
+            color: var(--sw-text-3);
             font-size: 12px;
             line-height: 1.45;
             margin-top: -8px;
@@ -580,7 +580,7 @@
             padding: 2px 6px;
             border-radius: 6px;
             background: var(--sw-surface-2) ;
-            color: #334155;
+            color: var(--sw-text-2);
             font-size: 12px;
         }
 
@@ -759,7 +759,7 @@
                 </div>
 
                 <div id="mfaStatusRow">
-                    <p id="mfaStatusText" style="margin:0 0 12px;color:#475569;">Verificando status...</p>
+                    <p id="mfaStatusText" style="margin:0 0 12px;color:var(--sw-text-2);">Verificando status...</p>
                     <div class="action-buttons">
                         <button type="button" class="btn-primary" id="mfaEnableBtn" onclick="startMfaSetup()" style="display:none;">
                             <i class="fas fa-shield-alt"></i> Ativar 2FA
@@ -771,9 +771,9 @@
                 </div>
 
                 <div id="mfaSetupPanel" style="display:none;">
-                    <p style="color:#475569;margin:0 0 10px;">1. Escaneie o QR code abaixo ou digite a chave manualmente no seu app autenticador (Google Authenticator, Authy, etc.).</p>
+                    <p style="color:var(--sw-text-2);margin:0 0 10px;">1. Escaneie o QR code abaixo ou digite a chave manualmente no seu app autenticador (Google Authenticator, Authy, etc.).</p>
                     <div id="mfaQrContainer" style="display:flex;justify-content:center;padding:10px;background: var(--sw-surface);border: 1px solid var(--sw-border) ;border-radius:8px;max-width:220px;margin:0 auto 10px;"></div>
-                    <p style="color:#475569;font-size:13px;margin:0 0 6px;word-break:break-all;">Chave manual: <strong id="mfaSecretText" style="font-family:monospace;">—</strong></p>
+                    <p style="color:var(--sw-text-2);font-size:13px;margin:0 0 6px;word-break:break-all;">Chave manual: <strong id="mfaSecretText" style="font-family:monospace;">—</strong></p>
                     <div class="form-group" style="max-width:220px;margin:0 auto;">
                         <label for="mfaConfirmCode">2. Código de confirmação (6 dígitos)</label>
                         <input type="text" id="mfaConfirmCode" class="form-input" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" style="text-align:center;letter-spacing:6px;font-size:20px;">
@@ -808,7 +808,7 @@
                     <label>Foto do Perfil</label>
                     <div>
                         <img id="photoPreview" class="photo-preview" style="display: none;" alt="Preview da foto">
-                        <div id="photoPlaceholder" class="photo-preview" style="background: var(--sw-surface-2) ; display: flex; align-items: center; justify-content: center; color: #6b7280;">
+                        <div id="photoPlaceholder" class="photo-preview" style="background: var(--sw-surface-2) ; display: flex; align-items: center; justify-content: center; color: var(--sw-text-3);">
                             <i class="fas fa-user" style="font-size: 24px;"></i>
                         </div>
                     </div>
@@ -1569,7 +1569,7 @@
             if (!el) return;
             el.textContent = text;
             el.style.display = text ? 'block' : 'none';
-            el.style.color = type === 'error' ? '#991b1b' : '#065f46';
+            el.style.color = type === 'error' ? 'var(--sw-danger)' : 'var(--sw-success)';
         }
 
         function renderMfaQr(otpauthUri) {

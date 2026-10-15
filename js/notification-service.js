@@ -39,7 +39,7 @@
             '.sw-toast-body{flex:1;min-width:0;}',
             '.sw-toast-title{font-weight:700;font-size:13px;}',
             '.sw-toast-message{overflow-wrap:anywhere;white-space:pre-line;}',
-            '.sw-toast-close{background:transparent;border:0;color:#fff;font-size:16px;line-height:1;cursor:pointer;padding:0 0 0 4px;opacity:.85;}',
+            '.sw-toast-close{background:transparent;border:0;color:#fff;font-size:16px;line-height:1;cursor:pointer;padding:0 0 0 4px;opacity:.85;width:auto;flex:0 0 auto;margin:0;}',
             '.sw-toast-close:hover{opacity:1;}',
             '@keyframes swToastIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}',
             '#sw-confirm-overlay{position:fixed;inset:0;z-index:10000001;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;}',

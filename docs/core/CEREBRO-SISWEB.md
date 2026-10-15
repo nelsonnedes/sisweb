@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-09-21 (Sessao 77: menu/CRUD/mobile folha + padrao cards + scroll-guard + SW purge)
+> Atualizado em: 2026-10-15 (cont. 19: engrenagem Administracao + admin bitematico)
 > Perfil global OpenCode Zen registrado em 2026-10-09 — ver seção 18 (protocolo de uso do Cérebro).
 
 ---
@@ -1666,3 +1666,36 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Arquivos:** `nf-config.js`, `nf-validator.js`, `nf-xml-builder.js`, `nf-service.js`, `functions/nf-functions.js`, `notas-fiscais.html`, `tests/nfe-contingencia-svc.test.mjs` (12), story `docs/stories/2026-10-15-nfe-contingencia-svc.md`.
 - **Gates:** lint OK, typecheck OK, test 1405/1404/0/1 (3 guards ajustados com intenção preservada). **Sem commit/push/deploy** (aguardando ordem; só @devops).
 - **Pendente:** homologação SVC por UF (requer contingência real); preencher `cancNFeHoras` segue pendente de aprovação do dossiê.
+
+## Sessao 2026-10-15 (cont. 16) — Leitura completa + ponto de partida pos-P5
+
+- **Leitura:** cerebro lido na integra (1692 linhas, cont. 15 como ultimo registro). Tree verificado: `main` em `bb67672`, sync com `origin/main`, working tree limpo. Suite de referencia: 178 arquivos `tests/*.test.mjs`, **1405 total / 1404 pass / 0 fail / 1 skip** (skip = emulator esperado). P5 publicado e verificado (hosting + 6 functions NF-e ativas em `functions:list`; producao serve `validarTpEmis`/`temis`).
+- **Para prosseguir (pendencias reais, nada quebrado):** (1) homologacao SVC manual — roteiro em `docs/stories/2026-10-15-nfe-contingencia-svc.md` (ativar motivo 15-255, emitir, conferir tpEmis/dhCont/xJust/chave, consultar/cancelar/inutilizar, desativar + contraprova tpEmis 1); (2) DIFAL (P2) e demais deferidos da story (EPEC, FS-DA, NFC-e offline, MDF-e, DANFE legenda, StatusServico dedicado); (3) `cancNFeHoras` null (preencher pelo MOC/NT); (4) browser automation indisponivel neste ambiente (`ChildProcess.kill`, desde cont. 13) — teste vivo segue manual.
+- **Regras operacionais vigentes (nao renegociar):** trabalhar/publicar DE `C:\Sisweb` (build+deploy); `inject-cachebusters` antes de todo deploy com JS; JS novo referenciado no HTML entra em `hosting-files.json` + `?v=`; functions em grupos pequenos (quota 20 vCPU); NUNCA reescrever arquivos via cmdlets de texto do PS 5.1 (bytes via Copy-Item/node); NAO commitar `logs.md`; fiscal sem fonte oficial = marcar NAO VERIFICADO (hierarquia MOC > NT > XSD > SEFAZ > NFePHP > codigo).
+
+## Sessao 2026-10-15 (cont. 17) — company.html bitematico claro/escuro
+
+- **Sintoma (print de producao, tema escuro):** cards "Dados Bancarios / PIX" e "Georeferenciamento" brancos (`#f8fafc` fixo) com labels quase invisiveis; resto da pagina no tema.
+- **Causa:** `<style>` + inline + JS do `company.html` com cores claras hardcoded (`#f8fafc`, `#cbd5e1`, `#1e293b`, `#f3f4f6` no CNPJ readonly 5x, `#d0d7de`/`var(--sw-surface)` nos inputs, `#666/#ddd/#e74c3c` no JS, `#fefefe` nos 3 modais, `#fffbeb/#f59e0b/#e2e8f0/#475569/#64748b` nos company-cards). Inputs ja eram cobertos pelo global `content-theme.css` (`!important`), mas os cards nao.
+- **Fix (somente UI viva, padrao Fase 25.x):** tudo para tokens (`--sw-bg/surface/surface-2/border/text-1/2/3/input-bg/input-border/info/danger/warning/alert-warning-bg/brand/on-brand`). CSS morto intocado (legacy-menu/settings/user-info, `button[onclick*="window.location"]` — sem markup). Doc de impressao (linha ~1805, documento separado sem tokens) intocado. Guardas de teste preservados (`var(--sw-gradient)` nos botoes, sem `#2563eb`).
+- **Trava:** `tests/company-theme-tokens.test.mjs` (novo, 2 testes).
+- **Gates:** lint + typecheck OK; `validate:pr` 6/6 (1407 testes / 1406 pass / 0 fail / 1 skip esperado). Inject (16 HTMLs com hash renovado) + build 543 + `deploy --only hosting` complete; producao verificada via fetch (`var(--sw-bg)`/`surface-2` presentes, `#f8fafc`/`#1e293b` ausentes).
+- **Pendente:** commit + push (nao executados).
+
+## Sessao 2026-10-15 (cont. 18) — Toast canonico + subscription-status/user-profile bitematicos
+
+- **Toast quebrado (causa raiz, codigo compartilhado):** (1) `modules/core/toast.js` (T1) vencia a corrida em 5 paginas e renderizava `white-space:nowrap + ellipsis` (texto cortado, documentado na story toast-audit §6.4) com container fixo 420px (estoura mobile); (2) o botao × dos dois renderers herdava `button{width:100%}` de paginas como `company.html` → × em linha propria full-width, layout "todo desconfigurado". Fix: T1 agora **delega** a `NotificationService.show` quando disponivel (padrao T2/T4/T6; fallback proprio corrigido: `pre-line + anywhere`, container `min(420px,100vw-32)`, × imune, erro 11000 em vez de grudar); `.sw-toast-close` do servico ganhou `width:auto;flex:0 0 auto` (imune em TODAS as paginas). Guardas preservados (`String(message||'')`, `!s return`, `z-index:10000000`).
+- **subscription-status:** a ilha `--sisweb-*` era permanentemente clara (sem variante dark). Fix: bloco `html[data-theme="dark"]` mapeando ink/muted/line/panel/soft/green/red p/ tokens + fundo body + `.help-hub`/`.steps-list`; claro 100% preservado. Individuais: module-card h4/ul, screen-print, modais `#fefefe`→surface, about, cards de alerta JS p/ tokens. Morto intocado (legacy-*, `--sisweb-blue/navy/amber` sem uso, lightbox propositalmente escura, badges semanticos).
+- **user-profile + Editar Informacoes Pessoais:** labels, inputs (borda→input-border), info-label/value, btn-secondary, modal (titulo/×/readonly), reference-grid, hints, MFA (`#475569`→text-2, `setMfaMessage`→danger/success). Badges semanticos e dot online preservados.
+- **Trava:** `tests/pages-theme-toast.test.mjs` (novo, 4 testes).
+- **Gates:** lint + typecheck OK; `validate:pr` 6/6 (1411 testes / 1410 pass / 0 fail / 1 skip). Inject (5 HTMLs) + build 543 + deploy hosting complete; producao verificada via fetch (dark-block + modais + close-immune no ar).
+- **Pendente:** commit + push (nao executados).
+
+## Sessao 2026-10-15 (cont. 19) — Engrenagem Administracao + admin/sub-paginas bitematicos
+
+- **Engrenagem (causa):** `.settings-panel`/`.settings-action`/`.admin-section` do dropdown injetado pelo `menu-component.js` nao tinham override no `shell-theme.css` (sininho/alertas ja tinham — Fase 4). Fix no local sancionado (Fase 25.2: vence por especificidade, componente intocado): painel/actions/hover/admin-section/titulo danger/link transparente/slot no escuro. `admin.html` em si estava limpo (`#6366f1` indigo → `var(--sw-info)`); `admin-premium.css` ja 100% tokens (133 usos, 0 escapes).
+- **Sub-paginas:** governance (textos/bordas/th/btn/chips p/ tokens + bloco dark p/ pasteis badge/panel/chips/error/issue-badge); settings (body/cards p/ tokens + focus/label em tokens + bloco dark p/ success/error/audit-before/after); subscriptions (bordas/labels/botoes ghost p/ tokens, pills/templates JS + bloco dark p/ status/origin/hash/filetype/data-origin). Claro 100% preservado; botoes solidos coloridos (aprove/rejeite/bloqueie), switches, badges semanticos e lightbox preservados (legiveis nos 2 temas). Morto intocado.
+- **Armadilha (cache CSS):** injector so cobre `<script>` — `shell-theme.css` teve bump manual de `?v=` via node/sha256 nos 26 HTMLs (`8c3beb0909c8`), sem reescrita PS (mojibake). Sem bump de SW (URL nova = cache-miss).
+- **Trava:** `tests/admin-theme-tokens.test.mjs` (novo, 3 testes).
+- **Gates:** `validate:pr` 6/6 (1414 testes / 1413 pass / 0 fail / 1 skip). Build 543 + deploy hosting complete; producao verificada via fetch (CSS com gear-dark, admin sem indigo, `?v=` novo).
+- **Pendente:** commit + push (nao executados).

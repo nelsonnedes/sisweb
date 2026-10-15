@@ -59,7 +59,7 @@ test('P2: carregar() usa companies/{tenant}/estoqueProdutos e normaliza objeto/a
 
 test('registro automático: exposto na API e grava nó canônico tenant-scoped', () => {
   assert.match(prodSrc, /registrarProdutosDaNota/);
-  assert.match(prodSrc, /return \{ carregar,[^}]*registrarProdutosDaNota \};/);
+  assert.match(prodSrc, /return \{ carregar,[^}]*registrarProdutosDaNota(,| \};)/, 'API expõe registrarProdutosDaNota (extensível a novos registradores)');
   assert.match(prodSrc, /await fb\(\)\.saveToFirebase\(path, null, lista\)/);
   assert.match(prodSrc, /`companies\/\$\{tid\}\/estoqueProdutos`/);
 });

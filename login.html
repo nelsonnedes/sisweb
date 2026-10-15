@@ -14,7 +14,7 @@
     <meta http-equiv="Expires" content="0">
 <title>Portal de Acesso - SisWeb</title>
     <!-- Toast unificado (carrega ANTES de qualquer uso de window.__toast) -->
-    <script type="module" src="./modules/core/toast.js?v=bb0f3e5b8eec"></script>
+    <script type="module" src="./modules/core/toast.js?v=b7b7d592300d"></script>
     <link rel="preconnect" href="https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app">
     <link rel="preconnect" href="https://www.googleapis.com">
     <link rel="dns-prefetch" href="https://o4511662240432128.ingest.us.sentry.io">
@@ -860,7 +860,7 @@
         // MÓDULO CANÔNICO: Firebase + controle de sessão + Fale Conosco
         // Registro e Recuperação usam exclusivamente authService (sem duplicatas).
         // ═══════════════════════════════════════════════════════════════════════
-        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=678c8a6de062';
+        import { authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus, app, auth, db, ref, set, get, remove, child, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, ensureInitialized } from './firebaseService.js?v=fdef24272f49';
 
         try { ensureInitialized(); } catch (_) {}
         window.firebaseService = { ...(window.firebaseService || {}), authService, isFirebaseOperational, setCompanyClaim, ensureAuthPersistence, getMyPartnerStatus };
@@ -1457,7 +1457,7 @@
         });
     </script>
     <script type="module">
-        import { toast } from './modules/core/toast.js?v=bb0f3e5b8eec';
+        import { toast } from './modules/core/toast.js?v=b7b7d592300d';
         // Toast já disponível globalmente como window.__toast via modules/core/toast.js
     </script>
 </body>

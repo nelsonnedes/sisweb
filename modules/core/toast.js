@@ -20,7 +20,7 @@ const TOAST_CONFIG = {
     maxToasts: 4,
     dedupeMs: 500,
     durations: {
-        error: 0,
+        error: 11000,
         warning: 4000,
         success: 3000,
         info: 3000
@@ -37,7 +37,7 @@ function ensureContainer() {
         c.id = '__toast_container__';
         c.setAttribute('role', 'status');
         c.setAttribute('aria-live', 'polite');
-        c.style.cssText = 'position:fixed;top:16px;right:16px;z-index:10000000;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+        c.style.cssText = 'position:fixed;top:16px;right:16px;z-index:10000000;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:min(420px,calc(100vw - 32px));';
         document.body.appendChild(c);
     }
     return c;
@@ -58,6 +58,14 @@ function show(message, type = 'info', opts = {}) {
         const now = Date.now();
         const s = String(message || '');
         if (!s) return;
+        // Renderer canônico: NotificationService (Onda A). T1 mantém só fallback.
+        try {
+            if (typeof window !== 'undefined' && window.NotificationService
+                && typeof window.NotificationService.show === 'function') {
+                window.NotificationService.show(s, type, opts);
+                return;
+            }
+        } catch (_) {}
         if (s === lastMsg && now - lastAt < TOAST_CONFIG.dedupeMs) return;
         lastMsg = s;
         lastAt = now;
@@ -75,12 +83,12 @@ function show(message, type = 'info', opts = {}) {
         const txt = document.createElement('div');
         txt.textContent = s;
         txt.title = s;
-        txt.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        txt.style.cssText = 'flex:1;min-width:0;white-space:pre-line;overflow-wrap:anywhere;';
 
         const close = document.createElement('button');
         close.textContent = '×';
         close.setAttribute('aria-label', 'Fechar');
-        close.style.cssText = 'background:transparent;border:0;color:#fff;font-size:16px;line-height:1;cursor:pointer;';
+        close.style.cssText = 'background:transparent;border:0;color:#fff;font-size:16px;line-height:1;cursor:pointer;flex:0 0 auto;width:auto;margin:0;padding:0;';
         close.onclick = function() { try { c.removeChild(t); } catch(e) {} };
 
         t.appendChild(txt);

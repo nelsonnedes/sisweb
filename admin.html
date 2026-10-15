@@ -11,11 +11,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Unificado - SISWEB</title>
     <!-- Toast unificado (carrega ANTES de qualquer uso de window.__toast) -->
-    <script type="module" src="./modules/core/toast.js?v=bb0f3e5b8eec"></script>
+    <script type="module" src="./modules/core/toast.js?v=b7b7d592300d"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
     <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
     <script>
@@ -926,13 +926,13 @@
                 <!-- Funil de Conversão -->
                 <div class="section" style="margin-bottom:16px;">
                     <div class="section-header-inline">
-                        <div class="section-title"><i class="fas fa-filter" style="color:#6366f1;margin-right:6px;"></i>Funil de Conversão</div>
+                        <div class="section-title"><i class="fas fa-filter" style="color:var(--sw-info);margin-right:6px;"></i>Funil de Conversão</div>
                         <span id="campFunnelMeta" class="badge pill">Calculando...</span>
                     </div>
                     <div style="background:var(--sw-surface-2);border: 1px solid var(--sw-border) ;border-radius:12px;padding:16px;">
                         <div class="camp-funnel-row">
                             <div class="camp-funnel-label"><i class="fas fa-users"></i> Total cadastrados</div>
-                            <div class="camp-funnel-bar-wrap"><div id="funnelBarTotal" class="camp-funnel-bar" style="background:#6366f1;"></div></div>
+                            <div class="camp-funnel-bar-wrap"><div id="funnelBarTotal" class="camp-funnel-bar" style="background:var(--sw-info);"></div></div>
                             <div id="funnelCountTotal" class="camp-funnel-count">0</div>
                         </div>
                         <div class="camp-funnel-row">
@@ -958,7 +958,7 @@
                     <!-- Editor campanha -->
                     <div class="card" style="flex:2 1 380px;">
                         <div class="card-header">
-                            <div class="card-title"><i class="fas fa-bullhorn" style="color:#6366f1;"></i>&nbsp;Editar campanha comercial</div>
+                            <div class="card-title"><i class="fas fa-bullhorn" style="color:var(--sw-info);"></i>&nbsp;Editar campanha comercial</div>
                             <span class="badge pill" id="campaignEditMeta">Pronta para edição</span>
                         </div>
                         <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
@@ -977,7 +977,7 @@
                             </div>
                         </div>
                         <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--sw-border);">
-                            <div style="font-size:0.78rem;font-weight:700;color:var(--sw-text-2);margin-bottom:8px;"><i class="fas fa-share-alt" style="color:#6366f1;"></i>&nbsp;Programa de Indicação</div>
+                            <div style="font-size:0.78rem;font-weight:700;color:var(--sw-text-2);margin-bottom:8px;"><i class="fas fa-share-alt" style="color:var(--sw-info);"></i>&nbsp;Programa de Indicação</div>
                             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                                 <input id="campaignReferralEnabledEdit" type="checkbox">
                                 <label for="campaignReferralEnabledEdit" style="font-size:0.82rem;color:var(--sw-label);">Habilitar indicação</label>
@@ -1337,7 +1337,7 @@
         </div>
     </div>
 
-    <script src="firebaseService.js?v=678c8a6de062" type="module"></script>
+    <script src="firebaseService.js?v=fdef24272f49" type="module"></script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
 <script src="menu-component.js?v=1148ebbe47e4"></script>

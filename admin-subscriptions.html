@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -62,7 +62,7 @@
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid var(--sw-border);
         }
 
         .page-header h1 {
@@ -80,7 +80,7 @@
             border: none;
             border-radius: 4px;
             background-color: var(--sw-surface-2) ;
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s ease;
@@ -92,7 +92,7 @@
         }
 
         .filter-btn:hover:not(.active) {
-            background-color: #eee;
+            background-color: var(--sw-hover);
         }
 
         .subscriptions-table {
@@ -105,12 +105,12 @@
         .subscriptions-table td {
             padding: 15px;
             text-align: left;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .subscriptions-table th {
             font-weight: bold;
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             font-size: 14px;
             background-color: var(--sw-surface-2) ;
         }
@@ -143,7 +143,7 @@
 
         .status-expired {
             background-color: var(--sw-surface-2) ;
-            color: #95a5a6;
+            color: var(--sw-text-3);
         }
 
         .status-rejected {
@@ -268,7 +268,7 @@
             top: 15px;
             right: 15px;
             font-size: 24px;
-            color: #95a5a6;
+            color: var(--sw-text-3);
             cursor: pointer;
             transition: color 0.3s;
         }
@@ -280,7 +280,7 @@
         .modal-header {
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .modal-header h2 {
@@ -302,7 +302,7 @@
         .detail-label {
             font-weight: bold;
             margin-bottom: 5px;
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             font-size: 14px;
         }
 
@@ -328,7 +328,7 @@
         .receipt-image {
             max-width: 100%;
             border-radius: 4px;
-            border: 1px solid #eee;
+            border: 1px solid var(--sw-border);
             margin-bottom: 15px;
         }
 
@@ -336,7 +336,7 @@
             display: inline-block;
             margin-bottom: 12px;
             font-size: 13px;
-            color: #2563eb;
+            color: var(--sw-link);
             text-decoration: underline;
             word-break: break-all;
         }
@@ -378,7 +378,7 @@
             font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.3px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--sw-border);
             background: var(--sw-surface-2);
             color: var(--sw-text-2);
             text-transform: uppercase;
@@ -399,9 +399,9 @@
         .download-proof-btn {
             padding: 8px 12px;
             border-radius: 6px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--sw-border);
             background: var(--sw-surface);
-            color: #0f172a;
+            color: var(--sw-text-1);
             font-size: 12px;
             font-weight: 700;
             cursor: pointer;
@@ -471,7 +471,7 @@
         .loading {
             text-align: center;
             padding: 40px;
-            color: #7f8c8d;
+            color: var(--sw-text-2);
             font-size: 16px;
         }
 
@@ -503,7 +503,7 @@
         }
 
         .pix-panel-actions select {
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--sw-input-border);
             border-radius: 6px;
             padding: 6px 8px;
             font-size: 13px;
@@ -517,12 +517,12 @@
         .empty-state {
             text-align: center;
             padding: 40px;
-            color: #7f8c8d;
+            color: var(--sw-text-2);
         }
 
         .empty-state i {
             font-size: 48px;
-            color: #ddd;
+            color: var(--sw-text-3);
             margin-bottom: 15px;
         }
 
@@ -530,6 +530,17 @@
             font-size: 16px;
         }
 
+        /* Pasteis claros: viram tintas tematicas no escuro (claro preservado acima). */
+        html[data-theme="dark"] .status-active { background: var(--sw-alert-success-bg); color: var(--sw-success); }
+        html[data-theme="dark"] .status-pending { background: var(--sw-alert-warning-bg); color: var(--sw-warning); }
+        html[data-theme="dark"] .status-rejected { background: var(--sw-alert-error-bg); color: var(--sw-danger); }
+        html[data-theme="dark"] .origin-new { background: var(--sw-alert-success-bg); color: var(--sw-success); }
+        html[data-theme="dark"] .origin-legacy { background: var(--sw-alert-warning-bg); color: var(--sw-warning); }
+        html[data-theme="dark"] .status-auto { background: var(--sw-alert-info-bg); color: var(--sw-info); }
+        html[data-theme="dark"] .hash-indicator { border-color: var(--sw-info); background: var(--sw-alert-info-bg); color: var(--sw-info); }
+        html[data-theme="dark"] .filetype-badge.badge-pdf { background: var(--sw-alert-error-bg); border-color: var(--sw-danger); color: var(--sw-danger); }
+        html[data-theme="dark"] .filetype-badge.badge-image { background: var(--sw-alert-info-bg); border-color: var(--sw-info); color: var(--sw-info); }
+        html[data-theme="dark"] .data-origin-panel { border-color: var(--sw-info); background: var(--sw-alert-info-bg); color: var(--sw-info); }
         @media (max-width: 768px) {
             .filter-section {
                 display: grid;
@@ -573,7 +584,7 @@
                 grid-template-columns: minmax(92px, 38%) 1fr;
                 gap: 8px;
                 border: 0;
-                border-bottom: 1px dashed #e2e8f0;
+                border-bottom: 1px dashed var(--sw-border);
                 padding: 7px 0;
                 white-space: normal;
             }
@@ -1609,7 +1620,7 @@
                 const canRevalidate = status !== 'approved';
                 return `
                     <tr>
-                        <td><strong>${userLabel}</strong><br><span style="font-size:12px;color:#64748b;">${item.email || '-'}</span></td>
+                        <td><strong>${userLabel}</strong><br><span style="font-size:12px;color:var(--sw-text-3);">${item.email || '-'}</span></td>
                         <td>${item.planLabel}</td>
                         <td>${formatCurrencySafe(item.amount)}</td>
                         <td><span class="status ${autoPixStatusClass(status)} status-auto">${autoPixStatusLabel(status)}</span></td>
@@ -2106,8 +2117,8 @@
                         <tr>
                             <td>
                                 <strong>${userLabel}</strong><br>
-                                <span style="font-size:12px;color:#64748b;">${profile.email || req.uid || '-'}</span><br>
-                                <span style="font-size:12px;color:#64748b;">${companyLabel}</span>
+                                <span style="font-size:12px;color:var(--sw-text-3);">${profile.email || req.uid || '-'}</span><br>
+                                <span style="font-size:12px;color:var(--sw-text-3);">${companyLabel}</span>
                             </td>
                             <td>${req.requestedDays || 0}</td>
                             <td style="max-width:280px;white-space:normal;">${justification}</td>

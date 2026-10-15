@@ -196,6 +196,43 @@ html[data-theme="dark"] main-menu .settings-section {
   border-top-color: var(--sw-border);
 }
 
+/* ---------- Painel da engrenagem (inclui seção Administração) no escuro ---------- */
+html[data-theme="dark"] main-menu .settings-dropdown .settings-panel {
+  background: var(--sw-surface);
+  border-color: var(--sw-border);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
+}
+
+html[data-theme="dark"] main-menu .settings-dropdown .settings-action {
+  color: var(--sw-text-1);
+}
+
+html[data-theme="dark"] main-menu .settings-dropdown .settings-action i {
+  color: var(--sw-info);
+}
+
+html[data-theme="dark"] main-menu .settings-dropdown .settings-action:hover,
+html[data-theme="dark"] main-menu .settings-dropdown .settings-action:focus-visible {
+  background: var(--sw-hover);
+}
+
+html[data-theme="dark"] main-menu .settings-dropdown .admin-section {
+  background: var(--sw-alert-error-bg);
+  border-top-color: var(--sw-danger);
+}
+
+html[data-theme="dark"] main-menu .settings-dropdown .admin-section .settings-section-title {
+  color: var(--sw-danger);
+}
+
+html[data-theme="dark"] main-menu .settings-dropdown .admin-link.settings-action {
+  background: transparent;
+}
+
+html[data-theme="dark"] main-menu .settings-profile-card-slot {
+  color: var(--sw-text-1);
+}
+
 /* ---------- Sininho (Fase 4: superfícies por tema, severidade preservada) ---------- */
 html[data-theme] main-menu .alerts-item {
   background: var(--sw-alert-bg);

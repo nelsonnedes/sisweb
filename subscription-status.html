@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
@@ -149,7 +149,7 @@
         }
         .quick-guide-search {
             width: 100%;
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--sw-input-border);
             border-radius: 8px;
             padding: 11px 12px;
             font-size: 14px;
@@ -185,22 +185,22 @@
         }
         .module-card h4 {
             margin: 0 0 8px;
-            color: #1f2937;
+            color: var(--sw-text-1);
             font-size: 15px;
         }
         .module-card ul {
             margin: 0;
             padding-left: 18px;
-            color: #4b5563;
+            color: var(--sw-text-2);
             line-height: 1.5;
             font-size: 14px;
         }
         .screen-print {
-            border: 1px solid #dbe4ef;
+            border: 1px solid var(--sw-border);
             border-radius: 8px;
             padding: 8px;
             background: var(--sw-surface);
-            color: #475569;
+            color: var(--sw-text-2);
             font-size: 13px;
             margin-top: 10px;
         }
@@ -220,7 +220,7 @@
         .screen-print figcaption {
             margin-top: 8px;
             font-size: 12px;
-            color: #4b5563;
+            color: var(--sw-text-2);
             line-height: 1.45;
         }
         @media (max-width: 720px) {
@@ -401,7 +401,7 @@
         }
 
         .about-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 15% auto;
             padding: 30px;
             border: none;
@@ -424,7 +424,7 @@
             display: block;
             width: 50px;
             height: 3px;
-            background: #3498db;
+            background: var(--sw-brand);
             margin: 10px auto;
         }
 
@@ -440,7 +440,7 @@
             align-items: center;
             margin-bottom: 25px;
             padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .developer-avatar {
@@ -456,7 +456,7 @@
 
         .developer-avatar i {
             font-size: 40px;
-            color: white;
+            color: var(--sw-on-brand);
         }
 
         .developer-name {
@@ -471,7 +471,7 @@
         }
 
         .developer-name span {
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             font-size: 16px;
         }
 
@@ -498,7 +498,7 @@
         }
 
         .contact-item i {
-            color: #3498db;
+            color: var(--sw-info);
             font-size: 20px;
             width: 24px;
         }
@@ -509,7 +509,7 @@
         }
 
         .contact-item a:hover {
-            color: #3498db;
+            color: var(--sw-info);
         }
 
         /* Estilo para o modal de Ajuda */
@@ -526,7 +526,7 @@
         }
 
         .help-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 20px;
             border: 1px solid #888;
@@ -636,7 +636,7 @@
         }
 
         .close:hover {
-            color: black;
+            color: var(--sw-text-1);
             text-decoration: none;
             cursor: pointer;
         }
@@ -653,6 +653,32 @@
             --sisweb-amber: #d97706;
             --sisweb-red: #dc2626;
             --sisweb-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+        }
+
+        /* Tema escuro: ilha --sisweb-* segue os tokens globais (claro preservado acima). */
+        html[data-theme="dark"] {
+            --sisweb-ink: var(--sw-text-1);
+            --sisweb-muted: var(--sw-text-2);
+            --sisweb-line: var(--sw-border);
+            --sisweb-panel: var(--sw-surface);
+            --sisweb-soft: var(--sw-surface-2);
+            --sisweb-green: var(--sw-success);
+            --sisweb-red: var(--sw-danger);
+            --sisweb-shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
+            background: var(--sw-bg);
+        }
+
+        html[data-theme="dark"] body {
+            background: var(--sw-bg);
+            color: var(--sw-text-1);
+        }
+
+        html[data-theme="dark"] .help-hub {
+            background: var(--sw-surface);
+        }
+
+        html[data-theme="dark"] .steps-list {
+            background: var(--sw-surface-2);
         }
 
         html {
@@ -856,7 +882,7 @@
 
         .status-card .highlight,
         .info-card .highlight {
-            color: #15803d;
+            color: var(--sw-success);
         }
 
         .status-card .warning,
@@ -916,7 +942,7 @@
         .extension-form textarea,
         .quick-guide-search {
             width: 100%;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--sw-input-border);
             border-radius: 11px;
             padding: 11px 12px;
             background: var(--sw-surface);
@@ -1479,7 +1505,7 @@
 
     <script src="auth.js?v=4173d8da9343"></script>
     <script type="module">
-        import { authService, isFirebaseOperational, getSubscriptionSettings, requestSubscriptionExtension, getAll, loadFromFirebase, getTenantId, getCurrentUid, grantReadOnlyGrace } from './firebaseService.js?v=678c8a6de062';
+        import { authService, isFirebaseOperational, getSubscriptionSettings, requestSubscriptionExtension, getAll, loadFromFirebase, getTenantId, getCurrentUid, grantReadOnlyGrace } from './firebaseService.js?v=fdef24272f49';
         
         window.firebaseService = {
             ...(window.firebaseService || {}),
@@ -1964,14 +1990,14 @@
             if (!container) return;
             const alerts = typeof window.getSystemAlerts === 'function' ? window.getSystemAlerts() : [];
             if (!alerts.length) {
-                container.innerHTML = '<div style="font-size:13px;color:#64748b;">Nenhuma notificação recente. Use "Nova mensagem" para abrir um ticket com o Admin.</div>';
+                container.innerHTML = '<div style="font-size:13px;color:var(--sw-text-3);">Nenhuma notificação recente. Use "Nova mensagem" para abrir um ticket com o Admin.</div>';
                 return;
             }
             container.innerHTML = alerts.slice(0, 10).map((item) => {
                 const title = String(item.title || 'Mensagem').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const message = String(item.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const date = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : '';
-                return `<div style="border: 1px solid var(--sw-border) ;border-radius:8px;padding:8px 10px;background: var(--sw-surface);"><strong style="display:block;color:#1e293b;">${title}</strong><span style="display:block;color:#334155;font-size:13px;">${message}</span><small style="color:#94a3b8;">${date}</small></div>`;
+                return `<div style="border: 1px solid var(--sw-border) ;border-radius:8px;padding:8px 10px;background: var(--sw-surface);"><strong style="display:block;color:var(--sw-text-1);">${title}</strong><span style="display:block;color:var(--sw-text-2);font-size:13px;">${message}</span><small style="color:var(--sw-text-3);">${date}</small></div>`;
             }).join('');
         }
 

@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -43,9 +43,9 @@
         }
 
         body {
-            background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+            background: var(--sw-bg);
             padding: 20px;
-            color: #0f172a;
+            color: var(--sw-text-1);
         }
 
         .container {
@@ -64,7 +64,7 @@
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid var(--sw-border);
         }
 
         .page-header h1 {
@@ -78,7 +78,7 @@
         }
 
         .settings-card {
-            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            background: var(--sw-surface);
             border-radius: 12px;
             padding: 18px;
             box-shadow: 0 8px 24px rgba(15,23,42,0.08);
@@ -95,7 +95,7 @@
             color: var(--sw-text-1);
             margin-bottom: 12px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
             font-size: 18px;
             display: flex;
             align-items: center;
@@ -118,7 +118,7 @@
         }
 
         .accordion-chevron {
-            color: #64748b;
+            color: var(--sw-text-3);
             transition: transform 0.2s ease;
         }
 
@@ -131,7 +131,7 @@
         }
 
         .settings-card h2 i {
-            color: #3498db;
+            color: var(--sw-info);
         }
 
         .form-group {
@@ -141,7 +141,7 @@
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #7f8c8d;
+            color: var(--sw-label);
             font-weight: bold;
             font-size: 14px;
         }
@@ -151,7 +151,7 @@
         .form-group textarea {
             width: 100%;
             padding: 12px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--sw-input-border);
             border-radius: 8px;
             font-size: 16px;
             transition: border-color 0.2s, box-shadow 0.2s;
@@ -162,14 +162,14 @@
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            border-color: var(--sw-focus);
+            box-shadow: 0 0 0 3px var(--sw-focus-ring);
             outline: none;
         }
 
         .form-group .hint {
             font-size: 12px;
-            color: #95a5a6;
+            color: var(--sw-text-3);
             margin-top: 5px;
         }
 
@@ -283,7 +283,7 @@
         .action-list li {
             margin-bottom: 15px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .action-list li:last-child {
@@ -325,7 +325,7 @@
             border-radius: 8px;
             padding: 10px;
             font-size: 13px;
-            color: #1f2937;
+            color: var(--sw-text-1);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -347,7 +347,7 @@
         }
 
         .subusers-table th {
-            color: #64748b;
+            color: var(--sw-text-3);
             font-weight: 700;
         }
 
@@ -407,7 +407,7 @@
             cursor: pointer;
             list-style: none;
             font-size: 12px;
-            color: #1f2937;
+            color: var(--sw-text-1);
             font-weight: 700;
             margin-bottom: 8px;
         }
@@ -418,7 +418,7 @@
 
         .audit-entry-details summary::before {
             content: "▸ ";
-            color: #64748b;
+            color: var(--sw-text-3);
         }
 
         .audit-entry-details[open] summary::before {
@@ -462,7 +462,7 @@
         .audit-diff-field {
             font-size: 12px;
             font-weight: 700;
-            color: #0f172a;
+            color: var(--sw-text-1);
             margin-bottom: 5px;
             word-break: break-word;
         }
@@ -494,7 +494,7 @@
         }
 
         .audit-arrow {
-            color: #64748b;
+            color: var(--sw-text-3);
             font-weight: 700;
             padding-top: 6px;
         }
@@ -533,6 +533,23 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Pasteis claros: viram tintas tematicas no escuro (claro preservado acima). */
+        html[data-theme="dark"] .success-message {
+            background: var(--sw-alert-success-bg);
+            color: var(--sw-success);
+        }
+        html[data-theme="dark"] .error-message {
+            background: var(--sw-alert-error-bg);
+            color: var(--sw-danger);
+        }
+        html[data-theme="dark"] .audit-before {
+            background: var(--sw-alert-error-bg);
+            color: var(--sw-danger);
+        }
+        html[data-theme="dark"] .audit-after {
+            background: var(--sw-alert-success-bg);
+            color: var(--sw-success);
+        }
         @media (max-width: 768px) {
             body { padding: 10px; }
             .container { padding: 12px; border-radius: 12px; }
@@ -564,7 +581,7 @@
                 display: grid;
                 grid-template-columns: minmax(98px, 38%) 1fr;
                 gap: 8px;
-                border-bottom: 1px dashed #e2e8f0;
+                border-bottom: 1px dashed var(--sw-border);
                 border-left: 0;
                 border-right: 0;
                 border-top: 0;
@@ -575,7 +592,7 @@
                 content: attr(data-label);
                 font-size: 11px;
                 text-transform: uppercase;
-                color: #64748b;
+                color: var(--sw-text-3);
                 letter-spacing: 0.03em;
                 font-weight: 700;
             }

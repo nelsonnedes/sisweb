@@ -20,7 +20,7 @@
     <script src="sentry-init.js?v=a0ebe6edc1c6"></script>
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
@@ -1599,7 +1599,12 @@
                 <label style="display:flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer;">
                   <input type="radio" name="nfTipoProduto" value="cadastrado"
                     onchange="window.NFProdutosNF?.alterarTipoProduto('cadastrado')">
-                  <span>📦 Produto Cadastrado (Estoque)</span>
+                  <span>📦 Produto Cadastrado (NF-e)</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer;">
+                  <input type="radio" name="nfTipoProduto" value="romaneio"
+                    onchange="window.NFProdutosNF?.alterarTipoProduto('romaneio')">
+                  <span>🌲 Produto Romaneio (CONAMA)</span>
                 </label>
               </div>
 
@@ -1736,6 +1741,70 @@
                   <div class="form-group" style="justify-content:flex-end;">
                     <label>&nbsp;</label>
                     <button type="button" onclick="adicionarItemNFManual()" class="btn btn-success">
+                      <i class="fas fa-plus"></i> Adicionar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Seção: Produto Romaneio (CONAMA) (fica oculta por padrão;
+                   visibilidade via NFProdutosNF.alterarTipoProduto('romaneio')
+                   — NÃO alterar aqui, o toggle vive em nf-produtos-nf.js) -->
+              <div id="nfSecaoProdutoRomaneio" class="nf-produto-section" style="display:none;background:var(--sw-surface);border:1px solid var(--sw-border);border-radius:6px;padding:12px;margin-bottom:12px;">
+                <div class="form-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px;">
+                  <div class="form-group" style="flex:0 0 150px;">
+                    <label for="nfTipoRomaneio">Tipo de Romaneio:</label>
+                    <select id="nfTipoRomaneio" onchange="window.NFProdutosNF?.carregarRomaneiosPorTipoNF?.(this.value)">
+                      <option value="">Selecione o tipo</option>
+                      <option value="romaneiosTL">Romaneio TL</option>
+                      <option value="romaneiosPct">Romaneio PCT</option>
+                      <option value="romaneiosPes">Romaneio PES</option>
+                      <option value="romaneiosTora">Romaneio TORA</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="min-width:220px">
+                    <label for="nfRomaneioSelect">Romaneio:</label>
+                    <select id="nfRomaneioSelect" onchange="window.NFProdutosNF?.selecionarRomaneioNFe?.()">
+                      <option value="">Selecione um romaneio</option>
+                    </select>
+                  </div>
+                </div>
+                <!-- Preview CONAMA: o módulo renderiza uma linha por
+                     "Espécie Madeira em Categoria" com o Volume m³; cada linha
+                     carrega data-descricao + data-volume (+ data-preco do resumo)
+                     e o clique seleciona o item (selecionarConamaNFeClick), que
+                     limpa NCM/preço e recaptura via lookup no catálogo NF-e. -->
+                <div id="nfPreviewRomaneioNFe" style="margin:8px 0;">
+                  <ul id="nfListaConamaNFe" onclick="selecionarConamaNFeClick(event)" style="list-style:none;margin:0;padding:0;"></ul>
+                </div>
+                <div class="form-row nf-product-entry-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px;">
+                  <div class="form-group" style="min-width:160px">
+                    <label for="itemDescricaoRom">Descrição:</label>
+                    <input type="text" id="itemDescricaoRom" readonly placeholder="Selecione um item do resumo CONAMA">
+                  </div>
+                  <div class="form-group" style="max-width:90px">
+                    <label for="itemQuantidadeRom">Qtd (m³):</label>
+                    <input type="number" id="itemQuantidadeRom" step="0.001" min="0" placeholder="0,000">
+                  </div>
+                  <div class="form-group" style="max-width:120px">
+                    <label for="itemValorUnitarioRom">Valor Unit.:</label>
+                    <input type="text" id="itemValorUnitarioRom" placeholder="R$ 0,00">
+                  </div>
+                  <div class="form-group" style="max-width:90px">
+                    <label for="itemNCMRom">NCM: *</label>
+                    <input type="text" id="itemNCMRom" maxlength="8" placeholder="00000000">
+                  </div>
+                  <div class="form-group" style="max-width:75px">
+                    <label for="itemCFOPRom">CFOP: *</label>
+                    <input type="text" id="itemCFOPRom" maxlength="4" placeholder="5102" value="5102">
+                  </div>
+                  <div class="form-group" style="max-width:90px">
+                    <label>Unidade:</label>
+                    <span id="itemUnRom" style="font-weight:700;">M³</span>
+                  </div>
+                  <div class="form-group" style="justify-content:flex-end;">
+                    <label>&nbsp;</label>
+                    <button type="button" onclick="adicionarItemNFRomaneio()" class="btn btn-success">
                       <i class="fas fa-plus"></i> Adicionar
                     </button>
                   </div>
@@ -2651,7 +2720,7 @@
             normalizeCompanyProfileForReport,
             getCompanyProfileForReport,
             resolveAuthenticatedTenant
-        } from './firebaseService.js?v=678c8a6de062';
+        } from './firebaseService.js?v=fdef24272f49';
         window.firebaseService = {
             ...(window.firebaseService || {}),
             loadFromFirebase,
@@ -2694,21 +2763,21 @@
     <script src="storageService.js?v=26c2875bf32d"></script>
     <!-- Módulos Fiscais -->
     <script src="nf-tables.js?v=e817068adb54"></script>
-    <script src="nf-config.js?v=e48afc362031"></script>
+    <script src="nf-config.js?v=3eeb70ead734"></script>
     <!-- node-forge: necessário para extrair metadados do certificado .pfx no browser -->
     <script src="https://unpkg.com/node-forge@1.3.1/dist/forge.min.js"></script>
     <script src="nf-cert.js?v=b522cff21ec4"></script>
-    <script src="nf-validator.js?v=12b53cfd2df2"></script>
+    <script src="nf-validator.js?v=f4c0b16f4a49"></script>
     <script src="nf-tax-tables.js?v=3d160df3c943"></script>
-    <script src="nf-itens.js?v=f4da7db25215"></script>
-    <script src="nf-xml-builder.js?v=fe5dc0dfa092"></script>
+    <script src="nf-itens.js?v=7ba2fcddb556"></script>
+    <script src="nf-xml-builder.js?v=ffd5c15fe12b"></script>
     <script src="nf-fiscal-events.js?v=4a67d0a21c7c"></script>
-    <script src="nf-storage.js?v=53866e33ac5d"></script>
-    <script src="nf-service.js?v=30c157266084"></script>
+    <script src="nf-storage.js?v=46f3910730cf"></script>
+    <script src="nf-service.js?v=bebba014b0a2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="nf-dashboard.js?v=3c7aac3519cc"></script>
     <!-- Novos módulos Fase 0 -->
-    <script src="nf-naturezas.js?v=d50eef83e564"></script>
+    <script src="nf-naturezas.js?v=23c18a5d9e91"></script>
     <script src="nf-preferencias.js?v=b5a49347dcd0"></script>
     <script src="nf-produtos-nf.js?v=7de147980e14"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4731,6 +4800,22 @@
             console.warn('[NF-e] Cadastro automático de produtos falhou:', regErr?.message || regErr);
           }
         }
+        // Produto Cadastrado (NF-e) + Romaneio: NF-e autorizada grava os itens
+        // Manual/Romaneio no nó fiscal próprio (companies/{tenant}/fiscal/produtos-nfe).
+        // FIRE-AND-FORGET: nunca bloqueia a emissão; SEM toast (só console.warn).
+        if (autorizada && _notaEmCurso && window.NFProdutosNF?.registrarProdutosNFeDaNota) {
+          const notaParaCatalogoNFe = _notaEmCurso;
+          try {
+            const regNFe = window.NFProdutosNF.registrarProdutosNFeDaNota(notaParaCatalogoNFe, obterTenantIdNF());
+            if (regNFe && typeof regNFe.catch === 'function') {
+              regNFe.catch((nfeErr) => {
+                console.warn('[NF-e] Cadastro automático de produtos NF-e falhou:', nfeErr?.message || nfeErr);
+              });
+            }
+          } catch (nfeErr) {
+            console.warn('[NF-e] Cadastro automático de produtos NF-e falhou:', nfeErr?.message || nfeErr);
+          }
+        }
         mostrarAlertaEmissao(`${autorizada ? '✅' : '⚠️'} NF-e ${result.numero} — ${String(result.status).toUpperCase()}: ${result.msg}`, autorizada ? 'ok' : 'erro');
         _notaEmCurso = null;
         _itensNF = [];
@@ -6215,6 +6300,71 @@ renderizarVolumesNF();
       ocultarAlertaEmissao();
     }
 
+    // ─── adicionarItemNFRomaneio — MODO ROMANEIO/CONAMA (via NFItens) ─
+    // Espelha adicionarItemNFManual: cProd 'ROMANEIO_'+timestamp, uCom 'M³',
+    // mesmos fallbacks; validação NFItens.validarEntradaItem (fail-closed).
+    function adicionarItemNFRomaneio() {
+      const nome  = (document.getElementById('itemDescricaoRom')?.value || '').trim();
+      const qtd   = parseFloat(document.getElementById('itemQuantidadeRom')?.value) || 0;
+      const vUnit = parseMoeda(document.getElementById('itemValorUnitarioRom')?.value);
+      const ncm   = (document.getElementById('itemNCMRom')?.value || '').replace(/\D/g,'').padStart(8,'0');
+      const cfop  = document.getElementById('itemCFOPRom')?.value || '5102';
+
+      const v = window.NFItens?.validarEntradaItem
+        ? window.NFItens.validarEntradaItem({ nome, qtd, vUnit, ncm, cfop })
+        : { valid: !!nome && qtd > 0 && vUnit > 0 && ncm.length === 8 && !/^0{8}$/.test(ncm) && /^[1-9]\d{3}$/.test(cfop) };
+      if (!v.valid) return mostrarAlertaEmissao('⚠️ ' + (v.erro || 'Campos do item inválidos'), 'warn');
+
+      const cfg = window.NFService?.getConfig?.() || {};
+      const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
+      const natOpId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
+
+      const item = window.NFItens?.criarItemFiscal
+        ? window.NFItens.criarItemFiscal({
+            id: 'it_' + Date.now(),
+            cProd: 'ROMANEIO_' + Date.now(),
+            xProd: nome,
+            ncm, cfop, uCom: 'M³', qCom: qtd, vUnCom: vUnit,
+            csosn: '102', cest: '', orig: '0', importado: false,
+            natOpId, cfg, ufDest,
+          })
+        : { id: 'it_' + Date.now(), cProd: 'ROMANEIO_' + Date.now(), xProd: nome, ncm, cfop, uCom: 'M³', uTrib: 'M³', qCom: qtd, vUnCom: vUnit, vProd: qtd * vUnit, csosn: '102', imposto: {} };
+
+      _itensNF.push(item);
+      invalidarRevisaoNF();
+      renderizarItensNF();
+      atualizarTotaisNF();
+      ['itemDescricaoRom','itemQuantidadeRom','itemValorUnitarioRom'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      ocultarAlertaEmissao();
+    }
+
+    // ─── Preview CONAMA: clique na linha seleciona o item p/ o formulário ────
+    // NCM/preço são limpos e recapturados via lookup a cada clique: reaproveitar
+    // o NCM da linha anterior colocaria o NCM da espécie errada no item.
+    function selecionarConamaNFeClick(ev) {
+      const li = ev?.target?.closest?.('[data-descricao]');
+      if (!li) return;
+      const d = li.dataset || {};
+      const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined && val !== '') el.value = val;
+      };
+      set('itemDescricaoRom', d.descricao);
+      set('itemQuantidadeRom', d.volume);
+      const ncmEl = document.getElementById('itemNCMRom');
+      if (ncmEl) ncmEl.value = '';
+      const precoEl = document.getElementById('itemValorUnitarioRom');
+      if (precoEl) precoEl.value = '';
+      if (d.descricao && window.NFProdutosNF?.autoPreencherRomaneio) {
+        try { window.NFProdutosNF.autoPreencherRomaneio(d.descricao); } catch (_) {}
+      } else if (parseFloat(d.preco) > 0 && precoEl) {
+        precoEl.value = 'R$ ' + parseFloat(d.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      }
+    }
+
     // ─── adicionarItemNF — MODO CADASTRADO (via NFItens) ─
     function adicionarItemNF() {
       const prodId  = document.getElementById('nfProdCadSelect')?.value;
@@ -6296,7 +6446,7 @@ renderizarVolumesNF();
           el.value = nat.csosn;
         }
       };
-      const cfopIds = ['itemCFOP', 'itemCFOPCad'];
+      const cfopIds = ['itemCFOP', 'itemCFOPCad', 'itemCFOPRom'];
       cfopIds.forEach((fid) => {
         const el = document.getElementById(fid);
         if (el && nat.cfopPadrao) el.value = nat.cfopPadrao;
@@ -6615,6 +6765,8 @@ renderizarVolumesNF();
 
     // ─── Exposição global ──────────────────────────────────
     window.adicionarItemNFManual  = adicionarItemNFManual;
+    window.adicionarItemNFRomaneio = adicionarItemNFRomaneio;
+    window.selecionarConamaNFeClick = selecionarConamaNFeClick;
     window.adicionarItemNF        = adicionarItemNF;
     window.editarItemNF           = editarItemNF;
     window.salvarEdicaoItemNF     = salvarEdicaoItemNF;

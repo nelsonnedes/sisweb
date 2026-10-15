@@ -16,11 +16,11 @@
         }
     </script>
     <!-- Toast unificado (carrega ANTES de qualquer uso de window.__toast) -->
-    <script type="module" src="./modules/core/toast.js?v=bb0f3e5b8eec"></script>
+    <script type="module" src="./modules/core/toast.js?v=b7b7d592300d"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
-    <link rel="stylesheet" href="styles/shell-theme.css?v=c1329199a1c6">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
@@ -64,7 +64,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         body {
-            background: linear-gradient(180deg, #f4f7fb 0%, #eef2f7 100%);
+            background: var(--sw-bg);
             padding: 20px;
         }
 
@@ -84,7 +84,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             font-size: 30px;
         }
         .page-subtitle {
-            color: #64748b;
+            color: var(--sw-text-2);
             margin-bottom: 26px;
             font-size: 15px;
         }
@@ -103,10 +103,11 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         input, select {
             width: 100%;
             padding: 10px 12px;
-            border: 1px solid #d0d7de;
+            border: 1px solid var(--sw-input-border);
             border-radius: 8px;
             font-size: 16px;
-            background: var(--sw-surface);
+            background: var(--sw-input-bg);
+            color: var(--sw-text-1);
         }
 
         .grid {
@@ -183,7 +184,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .error {
-            color: #e74c3c;
+            color: var(--sw-danger);
             font-size: 14px;
             margin-top: 5px;
             display: none;
@@ -208,7 +209,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
         .action-button {
             background-color: var(--sw-info);
-            color: white;
+            color: var(--sw-on-brand);
             padding: 8px 14px;
             border: none;
             border-radius: 8px;
@@ -276,7 +277,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 20px;
             border: 1px solid #888;
@@ -284,7 +285,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .close {
-            color: #aaa;
+            color: var(--sw-text-3);
             float: right;
             font-size: 28px;
             font-weight: bold;
@@ -292,7 +293,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .close:hover {
-            color: black;
+            color: var(--sw-text-1);
         }
 
         .logo-preview {
@@ -391,7 +392,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .about-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 15% auto;
             padding: 30px;
             border: none;
@@ -414,7 +415,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             display: block;
             width: 50px;
             height: 3px;
-            background: #3498db;
+            background: var(--sw-brand);
             margin: 10px auto;
         }
 
@@ -430,7 +431,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             align-items: center;
             margin-bottom: 25px;
             padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--sw-border);
         }
 
         .developer-avatar {
@@ -446,7 +447,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
 
         .developer-avatar i {
             font-size: 40px;
-            color: white;
+            color: var(--sw-on-brand);
         }
 
         .developer-name {
@@ -461,7 +462,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .developer-name span {
-            color: #7f8c8d;
+            color: var(--sw-text-3);
             font-size: 16px;
         }
 
@@ -488,7 +489,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .contact-item i {
-            color: #3498db;
+            color: var(--sw-info);
             font-size: 20px;
             width: 24px;
         }
@@ -499,7 +500,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .contact-item a:hover {
-            color: #3498db;
+            color: var(--sw-info);
         }
 
         /* Estilo para o modal de Ajuda */
@@ -516,7 +517,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .help-content {
-            background-color: #fefefe;
+            background-color: var(--sw-surface);
             margin: 5% auto;
             padding: 20px;
             border: 1px solid #888;
@@ -573,8 +574,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .company-card.is-incomplete {
-            border-color: #f59e0b;
-            background: #fffbeb;
+            border-color: var(--sw-warning);
+            background: var(--sw-alert-warning-bg);
         }
 
         .company-card-header {
@@ -590,7 +591,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             border: 1px solid var(--sw-border) ;
             border-radius: 8px;
             object-fit: contain;
-            background: #f8fafc;
+            background: var(--sw-surface-2);
         }
 
         .company-card-placeholder {
@@ -598,18 +599,18 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             height: 60px;
             flex: 0 0 60px;
             border-radius: 8px;
-            background: #e2e8f0;
+            background: var(--sw-surface-2);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #64748b;
+            color: var(--sw-text-3);
         }
 
         .company-card-meta {
             display: grid;
             gap: 6px;
             margin-top: 14px;
-            color: #475569;
+            color: var(--sw-text-2);
             font-size: 14px;
         }
 
@@ -621,7 +622,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         }
 
         .company-card-note {
-            color: #64748b;
+            color: var(--sw-text-3);
             font-size: 13px;
             align-self: center;
         }
@@ -658,7 +659,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 <div class="form-group">
                     <label for="cnpj">CNPJ:</label>
                     <input type="text" id="cnpj" required>
-                    <small id="cnpjPolicyNotice" style="display:block;margin-top:6px;color:#64748b;">CNPJ só pode ser alterado no painel administrativo.</small>
+                    <small id="cnpjPolicyNotice" style="display:block;margin-top:6px;color:var(--sw-text-3);">CNPJ só pode ser alterado no painel administrativo.</small>
                 </div>
 
                 <div class="form-group">
@@ -734,8 +735,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             </div>
 
             <!-- Seção Dados Bancários / PIX para Cobrança -->
-            <div style="margin-top: 25px; margin-bottom: 15px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;">
-                <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+            <div style="margin-top: 25px; margin-bottom: 15px; padding: 18px; border: 1px solid var(--sw-border); border-radius: 10px; background-color: var(--sw-surface-2);">
+                <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: var(--sw-text-1); display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-university" style="color: var(--sw-brand);"></i> Dados Bancários / PIX para Cobrança
                 </h3>
                 <div class="grid" style="margin-bottom: 15px;">
@@ -767,8 +768,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 </div>
             </div>
 
-            <div style="margin-top: 25px; margin-bottom: 15px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 10px; background-color: #f8fafc;">
-                <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+            <div style="margin-top: 25px; margin-bottom: 15px; padding: 18px; border: 1px solid var(--sw-border); border-radius: 10px; background-color: var(--sw-surface-2);">
+                <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: var(--sw-text-1); display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-location-dot" style="color: var(--sw-brand);"></i> <strong>Georeferenciamento</strong>
                 </h3>
                 <div class="grid">
@@ -1214,7 +1215,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                         cell.textContent = 'Nenhuma empresa cadastrada';
                         cell.style.textAlign = 'center';
                         cell.style.padding = '15px';
-                        cell.style.color = '#666';
+                        cell.style.color = 'var(--sw-text-3)';
                         row.appendChild(cell);
                         companyList.appendChild(row);
                     } else {
@@ -1234,7 +1235,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                                     }
                                 } catch (error) {
                                     console.warn('⚠️ Erro ao carregar logo na lista:', error);
-                                    logoHtml = '<span style="color: #e74c3c; font-size: 12px;">Erro</span>';
+                                    logoHtml = '<span style="color: var(--sw-danger); font-size: 12px;">Erro</span>';
                                 }
                             } else {
                                 logoHtml = '<span style="color: var(--sw-text-2) ; font-size: 12px;">Sem logo</span>';
@@ -1429,7 +1430,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                         
                         // Bloquear CNPJ de alterações conforme melhores práticas multitenant
                         document.getElementById('cnpj').setAttribute('readonly', 'true');
-                        document.getElementById('cnpj').style.backgroundColor = '#f3f4f6';
+                        document.getElementById('cnpj').style.backgroundColor = 'var(--sw-surface-2)';
                         
                         // Exibir formulário se estiver oculto
                         document.getElementById('companyForm').style.display = 'block';
@@ -2294,7 +2295,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 if (list.length === 0) {
                     companiesContainer.innerHTML = `
                         <div style="text-align: center; padding: 20px; color: var(--sw-text-2) ; background: var(--sw-surface-2) ; border-radius: 8px; margin: 20px 0;">
-                            <i class="fas fa-building" style="font-size: 48px; margin-bottom: 10px; color: #ddd;"></i>
+                            <i class="fas fa-building" style="font-size: 48px; margin-bottom: 10px; color: var(--sw-text-3);"></i>
                             <p style="margin: 0; font-size: 16px;">Nenhuma empresa cadastrada ainda</p>
                             <p style="margin: 5px 0 0 0; font-size: 14px;">Use o formulário acima para cadastrar sua primeira empresa</p>
                         </div>
@@ -2378,7 +2379,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 const companiesContainer = document.getElementById('companiesContainer');
                 if (companiesContainer) {
                     companiesContainer.innerHTML = `
-                        <div style="text-align: center; padding: 20px; color: #e74c3c; background: var(--sw-surface-2) ; border-radius: 8px; margin: 20px 0;">
+                        <div style="text-align: center; padding: 20px; color: var(--sw-danger); background: var(--sw-surface-2) ; border-radius: 8px; margin: 20px 0;">
                             <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 10px;"></i>
                             <p style="margin: 0; font-size: 16px;">Erro ao carregar empresas</p>
                             <p style="margin: 5px 0 0 0; font-size: 14px;">${error.message}</p>
@@ -2476,7 +2477,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     
                     // Bloquear CNPJ de alterações
                     document.getElementById('cnpj').setAttribute('readonly', 'true');
-                    document.getElementById('cnpj').style.backgroundColor = '#f3f4f6';
+                    document.getElementById('cnpj').style.backgroundColor = 'var(--sw-surface-2)';
                     
                     // Exibir formulário se estiver oculto e rolar para ele
                     const formContainer = document.getElementById('companyForm');
@@ -2567,7 +2568,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                     cnpjInput.style.backgroundColor = '';
                 } else {
                     cnpjInput.setAttribute('readonly', 'true');
-                    cnpjInput.style.backgroundColor = '#f3f4f6';
+                    cnpjInput.style.backgroundColor = 'var(--sw-surface-2)';
                 }
             }
             
@@ -2677,7 +2678,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             const cnpjInput = document.getElementById('cnpj');
             if (cnpjInput) {
                 cnpjInput.setAttribute('readonly', 'true');
-                cnpjInput.style.backgroundColor = '#f3f4f6';
+                cnpjInput.style.backgroundColor = 'var(--sw-surface-2)';
             }
         }
 
@@ -2700,7 +2701,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
                 const cnpjInput = document.getElementById('cnpj');
                 if (cnpjInput) {
                     cnpjInput.setAttribute('readonly', 'true');
-                    cnpjInput.style.backgroundColor = '#f3f4f6';
+                    cnpjInput.style.backgroundColor = 'var(--sw-surface-2)';
                 }
             }
             if (access.mode === 'has_company' || access.mode === 'admin') {
