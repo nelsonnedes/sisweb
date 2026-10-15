@@ -1650,6 +1650,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Functions (13):** create `estoqueAplicarMovimento` + updates `setUserAccessStatus`, `nf_assinarXML/enviarSEFAZ/consultarNFe/reservarNumero/cancelarNFe/cartaCorrecaoNFe/eventoRTC/inutilizarNumeracao`, `mdfe_consultar/emitir/encerrar`. 1ª tentativa: timeout local transitório no load; 2ª OK 13/13. Aviso `firebase-functions` outdated (só warning).
 - **Pendente:** teste vivo MDF-e/NF-e em homologação; agent-browser falhou 2× neste ambiente (`ChildProcess.kill`, doctor travou) — retomar com retry.
 
+## Sessao 2026-10-15 (cont. 15) — P5 publicado (commit+push+deploy) e sistema testado
+
+- **Gates:** lint OK, typecheck OK, test 1405/1404/0/1.
+- **Commit `5c81885` + push `3c2675c..5c81885`** (+ doc `51c48a5` com registro do deploy).
+- **Hosting publicado** (build:hosting + release); produção serve `validarTpEmis`/`temis` (marcadores conferidos via fetch).
+- **Functions 6/6 em 2 grupos** (quota vCPU): nf_enviarSEFAZ, nf_consultarNFe, nf_cancelarNFe, nf_cartaCorrecaoNFe, nf_eventoRTC, nf_inutilizarNumeracao — `functions:list` confirma ativas.
+- **Teste vivo de emissão:** browser automation indisponível neste ambiente (mesmo `ChildProcess.kill` da cont.13) — ficou o roteiro manual de homologação SVC na story (ativar, emitir, conferir tpEmis/dhCont/xJust/chave, consultar/cancelar/inutilizar, desativar + contraprova normal).
+
 ## Sessao 2026-10-15 (cont. 14) — P5 Contingência SVC NF-e implementado
 
 - **Escopo (ordem expressa):** só P5; DIFAL e demais pendências seguem pendentes; EPEC/FS-DA/offline/NFC-e/MDF-e fora; DANFE sem legenda (wording MOC não verificado).
