@@ -18,8 +18,23 @@ Emitir NF-e em contingência SVC quando a SEFAZ de origem está fora do ar, sem 
 - [x] Testes `tests/nfe-contingencia-svc.test.mjs` (12)
 - [x] Gates: `npm run lint` + `npm run typecheck` + `npm test`
 - [x] 3 guards pré-existentes ajustados com intenção preservada (`fiscal-nfe-events` roteamento, `company-logo-storage-policy` janela pós-revisão)
-- [ ] Homologação SVC por UF (requer ativação/contingência real — fora do código)
-- [ ] Deploy functions + hosting (só @devops; Constitution II)
+- [ ] Homologação SVC por UF (requer contingência real + senha do certificado — manual, roteiro abaixo)
+- [x] Deploy functions + hosting (devops, pedido expresso 2026-10-15)
+
+## Deploy executado
+- Commit `5c81885` + push `3c2675c..5c81885` main.
+- Hosting publicado (build:hosting + release completa).
+- Functions (6/6 em 2 grupos): nf_enviarSEFAZ, nf_consultarNFe, nf_cancelarNFe, nf_cartaCorrecaoNFe, nf_eventoRTC, nf_inutilizarNumeracao.
+- Verificado: `functions:list` ativas; produção serve `validarTpEmis`/`validarDhContXJust` e builder com `temis`.
+- Browser automation indisponível neste ambiente (mesma falha `ChildProcess.kill` da cont.13) — teste vivo de emissão fica como roteiro manual.
+
+## Roteiro manual de homologação SVC (pendente, com o usuário)
+1. Tenant de homologação com certificado válido; anotar UF do emitente.
+2. Config NF-e → Contingência SVC → ativar com motivo 15–255 chars (tipo auto).
+3. Emitir NF-e de teste: confirmar diálogo "Emitir em contingência", senha A1.
+4. Conferir no XML: `<tpEmis>6|7</tpEmis>`, `<dhCont>`, `<xJust>`, dígito da chave.
+5. Consultar SEFAZ, cancelar e inutilizar uma faixa — tudo deve rotear ao SVC.
+6. Desativar contingência ao final e emitir uma normal (tpEmis 1) como contraprova.
 
 ## Resultado dos gates
 - `npm run lint`: OK
