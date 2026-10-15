@@ -47,10 +47,10 @@ Executar o roadmap da auditoria (sessão cont. 9), na ordem: 1º integridade →
 - `npm run build:hosting`: OK (543 arquivos)
 
 ## Deploy (devops, sob ordem expressa)
-- [ ] Commit dossiê + push
-- [ ] `firebase deploy --only hosting`
-- [ ] `firebase deploy --only database`
-- [ ] `firebase deploy --only functions:` estoqueAplicarMovimento, setUserAccessStatus, nf_assinarXML, nf_enviarSEFAZ, nf_consultarNFe, nf_reservarNumero, nf_cancelarNFe, nf_cartaCorrecaoNFe, nf_eventoRTC, nf_inutilizarNumeracao, mdfe_consultar, mdfe_emitir, mdfe_encerrar
+- [x] Commit dossiê + push (`3c2675c`, `ebb6cf8..3c2675c`)
+- [x] `firebase deploy --only hosting` (543 arqs, 11 novos)
+- [x] `firebase deploy --only database` (rules com gate `active != false`)
+- [x] `firebase deploy --only functions:` estoqueAplicarMovimento (create), setUserAccessStatus, nf_assinarXML, nf_enviarSEFAZ, nf_consultarNFe, nf_reservarNumero, nf_cancelarNFe, nf_cartaCorrecaoNFe, nf_eventoRTC, nf_inutilizarNumeracao, mdfe_consultar, mdfe_emitir, mdfe_encerrar (12 updates; 1ª tentativa falhou em timeout local transitório, 2ª OK)
 - [ ] Verificação pós-deploy + teste vivo MDF-e/NF-e em homologação
 
 ## Deferido com motivo

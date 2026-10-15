@@ -65,6 +65,45 @@ const SEFAZ_EP = {
     SP: { NfeAutorizacao4: 'https://nfe.fazenda.sp.gov.br/ws/nfeautorizacao4.asmx' },
     MG: { NfeAutorizacao4: 'https://nfe.fazenda.mg.gov.br/nfe2/services/NFeAutorizacao4' },
   },
+  // P5 SVC (catálogo NFePHP wsnfe_4.00, blocos SVCAN/SVCRS — homolog+produção,
+  // todos os serviços; SVC-RS compartilha a infra/hosts do SVRS, distinguido
+  // pelo tpEmis 6/7 no XML).
+  'svc-an': {
+    homologacao: {
+      NfeAutorizacao4:    'https://hom.sefazvirtual.fazenda.gov.br/NFeAutorizacao4/NFeAutorizacao4.asmx',
+      NfeRetAutorizacao4: 'https://hom.sefazvirtual.fazenda.gov.br/NFeRetAutorizacao4/NFeRetAutorizacao4.asmx',
+      NfeConsultaProtocolo4: 'https://hom.sefazvirtual.fazenda.gov.br/NFeConsultaProtocolo4/NFeConsultaProtocolo4.asmx',
+      NFeRecepcaoEvento4: 'https://hom.sefazvirtual.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx',
+      NfeInutilizacao4:   'https://hom.sefazvirtual.fazenda.gov.br/NFeInutilizacao4/NFeInutilizacao4.asmx',
+      NfeStatusServico4:  'https://hom.sefazvirtual.fazenda.gov.br/NFeStatusServico4/NFeStatusServico4.asmx',
+    },
+    producao: {
+      NfeAutorizacao4:    'https://www.sefazvirtual.fazenda.gov.br/NFeAutorizacao4/NFeAutorizacao4.asmx',
+      NfeRetAutorizacao4: 'https://www.sefazvirtual.fazenda.gov.br/NFeRetAutorizacao4/NFeRetAutorizacao4.asmx',
+      NfeConsultaProtocolo4: 'https://www.sefazvirtual.fazenda.gov.br/NFeConsultaProtocolo4/NFeConsultaProtocolo4.asmx',
+      NFeRecepcaoEvento4: 'https://www.sefazvirtual.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx',
+      NfeInutilizacao4:   'https://www.sefazvirtual.fazenda.gov.br/NFeInutilizacao4/NFeInutilizacao4.asmx',
+      NfeStatusServico4:  'https://www.sefazvirtual.fazenda.gov.br/NFeStatusServico4/NFeStatusServico4.asmx',
+    },
+  },
+  'svc-rs': {
+    homologacao: {
+      NfeAutorizacao4:    'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeAutorizacao/NFeAutorizacao4.asmx',
+      NfeRetAutorizacao4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeRetAutorizacao/NFeRetAutorizacao4.asmx',
+      NfeConsultaProtocolo4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeConsulta/NfeConsulta4.asmx',
+      NFeRecepcaoEvento4: 'https://nfe-homologacao.svrs.rs.gov.br/ws/recepcaoevento/recepcaoevento4.asmx',
+      NfeInutilizacao4:   'https://nfe-homologacao.svrs.rs.gov.br/ws/nfeinutilizacao/nfeinutilizacao4.asmx',
+      NfeStatusServico4:  'https://nfe-homologacao.svrs.rs.gov.br/ws/NfeStatusServico/NfeStatusServico4.asmx',
+    },
+    producao: {
+      NfeAutorizacao4:    'https://nfe.svrs.rs.gov.br/ws/NfeAutorizacao/NFeAutorizacao4.asmx',
+      NfeRetAutorizacao4: 'https://nfe.svrs.rs.gov.br/ws/NfeRetAutorizacao/NFeRetAutorizacao4.asmx',
+      NfeConsultaProtocolo4: 'https://nfe.svrs.rs.gov.br/ws/NfeConsulta/NfeConsulta4.asmx',
+      NFeRecepcaoEvento4: 'https://nfe.svrs.rs.gov.br/ws/recepcaoevento/recepcaoevento4.asmx',
+      NfeInutilizacao4:   'https://nfe.svrs.rs.gov.br/ws/nfeinutilizacao/nfeinutilizacao4.asmx',
+      NfeStatusServico4:  'https://nfe.svrs.rs.gov.br/ws/NfeStatusServico/NfeStatusServico4.asmx',
+    },
+  },
 };
 
 const UF_CODIGO_IBGE = {
@@ -76,11 +115,58 @@ const UF_CODIGO_IBGE = {
 
 const CCE_COND_USO = 'A Carta de Correcao e disciplinada pelo paragrafo 1o-A do art. 7o do Convenio S/N, de 15 de dezembro de 1970 e pode ser utilizada para regularizacao de erro ocorrido na emissao de documento fiscal, desde que o erro nao esteja relacionado com: I - as variaveis que determinam o valor do imposto tais como: base de calculo, aliquota, diferenca de preco, quantidade, valor da operacao ou da prestacao; II - a correcao de dados cadastrais que implique mudanca do remetente ou do destinatario; III - a data de emissao ou de saida.';
 
-function getEndpoint(servico, ambiente, uf) {
+function getEndpoint(servico, ambiente, uf, tpEmis) {
+  // P5: nota em contingência SVC vive no SVC (sem retransmissão à origem —
+  // fonte: NFePHP Contingency): autorização, consulta, eventos e inutilização
+  // usam o bloco svc-*. tpEmis ausente/inválido = rota normal (compatível).
+  const svc = resolverAmbienteSVC(tpEmis);
+  if (svc && SEFAZ_EP[svc] && SEFAZ_EP[svc][ambiente] && SEFAZ_EP[svc][ambiente][servico]) {
+    return SEFAZ_EP[svc][ambiente][servico];
+  }
   const env = SEFAZ_EP[ambiente] || SEFAZ_EP.homologacao;
   // UF própria?
   if (ambiente === 'producao' && env[uf] && env[uf][servico]) return env[uf][servico];
   return env[servico] || SEFAZ_EP.homologacao[servico];
+}
+
+// P5 Contingência SVC — mapa UF→ambiente autoritativo no backend (fonte:
+// NFePHP Contingency.md; gêmea de exibição em nf-config.js SVC_POR_UF).
+// Tenant pode forçar o tipo (override explícito), nunca inventado.
+const SVC_POR_UF = {
+  'AC': 'SVC-AN', 'AL': 'SVC-AN', 'AP': 'SVC-AN', 'CE': 'SVC-AN',
+  'DF': 'SVC-AN', 'ES': 'SVC-AN', 'MG': 'SVC-AN', 'PA': 'SVC-AN',
+  'PB': 'SVC-AN', 'PI': 'SVC-AN', 'RJ': 'SVC-AN', 'RN': 'SVC-AN',
+  'RO': 'SVC-AN', 'RR': 'SVC-AN', 'RS': 'SVC-AN', 'SC': 'SVC-AN',
+  'SE': 'SVC-AN', 'SP': 'SVC-AN', 'TO': 'SVC-AN',
+  'AM': 'SVC-RS', 'BA': 'SVC-RS', 'GO': 'SVC-RS', 'MA': 'SVC-RS',
+  'MS': 'SVC-RS', 'MT': 'SVC-RS', 'PE': 'SVC-RS', 'PR': 'SVC-RS',
+};
+function resolverTipoSVC(uf, override) {
+  const fixo = String(override || '').trim().toUpperCase();
+  if (fixo === 'SVC-AN' || fixo === 'SVC-RS') return fixo;
+  return SVC_POR_UF[String(uf || '').trim().toUpperCase()] || '';
+}
+function resolverAmbienteSVC(tpEmis) {
+  const t = String(tpEmis ?? '').trim();
+  if (t === '6') return 'svc-an';
+  if (t === '7') return 'svc-rs';
+  return null;
+}
+// tpEmis persistido no registro da nota (fonte da verdade do roteamento);
+// fallback = param explícito do cliente; default '1' (rota normal).
+async function lerTpEmisNota(db, tenantId, modKey, nfId, fallback) {
+  const fb = ['6', '7'].includes(String(fallback ?? '').trim()) ? String(fallback).trim() : '1';
+  try {
+    for (const ref of getFiscalNoteRefs(db, tenantId, modKey, nfId)) {
+      const snap = await ref.get().catch(() => null);
+      if (snap && snap.exists()) {
+        const v = snap.val() || {};
+        const t = String((v.ide && v.ide.tpEmis) ?? v.tpEmis ?? '').trim();
+        if (t !== '') return t;
+      }
+    }
+  } catch (_) {}
+  return fb;
 }
 
 function sanitizePathSegment(value, fieldName) {
@@ -1172,12 +1258,14 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
     const ufEmitMatch = xmlAssinado.match(/<UF>([A-Z]{2})<\/UF>/);
     const ufEmit = ufEmitMatch ? ufEmitMatch[1] : 'SP';
 
-    const url  = getEndpoint('NfeAutorizacao4', env, ufEmit);
+    // P5: tpEmis do XML assinado decide o ambiente (SVC vive no SVC).
+    const tpEmisEnvio = (xmlAssinado.match(/<tpEmis>(\d)<\/tpEmis>/) || [])[1] || '1';
+    const url  = getEndpoint('NfeAutorizacao4', env, ufEmit, tpEmisEnvio);
     const chaveMatch = xmlAssinado.match(/Id="NFe(\d{44})"/);
     const cUF = resolveCUF({ chave: chaveMatch ? chaveMatch[1] : '', ufEmit });
     const soap = buildSoapEnvelope('NFeAutorizacao4', loteXml, '4.00', cUF);
 
-    functions.logger.info(`[nf_enviarSEFAZ] Enviando NF ${nfId} | UF=${ufEmit} | Amb=${env} | URL=${url}`);
+    functions.logger.info(`[nf_enviarSEFAZ] Enviando NF ${nfId} | UF=${ufEmit} | Amb=${env} | tpEmis=${tpEmisEnvio} | URL=${url}`);
     const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeAutorizacao4'));
     const ret  = parseSefazResponse(resp.body);
 
@@ -1232,6 +1320,8 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
       descricao:     descreverCStat(ret.cStat) || ret.xMotivo || '',
       nProt:         ret.nProt,
       dhAutorizacao: ret.dhRecbto || new Date().toISOString(),
+      tpEmis:        tpEmisEnvio,
+      ambienteSefaz: resolverAmbienteSVC(tpEmisEnvio) || 'normal',
       updatedAt:     new Date().toISOString(),
       ...(falhaComunicacao ? { erroMsg: `Sem retorno válido da SEFAZ (cStat ${ret.cStat}). Tente reenviar/consultar.` } : {}),
       ...(xmlStoragePath ? { xmlStoragePath } : {}),
@@ -1247,6 +1337,8 @@ exports.nf_enviarSEFAZ = onFiscalCall(async (data, context) => {
       descricao:  descreverCStat(ret.cStat) || ret.xMotivo || '',
       nProt:      ret.nProt,
       dhRecbto:   ret.dhRecbto,
+      tpEmis:     tpEmisEnvio,
+      ambienteSefaz: resolverAmbienteSVC(tpEmisEnvio) || 'normal',
       xmlProcStoragePath,
     };
   } catch (e) {
@@ -1322,7 +1414,7 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação obrigatória');
   }
-  const { tenantId: rawTenantId, chave, senhaA1, ambiente } = data || {};
+  const { tenantId: rawTenantId, chave, senhaA1, ambiente, tpEmis: rawTpEmis } = data || {};
   const tenantId = sanitizePathSegment(rawTenantId, 'tenantId');
   if (!chave || !senhaA1) {
     throw new functions.https.HttpsError('invalid-argument', 'tenantId, chave e senhaA1 são obrigatórios');
@@ -1336,7 +1428,10 @@ exports.nf_consultarNFe = onFiscalCall(async (data, context) => {
     const consultaXml = `<consSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><xServ>CONSULTAR</xServ><chNFe>${chave}</chNFe></consSitNFe>`;
 
     const cUF = resolveCUF({ chave });
-    const url  = getEndpoint('NfeConsultaProtocolo4', env);
+    // P5: nota autorizada em SVC é consultada no SVC (cliente informa o tpEmis
+    // do registro; sem ele, rota normal — compatível).
+    const tpEmisCons = ['6', '7'].includes(String(rawTpEmis ?? '').trim()) ? String(rawTpEmis).trim() : '1';
+    const url  = getEndpoint('NfeConsultaProtocolo4', env, undefined, tpEmisCons);
     // As actions do asmx SVRS de consulta variam de nome entre versões do WSDL
     // (SOAP Fault "action not recognized" em 05/2026 para NfeConsultaProtocolo4
     // E NfeConsulta4). Auto-descoberta com fallback ORDENADO: usa a primeira
@@ -1479,6 +1574,8 @@ exports.nf_cancelarNFe = onFiscalCall(async (data, context) => {
   const modKey = modelo == 65 ? 'nfce' : 'nfe';
   const db     = admin.database();
   const dhEvento = toFiscalDateTime();
+  // P5: evento vai ao SVC que autorizou a nota (registro é a fonte da verdade).
+  const tpEmisCanc = await lerTpEmisNota(db, tenantId, modKey, nfId, (data || {}).tpEmis);
   // Prazo de cancelamento: decorrido desde dhAutorizacao vs limite da config
   // do tenant (prazosFiscais.cancNFeHoras; null = sem bloqueio). Antes do PFX
   // e da SEFAZ — poupa a ida quando já estourado.
@@ -1530,7 +1627,7 @@ exports.nf_cancelarNFe = onFiscalCall(async (data, context) => {
     </envEvento>`;
 
     const eventoAssinado = assinarXMLcomForge(eventoXml, pfxBuffer, senhaA1, { tagName: 'infEvento', idPrefix: 'ID' });
-    const url  = getEndpoint('NFeRecepcaoEvento4', env);
+    const url  = getEndpoint('NFeRecepcaoEvento4', env, undefined, tpEmisCanc);
     const soap = buildSoapEnvelope('NFeRecepcaoEvento4', eventoAssinado, '1.00', cUF);
     const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeRecepcaoEvento4'));
     const ret  = parseSefazResponse(resp.body, ['135', '136', '155']);
@@ -1611,6 +1708,8 @@ exports.nf_cartaCorrecaoNFe = onFiscalCall(async (data, context) => {
   const db     = admin.database();
   const cnpj   = requireCnpj(cnpjEmit);
   const cUF    = resolveCUF({ chave: chaveNFe });
+  // P5: CC-e vai ao SVC que autorizou a nota (registro é a fonte da verdade).
+  const tpEmisCce = await lerTpEmisNota(db, tenantId, modKey, nfId, (data || {}).tpEmis);
   const seq    = await resolveCceSequence(db, tenantId, modKey, nfId, nSeqEvento);
   const seqStr = String(seq).padStart(2, '0');
   const dhEvento = toFiscalDateTime();
@@ -1639,7 +1738,7 @@ exports.nf_cartaCorrecaoNFe = onFiscalCall(async (data, context) => {
     </envEvento>`;
 
     const eventoAssinado = assinarXMLcomForge(eventoXml, pfxBuffer, senhaA1, { tagName: 'infEvento', idPrefix: 'ID' });
-    const url  = getEndpoint('NFeRecepcaoEvento4', env);
+    const url  = getEndpoint('NFeRecepcaoEvento4', env, undefined, tpEmisCce);
     const soap = buildSoapEnvelope('NFeRecepcaoEvento4', eventoAssinado, '1.00', cUF);
     const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeRecepcaoEvento4'));
     const ret  = parseSefazResponse(resp.body, ['135', '136']);
@@ -1710,7 +1809,7 @@ exports.nf_inutilizarNumeracao = onFiscalCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação obrigatória');
   }
-  const { tenantId: rawTenantId, modelo, serie: rawSerie, numeroInicial: rawIni, numeroFinal: rawFim, justificativa, senhaA1, ambiente, cnpjEmit, ufEmit, cUF: rawCUF, ano } = data || {};
+  const { tenantId: rawTenantId, modelo, serie: rawSerie, numeroInicial: rawIni, numeroFinal: rawFim, justificativa, senhaA1, ambiente, cnpjEmit, ufEmit, cUF: rawCUF, ano, tpEmis: rawTpEmis } = data || {};
   const tenantId = sanitizePathSegment(rawTenantId, 'tenantId');
   const mod = String(modelo == 65 ? 65 : 55);
   const modKey = getModKey(mod);
@@ -1755,7 +1854,9 @@ exports.nf_inutilizarNumeracao = onFiscalCall(async (data, context) => {
       </infInut>
     </inutNFe>`;
     const inutAssinado = assinarXMLcomForge(inutXml, pfxBuffer, senhaA1, { tagName: 'infInut', idPrefix: 'ID' });
-    const url  = getEndpoint('NFeInutilizacao4', env);
+    // P5: sem nota vinculada — cliente informa tpEmis da contingência ativa (default: rota normal).
+    const tpEmisInut = ['6', '7'].includes(String(rawTpEmis ?? '').trim()) ? String(rawTpEmis).trim() : '1';
+    const url  = getEndpoint('NFeInutilizacao4', env, undefined, tpEmisInut);
     const soap = buildSoapEnvelope('NFeInutilizacao4', inutAssinado, '4.00', cUF);
     const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeInutilizacao4'));
     const ret  = parseSefazResponse(resp.body, ['102']);
@@ -2163,6 +2264,8 @@ exports.nf_eventoRTC = onFiscalCall(async (data, context) => {
   const db     = admin.database();
   const cnpj   = requireCnpj(cnpjEmit);
   const cUF    = resolveCUF({ chave: chaveNFe });
+  // P5: evento RTC vai ao SVC que autorizou a nota (registro é a fonte da verdade).
+  const tpEmisRtc = await lerTpEmisNota(db, tenantId, modKey, nfId, (data || {}).tpEmis);
   const seq    = await resolveRtcSequence(db, tenantId, modKey, nfId, nSeqEvento);
   const seqStr = String(seq).padStart(2, '0');
   const dhEvento = toFiscalDateTime();
@@ -2188,7 +2291,7 @@ exports.nf_eventoRTC = onFiscalCall(async (data, context) => {
     </envEvento>`;
 
     const eventoAssinado = assinarXMLcomForge(eventoXml, pfxBuffer, senhaA1, { tagName: 'infEvento', idPrefix: 'ID' });
-    const url  = getEndpoint('NFeRecepcaoEvento4', env);
+    const url  = getEndpoint('NFeRecepcaoEvento4', env, undefined, tpEmisRtc);
     const soap = buildSoapEnvelope('NFeRecepcaoEvento4', eventoAssinado, '1.00', cUF);
     const resp = await postSefaz(url, soap, pfxBuffer, senhaA1, soapActionFor('NFeRecepcaoEvento4'));
     const ret  = parseSefazResponse(resp.body, ['135', '136']);

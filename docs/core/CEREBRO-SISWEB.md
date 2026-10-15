@@ -1642,3 +1642,19 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Fontes (4 frentes paralelas, só oficiais):** SVRS/AM/MT/SVAN + SVC-RS + MOC 7.0 (I e III) + EC87/LC190/Conv236/NT2015.003 + Ajuste 07/05 + NT2011/007 + NT2018.004 + NT2011/003 + Lei 12.876/2013 + IT 2025.002 v1.70 + Lei 12.741/2012 + Dec 8.264/2014 + INs IBAMA 21/2014, 16/2022, 3/2025 + Dec PA 2.596/2022 + NT 2014.004.
 - **NÃO VERIFICADO (não usar sem confirmar):** PA/RO/AC/AP↔SVRS e SVC; endpoints SVC-RS v4; Informe RFB unificação SVAN; prazo CC-e 720h; tags integrais ICMSUFDest; FCP por UF; vedação total 00000000; 703 no MOC em texto; GF fora de PA/MT; webservice fiscal-ambiental.
 - **Achados que viram condição de lançamento:** 1 DOF : 1 NF (IN 21/2014 art.35); GF-PA exige chave NF-e; cancel 24h + 155 fora de prazo + substituição 168h; sem tag DOF/GF no MOC (só `infCpl`/`infAdic`); IBPT opcional; TZ lei fecha mapa (PA/AP/MA −03; MT/RO/leste-AM −04; AC/oeste-AM −05).
+
+## Sessao 2026-10-14 (cont. 13) — Publish total sob ordem expressa (Gage/devops)
+
+- **Commit+push:** `3c2675c` (dossiê), `ebb6cf8..3c2675c` main.
+- **Hosting:** 543 arqs, 11 novos. **Database:** rules com gate `active != false` ao vivo.
+- **Functions (13):** create `estoqueAplicarMovimento` + updates `setUserAccessStatus`, `nf_assinarXML/enviarSEFAZ/consultarNFe/reservarNumero/cancelarNFe/cartaCorrecaoNFe/eventoRTC/inutilizarNumeracao`, `mdfe_consultar/emitir/encerrar`. 1ª tentativa: timeout local transitório no load; 2ª OK 13/13. Aviso `firebase-functions` outdated (só warning).
+- **Pendente:** teste vivo MDF-e/NF-e em homologação; agent-browser falhou 2× neste ambiente (`ChildProcess.kill`, doctor travou) — retomar com retry.
+
+## Sessao 2026-10-15 (cont. 14) — P5 Contingência SVC NF-e implementado
+
+- **Escopo (ordem expressa):** só P5; DIFAL e demais pendências seguem pendentes; EPEC/FS-DA/offline/NFC-e/MDF-e fora; DANFE sem legenda (wording MOC não verificado).
+- **Fontes novas:** NFePHP `Contingency.md` + catálogo `wsnfe_4.00_mod55.xml` (blocos SVCAN/SVCRS, via curl em Temp — não versionado); XSD local dhCont/xJust (posição/limites).
+- **Comportamento:** config `contingencia` (manual, motivo 15–255, tipo auto/SVC-AN/SVC-RS) → `emitirNFe` carimba tpEmis/dhCont/xJust antes de validar → chave com dígito tpEmis → SVC autoriza (sem retransmissão) → `tpEmis`/`ambienteSefaz` persistidos → consulta/cancel/CC/RTC/inutil roteados pelo registro; confirm por emissão na UI; NFC-e e tpEmis 2/4/5/8/9 rejeitados.
+- **Arquivos:** `nf-config.js`, `nf-validator.js`, `nf-xml-builder.js`, `nf-service.js`, `functions/nf-functions.js`, `notas-fiscais.html`, `tests/nfe-contingencia-svc.test.mjs` (12), story `docs/stories/2026-10-15-nfe-contingencia-svc.md`.
+- **Gates:** lint OK, typecheck OK, test 1405/1404/0/1 (3 guards ajustados com intenção preservada). **Sem commit/push/deploy** (aguardando ordem; só @devops).
+- **Pendente:** homologação SVC por UF (requer contingência real); preencher `cancNFeHoras` segue pendente de aprovação do dossiê.

@@ -22,7 +22,7 @@ test('eventos fiscais sao assinados e enviados aos servicos SEFAZ corretos', () 
   assert.match(nfFunctions, /tpEvento>110110<\/tpEvento>/);
   assert.match(nfFunctions, /xCondUso>\$\{escapeXml\(CCE_COND_USO\)\}<\/xCondUso>/);
   assert.match(nfFunctions, /assinarXMLcomForge\(eventoXml, pfxBuffer, senhaA1, \{ tagName: 'infEvento', idPrefix: 'ID' \}\)/);
-  assert.match(nfFunctions, /getEndpoint\('NFeRecepcaoEvento4', env\)/);
+  assert.match(nfFunctions, /getEndpoint\('NFeRecepcaoEvento4', env/);
   assert.match(nfFunctions, /parseSefazResponse\(resp\.body, \['135', '136'\]\)/);
 });
 
@@ -33,7 +33,7 @@ test('inutilizacao monta infInut assinado, valida faixa local e persiste auditor
   assert.match(nfFunctions, /<xServ>INUTILIZAR<\/xServ>/);
   assert.match(nfFunctions, /await assertNoLocalAuthorizedNumberInRange\(db, tenantId, modKey, serie, numeroInicial, numeroFinal\)/);
   assert.match(nfFunctions, /assinarXMLcomForge\(inutXml, pfxBuffer, senhaA1, \{ tagName: 'infInut', idPrefix: 'ID' \}\)/);
-  assert.match(nfFunctions, /getEndpoint\('NFeInutilizacao4', env\)/);
+  assert.match(nfFunctions, /getEndpoint\('NFeInutilizacao4', env/);
   assert.match(nfFunctions, /parseSefazResponse\(resp\.body, \['102'\]\)/);
   assert.match(nfFunctions, /companies\/\$\{tenantId\}\/fiscal\/notas\/inutilizacoes\/\$\{recordId\}/);
 });

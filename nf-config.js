@@ -48,6 +48,18 @@ const NFConfigService = (() => {
       cscId: '',     // ID token QR Code
       cscToken: '',  // Token CSC para QR Code
     },
+    // P5 — Contingência SVC (NFe mod 55). Desligada por default (emissão normal).
+    // Ativação é MANUAL e explícita por tenant (nunca automática): exige motivo
+    // 15–255 chars (NFePHP Contingency; MOC Anexo III). tipo vazio = resolve
+    // pela UF do emitente (SVC_POR_UF). Produção exige SEFAZ origem com SVC
+    // ativo — homologar por UF antes de usar.
+    contingencia: {
+      ativa: false,
+      tipo: '',         // '' = auto pela UF | 'SVC-AN' | 'SVC-RS'
+      motivo: '',       // 15–255 chars, obrigatório ao ativar
+      ativadaEm: '',    // ISO da entrada em contingência (= dhCont do XML)
+      ativadaPor: '',   // uid
+    },
     // Prazos de eventos fiscais (horas desde a autorização). null = sem
     // bloqueio (só informa o decorrido). PREENCHA conforme MOC/NT vigente
     // antes de ativar — nenhum valor aqui é regra oficial.
@@ -555,6 +567,49 @@ const NFConfigService = (() => {
     return `há ${Math.floor(decorridoHoras / 24)} dias`;
   }
 
+  // ─── P5 Contingência SVC: UF → ambiente (fonte: NFePHP Contingency.md;
+  // abaixo do MOC, acima do código). Gêmea no backend (SVC_POR_UF em
+  // nf-functions.js) — manter sincronizadas. Tenant pode forçar o tipo
+  // (override explícito), nunca inventado em silêncio.
+  const SVC_POR_UF = {
+    'AC': 'SVC-AN', 'AL': 'SVC-AN', 'AP': 'SVC-AN', 'CE': 'SVC-AN',
+    'DF': 'SVC-AN', 'ES': 'SVC-AN', 'MG': 'SVC-AN', 'PA': 'SVC-AN',
+    'PB': 'SVC-AN', 'PI': 'SVC-AN', 'RJ': 'SVC-AN', 'RN': 'SVC-AN',
+    'RO': 'SVC-AN', 'RR': 'SVC-AN', 'RS': 'SVC-AN', 'SC': 'SVC-AN',
+    'SE': 'SVC-AN', 'SP': 'SVC-AN', 'TO': 'SVC-AN',
+    'AM': 'SVC-RS', 'BA': 'SVC-RS', 'GO': 'SVC-RS', 'MA': 'SVC-RS',
+    'MS': 'SVC-RS', 'MT': 'SVC-RS', 'PE': 'SVC-RS', 'PR': 'SVC-RS',
+  };
+  function resolverTipoSVC(uf, override) {
+    const fixo = String(override || '').trim().toUpperCase();
+    if (fixo === 'SVC-AN' || fixo === 'SVC-RS') return fixo;
+    return SVC_POR_UF[String(uf || '').trim().toUpperCase()] || '';
+  }
+  function tpEmisDeTipoSVC(tipo) {
+    if (tipo === 'SVC-RS') return '7';
+    if (tipo === 'SVC-AN') return '6';
+    return '1';
+  }
+  // Valida o bloco contingencia da config (ativação manual explícita).
+  // Retorna { valid, errors[] } no mesmo formato de NFValidator.
+  function validarContingencia(cont) {
+    const errors = [];
+    const c = cont && typeof cont === 'object' ? cont : {};
+    if (!c.ativa) return { valid: true, errors };
+    const tipo = String(c.tipo || '').trim().toUpperCase();
+    if (tipo !== '' && tipo !== 'SVC-AN' && tipo !== 'SVC-RS') {
+      errors.push('Tipo de contingência inválido (use SVC-AN ou SVC-RS, ou vazio para auto pela UF)');
+    }
+    const motivo = String(c.motivo || '').trim();
+    if (motivo.length < 15 || motivo.length > 255) {
+      errors.push('Motivo da contingência obrigatório (15–255 caracteres)');
+    }
+    if (c.ativadaEm && Number.isNaN(new Date(c.ativadaEm).getTime())) {
+      errors.push('Data de ativação da contingência inválida');
+    }
+    return { valid: errors.length === 0, errors };
+  }
+
   // ─── API pública ──────────────────────────────────────────────────────────
   return {
     loadConfig,
@@ -571,6 +626,10 @@ const NFConfigService = (() => {
     ajustarCFOP,
     avaliarPrazoEvento,
     formatarDecorridoHoras,
+    SVC_POR_UF,
+    resolverTipoSVC,
+    tpEmisDeTipoSVC,
+    validarContingencia,
     validarCNPJ,
     validarCPF,
     formatarCNPJ,

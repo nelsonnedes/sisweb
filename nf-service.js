@@ -296,6 +296,30 @@ const NFService = (() => {
     const cfgVal = window.NFValidator.validarConfigParaEmissao(_config);
     if (!cfgVal.valid) throw new Error('Configuração incompleta:\n• ' + cfgVal.errors.join('\n• '));
 
+    // 1b. P5 Contingência SVC (ativação MANUAL por tenant, nunca automática).
+    // Se ativa: carimba ide.tpEmis/dhCont/xJust ANTES de validar e gerar o XML
+    // (a chave muda com tpEmis e a nota é regravada — fonte: NFePHP Contingency).
+    // Desligada (default): ide segue sem tpEmis → builder emite '1', nada muda.
+    const cont = _config && _config.contingencia && _config.contingencia.ativa ? _config.contingencia : null;
+    if (cont) {
+      const ufEmit = String(nfeData?.emit?.endereco?.uf || _config?.empresa?.endereco?.uf || '').trim().toUpperCase();
+      const tipo = (window.NFConfigService?.resolverTipoSVC)
+        ? window.NFConfigService.resolverTipoSVC(ufEmit, cont.tipo)
+        : String(cont.tipo || '').trim().toUpperCase();
+      if (tipo !== 'SVC-AN' && tipo !== 'SVC-RS') {
+        throw new Error(`Contingência ativa sem tipo resolvido para UF ${ufEmit || '(vazia)'}. Desative a contingência ou informe o tipo (SVC-AN/SVC-RS).`);
+      }
+      const motivo = String(cont.motivo || '').trim();
+      if (motivo.length < 15 || motivo.length > 255) {
+        throw new Error('Contingência ativa exige motivo de 15–255 caracteres na configuração fiscal.');
+      }
+      if (!nfeData.ide || typeof nfeData.ide !== 'object') nfeData.ide = {};
+      nfeData.ide.tpEmis = tipo === 'SVC-RS' ? '7' : '6';
+      nfeData.ide.dhCont = cont.ativadaEm || new Date().toISOString();
+      nfeData.ide.xJust = motivo;
+      nfeData.contingenciaSVC = { tipo, motivo, ativadaEm: nfeData.ide.dhCont };
+    }
+
     // 2. Calcular totais. vTotTrib = soma dos tributos (inclui IBS/CBS/IS quando
     //    presentes) — é o que a SEFAZ valida (cStat 685). O texto IBPT da Lei da
     //    Transparência vai só em infCpl/Dados Adicionais, nunca no vTotTrib.

@@ -2227,6 +2227,45 @@
           </div><!-- cfg-panel-body -->
           </div><!-- panelNfe -->
 
+          <!-- ══ 2b. Contingência SVC (P5 — só NF-e mod 55) ═══════════════════ -->
+          <div class="cfg-panel" id="panelContingencia">
+            <div class="cfg-panel-header" onclick="cfgTogglePanel('panelContingencia')">
+              <h3><i class="fas fa-exclamation-triangle"></i> Contingência SVC
+              <span class="cfg-panel-badge" id="badgeContingencia">Normal</span></h3>
+              <i class="fas fa-chevron-down cfg-panel-chevron"></i>
+            </div>
+            <div class="cfg-panel-body">
+            <p style="color: var(--sw-text-2);font-size:12px;margin-bottom:10px;">Emissão via SEFAZ Virtual de Contingência quando a SEFAZ de origem está fora do ar (tpEmis 6=SVC-AN, 7=SVC-RS). Ativação MANUAL por tenant — nunca automática. Em produção, só funciona com o SVC ativado pela SEFAZ de origem. Homologue por UF antes de usar em produção.</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cfgContAtiva">Modo:</label>
+                <select id="cfgContAtiva">
+                  <option value="0">✅ Emissão normal (tpEmis 1)</option>
+                  <option value="1">⚠️ Contingência SVC ativa</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cfgContTipo">Ambiente SVC:</label>
+                <select id="cfgContTipo">
+                  <option value="">Automático pela UF do emitente</option>
+                  <option value="SVC-AN">SVC-AN (tpEmis 6)</option>
+                  <option value="SVC-RS">SVC-RS (tpEmis 7)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="flex:2;">
+                <label for="cfgContMotivo">Motivo (15–255 caracteres, vai para o registro e dhCont/xJust do XML):</label>
+                <input type="text" id="cfgContMotivo" maxlength="255" placeholder="Ex.: SEFAZ de origem fora do ar (erro de conexão)">
+              </div>
+              <div class="form-group">
+                <label>Ativada em:</label>
+                <input type="text" id="cfgContAtivadaEm" readonly placeholder="—">
+              </div>
+            </div>
+            </div><!-- cfg-panel-body -->
+          </div><!-- panelContingencia -->
+
           <!-- ══ 3. Naturezas da Operação ════════════════════════════ -->
           <div class="cfg-panel" id="panelNaturezas">
             <div class="cfg-panel-header" onclick="cfgTogglePanel('panelNaturezas')">
@@ -2840,6 +2879,19 @@
       set('cfgProximoNumero', n.proximoNumero || 1);
       set('cfgCfopPadrao', n.cfopPadrao || '5102');
       set('cfgNatOp', n.naturezaOperacao);
+      // P5 Contingência SVC
+      try {
+        const ct = cfg.contingencia || {};
+        const elAtiva = document.getElementById('cfgContAtiva'); if (elAtiva) elAtiva.value = ct.ativa ? '1' : '0';
+        const elTipo = document.getElementById('cfgContTipo'); if (elTipo) elTipo.value = ct.tipo || '';
+        const elMot = document.getElementById('cfgContMotivo'); if (elMot) elMot.value = ct.motivo || '';
+        const elEm = document.getElementById('cfgContAtivadaEm'); if (elEm) elEm.value = ct.ativadaEm ? String(ct.ativadaEm).slice(0, 16).replace('T', ' ') : '';
+        const badge = document.getElementById('badgeContingencia');
+        if (badge) {
+          const rotulo = ct.ativa ? `⚠️ Contingência ${ct.tipo || 'auto'} ativa` : 'Normal';
+          badge.textContent = rotulo;
+        }
+      } catch (_) {}
       set('cfgIcmsAliq', imp.icms?.aliquotaInterna || 0);
       set('cfgCSOSN', imp.icms?.csosn || '102');
       set('cfgIcmsCst', imp.icms?.cst || '00');
@@ -3230,6 +3282,27 @@
           cfopPadrao: g('cfgCfopPadrao') || '5102',
           naturezaOperacao: g('cfgNatOp') || 'Venda de Mercadoria',
         },
+        contingencia: (() => {
+          // P5: bloco explícito (salvarConfiguracoes monta o objeto campo a
+          // campo — sem isto, a contingência nunca persistiria). Meta
+          // (ativadaEm/Por) preservada da config carregada; ativação nova
+          // carimba agora + uid.
+          let anterior = null;
+          try { anterior = window.NFService?.getConfig?.()?.contingencia || null; } catch (_) {}
+          const ativa = document.getElementById('cfgContAtiva')?.value === '1';
+          const tipo = document.getElementById('cfgContTipo')?.value || '';
+          const motivo = (document.getElementById('cfgContMotivo')?.value || '').trim();
+          const eraAtiva = !!(anterior && anterior.ativa);
+          let ativadaEm = (anterior && anterior.ativadaEm) || '';
+          let ativadaPor = (anterior && anterior.ativadaPor) || '';
+          if (ativa && !eraAtiva) {
+            ativadaEm = new Date().toISOString();
+            try { ativadaPor = obterUidAutenticadoNF?.() || ''; } catch (_) { ativadaPor = ''; }
+            if (typeof ativadaPor !== 'string') ativadaPor = '';
+          }
+          if (!ativa) { ativadaEm = ''; ativadaPor = ''; }
+          return { ativa, tipo, motivo, ativadaEm, ativadaPor };
+        })(),
         respTec: {
           cnpj: g('cfgRespTecCnpj').replace(/\D/g, ''),
           xContato: g('cfgRespTecContato'),
@@ -3275,6 +3348,15 @@
       if (cnpjVal && window.NFValidator?.validarCNPJ && !window.NFValidator.validarCNPJ(cnpjVal)) {
         if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Salvar Configurações da Empresa/NF-e/Impostos'; }
         return notifyUser('⚠️ CNPJ da empresa inválido. Verifique.');
+      }
+
+      // P5: validar bloco de contingência antes de persistir (fail-closed)
+      if (cfg.contingencia && cfg.contingencia.ativa && window.NFConfigService?.validarContingencia) {
+        const vc = window.NFConfigService.validarContingencia(cfg.contingencia);
+        if (!vc.valid) {
+          if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Salvar Configurações da Empresa/NF-e/Impostos'; }
+          return notifyUser('⚠️ Contingência inválida: ' + vc.errors.join('; '));
+        }
       }
 
       // Obter tenantId com o mesmo resolvedor seguro da sessao operacional
@@ -4583,6 +4665,25 @@
         renderizarAlertasRevisaoNF(_revisaoFiscalStatus);
         return mostrarAlertaEmissao('⚠️ Corrija os erros da revisão fiscal antes de emitir.');
       }
+      // P5: contingência ativa exige ciência explícita POR EMISSÃO (nunca
+      // silenciosa — a origem pode já ter voltado). O tpEmis/dhCont/xJust vão
+      // no XML e a chave muda; sem confirmação, aborta aqui.
+      try {
+        const cfgEm = window.NFService?.getConfig?.() || {};
+        const contEm = cfgEm.contingencia && cfgEm.contingencia.ativa ? cfgEm.contingencia : null;
+        if (contEm) {
+          const tipoEm = (window.NFConfigService?.resolverTipoSVC
+            ? window.NFConfigService.resolverTipoSVC(cfgEm.empresa?.endereco?.uf, contEm.tipo)
+            : (contEm.tipo || 'SVC'));
+          const okCont = await confirmDialog({
+            title: 'Emitir em contingência',
+            message: `Contingência ${tipoEm} ATIVA (motivo: ${contEm.motivo || '—'}). A NF-e sairá com tpEmis ${tipoEm === 'SVC-RS' ? '7' : '6'} e será autorizada no SVC, não na SEFAZ de origem. Confirmar emissão em contingência?`,
+            confirmLabel: 'Emitir em contingência',
+            danger: true,
+          });
+          if (!okCont) return mostrarAlertaEmissao('Emissão em contingência cancelada pelo usuário.', 'warn');
+        }
+      } catch (_) {}
       // Senha via modal central — MESMO padrão do "Consultar SEFAZ" (sem campo
       // inline na página). A revisão já foi validada; cancelar o modal aborta.
       const senha = await solicitarSenhaA1NF('Senha do certificado A1', {
@@ -5639,6 +5740,15 @@ renderizarVolumesNF();
       try {
         if (typeof window.firebaseService?.callFunction !== 'function') throw new Error('Firebase Functions indisponível.');
         const cfg = window.NFService?.getConfig?.() || {};
+        // P5: sem nota vinculada — usa a contingência ativa da config, se houver.
+        let tpEmisInut = '1';
+        try {
+          const contInut = cfg.contingencia && cfg.contingencia.ativa ? cfg.contingencia : null;
+          if (contInut && window.NFConfigService?.resolverTipoSVC) {
+            const tipoInut = window.NFConfigService.resolverTipoSVC(cfg.empresa?.endereco?.uf, contInut.tipo);
+            tpEmisInut = tipoInut === 'SVC-RS' ? '7' : (tipoInut === 'SVC-AN' ? '6' : '1');
+          }
+        } catch (_) {}
         const data = await window.firebaseService.callFunction('nf_inutilizarNumeracao', {
           tenantId: obterTenantIdNF(),
           modelo: 55,
@@ -5650,6 +5760,7 @@ renderizarVolumesNF();
           ambiente: cfg.nfe?.ambiente || 'homologacao',
           cnpjEmit: cfg.empresa?.cnpj || '',
           ufEmit: cfg.empresa?.endereco?.uf || '',
+          tpEmis: tpEmisInut,
         });
         setEventoFiscalMsg(data?.autorizada ? 'Inutilização autorizada pela SEFAZ.' : (data?.xMotivo || 'Evento enviado, confira o retorno.'), data?.autorizada ? 'ok' : 'warn');
         if (data?.autorizada) {
@@ -6011,7 +6122,7 @@ renderizarVolumesNF();
         mostrarAlertaEmissao('⏳ Consultando a NF-e na SEFAZ — aguardando retorno...', 'warn');
         const ambiente = (nf?.ide?.tpAmb === 1 || nf?.tpAmb === 1) ? 'producao' : 'homologacao';
         const res = await window.firebaseService.callFunction('nf_consultarNFe',
-          { tenantId: tid, chave: nf.chave, senhaA1: senha, ambiente });
+          { tenantId: tid, chave: nf.chave, senhaA1: senha, ambiente, tpEmis: nf?.ide?.tpEmis || nf?.tpEmis || '1' });
         // Mensagem do TOPO com a verdade real da SEFAZ (persistente — paridade MDF-e)
         const cStat = res?.cStat || '';
         const motivo = res?.descricao || res?.xMotivo || 'sem retorno definitivo da SEFAZ.';

@@ -715,8 +715,10 @@ test('NF-e emission screen uses guided steps and fiscal review before A1 passwor
   assert.match(notasFiscais, /className = 'field-error'/);
   assert.match(notasFiscais, /Prévia fiscal montada/);
   assert.match(notasFiscais, /_revisaoFiscalStatus\.errors/);
-  // Senha só é pedida APÓS a revisão — via modal central (padrão Consultar SEFAZ)
-  assert.match(notasFiscais, /async function liberarSenhaEmissao\(\) \{[\s\S]{0,1200}await solicitarSenhaA1NF\('Senha do certificado A1', \{[\s\S]{0,300}await confirmarEmissao\(senha\)/);
+  // Senha só é pedida APÓS a revisão — via modal central (padrão Consultar SEFAZ).
+  // A confirmação de contingência SVC (P5) também ocorre após a revisão e
+  // antes da senha, por isso a janela é maior que a original.
+  assert.match(notasFiscais, /async function liberarSenhaEmissao\(\) \{[\s\S]{0,2600}await solicitarSenhaA1NF\('Senha do certificado A1', \{[\s\S]{0,300}await confirmarEmissao\(senha\)/);
   assert.match(notasFiscais, /editarClienteSelecionadoNF/);
   assert.match(notasFiscais, /window\.openEditClientModal\(cliente, \{/);
   assert.doesNotMatch(notasFiscais, /nfEditClientModal/);

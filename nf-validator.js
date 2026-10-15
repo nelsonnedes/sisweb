@@ -58,6 +58,34 @@ const NFValidator = (() => {
     return /^[123567]\d{3}$/.test(String(cfop || '').trim());
   }
 
+  // ─── tpEmis — P5 Contingência SVC (só NFe mod 55; MOC Anexo I B22) ─────────
+  // 1=normal (default quando ausente); 6=SVC-AN, 7=SVC-RS. Demais valores
+  // (2/4/5/8/9 = FS-IA/EPEC/FS-DA/offline) estão FORA de escopo e são
+  // rejeitados com erro explícito — nunca silencioso.
+  function validarTpEmis(tpEmis, mod) {
+    const t = tpEmis == null || String(tpEmis).trim() === '' ? '1' : String(tpEmis).trim();
+    if (t === '1') return { valid: true, tpEmis: t };
+    if ((t === '6' || t === '7') && String(mod ?? 55) === '55') return { valid: true, tpEmis: t };
+    if ((t === '6' || t === '7')) return { valid: false, tpEmis: t, erro: 'Contingência SVC (tpEmis 6/7) só existe para NF-e modelo 55' };
+    return { valid: false, tpEmis: t, erro: `tpEmis ${t} fora de escopo (suportados: 1=normal, 6=SVC-AN, 7=SVC-RS)` };
+  }
+
+  // ─── dhCont/xJust — XSD: só para tpEmis ≠ 1, após verProc ─────────────────
+  // dhCont = TDateTimeUTC da entrada em contingência; xJust 15–256 chars.
+  function validarDhContXJust(tpEmis, dhCont, xJust) {
+    const t = String(tpEmis ?? '1').trim();
+    if (t === '1' || t === '') return { valid: true };
+    const erros = [];
+    const dh = String(dhCont || '').trim();
+    if (!dh) erros.push('dhCont obrigatório em contingência (data/hora de entrada, com offset)');
+    else if (Number.isNaN(new Date(dh).getTime()) || !/[+-]\d{2}:\d{2}$/.test(dh)) {
+      erros.push('dhCont inválido (ex.: 2026-10-15T10:00:00-03:00)');
+    }
+    const just = String(xJust || '').trim();
+    if (just.length < 15 || just.length > 256) erros.push('xJust obrigatório em contingência (15–256 caracteres)');
+    return erros.length ? { valid: false, erros } : { valid: true };
+  }
+
   // ─── CEP ───────────────────────────────────────────────────────────────────
   function validarCEP(cep) {
     return /^\d{8}$/.test(String(cep || '').replace(/\D/g, ''));
@@ -410,6 +438,13 @@ const NFValidator = (() => {
       if (!okRef) erros.push(`Finalidade ${ide.finNFe} exige chave de acesso (44 dígitos) da NF-e referenciada (NFref)`);
     }
     if (!validarCodigoMunicipio(ide.cMunFG)) erros.push('Código IBGE do município de ocorrência obrigatório/inválido');
+    // P5: tpEmis + dhCont/xJust (default 1 = passthrough, nada muda no normal)
+    const tpe = validarTpEmis(ide.tpEmis, ide.mod);
+    if (!tpe.valid) erros.push(tpe.erro);
+    else if (tpe.tpEmis !== '1') {
+      const cj = validarDhContXJust(tpe.tpEmis, ide.dhCont, ide.xJust);
+      if (!cj.valid) erros.push(...cj.erros);
+    }
     // Compras governamentais (ide > gCompraGov, TCompraGov — regras da doc do schema oficial)
     const cg = ide.compraGov;
     if (cg) {
@@ -484,6 +519,8 @@ const NFValidator = (() => {
     validarTotais,
     validarTransporte,
     validarIde,
+    validarTpEmis,
+    validarDhContXJust,
     validarNFe,
     validarConfigParaEmissao,
   };

@@ -85,6 +85,9 @@ const NFXmlBuilder = (() => {
   }
 
   // ─── Gerar chave NF-e (44 dígitos) ────────────────────────────────────────
+  // P5: o dígito tpEmis acompanha ide.tpEmis (1=normal, 6=SVC-AN, 7=SVC-RS;
+  // fonte: NFePHP Contingency — a chave MUDA e deve ser regravada). Fail-closed:
+  // valores fora de {1,6,7} ou SVC em mod 65 lançam erro explícito.
   function gerarChave(emit, ide) {
     const cuf  = getCUF(emit.endereco?.uf || 'SP').padStart(2, '0');
     // AAMM da chave = ano/mês LOCAL de emissão (mesma base do dhEmi do XML)
@@ -93,7 +96,13 @@ const NFXmlBuilder = (() => {
     const mod  = String(ide.mod  || 55).padStart(2, '0');
     const serie= String(ide.serie || 1).padStart(3, '0');
     const nnf  = String(ide.nNF  || 1).padStart(9, '0');
-    const temis= '1'; // emissão normal
+    const temis = String(ide.tpEmis ?? '1').trim();
+    if (!['1', '6', '7'].includes(temis)) {
+      throw new Error(`tpEmis ${temis} fora de escopo (suportados: 1=normal, 6=SVC-AN, 7=SVC-RS)`);
+    }
+    if (temis !== '1' && mod !== '55') {
+      throw new Error(`Contingência SVC (tpEmis ${temis}) só existe para NF-e modelo 55`);
+    }
     const cnf  = String(Math.floor(Math.random() * 99999999)).padStart(8, '0');
     const base43 = cuf + aamm + cnpj + mod + serie + nnf + temis + cnf;
     const dv   = calcDV(base43);
@@ -120,6 +129,12 @@ const NFXmlBuilder = (() => {
     const dhEmi = toBrasiliaDateTime(ide.dhEmi);
     // dhSaiEnt (Fase C, opcional): data/hora da saída ou entrada da mercadoria
     const dhSaiEnt = toBrasiliaDateTime(ide.dhSaiEnt);
+    // P5: tpEmis do ide (default 1 = XML idêntico ao anterior). dhCont/xJust
+    // SÓ quando tpEmis ≠ 1, após verProc e antes de NFref (ordem do XSD oficial).
+    const tpEmis = String(ide.tpEmis ?? '1').trim() || '1';
+    const contXml = tpEmis !== '1'
+      ? `<dhCont>${esc(String(ide.dhCont || ''))}</dhCont><xJust>${esc(String(ide.xJust || ''))}</xJust>`
+      : '';
     // A4: NFref — finNFe 2/3/4 exige documento referenciado (MOC)
     const refs = Array.isArray(ide.NFref) ? ide.NFref : (ide.NFref ? [ide.NFref] : []);
     const nfrefXml = refs.map((r) => String(r || '').replace(/\D/g, '').slice(0, 44))
@@ -139,14 +154,14 @@ const NFXmlBuilder = (() => {
       <idDest>${ide.idDest || 1}</idDest>
       <cMunFG>${requireCodigoMunicipio(ide.cMunFG, 'Código IBGE do município de ocorrência')}</cMunFG>
       <tpImp>${ide.tpImp || 1}</tpImp>
-      <tpEmis>1</tpEmis>
+      <tpEmis>${tpEmis}</tpEmis>
       <cDV>${chaveInfo.cDV}</cDV>
       <tpAmb>${ide.tpAmb || 2}</tpAmb>
       <finNFe>${ide.finNFe || 1}</finNFe>
       <indFinal>${ide.indFinal || 0}</indFinal>
       <indPres>${ide.indPres || 0}</indPres>
       <procEmi>0</procEmi>
-      <verProc>Sisweb 1.0</verProc>${nfrefXml}${buildCompraGov(ide.compraGov)}
+      <verProc>Sisweb 1.0</verProc>${contXml}${nfrefXml}${buildCompraGov(ide.compraGov)}
     </ide>`;
   }
 
