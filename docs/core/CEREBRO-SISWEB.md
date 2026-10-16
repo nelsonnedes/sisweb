@@ -1781,3 +1781,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Consulta vazia (causa raiz):** NF-e chama `carregarNotasFiscais()` no init (`notas-fiscais.html:6825`); MDF-e nunca chamava `consultarMdfes()` — `__mdfeConsultaFiltrados` nascia `[]`. Fix: `consultarMdfes()` no `.then` do init (paridade). Trava em `mdfe-consulta-ux.test.mjs`.
 - **DAMDFE mercado (imagem do emissor):** topo emitente+documento+fisco; faixa QTD NF-e/PESO/VALOR; tabelas VEÍCULOS (placa/UF/RNTRC/renavam+tara/cap) e CONDUTORES (CPF/nome); CIOT, vale-pedágio, seguros e fisco-adicional com "-" honesto (não coletados — sem inventar); PERCURSO; COMPOSIÇÃO DA CARGA; COMPLEMENTARES (observações); MODAL: RODOVIÁRIO + FORMA DE EMISSÃO (derivada da chave) no cabeçalho. Verificado funcionalmente com dados do MDF-e 20: MERCADO-OK/QR-OK/HOMOLOG-OK.
 - **Gates:** lint OK, typecheck OK, `npm test` 1465/1464/0/1. Commit + push + hosting (só web; `?v=` mdf-e.js atualizado).
+
+## Sessao 2026-10-16 (cont. 29) — Encerramento IBGE + municipios por UF + RNTC/reboque + DAMDFE rota
+
+- **Raiz do erro "São Miguel do Gumá/BA":** municípios eram `<input>` livre (popularCidades só preenche `<select>`) + UF invisível (ufFim); usuário digitou cidade de carregamento/PA (com typo "Gumá", que falharia em qualquer UF — match exato do IBGE). Fix: selects IBGE por UF na emissão (carreg/descarreg) e no encerramento (novo `ufEncerramento` + `mdfeSincronizarEncerramento` pré-seleciona ufFim + descarregamento); `encerrarMdfe` resolve contra a UF visível. Trava em `tests/mdfe-localizacao-reboque.test.mjs`.
+- **Import NF-e:** `veicTransp.RNTC` (= `nfVeiculoRNTC`, `nf-service.js:69`) → `veiculoRntrc`; `veicTransp.UF` → `veiculoUf`; `reboque[0]` → `reboquePlaca/UF`; resumo com flags de divergência + avisos; cidades do percurso via `popularCidades`. Form MDF-e ganha reboque (placa+UF, opcional) com coleta/prefill/remember.
+- **XML contido:** só UF do `veicTracao` (tag existente); sem `<prop>` e sem `<veicReboque>` (mesma regra: sem XSD p/ validar posição, risco 215; travado em teste).
+- **DAMDFE:** `Rota: PA → TO → GO → BA` (percursoUfs do registro); `município/UF` em carreg/descarreg; linha REBOQUE quando existe. Verificado funcional: DAMDFE-OK.
+- **Testes:** novo `mdfe-localizacao-reboque.test.mjs` 7/7 (2 falhas investigadas: status ausente no fixture; `deepEqual` entre realms do vm; typo `rntrc:` vs `rntc:` no teste — código certo).
+- **Gates:** lint OK, typecheck OK, `npm test` 1472/1471/0/1. Commit + push + hosting (só web; `?v=` mdf-e.js atualizado).

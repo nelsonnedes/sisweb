@@ -560,6 +560,10 @@ function mdfeSalvarUltimoVeiculoCondutor(payload) {
                 cpf: String(payload?.condutor?.cpf || '').trim(),
                 cnh: String(payload?.condutor?.cnh || '').trim(),
             },
+            reboque: {
+                placa: String(payload?.reboque?.placa || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase(),
+                uf: String(payload?.reboque?.uf || '').trim().toUpperCase(),
+            },
         };
         if (!dados.veiculo.placa && !dados.condutor.nome) return;
         localStorage.setItem(__mdfeVeiculoCondutorKey(), JSON.stringify(dados));
@@ -585,6 +589,11 @@ function mdfePreencherUltimoVeiculoCondutor() {
         fillIfEmpty('condutorNome', c.nome);
         fillIfEmpty('condutorCpf', c.cpf);
         fillIfEmpty('condutorCnh', c.cnh);
+        try {
+            const r = dados.reboque || {};
+            fillIfEmpty('reboquePlaca', String(r.placa || ''));
+            fillIfEmpty('reboqueUf', String(r.uf || ''));
+        } catch (_) {}
     } catch (_) {}
 }
 
@@ -623,6 +632,15 @@ function mdfeNormalizarNFeImportacao(remoteData) {
                 origemUf: String(nota?.emit?.endereco?.uf || ''),
                 placa: String(nota?.transp?.veicTransp?.placa || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase(),
                 ufPlaca: String(nota?.transp?.veicTransp?.UF || nota?.transp?.veicTransp?.uf || '').toUpperCase(),
+                // ANTT/RNTC do veicTransp da NF-e (MOC NF-e) = RNTRC do MDF-e.
+                rntc: mdfeDigits(nota?.transp?.veicTransp?.RNTC || nota?.transp?.veicTransp?.rntc || nota?.transp?.veicTransp?.antt),
+                reboque: (() => {
+                    const rb0 = Array.isArray(nota?.transp?.reboque) ? nota.transp.reboque[0] : null;
+                    if (!rb0 || typeof rb0 !== 'object') return null;
+                    const placa = String(rb0.placa || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                    if (!placa) return null;
+                    return { placa, uf: String(rb0.UF || rb0.uf || '').toUpperCase() };
+                })(),
                 transportaNome: String(nota?.transp?.transporta?.xNome || nota?.transp?.transporta?.nome || ''),
                 transportaCpf: mdfeDigits(nota?.transp?.transporta?.CPF || nota?.transp?.transporta?.cpf),
                 valor,
@@ -654,11 +672,18 @@ function mdfeResumoImportacao(notas) {
         // autônomo: transporta.xNome + CPF). PJ (CNPJ) não vira condutor.
         condutor: { nome: '', cpf: '' },
         placa: '',
+        ufPlaca: '',
+        rntrc: '',
+        reboque: null,
         destinosDivergentes: false,
         placasDivergentes: false,
+        rntcsDivergentes: false,
+        reboquesDivergentes: false,
     };
     const destinos = new Set();
     const placas = new Set();
+    const rntcs = new Set();
+    const reboques = new Set();
     lista.forEach((nota) => {
         if (!resumo.origem.municipio && nota.origemMunicipio && nota.origemMunicipio !== 'N/A') {
             resumo.origem = { municipio: nota.origemMunicipio, uf: nota.origemUf || '' };
@@ -668,6 +693,13 @@ function mdfeResumoImportacao(notas) {
         }
         if (nota.municipio && nota.municipio !== 'N/A') destinos.add(`${nota.uf}|${nota.municipio}`);
         if (nota.placa) placas.add(nota.placa);
+        if (nota.ufPlaca && nota.placa && !resumo.ufPlaca) resumo.ufPlaca = nota.ufPlaca;
+        if (nota.rntc) rntcs.add(nota.rntc);
+        if (nota.reboque && nota.reboque.placa) {
+            const chaveReb = `${nota.reboque.placa}|${nota.reboque.uf || ''}`;
+            reboques.add(chaveReb);
+            if (!resumo.reboque) resumo.reboque = { ...nota.reboque };
+        }
     });
     if (destinos.size === 1) {
         const unico = [...destinos][0];
@@ -684,6 +716,13 @@ function mdfeResumoImportacao(notas) {
         resumo.placasDivergentes = true;
         resumo.placa = [...placas][0];
     }
+    if (rntcs.size === 1) {
+        resumo.rntrc = [...rntcs][0];
+    } else if (rntcs.size > 1) {
+        resumo.rntcsDivergentes = true;
+        resumo.rntrc = [...rntcs][0];
+    }
+    if (reboques.size > 1) resumo.reboquesDivergentes = true;
     return resumo;
 }
 
@@ -829,16 +868,38 @@ function confirmarImportacaoNFe() {
     // PREVALECEM sobre pré-preenchimentos anteriores (import roda depois do
     // prefill de últimos usados; só campos sem dado na nota ficam como estão).
     if (ufInicioEl && resumo.origem.uf) ufInicioEl.value = resumo.origem.uf;
-    if (cidadeCarregamentoEl && resumo.origem.municipio) cidadeCarregamentoEl.value = resumo.origem.municipio;
     if (ufFimEl && resumo.destino.uf) ufFimEl.value = resumo.destino.uf;
-    if (cidadeDescarregamentoEl && resumo.destino.municipio) cidadeDescarregamentoEl.value = resumo.destino.municipio;
+    // Cidades agora são selects IBGE por UF: popula + seleciona; sem a lib,
+    // cai no .value direto (inputs legados).
+    if (typeof popularCidades === 'function') {
+        try {
+            if (resumo.origem.uf) popularCidades('percursoMunicipioCarregamento', resumo.origem.uf, resumo.origem.municipio || '');
+            else if (cidadeCarregamentoEl && resumo.origem.municipio) cidadeCarregamentoEl.value = resumo.origem.municipio;
+            if (resumo.destino.uf) popularCidades('percursoMunicipioDescarregamento', resumo.destino.uf, resumo.destino.municipio || '');
+            else if (cidadeDescarregamentoEl && resumo.destino.municipio) cidadeDescarregamentoEl.value = resumo.destino.municipio;
+        } catch (_) {}
+    } else {
+        if (cidadeCarregamentoEl && resumo.origem.municipio) cidadeCarregamentoEl.value = resumo.origem.municipio;
+        if (cidadeDescarregamentoEl && resumo.destino.municipio) cidadeDescarregamentoEl.value = resumo.destino.municipio;
+    }
     if (placaEl && resumo.placa) placaEl.value = resumo.placa;
+    // ANTT/RNTC, UF da placa e reboque vêm da NF-e (veicTransp/reboque).
+    const ufPlacaEl = document.getElementById('veiculoUf');
+    if (ufPlacaEl && resumo.ufPlaca) ufPlacaEl.value = resumo.ufPlaca;
+    const rntrcEl = document.getElementById('veiculoRntrc');
+    if (rntrcEl && resumo.rntrc) rntrcEl.value = resumo.rntrc;
+    if (resumo.reboque) {
+        const rebPlacaEl = document.getElementById('reboquePlaca');
+        const rebUfEl = document.getElementById('reboqueUf');
+        if (rebPlacaEl && resumo.reboque.placa) rebPlacaEl.value = resumo.reboque.placa;
+        if (rebUfEl && resumo.reboque.uf) rebUfEl.value = resumo.reboque.uf;
+    }
     // Condutor do transportador PF da NF-e (motorista autônomo)
     const condutorNomeEl = document.getElementById('condutorNome');
     const condutorCpfEl = document.getElementById('condutorCpf');
     if (condutorNomeEl && resumo.condutor.nome) condutorNomeEl.value = resumo.condutor.nome;
     if (condutorCpfEl && resumo.condutor.cpf) condutorCpfEl.value = formatarCPF(resumo.condutor.cpf);
-    // Completa o que a NF-e não carrega (RNTC/tara/capacidade/CNH) com o último
+    // Completa o que a NF-e não carrega (tara/capacidade/CNH) com o último
     // veículo/condutor usados neste tenant — poupa redigitação.
     mdfePreencherUltimoVeiculoCondutor();
 
@@ -850,6 +911,8 @@ function confirmarImportacaoNFe() {
     if (totais.semPeso) avisos.push(`${totais.semPeso} NF-e sem peso — informe o peso manualmente`);
     if (resumo.destinosDivergentes) avisos.push('destinatários com municípios diferentes — confira o descarregamento');
     if (resumo.placasDivergentes) avisos.push('placas diferentes entre as NF-e — confira o veículo');
+    if (resumo.rntcsDivergentes) avisos.push('RNTC diferentes entre as NF-e — confira o RNTRC');
+    if (resumo.reboquesDivergentes) avisos.push('reboques diferentes entre as NF-e — confira o reboque');
     let mensagem = `${novas.length} NF-e importada(s): R$ ${totais.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} · ${totais.peso.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} kg.`;
     if (avisos.length) mensagem += '\nAtenção: ' + avisos.join('; ') + '.';
     notifyUser(mensagem);
@@ -1006,6 +1069,10 @@ function coletarDadosFormulario() {
                 renavam: document.getElementById('veiculoRenavam').value,
                 tara: parseFloat(document.getElementById('veiculoTara').value) || 0,
                 capacidade: parseFloat(document.getElementById('veiculoCapacidade').value) || 0
+            },
+            reboque: {
+                placa: String(document.getElementById('reboquePlaca')?.value || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase(),
+                uf: String(document.getElementById('reboqueUf')?.value || '').trim().toUpperCase(),
             },
             condutor: {
                 nome: document.getElementById('condutorNome').value,
@@ -1263,10 +1330,26 @@ function carregarMdfesParaEncerramento() {
     });
 }
 
+// Encerramento: UF + cidade IBGE do próprio MDF-e (evita município de UF
+// errada, ex.: cidade de carregamento/PA resolvida contra ufFim/BA).
+function mdfeSincronizarEncerramento(mdfeId) {
+    try {
+        const mdfe = mdfes.find(m => String(m.id) === String(mdfeId));
+        const ufEl = document.getElementById('ufEncerramento');
+        if (!mdfe || !ufEl) return;
+        const uf = String(mdfe.ufFim || '').toUpperCase();
+        if (uf) ufEl.value = uf;
+        if (typeof popularCidades === 'function' && uf) {
+            try { popularCidades('municipioEncerramento', uf, mdfe.municipioDescarregamento || ''); } catch (_) {}
+        }
+    } catch (_) {}
+}
+
 // Encerrar MDF-e
 async function encerrarMdfe() {
     const mdfeId = document.getElementById('mdfeEncerramento').value;
     const dataEncerramento = document.getElementById('dataEncerramento').value;
+    const ufEncerramento = String(document.getElementById('ufEncerramento')?.value || '').trim().toUpperCase();
     const municipioEncerramento = document.getElementById('municipioEncerramento').value;
     
     if (!mdfeId) {
@@ -1276,6 +1359,11 @@ async function encerrarMdfe() {
     
     if (!dataEncerramento) {
         notifyUser('Informe a data/hora de encerramento');
+        return;
+    }
+
+    if (!ufEncerramento) {
+        notifyUser('Informe a UF de encerramento');
         return;
     }
     
@@ -1297,7 +1385,7 @@ async function encerrarMdfe() {
             confirmLabel: 'Encerrar MDF-e',
         });
         if (!senhaA1) return;
-        const cMunEnc = await resolverCodigoMunicipio(mdfe.ufFim, municipioEncerramento);
+        const cMunEnc = await resolverCodigoMunicipio(ufEncerramento, municipioEncerramento);
         const result = await window.firebaseService.callFunction('mdfe_encerrar', {
             tenantId: tenantIdMdfe,
             mdfeId: mdfe.id,
@@ -1323,6 +1411,7 @@ async function encerrarMdfe() {
     
     // Limpar formulário
     document.getElementById('mdfeEncerramento').value = '';
+    try { document.getElementById('ufEncerramento').value = ''; } catch (_) {}
     document.getElementById('municipioEncerramento').value = '';
     document.getElementById('protocoloEncerramento').value = '';
     
@@ -1491,6 +1580,11 @@ function mdfeDamdfeConteudo(mdfe, empresa) {
     // vale-pedágio (não coletados — "-" honesto); percurso; composição da
     // carga; seguros (não coletado); complementares; fisco. Só dados reais.
     const formaEmissao = !temChave ? '-' : (conting ? 'CONTINGÊNCIA' : 'NORMAL');
+    // Rota do percurso (UFs intermediárias vêm do form; ini/fim, do registro).
+    const rota = [m.ufInicio, ...(Array.isArray(m.percursoUfs) ? m.percursoUfs : []), m.ufFim]
+        .map((u) => String(u || '').trim().toUpperCase()).filter(Boolean).join(' → ') || '-';
+    const reb = m.reboque && typeof m.reboque === 'object' ? m.reboque : {};
+    const temReboque = !!String(reb.placa || '').trim();
     const fiscoBox = `<div class="damdfe-box damdfe-fisco"><span class="damdfe-lbl">CONTROLE DO FISCO</span><br>`
         + (barcode ? `<span class="damdfe-barcode">${barcode}</span><br>` : '')
         + `Chave de acesso:<br><span class="mono">${esc(temChave ? chaveDig : '-')}</span><br>${areaProtocolo}`
@@ -1510,15 +1604,17 @@ function mdfeDamdfeConteudo(mdfe, empresa) {
         + `<div class="damdfe-row"><div class="damdfe-box"><span class="damdfe-lbl">VEÍCULOS</span>`
         + `<table class="damdfe-tab"><thead><tr><th>PLACA</th><th>UF</th><th>RNTRC</th><th>RENAVAM</th></tr></thead>`
         + `<tbody><tr><td><strong>${esc(veiculo.placa || '-')}</strong></td><td>${esc(veiculo.uf || '-')}</td>`
-        + `<td>${esc(veiculo.rntrc || '-')}</td><td>${esc(veiculo.renavam || '-')}</td></tr></tbody></table>`
+        + `<td>${esc(veiculo.rntrc || '-')}</td><td>${esc(veiculo.renavam || '-')}</td></tr>`
+        + (temReboque ? `<tr><td><strong>${esc(reb.placa)}</strong> (REBOQUE)</td><td>${esc(reb.uf || '-')}</td><td>-</td><td>-</td></tr>` : '')
+        + `</tbody></table>`
         + `Tara: ${veiculo.tara != null && veiculo.tara !== '' ? `${esc(veiculo.tara)} kg` : '-'} · Capacidade: ${veiculo.capacidade != null && veiculo.capacidade !== '' ? `${esc(veiculo.capacidade)} kg` : '-'}</div>`
         + `<div class="damdfe-box"><span class="damdfe-lbl">CONDUTORES</span>`
         + `<table class="damdfe-tab"><thead><tr><th>CPF</th><th>NOME</th></tr></thead>`
         + `<tbody><tr><td>${esc(condutor.cpf || '-')}</td><td>${esc(condutor.nome || '-')}${condutor.cnh ? ` · CNH: ${esc(condutor.cnh)}` : ''}</td></tr></tbody></table></div></div>`
         + `<div class="damdfe-row"><div class="damdfe-box"><span class="damdfe-lbl">DADOS DO CIOT</span><br>CIOT: - · CPF/CNPJ: -</div>`
         + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES DE VALE-PEDÁGIO</span><br>-</div></div>`
-        + `<div class="damdfe-box"><span class="damdfe-lbl">PERCURSO</span><br>UF de início: <strong>${esc(m.ufInicio || '-')}</strong> · UF de fim: <strong>${esc(m.ufFim || '-')}</strong><br>`
-        + `Carregamento: ${esc(m.municipioCarregamento || '-')}<br>Descarregamento: ${esc(m.municipioDescarregamento || '-')}</div>`
+        + `<div class="damdfe-box"><span class="damdfe-lbl">PERCURSO</span><br>Rota: <strong>${esc(rota)}</strong><br>`
+        + `Carregamento: ${esc(m.municipioCarregamento || '-')}/${esc(m.ufInicio || '-')}<br>Descarregamento: ${esc(m.municipioDescarregamento || '-')}/${esc(m.ufFim || '-')}</div>`
         + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES DA COMPOSIÇÃO DA CARGA</span>`
         + `<table class="damdfe-tab"><thead><tr><th>Chave da NF-e</th><th>NF-e Nº/Série</th><th>Valor (R$)</th><th>Peso (kg)</th></tr></thead><tbody>${linhasDocs}</tbody></table></div>`
         + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES SOBRE SEGUROS</span><br>Responsável: - · Seguradora: - · Apólice: -</div>`
@@ -1618,14 +1714,30 @@ function __mdfePreencherFormularioDoRegistro(mdfe) {
     document.getElementById('mdfeDataEmissao').value = mdfe.dataEmissao || '';
     document.getElementById('mdfeUfInicio').value = mdfe.ufInicio || '';
     document.getElementById('percursoUfFim').value = mdfe.ufFim || '';
-    document.getElementById('percursoMunicipioCarregamento').value = mdfe.municipioCarregamento || '';
-    document.getElementById('percursoMunicipioDescarregamento').value = mdfe.municipioDescarregamento || '';
+    // Cidades via IBGE por UF (selects; popularCidades preenche + seleciona).
+    // Sem a lib de cidades, cai no .value direto (inputs legados).
+    if (typeof popularCidades === 'function') {
+        try {
+            popularCidades('percursoMunicipioCarregamento', mdfe.ufInicio || '', mdfe.municipioCarregamento || '');
+            popularCidades('percursoMunicipioDescarregamento', mdfe.ufFim || '', mdfe.municipioDescarregamento || '');
+        } catch (_) {}
+    } else {
+        try {
+            document.getElementById('percursoMunicipioCarregamento').value = mdfe.municipioCarregamento || '';
+            document.getElementById('percursoMunicipioDescarregamento').value = mdfe.municipioDescarregamento || '';
+        } catch (_) {}
+    }
     document.getElementById('veiculoPlaca').value = veiculoEdit.placa || '';
     try { const ufEl = document.getElementById('veiculoUf'); if (ufEl) ufEl.value = veiculoEdit.uf || ''; } catch (_) {}
     try { const rnEl = document.getElementById('veiculoRntrc'); if (rnEl) rnEl.value = veiculoEdit.rntrc || ''; } catch (_) {}
     document.getElementById('veiculoRenavam').value = veiculoEdit.renavam || '';
     document.getElementById('veiculoTara').value = veiculoEdit.tara != null ? veiculoEdit.tara : '';
     document.getElementById('veiculoCapacidade').value = veiculoEdit.capacidade != null ? veiculoEdit.capacidade : '';
+    try {
+        const reb = mdfe.reboque && typeof mdfe.reboque === 'object' ? mdfe.reboque : {};
+        const rpEl = document.getElementById('reboquePlaca'); if (rpEl) rpEl.value = reb.placa || '';
+        const ruEl = document.getElementById('reboqueUf'); if (ruEl) ruEl.value = reb.uf || '';
+    } catch (_) {}
     document.getElementById('condutorNome').value = condutorEdit.nome || '';
     document.getElementById('condutorCpf').value = condutorEdit.cpf || '';
     document.getElementById('condutorCnh').value = condutorEdit.cnh || '';
@@ -1916,6 +2028,7 @@ window.visualizarMdfe = visualizarMdfe;
 window.abrirDamdfeImpressao = abrirDamdfeImpressao;
 window.editarMdfe = editarMdfe;
 window.encerrarMdfe = encerrarMdfe;
+window.mdfeSincronizarEncerramento = mdfeSincronizarEncerramento;
 window.encerrarMdfeRapido = encerrarMdfeRapido;
 window.consultarMdfeFiscal = consultarMdfeFiscal;
 window.gerarRelatorioMdfe = gerarRelatorioMdfe;
