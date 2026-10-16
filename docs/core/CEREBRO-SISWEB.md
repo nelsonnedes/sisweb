@@ -1775,3 +1775,9 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **NF-e declarada SEM mudança (evidência):** `nfAplicarLogoEmpresaAoDanfe` (`notas-fiscais.html:5256`) já faz a mesma cascata (local → central → profile) + pick tolerante + Storage + teto 2MB (`nf-danfe.js:508`); emitente vem do XML fiscal (correto). Paridade atingida sem diff.
 - **Testes:** `tests/mdfe-empresa-logo.test.mjs` 6/6 (tolerância, PT/EN, cascata profile via SDK, localStorage fallback, Storage teto/download, wiring). 2 falhas iniciais investigadas (tenantId nulo no vm → fallback real implementado; regex `${tid}`).
 - **Gates:** lint OK, typecheck OK, `npm test` 1464/1463/0/1. Commit + push + hosting (só web; `?v=` mdf-e.js atualizado).
+
+## Sessao 2026-10-16 (cont. 28) — Consulta nasce povoada + DAMDFE padrão de mercado
+
+- **Consulta vazia (causa raiz):** NF-e chama `carregarNotasFiscais()` no init (`notas-fiscais.html:6825`); MDF-e nunca chamava `consultarMdfes()` — `__mdfeConsultaFiltrados` nascia `[]`. Fix: `consultarMdfes()` no `.then` do init (paridade). Trava em `mdfe-consulta-ux.test.mjs`.
+- **DAMDFE mercado (imagem do emissor):** topo emitente+documento+fisco; faixa QTD NF-e/PESO/VALOR; tabelas VEÍCULOS (placa/UF/RNTRC/renavam+tara/cap) e CONDUTORES (CPF/nome); CIOT, vale-pedágio, seguros e fisco-adicional com "-" honesto (não coletados — sem inventar); PERCURSO; COMPOSIÇÃO DA CARGA; COMPLEMENTARES (observações); MODAL: RODOVIÁRIO + FORMA DE EMISSÃO (derivada da chave) no cabeçalho. Verificado funcionalmente com dados do MDF-e 20: MERCADO-OK/QR-OK/HOMOLOG-OK.
+- **Gates:** lint OK, typecheck OK, `npm test` 1465/1464/0/1. Commit + push + hosting (só web; `?v=` mdf-e.js atualizado).

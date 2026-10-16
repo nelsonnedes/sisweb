@@ -55,9 +55,12 @@ test('DAMDFE oficial: cabeçalho emitente + blocos MOC + IE', () => {
   const htmlOut = mdfeDamdfeConteudo(MDFE, EMPRESA);
   for (const esperado of [
     'IDENTIFICAÇÃO DO EMITENTE', 'JN Madeiras', 'CNPJ:', 'IE: 15.123456-7',
-    'DAMDFE', '000000020', 'INFORMAÇÕES DO MODAL RODOVIÁRIO', 'INFORMAÇÕES DA CARGA',
-    'CONTROLE DO FISCO', 'DOCUMENTOS FISCAIS VINCULADOS', '1715',
-    '915260000005061', CHAVE, 'R$ 1.200,50', '600,250 kg', 'Sinop',
+    'DAMDFE', '000000020', 'MODAL: RODOVIÁRIO', 'VEÍCULOS', 'CONDUTORES',
+    'QTD. NF-e', 'PERCURSO', 'INFORMAÇÕES DA COMPOSIÇÃO DA CARGA',
+    'DADOS DO CIOT', 'INFORMAÇÕES SOBRE SEGUROS',
+    'INFORMAÇÕES COMPLEMENTARES DE INTERESSE DO CONTRIBUINTE',
+    'CONTROLE DO FISCO', '1715',
+    '915260000005061', CHAVE, 'VALOR TOTAL DA CARGA (R$)', '1.200,50', 'PESO BRUTO (kg)', '600,250', 'Sinop',
     'EMITIDO EM AMBIENTE DE HOMOLOGAÇÃO – SEM VALOR FISCAL',
   ]) {
     assert.ok(htmlOut.includes(esperado), `deve conter: ${esperado.slice(0, 40)}`);

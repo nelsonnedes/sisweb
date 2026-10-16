@@ -63,11 +63,12 @@ test('DAMDFE: placa/UF + RNTRC quando presentes; ausentes quando não', () => {
   const com = internals.mdfeDamdfeConteudo(
     { numero: '20', veiculo: { placa: 'IBG2314', uf: 'PA', rntrc: '12345678' }, documentos: [] }, {},
   );
-  assert.ok(com.includes('IBG2314/PA'));
-  assert.ok(com.includes('RNTRC: 12345678'));
+  assert.ok(com.includes('IBG2314'));
+  assert.ok(com.includes('<td>PA</td>'));
+  assert.ok(com.includes('<td>12345678</td>'));
   const sem = internals.mdfeDamdfeConteudo({ numero: '20', veiculo: { placa: 'IBG2314' }, documentos: [] }, {});
   assert.ok(sem.includes('IBG2314'));
-  assert.doesNotMatch(sem, /RNTRC/);
+  assert.ok(sem.includes('<td>-</td>'), 'células vazias com "-" (padrão mercado)');
 });
 
 test('DAMDFE: logo só com fonte confiável (https/data:image)', () => {

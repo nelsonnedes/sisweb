@@ -265,6 +265,9 @@ document.addEventListener('DOMContentLoaded', function() {
     carregarDados().then(() => {
         atualizarDashboard();
         definirProximoNumeroMdfe();
+        // Povoe a Consulta na abertura (paridade com carregarNotasFiscais
+        // da NF-e): sem isto a tabela nasce com "Nenhum MDF-e encontrado".
+        try { consultarMdfes(); } catch (_) {}
     });
     
     console.log('✅ Sistema MDF-e inicializado com sucesso');
@@ -1471,10 +1474,6 @@ function mdfeDamdfeConteudo(mdfe, empresa) {
         .filter((x) => x && x !== '-').join(' — ');
     // Só https/data:image — nunca javascript:/data:text (registro remoto).
     const logoSrc = /^(https?:\/\/|data:image\/)/i.test(String(emp.logoSrc || '')) ? String(emp.logoSrc) : '';
-    const taraCap = [
-        veiculo.tara != null && veiculo.tara !== '' ? `Tara: ${esc(veiculo.tara)} kg` : '',
-        veiculo.capacidade != null && veiculo.capacidade !== '' ? `Capacidade: ${esc(veiculo.capacidade)} kg` : '',
-    ].filter(Boolean).join(' · ') || '-';
     const linhasDocs = docs.length ? docs.map((d) => {
         const chave = esc(d && d.chave);
         const nfRef = [d && d.nfeNumero, d && d.nfeSerie].filter((x) => x != null && String(x) !== '').map(String).join('/');
@@ -1487,28 +1486,44 @@ function mdfeDamdfeConteudo(mdfe, empresa) {
         ? `<div class="damdfe-banner">EMISSÃO EM CONTINGÊNCIA</div>`
         : `<div>Protocolo de autorização: <strong>${esc(m.protocolo || '-')}</strong></div>`
             + (homolog ? `<div class="damdfe-banner">EMITIDO EM AMBIENTE DE HOMOLOGAÇÃO – SEM VALOR FISCAL</div>` : '');
+    // Estrutura espelha o DAMDFE padrão de mercado (emissores): emitente +
+    // documento + fisco no topo; quantitativos; veículos/condutores; CIOT e
+    // vale-pedágio (não coletados — "-" honesto); percurso; composição da
+    // carga; seguros (não coletado); complementares; fisco. Só dados reais.
+    const formaEmissao = !temChave ? '-' : (conting ? 'CONTINGÊNCIA' : 'NORMAL');
+    const fiscoBox = `<div class="damdfe-box damdfe-fisco"><span class="damdfe-lbl">CONTROLE DO FISCO</span><br>`
+        + (barcode ? `<span class="damdfe-barcode">${barcode}</span><br>` : '')
+        + `Chave de acesso:<br><span class="mono">${esc(temChave ? chaveDig : '-')}</span><br>${areaProtocolo}`
+        + (qrSvg ? `<br><span class="damdfe-qr">${qrSvg}</span><br>Consulta de autenticidade no Portal Nacional do MDF-e` : '')
+        + `</div>`;
     return `<div class="damdfe">`
         + `<div class="damdfe-row"><div class="damdfe-box damdfe-emit"><span class="damdfe-lbl">IDENTIFICAÇÃO DO EMITENTE</span><br>`
         + (logoSrc ? `<img class="damdfe-logo" src="${esc(logoSrc)}" alt="" onerror="this.remove()">` : '')
         + `<strong>${esc(emp.name || 'Empresa não informada')}</strong><br>${esc(endEmit || '-')}<br>`
         + `CNPJ: ${esc(emp.cnpj || '-')}${emp.ie ? ` &nbsp; IE: ${esc(emp.ie)}` : ''}<br>Fone: ${esc(emp.phone || '-')}</div>`
         + `<div class="damdfe-box damdfe-doc"><span class="t">DAMDFE</span><br>Documento Auxiliar do Manifesto Eletrônico de Documentos Fiscais<br>`
-        + `Nº <strong>${esc(m.numero != null ? m.numero : '-')}</strong> · SÉRIE ${esc(m.serie != null ? m.serie : '-')}<br>DATA DE EMISSÃO: ${dataEmissao}</div></div>`
-        + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES DO MODAL RODOVIÁRIO</span><br>`
-        + `Placa: <strong>${esc(veiculo.placa || '-')}${veiculo.uf ? `/${esc(veiculo.uf)}` : ''}</strong> · RENAVAM: ${esc(veiculo.renavam || '-')} · ${taraCap}`
-        + (veiculo.rntrc ? `<br>RNTRC: ${esc(veiculo.rntrc)}` : '') + `<br>`
-        + `Condutor: ${esc(condutor.nome || '-')} · CPF: ${esc(condutor.cpf || '-')}${condutor.cnh ? ` · CNH: ${esc(condutor.cnh)}` : ''}</div>`
-        + `<div class="damdfe-row"><div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES DA CARGA</span><br>`
-        + `Carregamento: ${esc(m.municipioCarregamento || '-')}/${esc(m.ufInicio || '-')}<br>`
-        + `Descarregamento: ${esc(m.municipioDescarregamento || '-')}/${esc(m.ufFim || '-')}<br>`
-        + `Documentos: <strong>${docs.length} NF-e</strong> · Valor total: <strong>R$ ${moeda(m.valorTotal)}</strong> · Peso bruto: <strong>${pesoFmt(m.pesoTotal)} kg</strong></div>`
-        + `<div class="damdfe-box damdfe-fisco"><span class="damdfe-lbl">CONTROLE DO FISCO</span><br>`
-        + (barcode ? `<span class="damdfe-barcode">${barcode}</span><br>` : '')
-        + `Chave de acesso:<br><span class="mono">${esc(temChave ? chaveDig : '-')}</span><br>${areaProtocolo}</div></div>`
-        + `<div class="damdfe-box"><span class="damdfe-lbl">DOCUMENTOS FISCAIS VINCULADOS</span>`
-        + `<table class="damdfe-tab"><thead><tr><th>Chave da NF-e</th><th>NF-e Nº/Série</th><th>Valor</th><th>Peso</th></tr></thead><tbody>${linhasDocs}</tbody></table></div>`
-        + (m.observacoes ? `<div class="damdfe-box"><span class="damdfe-lbl">OBSERVAÇÕES</span><br>${esc(m.observacoes)}</div>` : '')
-        + (qrSvg ? `<div class="damdfe-box damdfe-fisco"><span class="damdfe-qr">${qrSvg}</span><br>Consulta de autenticidade no Portal Nacional do MDF-e</div>` : '')
+        + `Nº <strong>${esc(m.numero != null ? m.numero : '-')}</strong> · SÉRIE ${esc(m.serie != null ? m.serie : '-')}<br>`
+        + `DATA DE EMISSÃO: ${dataEmissao}<br>MODAL: RODOVIÁRIO · EMISSÃO: ${formaEmissao}</div>`
+        + fiscoBox + `</div>`
+        + `<div class="damdfe-box"><table class="damdfe-tab"><thead><tr><th>QTD. NF-e</th><th>PESO BRUTO (kg)</th><th>VALOR TOTAL DA CARGA (R$)</th></tr></thead>`
+        + `<tbody><tr><td>${docs.length}</td><td class="num">${pesoFmt(m.pesoTotal)}</td><td class="num">${moeda(m.valorTotal)}</td></tr></tbody></table></div>`
+        + `<div class="damdfe-row"><div class="damdfe-box"><span class="damdfe-lbl">VEÍCULOS</span>`
+        + `<table class="damdfe-tab"><thead><tr><th>PLACA</th><th>UF</th><th>RNTRC</th><th>RENAVAM</th></tr></thead>`
+        + `<tbody><tr><td><strong>${esc(veiculo.placa || '-')}</strong></td><td>${esc(veiculo.uf || '-')}</td>`
+        + `<td>${esc(veiculo.rntrc || '-')}</td><td>${esc(veiculo.renavam || '-')}</td></tr></tbody></table>`
+        + `Tara: ${veiculo.tara != null && veiculo.tara !== '' ? `${esc(veiculo.tara)} kg` : '-'} · Capacidade: ${veiculo.capacidade != null && veiculo.capacidade !== '' ? `${esc(veiculo.capacidade)} kg` : '-'}</div>`
+        + `<div class="damdfe-box"><span class="damdfe-lbl">CONDUTORES</span>`
+        + `<table class="damdfe-tab"><thead><tr><th>CPF</th><th>NOME</th></tr></thead>`
+        + `<tbody><tr><td>${esc(condutor.cpf || '-')}</td><td>${esc(condutor.nome || '-')}${condutor.cnh ? ` · CNH: ${esc(condutor.cnh)}` : ''}</td></tr></tbody></table></div></div>`
+        + `<div class="damdfe-row"><div class="damdfe-box"><span class="damdfe-lbl">DADOS DO CIOT</span><br>CIOT: - · CPF/CNPJ: -</div>`
+        + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES DE VALE-PEDÁGIO</span><br>-</div></div>`
+        + `<div class="damdfe-box"><span class="damdfe-lbl">PERCURSO</span><br>UF de início: <strong>${esc(m.ufInicio || '-')}</strong> · UF de fim: <strong>${esc(m.ufFim || '-')}</strong><br>`
+        + `Carregamento: ${esc(m.municipioCarregamento || '-')}<br>Descarregamento: ${esc(m.municipioDescarregamento || '-')}</div>`
+        + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES DA COMPOSIÇÃO DA CARGA</span>`
+        + `<table class="damdfe-tab"><thead><tr><th>Chave da NF-e</th><th>NF-e Nº/Série</th><th>Valor (R$)</th><th>Peso (kg)</th></tr></thead><tbody>${linhasDocs}</tbody></table></div>`
+        + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES SOBRE SEGUROS</span><br>Responsável: - · Seguradora: - · Apólice: -</div>`
+        + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES COMPLEMENTARES DE INTERESSE DO CONTRIBUINTE</span><br>${esc(m.observacoes || '-')}</div>`
+        + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES ADICIONAIS DE INTERESSE DO FISCO</span><br>-</div>`
         + `</div>`;
 }
 

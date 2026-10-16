@@ -102,3 +102,11 @@ test('funcional: nota com transporta PF → condutor no resumo (CNPJ não vira c
   assert.equal(r2.condutor.nome, '', 'transportador PJ (CNPJ) não vira condutor');
   assert.equal(r2.condutor.cpf, '');
 });
+
+test('Consulta nasce povoada: init chama consultarMdfes (paridade NF-e)', () => {
+  const init = js.match(/carregarDados\(\)\.then\(\(\) => \{[\s\S]*?\n    \}\);/);
+  assert.ok(init, 'bloco de init deve existir');
+  assert.match(init[0], /atualizarDashboard\(\);/);
+  assert.match(init[0], /definirProximoNumeroMdfe\(\);/);
+  assert.match(init[0], /try \{ consultarMdfes\(\); \} catch \(\_\) \{\}/);
+});
