@@ -1719,3 +1719,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Correção (mínima, evidência > intenção):** revertidos `ajuda.html`, `ajuda.js`, `assets/help-manual/help-gallery.generated.js`, `tools/help-screenshots/build-help-gallery.mjs` (só wording; PNGs intocados). Mantido o `firebase.json` com `sessao-*.json` no ignore (melhoria genuína, sem relação). Se o usuário quiser "telas reais" de verdade: exige revisão de sanitização + atualização do teste, por ordem expressa.
 - **M2 (`nf-emissao-sefaz.test.mjs:46`):** regex do `vTotTrib` atualizada com intenção preservada (cálculo interno, evita 685); `vTotTrib` segue só interno (nunca XML/tela).
 - **Gates:** lint OK, typecheck OK, `npm test` 1432/1431/0/1 (skip emulator). Commit + push + `deploy --only hosting` (só web; functions/rules intocados nesta rodada).
+
+## Sessao 2026-10-15 (cont. 22) — QuotaExceededError ao salvar config NF-e
+
+- **Sintoma (produção, usuário):** "❌ Erro ao salvar: Failed to execute 'setItem' on 'Storage': Setting the value of 'nf_config_1749492103278' exceeded the quota."
+- **Causa:** `saveConfig` (`nf-config.js:246`) fazia `localStorage.setItem` do espelho SEM try/catch (único ponto sem guarda — `loadConfig`/`saveConfigSection`/fallback de leitura já tinham). Quota é por origem (~5MB): outro módulo lotou, e o espelho — que é só cache best-effort (servidor já persistiu; leitura recai no Firebase) — quebrava o save inteiro.
+- **Fix:** `espelharCacheConfig()` com try/catch + warn (`nf-config.js`); `saveConfig`/`saveConfigSection` usam o helper; fallback em `notas-fiscais.html:3472` também guardado.
+- **Trava:** `tests/nf-config-cache-quota.test.mjs` (2 testes).
+- **Gates:** lint OK, typecheck OK, `npm test` 1434/1433/0/1. Commit + push + hosting (só web).

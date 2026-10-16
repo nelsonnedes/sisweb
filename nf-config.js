@@ -163,6 +163,18 @@ const NFConfigService = (() => {
     return `nf_config_${tenantId}`;
   }
 
+  // ─── Espelho local da config (cache; nunca pode quebrar o save) ───────────
+  // localStorage tem quota por origem (~5MB): se outro módulo lotou, o
+  // setItem lança QuotaExceededError. Cache é best-effort — o servidor já
+  // persistiu; na próxima leitura o fallback é o Firebase.
+  function espelharCacheConfig(tenantId, config) {
+    try {
+      localStorage.setItem(localKey(tenantId), JSON.stringify(config));
+    } catch (e) {
+      console.warn('[NFConfig] Cache local ignorado (quota?):', e && e.message ? e.message : e);
+    }
+  }
+
   async function loadConfigFromRealtime(tenantId) {
     if (!tenantId) return null;
     const svc = window.firebaseService || null;
@@ -243,7 +255,7 @@ const NFConfigService = (() => {
       config: toSave,
     });
     const persisted = result && result.config && typeof result.config === 'object' ? result.config : toSave;
-    localStorage.setItem(localKey(tenantId), JSON.stringify(persisted));
+    espelharCacheConfig(tenantId, persisted);
     console.log(`[NFConfig] Config salva via callable segura: ${getConfigPath(tenantId)}`);
     return persisted;
   }
@@ -262,14 +274,14 @@ const NFConfigService = (() => {
       payload,
     });
     if (result && result.config && typeof result.config === 'object') {
-      localStorage.setItem(localKey(tenantId), JSON.stringify(result.config));
+      espelharCacheConfig(tenantId, result.config);
     } else {
       const cached = localStorage.getItem(localKey(tenantId));
       if (cached) {
         try {
           const obj = JSON.parse(cached);
           obj[section] = { ...obj[section], ...payload };
-          localStorage.setItem(localKey(tenantId), JSON.stringify(obj));
+          espelharCacheConfig(tenantId, obj);
         } catch (_) {}
       }
     }

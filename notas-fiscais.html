@@ -3468,8 +3468,13 @@
         } else if (window.NFConfigService?.saveConfig) {
           salvo = await window.NFConfigService.saveConfig(tid, cfg);
         } else {
-          // Fallback: salvar apenas no localStorage
-          localStorage.setItem(`nf_config_${tid}`, JSON.stringify({ ...cfg, updatedAt: new Date().toISOString() }));
+          // Fallback: salvar apenas no localStorage (com guarda de quota —
+          // setItem sem try/catch quebrava o save com QuotaExceededError).
+          try {
+            localStorage.setItem(`nf_config_${tid}`, JSON.stringify({ ...cfg, updatedAt: new Date().toISOString() }));
+          } catch (e) {
+            console.warn('[NF] Cache local ignorado (quota?):', e && e.message ? e.message : e);
+          }
           salvo = cfg;
         }
 
