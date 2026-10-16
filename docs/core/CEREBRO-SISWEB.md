@@ -1735,3 +1735,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Não alterado (fora do provado):** teto 2.5MB de `clients`, `company_info`, `cache_*` — sem evidência de culpa, sem tuning por palpite.
 - **Trava:** `tests/user-profile-photo-cache.test.mjs` (2 testes).
 - **Gates:** lint OK, typecheck OK, `npm test` 1436/1435/0/1. Commit + push + hosting (só web).
+
+## Sessao 2026-10-16 — MDF-e: redirect pós-autorização + DAMDFE (preview/PDF) + ordenação
+
+- **Pedido do usuário (4 gaps após MDF-e Nº 20 autorizado, prot. 915260000005061):** (1) ir p/ aba Consulta ao concluir; (2) botão PDF em Ações (paridade NF-e); (3) mais recente primeiro na tabela; (4) Visualizar com preview do documento (não toast de texto).
+- **Implementado em `mdf-e.js`:** `emitirMdfe` chama `consultarMdfes()` + `window.showTab('consulta')` após autorizar; `consultarMdfes` ordena por `mdfeOrdenarPorNumeroDesc` (pura, testada); `mdfeDamdfeConteudo/mdfeDamdfeDocumento` (puros, só dados do registro + emitente via `obterDadosEmpresaMdfe`, tudo escapado) alimentam preview em modal (`mdfeAbrirPreviewDamdfe`, com botão Imprimir/PDF) e nova aba de impressão (`abrirDamdfeImpressao`, mesmo padrão do relatório); botão `fa-file-pdf` em Ações (sempre, como o DANFE da NF-e); `visualizarMdfe` delega ao preview. Sem gerador DAMDFE no repo — não reutilizado nada inexistente; sem URL SEFAZ inventada.
+- **Testes atualizados por mudança pedida (intenção preservada):** `tests/mdfe-console-robusto.test.mjs` (robustez legado agora no renderer + delegação ao preview). Novo `tests/mdfe-damdfe.test.mjs` (5 testes: ordenação, conteúdo, legado, XSS, wiring).
+- **Gates:** lint OK, typecheck OK, `npm test` 1441/1440/0/1. Commit + push + hosting (só web; `deploy:hosting` já roda `build:hosting` com cachebusters).

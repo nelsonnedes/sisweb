@@ -881,6 +881,10 @@ async function emitirMdfe() {
     limparFormularioMdfe();
     definirProximoNumeroMdfe();
     atualizarDashboard();
+    // Pós-autorização: atualiza a Consulta (mais recente primeiro) e leva o
+    // usuário até ela — paridade com a NF-e.
+    try { consultarMdfes(); } catch (_) {}
+    try { if (typeof window.showTab === 'function') window.showTab('consulta'); } catch (_) {}
     
     console.log('✅ MDF-e emitido:', dadosMdfe);
 }
@@ -999,6 +1003,11 @@ function mdfeConsultaMudarPagina(page) {
     renderizarTabelaMdfesPaginada();
 }
 
+// Ordenação da Consulta: nº desc (mais recente primeiro). Pura p/ teste.
+function mdfeOrdenarPorNumeroDesc(a, b) {
+    return (parseInt(b && b.numero, 10) || 0) - (parseInt(a && a.numero, 10) || 0);
+}
+
 function consultarMdfes(resetPage = true) {
     const busca = document.getElementById('searchMdfe').value.toLowerCase();
     const statusFiltro = document.getElementById('filterStatusMdfe').value;
@@ -1019,7 +1028,9 @@ function consultarMdfes(resetPage = true) {
         mdfeFiltrados = mdfeFiltrados.filter(mdfe => mdfe.status === statusFiltro);
     }
     
-    __mdfeConsultaFiltrados = mdfeFiltrados;
+    // Mais recentes primeiro (nº desc — paridade com a NF-e e com a
+    // importação em mdfeNormalizarNFeImportacao).
+    __mdfeConsultaFiltrados = mdfeFiltrados.slice().sort(mdfeOrdenarPorNumeroDesc);
     if (resetPage !== false) __mdfeConsultaPagina = 1;
     renderizarTabelaMdfesPaginada();
 }
@@ -1110,6 +1121,9 @@ function atualizarTabelaMdfes(mdfesParaExibir) {
                 <div class="mdfe-actions">
                 <button type="button" onclick="visualizarMdfe('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-primary btn-small" title="Visualizar" aria-label="Visualizar MDF-e">
                     <i class="fas fa-eye"></i>
+                </button>
+                <button type="button" onclick="abrirDamdfeImpressao('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-primary btn-small" title="DAMDFE / PDF" aria-label="Abrir DAMDFE para PDF">
+                    <i class="fas fa-file-pdf"></i>
                 </button>
                 ${mdfe.status === 'autorizado' ? `
                     <button type="button" onclick="encerrarMdfeRapido('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-warning btn-small" title="Encerrar" aria-label="Encerrar MDF-e">
@@ -1278,55 +1292,141 @@ async function encerrarMdfeRapido(id) {
     atualizarDashboard();
 }
 
-// Visualizar MDF-e
+// Visualizar MDF-e — preview do DAMDFE (como ficará ao enviar/imprimir)
 function visualizarMdfe(id) {
-    const mdfe = mdfes.find(m => m.id === id);
-    if (!mdfe) return;
-    const veiculo = mdfe.veiculo || {};
-    const condutor = mdfe.condutor || {};
-    const documentos = Array.isArray(mdfe.documentos) ? mdfe.documentos : [];
-    const numero = mdfe.numero != null ? mdfe.numero : '-';
-    const serie = mdfe.serie != null ? mdfe.serie : '-';
-    
-    let detalhes = `
-        MDF-e Nº: ${numero}/${serie}
-        Status: ${String(mdfe.status || '').toUpperCase()}
-        Data Emissão: ${formatarDataHora(mdfe.dataEmissao)}
-        
-        PERCURSO:
-        ${mdfe.ufInicio || '-'} → ${mdfe.ufFim || '-'}
-        Carregamento: ${mdfe.municipioCarregamento || '-'}
-        Descarregamento: ${mdfe.municipioDescarregamento || '-'}
-        
-        VEÍCULO:
-        Placa: ${veiculo.placa || '-'}
-        RENAVAM: ${veiculo.renavam || '-'}
-        Tara: ${veiculo.tara != null ? `${veiculo.tara} kg` : '-'}
-        Capacidade: ${veiculo.capacidade != null ? `${veiculo.capacidade} kg` : '-'}
-        
-        CONDUTOR:
-        Nome: ${condutor.nome || '-'}
-        CPF: ${condutor.cpf || '-'}
-        CNH: ${condutor.cnh || '-'}
-        
-        DOCUMENTOS: ${documentos.length} NF-e(s)
-        Valor Total: R$ ${(Number(mdfe.valorTotal) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-        Peso Total: ${(Number(mdfe.pesoTotal) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3})} kg
-    `;
-    
-    if (mdfe.protocolo) {
-        detalhes += `\nProtocolo: ${mdfe.protocolo}`;
+    const mdfe = mdfes.find(m => String(m.id) === String(id));
+    if (!mdfe) { notifyUser('MDF-e não encontrado'); return; }
+    mdfeAbrirPreviewDamdfe(mdfe);
+}
+
+// ─── DAMDFE (Documento Auxiliar do MDF-e): preview + PDF ─────────────────
+// Renderiza SOMENTE com dados do registro + emitente. Puro (sem DOM) p/ teste.
+// Registros legados podem não ter veiculo/condutor/documentos — tudo defensivo.
+function mdfeDamdfeConteudo(mdfe, empresa) {
+    const m = mdfe && typeof mdfe === 'object' ? mdfe : {};
+    const emp = empresa && typeof empresa === 'object' ? empresa : {};
+    const esc = (v) => escapeHtmlMdfe(v == null ? '' : String(v));
+    const veiculo = m.veiculo && typeof m.veiculo === 'object' ? m.veiculo : {};
+    const condutor = m.condutor && typeof m.condutor === 'object' ? m.condutor : {};
+    const docs = Array.isArray(m.documentos) ? m.documentos : [];
+    const moeda = (v) => (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    const pesoFmt = (v) => (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 3 });
+    let dataEmissao = '-';
+    try { if (m.dataEmissao) dataEmissao = esc(formatarDataHora(m.dataEmissao)); } catch (_) {}
+    const percurso = Array.isArray(m.percursoUfs) ? m.percursoUfs.filter(Boolean).join(' → ') : '';
+    const linhasDocs = docs.length ? docs.map((d) => {
+        const chave = esc(d && d.chave);
+        const nfRef = [d && d.nfeNumero, d && d.nfeSerie].filter((x) => x != null && String(x) !== '').map(String).join('/');
+        return `<tr><td class="mono">${chave || '-'}</td><td>${esc(nfRef || '-')}</td>` +
+            `<td class="num">R$ ${moeda(d && d.valor)}</td><td class="num">${pesoFmt(d && d.peso)} kg</td></tr>`;
+    }).join('') : '<tr><td colspan="4">Nenhum documento vinculado</td></tr>';
+    return `<div class="damdfe">
+        <div class="damdfe-head"><div><strong>DAMDFE</strong> — Documento Auxiliar do Manifesto Eletrônico de Documentos Fiscais</div>`
+        + `<div>MDF-e Nº <strong>${esc(m.numero != null ? m.numero : '-')}</strong> · Série ${esc(m.serie != null ? m.serie : '-')}</div></div>`
+        + `<div class="damdfe-sec"><strong>EMITENTE</strong><br>${esc(emp.name || '-')}<br>CNPJ: ${esc(emp.cnpj || '-')}<br>`
+        + `${esc([emp.address, emp.city && emp.state ? `${emp.city}/${emp.state}` : (emp.city || emp.state || '')].filter(Boolean).join(' — ') || '-')}<br>Fone: ${esc(emp.phone || '-')}</div>`
+        + `<div class="damdfe-cols"><div class="damdfe-sec"><strong>PERCURSO</strong><br>Origem: ${esc(m.ufInicio || '-')} — Carregamento: ${esc(m.municipioCarregamento || '-')}<br>`
+        + `Destino: ${esc(m.ufFim || '-')} — Descarregamento: ${esc(m.municipioDescarregamento || '-')}${percurso ? `<br>Passagem: ${esc(percurso)}` : ''}</div>`
+        + `<div class="damdfe-sec"><strong>EMISSÃO</strong><br>Data: ${dataEmissao}<br>Status: ${esc(String(m.status || '').toUpperCase() || '-')}</div></div>`
+        + `<div class="damdfe-cols"><div class="damdfe-sec"><strong>VEÍCULO</strong><br>Placa: ${esc(veiculo.placa || '-')}<br>RENAVAM: ${esc(veiculo.renavam || '-')}<br>`
+        + `Tara: ${veiculo.tara != null && veiculo.tara !== '' ? `${esc(veiculo.tara)} kg` : '-'} · Capacidade: ${veiculo.capacidade != null && veiculo.capacidade !== '' ? `${esc(veiculo.capacidade)} kg` : '-'}</div>`
+        + `<div class="damdfe-sec"><strong>CONDUTOR</strong><br>Nome: ${esc(condutor.nome || '-')}<br>CPF: ${esc(condutor.cpf || '-')}<br>CNH: ${esc(condutor.cnh || '-')}</div></div>`
+        + `<div class="damdfe-sec"><strong>DOCUMENTOS VINCULADOS (${docs.length} NF-e)</strong>`
+        + `<table class="damdfe-tab"><thead><tr><th>Chave da NF-e</th><th>NF-e Nº/Série</th><th>Valor</th><th>Peso</th></tr></thead><tbody>${linhasDocs}</tbody></table>`
+        + `Valor total: <strong>R$ ${moeda(m.valorTotal)}</strong> · Peso total: <strong>${pesoFmt(m.pesoTotal)} kg</strong></div>`
+        + `<div class="damdfe-sec"><strong>AUTENTICIDADE</strong><br>Chave de acesso: <span class="mono">${esc(m.chaveAcesso || '-')}</span><br>`
+        + `Protocolo de autorização: ${esc(m.protocolo || '-')}`
+        + `${m.protocoloEncerramento ? `<br>Protocolo de encerramento: ${esc(m.protocoloEncerramento)}${m.dataEncerramento ? ` em ${esc(m.dataEncerramento)}` : ''}` : ''}`
+        + `${m.observacoes ? `<br>Observações: ${esc(m.observacoes)}` : ''}</div>`
+        + `<div class="damdfe-foot">Documento auxiliar — a validade jurídica está no MDF-e eletrônico autorizado pela SEFAZ.</div>`
+        + `</div>`;
+}
+
+// Documento completo p/ impressão/PDF (nova aba — mesmo padrão do relatório).
+function mdfeDamdfeDocumento(mdfe, empresa) {
+    const css = `.damdfe{font-family:Arial,sans-serif;font-size:12px;color:#000;max-width:800px;margin:0 auto;}`
+        + `.damdfe-head{border:2px solid #000;padding:8px;margin-bottom:8px;text-align:center;}`
+        + `.damdfe-sec{border:1px solid #000;padding:6px 8px;margin-bottom:8px;}`
+        + `.damdfe-cols{display:flex;gap:8px;}.damdfe-cols .damdfe-sec{flex:1;}`
+        + `.damdfe-tab{width:100%;border-collapse:collapse;margin:6px 0;font-size:11px;}`
+        + `.damdfe-tab th,.damdfe-tab td{border:1px solid #000;padding:4px 6px;text-align:left;}`
+        + `.mono{font-family:monospace;font-size:11px;word-break:break-all;}`
+        + `.num{text-align:right;white-space:nowrap;}`
+        + `.damdfe-foot{font-size:10px;text-align:center;margin-top:4px;}`
+        + `.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid #999;border-radius:6px;background:#f1f5f9;font-family:Arial,sans-serif;}`
+        + `@media print{.sisweb-print-back{display:none !important;}}`;
+    const voltar = `<div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;font-weight:700;cursor:pointer;">Imprimir / Salvar PDF</button></div>`;
+    return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">`
+        + `<title>DAMDFE ${escapeHtmlMdfe(mdfe && mdfe.numero != null ? String(mdfe.numero) : '')}</title><style>${css}</style></head>`
+        + `<body>${voltar}${mdfeDamdfeConteudo(mdfe, empresa)}</body></html>`;
+}
+
+// Preview em modal (paridade com o modal de detalhes da NF-e/MDF-e)
+async function mdfeAbrirPreviewDamdfe(mdfe) {
+    let empresa = {};
+    try { empresa = await obterDadosEmpresaMdfe(); } catch (_) {}
+    const conteudo = mdfeDamdfeConteudo(mdfe, empresa);
+    try { document.getElementById('mdfeStatusDetalheModal')?.remove(); } catch (_) {}
+    const ov = document.createElement('div');
+    ov.id = 'mdfeStatusDetalheModal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:10000002;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+    const box = document.createElement('div');
+    box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
+    box.style.cssText = 'background:#fff;color:#000;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:820px;width:100%;padding:20px;max-height:88vh;overflow:auto;';
+    const h = document.createElement('h3');
+    h.textContent = `MDF-e ${mdfe && mdfe.numero != null ? mdfe.numero : ''} — Pré-visualização do DAMDFE`;
+    h.style.cssText = 'margin:0 0 12px;font-size:16px;font-family:Arial,sans-serif;';
+    box.appendChild(h);
+    const css = document.createElement('style');
+    css.textContent = '.damdfe{font-family:Arial,sans-serif;font-size:12px;color:#000;}.damdfe-head{border:2px solid #000;padding:8px;margin-bottom:8px;text-align:center;}.damdfe-sec{border:1px solid #000;padding:6px 8px;margin-bottom:8px;}.damdfe-cols{display:flex;gap:8px;}.damdfe-cols .damdfe-sec{flex:1;}.damdfe-tab{width:100%;border-collapse:collapse;margin:6px 0;font-size:11px;}.damdfe-tab th,.damdfe-tab td{border:1px solid #000;padding:4px 6px;text-align:left;}.mono{font-family:monospace;font-size:11px;word-break:break-all;}.num{text-align:right;white-space:nowrap;}.damdfe-foot{font-size:10px;text-align:center;margin-top:4px;}';
+    box.appendChild(css);
+    const body = document.createElement('div');
+    body.innerHTML = conteudo;
+    box.appendChild(body);
+    const footer = document.createElement('div');
+    footer.style.cssText = 'margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;font-family:Arial,sans-serif;';
+    const btnPrint = document.createElement('button');
+    btnPrint.type = 'button'; btnPrint.textContent = '🖨️ Imprimir / PDF';
+    btnPrint.style.cssText = 'padding:9px 16px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;';
+    btnPrint.onclick = () => { try { ov.remove(); } catch (_) {} abrirDamdfeImpressao(mdfe && mdfe.id); };
+    footer.appendChild(btnPrint);
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.textContent = 'Fechar';
+    btn.style.cssText = 'padding:9px 16px;border:0;border-radius:8px;background:#e2e8f0;color:#0f172a;font-weight:600;cursor:pointer;';
+    btn.onclick = () => ov.remove();
+    footer.appendChild(btn);
+    box.appendChild(footer);
+    ov.appendChild(box);
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+    try { btn.focus(); } catch (_) {}
+}
+
+// Abrir DAMDFE em nova aba p/ Imprimir/Salvar PDF (paridade com o DANFE da NF-e)
+async function abrirDamdfeImpressao(id) {
+    const mdfe = mdfes.find(m => String(m.id) === String(id));
+    if (!mdfe) { notifyUser('MDF-e não encontrado'); return; }
+    let empresa = {};
+    try { empresa = await obterDadosEmpresaMdfe(); } catch (_) {}
+    let novaJanela = null;
+    try {
+        novaJanela = window.open('', '_blank');
+    } catch (_) {
+        novaJanela = null;
     }
-    
-    if (mdfe.chaveAcesso) {
-        detalhes += `\nChave: ${mdfe.chaveAcesso}`;
+    if (!novaJanela || novaJanela.closed === true) {
+        notifyUser('Falha ao abrir janela de impressão. Verifique se os pop-ups estão permitidos.');
+        return;
     }
-    
-    if (mdfe.observacoes) {
-        detalhes += `\nObservações: ${mdfe.observacoes}`;
+    try {
+        novaJanela.document.open();
+        novaJanela.document.write(mdfeDamdfeDocumento(mdfe, empresa));
+        novaJanela.document.close();
+    } catch (_) {
+        notifyUser('Falha ao preparar documento de impressão.');
+        return;
     }
-    
-    notifyUser(detalhes);
+    try { novaJanela.focus(); } catch (_) {}
 }
 
 // ─── Preenche o formulário a partir de um registro (editar/clonar — DRY) ──
@@ -1631,6 +1731,7 @@ window.emitirMdfe = emitirMdfe;
 window.limparFormularioMdfe = limparFormularioMdfe;
 window.consultarMdfes = consultarMdfes;
 window.visualizarMdfe = visualizarMdfe;
+window.abrirDamdfeImpressao = abrirDamdfeImpressao;
 window.editarMdfe = editarMdfe;
 window.encerrarMdfe = encerrarMdfe;
 window.encerrarMdfeRapido = encerrarMdfeRapido;
@@ -1654,6 +1755,12 @@ window.__mdfeImportInternals = {
     mdfeNormalizarNFeImportacao,
     mdfeSomarImportacao,
     mdfeResumoImportacao,
+};
+// DAMDFE + ordenação da Consulta (testados em tests/mdfe-damdfe.test.mjs).
+window.__mdfeDamdfeInternals = {
+    mdfeOrdenarPorNumeroDesc,
+    mdfeDamdfeConteudo,
+    mdfeDamdfeDocumento,
 };
 
 console.log('🚛 Sistema MDF-e carregado com sucesso!'); 
