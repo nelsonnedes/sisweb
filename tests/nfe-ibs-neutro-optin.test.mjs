@@ -36,7 +36,7 @@ test('emissão bloqueia antes de consumir número sem ciência do neutro', () =>
   const gatePos = nfService.indexOf("err.code = 'IBS_NEUTRO_CONFIRMACAO'");
   const numeroPos = nfService.indexOf('incrementarNumero(_tenantId, 55');
   assert.ok(gatePos >= 0 && numeroPos >= 0 && gatePos < numeroPos, 'gate antes da reserva de número');
-  assert.match(nfService, /defaultNeutro: true,\n    \};/, 'fallback inline também marca');
+  assert.match(nfService, /imposto\.ibscbs = ibscbsCalc \|\| \{/, 'fallback com alíquotas oficiais de teste');
 });
 
 test('UI: opt-in com confirmDialog + registro na config + retry único', () => {

@@ -109,6 +109,8 @@
       "**/*dump*.json",
       "**/*backup*.json",
       "**/*diagnostic*.json",
+      "sessao-*.json",
+      "sessao--*.json",
       "database.rules.json",
       "firestore.rules",
       "firestore.indexes.json",

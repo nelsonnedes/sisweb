@@ -51,6 +51,14 @@ const NFXmlBuilder = (() => {
     return n.toFixed(dec);
   }
 
+  // ─── Arredondar para centavos (cStat 1080) ─────────────────────────────────
+  // A SEFAZ valida: soma dos <vIBSUF> dos itens == total. Somar floats crus
+  // (ex.: 0.1+0.2) e formatar só no XML quebra a igualdade por ±1 centavo.
+  // Somar centavos já arredondados espelha o que vai no XML de cada item.
+  function roundCents(v) {
+    return Math.round(parseFiscalNumber(v) * 100) / 100;
+  }
+
   // ─── Gerar cUF (código UF SEFAZ) ──────────────────────────────────────────
   function getCUF(uf) {
     const map = {
@@ -864,9 +872,9 @@ const NFXmlBuilder = (() => {
         const bc = parseFiscalNumber(gi.vBC != null ? gi.vBC : (it.vProd || it.total));
         const puf = parseFiscalNumber(gi.pIBSUF), pmu = parseFiscalNumber(gi.pIBSMun), pcb = parseFiscalNumber(gi.pCBS);
         vBCIBSCBS += bc;
-        vIBSUF    += gi.vIBSUF  != null ? parseFiscalNumber(gi.vIBSUF)  : bc * puf / 100;
-        vIBSMun   += gi.vIBSMun != null ? parseFiscalNumber(gi.vIBSMun) : bc * pmu / 100;
-        vCBS      += gi.vCBS    != null ? parseFiscalNumber(gi.vCBS)    : bc * pcb / 100;
+        vIBSUF    += roundCents(gi.vIBSUF  != null ? parseFiscalNumber(gi.vIBSUF)  : bc * puf / 100);
+        vIBSMun   += roundCents(gi.vIBSMun != null ? parseFiscalNumber(gi.vIBSMun) : bc * pmu / 100);
+        vCBS      += roundCents(gi.vCBS    != null ? parseFiscalNumber(gi.vCBS)    : bc * pcb / 100);
         vDevTribIBSUF  += devTribVal(gi.devTribUF);
         vDevTribIBSMun += devTribVal(gi.devTribMun);
         vDevTribCBS    += devTribVal(gi.devTribCBS);
@@ -888,16 +896,20 @@ const NFXmlBuilder = (() => {
       const gs = it.imposto?.is;
       if (gs && gs.habilitado) {
         const bcis = parseFiscalNumber(gs.vBCIS != null ? gs.vBCIS : (it.vProd || it.total));
-        vIS += gs.vIS != null ? parseFiscalNumber(gs.vIS) : bcis * parseFiscalNumber(gs.pIS) / 100;
+        vIS += roundCents(gs.vIS != null ? parseFiscalNumber(gs.vIS) : bcis * parseFiscalNumber(gs.pIS) / 100);
       }
     });
     const vDesc  = parseFloat(desconto) || 0;
     const vFrete = parseFloat(frete)    || 0;
     const vNF    = vProd + vIPI - vDesc + vFrete;
-    const vIBS   = vIBSUF + vIBSMun;
+    const vIBSUF_r  = roundCents(vIBSUF);
+    const vIBSMun_r = roundCents(vIBSMun);
+    const vIBS      = roundCents(vIBSUF_r + vIBSMun_r);
+    vCBS            = roundCents(vCBS);
+    vIS             = roundCents(vIS);
     return { vProd, vBC, vICMS, vIPI, vPIS, vCOFINS, vFCP, vDesc, vFrete, vNF,
       vTotTrib: vICMS + vIPI + vPIS + vCOFINS + vIBS + vCBS + vIS,
-      vBCIBSCBS, vIBSUF, vIBSMun, vIBS, vCBS, vIS,
+      vBCIBSCBS: roundCents(vBCIBSCBS), vIBSUF: vIBSUF_r, vIBSMun: vIBSMun_r, vIBS, vCBS, vIS,
       vDifIBSUF, vDifIBSMun, vDifCBS, vCredPres, vIBSEstCred, vCBSEstCred,
       vDevTribIBSUF, vDevTribIBSMun, vDevTribCBS,
       vMonoIBS, vMonoCBS, vMonoRetenIBS, vMonoRetenCBS, vMonoRetIBS, vMonoRetCBS,

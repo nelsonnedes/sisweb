@@ -151,10 +151,10 @@
     const ipi = window.NFConfigService?.calcularIPI?.(cfg, total);
     if (ipi) item.imposto.ipi = ipi;
 
-    // IBS / CBS (RTC)
+    // IBS / CBS (RTC): alíquotas oficiais de teste (IT 2025.002: 0.1% e 0.9%, cStat 1115 e 1026).
     const ibscbs = window.NFConfigService?.calcularIBSCBS?.(cfg, total)
-      || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
-    item.imposto.ibscbs = item.imposto.ibscbs || ibscbs;
+      || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0.1, pIBSMun: 0, pCBS: 0.9, vBC: total };
+    item.imposto.ibscbs = ibscbs;
 
     // IS (Imposto Seletivo)
     const isSel = window.NFConfigService?.calcularIS?.(cfg, total);
@@ -201,10 +201,9 @@
       const ipi = window.NFConfigService?.calcularIPI?.(cfg, total);
       if (ipi) imposto.ipi = ipi;
       else delete imposto.ipi;
-      const ibscbs = window.NFConfigService.calcularIBSCBS?.(cfg, total)
-        || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: total };
-      if (ibscbs) imposto.ibscbs = ibscbs;
-      else delete imposto.ibscbs;
+      const ibscbs = window.NFConfigService?.calcularIBSCBS?.(cfg, total)
+        || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0.1, pIBSMun: 0, pCBS: 0.9, vBC: total };
+      imposto.ibscbs = ibscbs;
       const isSel = window.NFConfigService.calcularIS?.(cfg, total);
       if (isSel) imposto.is = isSel;
       else delete imposto.is;

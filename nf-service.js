@@ -266,16 +266,15 @@ const NFService = (() => {
       cofins: pisCofins.cofins,
     };
     if (ipiCalc) imposto.ipi = ipiCalc;
-    // RTC (cStat 1115): todo item carrega <IBSCBS> — default neutro
-    // (CST 000/cClassTrib 000001/alíq. 0) quando a config não detalhar.
+    // RTC (cStat 1115 e 1026): todo item carrega <IBSCBS> com alíquotas válidas
+    // (IT 2025.002: IBS UF 0.1% e CBS 0.9%, cClassTrib 000001).
     const ibscbsCalc = window.NFConfigService.calcularIBSCBS?.(
       cfg, parseFloat(item.vProd || item.total) || 0
     );
     imposto.ibscbs = ibscbsCalc || {
       habilitado: true, cst: '000', cClassTrib: '000001',
-      pIBSUF: 0, pIBSMun: 0, pCBS: 0,
+      pIBSUF: 0.1, pIBSMun: 0, pCBS: 0.9,
       vBC: parseFloat(item.vProd || item.total) || 0,
-      defaultNeutro: true,
     };
     return imposto;
   }
@@ -318,6 +317,20 @@ const NFService = (() => {
       nfeData.ide.dhCont = cont.ativadaEm || new Date().toISOString();
       nfeData.ide.xJust = motivo;
       nfeData.contingenciaSVC = { tipo, motivo, ativadaEm: nfeData.ide.dhCont };
+    }
+
+    // 1c. Normalização IBS/CBS (evita cStat 1026 em reenvio de rascunhos com alíquotas zeradas):
+    // Na Reforma Tributária (IT 2025.002), CST 000 exige alíquotas válidas (0.1% e 0.9%).
+    if (Array.isArray(nfeData.det)) {
+      nfeData.det.forEach((d) => {
+        const ibs = d && d.imposto && d.imposto.ibscbs;
+        if (ibs && String(ibs.cst || '000') === '000') {
+          if (!Number.isFinite(ibs.pIBSUF) || Number(ibs.pIBSUF) <= 0) ibs.pIBSUF = 0.1;
+          if (!Number.isFinite(ibs.pCBS) || Number(ibs.pCBS) <= 0) ibs.pCBS = 0.9;
+          ibs.habilitado = true;
+          if (!ibs.cClassTrib) ibs.cClassTrib = '000001';
+        }
+      });
     }
 
     // 2. Calcular totais. vTotTrib = soma dos tributos (inclui IBS/CBS/IS quando
