@@ -92,9 +92,17 @@ const MdfeXmlBuilder = (() => {
         const placa = String(vehicle.placa || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
         const cpf = digits(driver.cpf);
         if (!placa || cpf.length !== 11) throw new Error('Placa e CPF do condutor sao obrigatorios para o MDF-e.');
+        // UF de licenciamento do veículo (MOC Anexo I); fallback = UF de
+        // carregamento (comportamento anterior, byte-idêntico p/ legados).
+        const ufVeiculo = /^[A-Z]{2}$/.test(String(vehicle.uf || '').toUpperCase())
+            ? String(vehicle.uf).toUpperCase()
+            : String(data.ufInicio || '').toUpperCase();
+        // RNTRC (<prop>) NÃO emitido: sem o XSD do modal p/ validar a posição
+        // na sequência, o risco de cStat 215 supera o benefício (o XML atual
+        // autoriza sem <prop>). RNTRC coletado vai ao registro + DAMDFE.
         return `<infModal versaoModal="3.00"><rodo><veicTracao><placa>${esc(placa)}</placa>`
             + `<tara>${digits(vehicle.tara)}</tara><condutor><xNome>${esc(driver.nome)}</xNome><CPF>${cpf}</CPF></condutor>`
-            + `<tpRod>01</tpRod><tpCar>00</tpCar><UF>${esc(data.ufInicio)}</UF></veicTracao></rodo></infModal>`;
+            + `<tpRod>01</tpRod><tpCar>00</tpCar><UF>${esc(ufVeiculo)}</UF></veicTracao></rodo></infModal>`;
     }
 
     function buildMdfe(data) {

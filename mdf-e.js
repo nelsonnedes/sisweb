@@ -29,11 +29,59 @@ function normalizeCompanyForMdfeReport(raw = {}) {
         name,
         cnpj: src.cnpj || configuracoesMdfe.cnpjEmitente || '-',
         ie: src.stateRegistration || src.inscricaoEstadual || src.ie || src.IE || '',
+        logoDataUrl: [/^data:image\//i.test(String(src.logoDataUrl || '')) ? src.logoDataUrl : '',
+            /^data:image\//i.test(String(src.logo || '')) ? src.logo : ''].find(Boolean) || '',
+        logoUrl: [src.logoUrl, src.logoURL, src.logoDownloadURL, src.downloadURL,
+            /^https?:\/\//i.test(String(src.logo || '')) ? src.logo : ''].find((u) => u && !/^data:/i.test(String(u))) || '',
+        logoStoragePath: src.logoStoragePath || src.logoPath || src.storagePath || '',
         address: address || '-',
         city: src.cidade || src.city || src.municipio || enderecoObj.municipio || '-',
         state: src.estado || src.state || src.uf || enderecoObj.uf || configuracoesMdfe.ufEmitente || '-',
         phone: src.telefone || src.phone || '-'
     };
+}
+
+// Resolve a logo da emitente p/ o DAMDFE (paridade com o DANFE: mesmos campos
+// de nfPickLogoFieldsForDanfe; Storage via getStorageDataURL/getDownloadURL).
+// Retorna dataURL ou https — ou '' (DAMDFE sai sem logo, sem quebrar).
+async function mdfeResolverLogoEmpresa(empresa) {
+    try {
+        const emp = empresa && typeof empresa === 'object' ? empresa : {};
+        if (/^data:image\//i.test(String(emp.logoDataUrl || ''))) return emp.logoDataUrl;
+        let path = String(emp.logoStoragePath || '');
+        let url = String(emp.logoUrl || '');
+        if (!url && !path) {
+            try {
+                const svc0 = window.firebaseService || {};
+                if (typeof svc0.getCompanyProfileForReport === 'function') {
+                    const central = await svc0.getCompanyProfileForReport();
+                    const data = central && central.success !== false ? (central.data || central) : null;
+                    if (data && typeof data === 'object') {
+                        const norm = normalizeCompanyForMdfeReport(data);
+                        if (/^data:image\//i.test(String(norm.logoDataUrl || ''))) return norm.logoDataUrl;
+                        url = String(norm.logoUrl || '');
+                        path = String(norm.logoStoragePath || '');
+                    }
+                }
+            } catch (_) {}
+        }
+        const svc = window.firebaseService || {};
+        if (path && !url) {
+            try {
+                if (typeof svc.getStorageDataURL === 'function') {
+                    const dataUrl = await svc.getStorageDataURL(path);
+                    if (/^data:image\//i.test(String(dataUrl || '')) && String(dataUrl).length < 2 * 1024 * 1024) return dataUrl;
+                }
+            } catch (_) {}
+            try {
+                if (typeof svc.getDownloadURL === 'function') {
+                    const dl = await svc.getDownloadURL(path);
+                    if (/^https?:\/\//i.test(String(dl || ''))) url = String(dl);
+                }
+            } catch (_) {}
+        }
+        return /^https?:\/\//i.test(url) ? url : '';
+    } catch (_) { return ''; }
 }
 
 async function obterDadosEmpresaMdfe() {
@@ -465,6 +513,8 @@ function mdfeSalvarUltimoVeiculoCondutor(payload) {
         const dados = {
             veiculo: {
                 placa: String(payload?.veiculo?.placa || '').trim(),
+                uf: String(payload?.veiculo?.uf || '').trim().toUpperCase(),
+                rntrc: String(payload?.veiculo?.rntrc || '').replace(/\D/g, ''),
                 renavam: String(payload?.veiculo?.renavam || '').trim(),
                 tara: payload?.veiculo?.tara ?? '',
                 capacidade: payload?.veiculo?.capacidade ?? '',
@@ -491,6 +541,8 @@ function mdfePreencherUltimoVeiculoCondutor() {
             if (el && !el.value && valor !== '' && valor != null) el.value = valor;
         };
         fillIfEmpty('veiculoPlaca', String(v.placa || '').toUpperCase());
+        fillIfEmpty('veiculoUf', String(v.uf || '').toUpperCase());
+        fillIfEmpty('veiculoRntrc', String(v.rntrc || ''));
         fillIfEmpty('veiculoRenavam', v.renavam);
         fillIfEmpty('veiculoTara', v.tara);
         fillIfEmpty('veiculoCapacidade', v.capacidade);
@@ -913,6 +965,8 @@ function coletarDadosFormulario() {
             municipioDescarregamento: document.getElementById('percursoMunicipioDescarregamento').value,
             veiculo: {
                 placa: document.getElementById('veiculoPlaca').value,
+                uf: String(document.getElementById('veiculoUf')?.value || '').trim().toUpperCase(),
+                rntrc: String(document.getElementById('veiculoRntrc')?.value || '').replace(/\D/g, ''),
                 renavam: document.getElementById('veiculoRenavam').value,
                 tara: parseFloat(document.getElementById('veiculoTara').value) || 0,
                 capacidade: parseFloat(document.getElementById('veiculoCapacidade').value) || 0
@@ -1345,6 +1399,7 @@ function mdfeDamdfeCss() {
         + '.damdfe-box{border:1px solid #000;padding:5px 7px;}'
         + '.damdfe-lbl{font-size:8px;font-weight:700;letter-spacing:.4px;}'
         + '.damdfe-emit{font-size:12px;}.damdfe-emit strong{font-size:13px;}'
+        + '.damdfe-logo{float:left;max-width:22mm;max-height:18mm;margin:0 8px 4px 0;}'
         + '.damdfe-doc{text-align:center;}.damdfe-doc .t{font-size:16px;font-weight:700;}'
         + '.damdfe-tab{width:100%;border-collapse:collapse;margin:4px 0;font-size:10px;}'
         + '.damdfe-tab th,.damdfe-tab td{border:1px solid #000;padding:3px 5px;text-align:left;}'
@@ -1381,6 +1436,8 @@ function mdfeDamdfeConteudo(mdfe, empresa) {
     const qrSvg = qrUrl ? mdfeQrSvg(qrUrl) : null;
     const endEmit = [emp.address, emp.city && emp.state ? `${emp.city}/${emp.state}` : (emp.city || emp.state || '')]
         .filter((x) => x && x !== '-').join(' — ');
+    // Só https/data:image — nunca javascript:/data:text (registro remoto).
+    const logoSrc = /^(https?:\/\/|data:image\/)/i.test(String(emp.logoSrc || '')) ? String(emp.logoSrc) : '';
     const taraCap = [
         veiculo.tara != null && veiculo.tara !== '' ? `Tara: ${esc(veiculo.tara)} kg` : '',
         veiculo.capacidade != null && veiculo.capacidade !== '' ? `Capacidade: ${esc(veiculo.capacidade)} kg` : '',
@@ -1399,12 +1456,14 @@ function mdfeDamdfeConteudo(mdfe, empresa) {
             + (homolog ? `<div class="damdfe-banner">EMITIDO EM AMBIENTE DE HOMOLOGAÇÃO – SEM VALOR FISCAL</div>` : '');
     return `<div class="damdfe">`
         + `<div class="damdfe-row"><div class="damdfe-box damdfe-emit"><span class="damdfe-lbl">IDENTIFICAÇÃO DO EMITENTE</span><br>`
+        + (logoSrc ? `<img class="damdfe-logo" src="${esc(logoSrc)}" alt="" onerror="this.remove()">` : '')
         + `<strong>${esc(emp.name || 'Empresa não informada')}</strong><br>${esc(endEmit || '-')}<br>`
         + `CNPJ: ${esc(emp.cnpj || '-')}${emp.ie ? ` &nbsp; IE: ${esc(emp.ie)}` : ''}<br>Fone: ${esc(emp.phone || '-')}</div>`
         + `<div class="damdfe-box damdfe-doc"><span class="t">DAMDFE</span><br>Documento Auxiliar do Manifesto Eletrônico de Documentos Fiscais<br>`
         + `Nº <strong>${esc(m.numero != null ? m.numero : '-')}</strong> · SÉRIE ${esc(m.serie != null ? m.serie : '-')}<br>DATA DE EMISSÃO: ${dataEmissao}</div></div>`
         + `<div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES DO MODAL RODOVIÁRIO</span><br>`
-        + `Placa: <strong>${esc(veiculo.placa || '-')}</strong> · RENAVAM: ${esc(veiculo.renavam || '-')} · ${taraCap}<br>`
+        + `Placa: <strong>${esc(veiculo.placa || '-')}${veiculo.uf ? `/${esc(veiculo.uf)}` : ''}</strong> · RENAVAM: ${esc(veiculo.renavam || '-')} · ${taraCap}`
+        + (veiculo.rntrc ? `<br>RNTRC: ${esc(veiculo.rntrc)}` : '') + `<br>`
         + `Condutor: ${esc(condutor.nome || '-')} · CPF: ${esc(condutor.cpf || '-')}${condutor.cnh ? ` · CNH: ${esc(condutor.cnh)}` : ''}</div>`
         + `<div class="damdfe-row"><div class="damdfe-box"><span class="damdfe-lbl">INFORMAÇÕES DA CARGA</span><br>`
         + `Carregamento: ${esc(m.municipioCarregamento || '-')}/${esc(m.ufInicio || '-')}<br>`
@@ -1436,6 +1495,7 @@ function mdfeDamdfeDocumento(mdfe, empresa) {
 async function mdfeAbrirPreviewDamdfe(mdfe) {
     let empresa = {};
     try { empresa = await obterDadosEmpresaMdfe(); } catch (_) {}
+    try { empresa.logoSrc = await mdfeResolverLogoEmpresa(empresa); } catch (_) {}
     const conteudo = mdfeDamdfeConteudo(mdfe, empresa);
     try { document.getElementById('mdfeStatusDetalheModal')?.remove(); } catch (_) {}
     const ov = document.createElement('div');
@@ -1479,6 +1539,7 @@ async function abrirDamdfeImpressao(id) {
     if (!mdfe) { notifyUser('MDF-e não encontrado'); return; }
     let empresa = {};
     try { empresa = await obterDadosEmpresaMdfe(); } catch (_) {}
+    try { empresa.logoSrc = await mdfeResolverLogoEmpresa(empresa); } catch (_) {}
     let novaJanela = null;
     try {
         novaJanela = window.open('', '_blank');
@@ -1512,6 +1573,8 @@ function __mdfePreencherFormularioDoRegistro(mdfe) {
     document.getElementById('percursoMunicipioCarregamento').value = mdfe.municipioCarregamento || '';
     document.getElementById('percursoMunicipioDescarregamento').value = mdfe.municipioDescarregamento || '';
     document.getElementById('veiculoPlaca').value = veiculoEdit.placa || '';
+    try { const ufEl = document.getElementById('veiculoUf'); if (ufEl) ufEl.value = veiculoEdit.uf || ''; } catch (_) {}
+    try { const rnEl = document.getElementById('veiculoRntrc'); if (rnEl) rnEl.value = veiculoEdit.rntrc || ''; } catch (_) {}
     document.getElementById('veiculoRenavam').value = veiculoEdit.renavam || '';
     document.getElementById('veiculoTara').value = veiculoEdit.tara != null ? veiculoEdit.tara : '';
     document.getElementById('veiculoCapacidade').value = veiculoEdit.capacidade != null ? veiculoEdit.capacidade : '';
@@ -1836,6 +1899,8 @@ window.__mdfeDamdfeInternals = {
     mdfeDamdfeCss,
     mdfeDamdfeConteudo,
     mdfeDamdfeDocumento,
+    mdfeResolverLogoEmpresa,
+    normalizeCompanyForMdfeReport,
 };
 
 console.log('🚛 Sistema MDF-e carregado com sucesso!'); 
