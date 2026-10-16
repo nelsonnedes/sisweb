@@ -114,6 +114,9 @@
 .btn-danger { background-color: var(--sw-danger) !important; color: var(--sw-on-brand) !important; }
 .btn-danger:hover { background-color: var(--sw-danger) !important; filter: brightness(0.88); }
 
+.btn-warning { background-color: var(--sw-warning) !important; color: var(--sw-on-brand) !important; }
+.btn-warning:hover { background-color: var(--sw-warning) !important; filter: brightness(0.88); }
+
 .btn-secondary { background-color: var(--sw-text-3) !important; color: var(--sw-on-brand) !important; }
 .btn-secondary:hover { background-color: var(--sw-text-3) !important; filter: brightness(0.88); }
 

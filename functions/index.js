@@ -6933,6 +6933,7 @@ exports.mdfe_reservarNumero = mdfeFunctions.mdfe_reservarNumero;
 exports.mdfe_emitir = mdfeFunctions.mdfe_emitir;
 exports.mdfe_consultar = mdfeFunctions.mdfe_consultar;
 exports.mdfe_encerrar = mdfeFunctions.mdfe_encerrar;
+exports.mdfe_cancelar = mdfeFunctions.mdfe_cancelar;
 
 const financeFunctions = require('./finance-functions');
 financeFunctions.configure({ isCallerSuperAdmin });

@@ -49,5 +49,5 @@ test('encerramento 110112 envia eventoMDFe direto (sem envEventoMDFe) com evEncM
   assert.doesNotMatch(mdfeFunctions, /<envEventoMDFe/, 'wrapper gerava cStat 215 (element is not declared)');
   const js = readFileSync('mdf-e.js', 'utf8');
   assert.match(js, /nProt: mdfe\.protocolo \|\| ''/);
-  assert.equal((js.match(/nProt: mdfe\.protocolo \|\| ''/g) || []).length, 2, 'os dois fluxos de encerramento (form + rápido)');
+  assert.equal((js.match(/nProt: mdfe\.protocolo \|\| ''/g) || []).length, 3, 'encerramento (form + rápido) + cancelamento');
 });

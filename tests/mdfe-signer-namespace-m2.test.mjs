@@ -32,7 +32,7 @@ test('M2: MDF-e passa o namespace mdfe nos dois signer calls (lote e evento)', (
   assert.match(mdfeFunctions, /assinarXMLcomForge\(xml, pfx, senhaA1, \{ tagName: 'infMDFe', idPrefix: 'MDFe', namespace: MDFE_NS \}\)/);
   assert.match(mdfeFunctions, /assinarXMLcomForge\(event, pfx, senhaA1, \{ tagName: 'infEvento', idPrefix: 'ID', namespace: MDFE_NS \}\)/);
   const usos = mdfeFunctions.match(/namespace: MDFE_NS/g) || [];
-  assert.equal(usos.length, 2, 'as duas assinaturas MDF-e devem declarar o namespace mdfe');
+  assert.equal(usos.length, 3, 'as três assinaturas MDF-e devem declarar o namespace mdfe (lote + encerramento + cancelamento)');
 });
 
 test('M2: precedente NF-e não muda (nenhum call site passa namespace)', () => {

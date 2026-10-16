@@ -2335,6 +2335,7 @@ exports.nf_eventoRTC = onFiscalCall(async (data, context) => {
 // Compartilhado apenas pelo módulo MDF-e do backend; não é uma API callable.
 exports.__mdfeInternals = {
   assertTenantAccess,
+  escapeXml,
   hasFiscalAdminPermission,
   sanitizePathSegment,
   descriptografarPFXdoStorage,

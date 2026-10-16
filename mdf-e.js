@@ -242,6 +242,7 @@ function mdfeMostrarDetalheStatus(id) {
         ], [
             ...(chave ? [{ label: '🔑 Copiar chave', onclick: () => { try { navigator.clipboard.writeText(chave); notifyUser('Chave copiada.'); } catch (_) {} } }] : []),
             ...(mdfe.status === 'autorizado' ? [{ label: '✅ Encerrar MDF-e', onclick: () => { try { document.getElementById('mdfeStatusDetalheModal')?.remove(); } catch (_) {} encerrarMdfeRapido(mdfe.id); } }] : []),
+            ...(['autorizado', 'erro_cancelamento'].includes(String(mdfe.status)) ? [{ label: '🚫 Cancelar MDF-e', onclick: () => { try { document.getElementById('mdfeStatusDetalheModal')?.remove(); } catch (_) {} cancelarMdfe(mdfe.id); } }] : []),
         ]);
     } catch (e) { notifyUser('Erro ao abrir detalhes: ' + (e?.message || e)); }
 }
@@ -1302,6 +1303,11 @@ function atualizarTabelaMdfes(mdfesParaExibir) {
                         <i class="fas fa-check"></i>
                     </button>
                 ` : ''}
+                ${['autorizado', 'erro_cancelamento'].includes(String(mdfe.status)) ? `
+                    <button type="button" onclick="cancelarMdfe('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-danger btn-small" title="Cancelar MDF-e" aria-label="Cancelar MDF-e">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                ` : ''}
                 ${mdfe.status === 'rascunho' ? `
                     <button type="button" onclick="editarMdfe('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-warning btn-small" title="Editar" aria-label="Editar MDF-e">
                         <i class="fas fa-edit"></i>
@@ -1484,6 +1490,67 @@ async function encerrarMdfeRapido(id) {
     
     consultarMdfes();
     atualizarDashboard();
+}
+
+// Cancelar MDF-e (tpEvento 110111 — Ajuste SINIEF 21/2010: até 24h da
+// autorização e transporte não iniciado; nunca de MDF-e encerrado).
+async function cancelarMdfe(id) {
+    const mdfe = mdfes.find(m => String(m.id) === String(id));
+    if (!mdfe || !['autorizado', 'erro_cancelamento'].includes(String(mdfe.status))) {
+        notifyUser('Somente MDF-e autorizado pode ser cancelado');
+        return;
+    }
+    // Justificativa via modal central (mín. 15 caracteres — MOC).
+    const justificativa = typeof window.promptDialog === 'function'
+        ? await window.promptDialog({
+            title: 'Cancelar MDF-e',
+            message: 'Justificativa do cancelamento (mín. 15 caracteres):',
+            placeholder: 'Motivo do cancelamento',
+            confirmLabel: 'Continuar',
+            cancelLabel: 'Voltar',
+            inputType: 'text',
+            autoComplete: 'off',
+            icon: 'fas fa-ban',
+        })
+        : prompt('Justificativa do cancelamento (mín. 15 caracteres):');
+    if (!justificativa) return;
+    if (String(justificativa).trim().length < 15) {
+        notifyUser('Justificativa com no mínimo 15 caracteres (MOC)');
+        return;
+    }
+    try {
+        const senhaA1 = await mdfeSolicitarSenhaA1({
+            message: 'Informe a senha do certificado A1 para cancelar o MDF-e.',
+            confirmLabel: 'Cancelar MDF-e',
+        });
+        if (!senhaA1) return;
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Cancelando MDF-e...'); } catch (_) {}
+        const result = await window.firebaseService.callFunction('mdfe_cancelar', {
+            tenantId: tenantIdMdfe,
+            mdfeId: mdfe.id,
+            chave: mdfe.chaveAcesso,
+            nProt: mdfe.protocolo || '',
+            xJust: String(justificativa).trim(),
+            senhaA1,
+            ambiente: document.getElementById('mdfeAmbiente')?.value || 'homologacao',
+        });
+        if (!result?.cancelado) throw new Error(result?.xMotivo || 'SEFAZ não autorizou o cancelamento.');
+        mdfe.status = 'cancelado';
+        mdfe.protocoloCancelamento = result.protocolo || '';
+        mdfe.dataCancelamento = new Date().toISOString();
+        mdfe.justificativaCancelamento = String(justificativa).trim();
+    } catch (error) {
+        console.error('❌ Erro ao cancelar MDF-e:', error);
+        mdfeMostrarAlerta(`Não foi possível cancelar o MDF-e: ${error.message}`, 'erro');
+        return;
+    } finally {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
+    }
+    mdfeMostrarAlerta('MDF-e cancelado com sucesso! Protocolo: ' + (mdfe.protocoloCancelamento || 'não informado'), 'ok');
+
+    consultarMdfes();
+    atualizarDashboard();
+    carregarMdfesParaEncerramento();
 }
 
 // Visualizar MDF-e — preview do DAMDFE (como ficará ao enviar/imprimir)
@@ -2047,6 +2114,7 @@ window.editarMdfe = editarMdfe;
 window.encerrarMdfe = encerrarMdfe;
 window.mdfeSincronizarEncerramento = mdfeSincronizarEncerramento;
 window.encerrarMdfeRapido = encerrarMdfeRapido;
+window.cancelarMdfe = cancelarMdfe;
 window.consultarMdfeFiscal = consultarMdfeFiscal;
 window.gerarRelatorioMdfe = gerarRelatorioMdfe;
 window.mdfeMostrarDetalheStatus = mdfeMostrarDetalheStatus;

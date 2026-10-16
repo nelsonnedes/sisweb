@@ -20,6 +20,7 @@ const {
   toFiscalDateTime,
   extrairConteudoTag,
   extrairBlocoTag,
+  escapeXml,
 } = nf.__mdfeInternals;
 
 const MDFe_ENDPOINTS = {
@@ -312,5 +313,46 @@ exports.mdfe_encerrar = onMdfeCall(async (data, context) => {
     await updateMdfe(tenantId, mdfeId, { status: 'erro_encerramento', erroMsg: error.message }).catch(() => {});
     if (error instanceof functions.https.HttpsError) throw error;
     throw httpsError('internal', `Falha no encerramento MDF-e: ${error.message}`);
+  }
+});
+
+// Cancelamento (tpEvento 110111 — Ajuste SINIEF 21/2010, cláusula 13ª: até
+// 24h da autorização e transporte não iniciado; nunca de MDF-e encerrado).
+// Mesmo envelope do encerramento: eventoMDFe DIRETO (sem wrapper).
+exports.mdfe_cancelar = onMdfeCall(async (data, context) => {
+  if (!context.auth) throw httpsError('unauthenticated', 'Autenticação obrigatória.');
+  const tenantId = sanitizePathSegment(data.tenantId, 'tenantId');
+  const mdfeId = sanitizePathSegment(data.mdfeId, 'mdfeId');
+  const key = requireAccessKey(data.chave);
+  const nProt = digits(data.nProt);
+  if (!/^\d{15}$/.test(nProt)) throw httpsError('invalid-argument', 'Protocolo de autorização (nProt, 15 dígitos) é obrigatório para o cancelamento.');
+  const xJust = String(data.xJust || '').trim().slice(0, 255);
+  if (xJust.length < 15) throw httpsError('invalid-argument', 'Justificativa do cancelamento (mín. 15 caracteres, MOC) é obrigatória.');
+  const senhaA1 = String(data.senhaA1 || '');
+  if (!senhaA1) throw httpsError('invalid-argument', 'Senha do certificado A1 é obrigatória.');
+  const access = await assertMdfeAdmin(context, tenantId);
+  const config = await readFiscalConfig(tenantId);
+  const cnpj = requireCnpj(config.empresa && config.empresa.cnpj);
+  const env = environment(data.ambiente);
+  const sequence = String(Number(data.nSeqEvento) || 1).padStart(3, '0');
+  const eventId = `ID110111${key}${sequence.slice(-2)}`;
+  const event = `<eventoMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="3.00"><infEvento Id="${eventId}">`
+    + `<cOrgao>${key.slice(0, 2)}</cOrgao><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><CNPJ>${cnpj}</CNPJ><chMDFe>${key}</chMDFe>`
+    + `<dhEvento>${toFiscalDateTime()}</dhEvento><tpEvento>110111</tpEvento><nSeqEvento>${sequence}</nSeqEvento>`
+    + `<detEvento versaoEvento="3.00"><evCancMDFe><descEvento>Cancelamento</descEvento><nProt>${nProt}</nProt><xJust>${escapeXml(xJust)}</xJust></evCancMDFe></detEvento>`
+    + `</infEvento></eventoMDFe>`;
+  try {
+    const pfx = await descriptografarPFXdoStorage(tenantId, access.uid, senhaA1);
+    const signedEvent = assinarXMLcomForge(event, pfx, senhaA1, { tagName: 'infEvento', idPrefix: 'ID', namespace: MDFE_NS });
+    // Mesmo padrão do encerramento: eventoMDFe direto (wrapper gerava cStat 215).
+    const payload = signedEvent;
+    const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeRecepcaoEvento, mdfeSoap('MDFeRecepcaoEvento', payload, key.slice(0, 2)), pfx, senhaA1, mdfeSoapAction('MDFeRecepcaoEvento'));
+    const result = parseSefazResponse(response.body, ['135', '136', '155']);
+    await updateMdfe(tenantId, mdfeId, { status: result.autorizada ? 'cancelado' : 'erro_cancelamento', cStat: result.cStat, xMotivo: result.xMotivo, protocoloCancelamento: result.nProt, dataCancelamento: toFiscalDateTime(), justificativaCancelamento: xJust });
+    return { cancelado: result.autorizada, cStat: result.cStat, xMotivo: result.xMotivo, protocolo: result.nProt };
+  } catch (error) {
+    await updateMdfe(tenantId, mdfeId, { status: 'erro_cancelamento', erroMsg: error.message }).catch(() => {});
+    if (error instanceof functions.https.HttpsError) throw error;
+    throw httpsError('internal', `Falha no cancelamento MDF-e: ${error.message}`);
   }
 });

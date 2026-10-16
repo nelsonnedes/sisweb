@@ -19,7 +19,7 @@ function loadSoapAction() {
 test('M4: todas as chamadas MDF-e enviam SOAP action (nada sem action)', () => {
   const chamadas = mdfeFunctions.match(/postSefaz\(/g) || [];
   const actions = mdfeFunctions.match(/mdfeSoapAction\('/g) || [];
-  assert.equal(chamadas.length, 3, 'MDF-e tem exatamente 3 chamadas postSefaz');
+  assert.equal(chamadas.length, 4, 'MDF-e tem exatamente 4 chamadas postSefaz (sinc + consulta + encerramento + cancelamento)');
   assert.equal(actions.length, chamadas.length, 'toda chamada postSefaz do MDF-e deve passar mdfeSoapAction');
   for (const servico of ['MDFeRecepcaoSinc', 'MDFeConsulta', 'MDFeRecepcaoEvento']) {
     const re = new RegExp(
