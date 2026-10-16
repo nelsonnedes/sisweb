@@ -43,8 +43,15 @@ Executar o roadmap da auditoria (sessão cont. 9), na ordem: 1º integridade →
 ## Gates
 - `npm run lint`: OK
 - `npm run typecheck`: OK
-- `npm test`: 1393 total / 1392 pass / 0 fail / 1 skip (skip = emulator esperado)
+- `npm test`: 1432 total / 1431 pass / 0 fail / 1 skip (skip = emulator esperado)
 - `npm run build:hosting`: OK (543 arquivos)
+
+## Pós-roadmap (cont. 20–21)
+- [x] cStat 1026: alíquotas oficiais teste 0.1%/0.9% para CST 000 (`nf-config.js`, `nf-itens.js`, `nf-service.js` normalizador) + `tests/nfe-ibs-optout.test.mjs`
+- [x] cStat 1080: `roundCents` nos totalizadores IBS/CBS/IS (`nf-xml-builder.js`)
+- [x] M2: regex `vTotTrib` com intenção preservada (`tests/nf-emissao-sefaz.test.mjs`)
+- [x] Revert wording ajuda "telas reais" (quebrava gate de privacidade sem prova; PNGs intocados)
+- File list desta rodada: `nf-config.js`, `nf-itens.js`, `nf-service.js`, `nf-xml-builder.js`, `tests/nfe-ibs-optout.test.mjs` (novo), `tests/nfe-ibs-neutro-optin.test.mjs`, `tests/nf-emissao-sefaz.test.mjs`, `firebase.json` (sessao-*.json no ignore), `docs/core/CEREBRO-SISWEB.md` (cont. 20–21)
 
 ## Deploy (devops, sob ordem expressa)
 - [x] Commit dossiê + push (`3c2675c`, `ebb6cf8..3c2675c`)
