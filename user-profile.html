@@ -1116,18 +1116,51 @@
                     console.warn("⚠️ Upload p/ Storage falhou:", err);
                 }
                 
-                // Fallback para Base64 local caso Storage falhe
+                // Fallback para Base64 local caso Storage falhe (foto reduzida:
+                // o arquivo original em base64, com MBs, estourava a quota do
+                // localStorage e quebrava outros saves da origem).
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const imageData = e.target.result;
-                    localStorage.setItem('userPhoto', imageData);
-                    loadUserPhoto();
-                    updatePhotoPreview(imageData);
-                    showGlobalMessage('success', '📸 Foto atualizada (modo local).');
-                    try { input.disabled = false; } catch (_) {}
+                    const rawData = e.target.result;
+                    reduzirFotoParaCache(rawData, function(imageData) {
+                        if (imageData) {
+                            try {
+                                localStorage.setItem('userPhoto', imageData);
+                            } catch (err) {
+                                console.warn('[Profile] Foto nao persistida localmente (quota?):', err && err.message ? err.message : err);
+                            }
+                        }
+                        loadUserPhoto();
+                        updatePhotoPreview(imageData || rawData);
+                        showGlobalMessage('success', '📸 Foto atualizada (modo local).');
+                        try { input.disabled = false; } catch (_) {}
+                    });
                 };
                 reader.readAsDataURL(file);
             })();
+        }
+
+        // Reduz a foto para no maximo 256px (JPEG q0.8, ~30-60KB) antes de
+        // cachear no localStorage. Sem isto, o arquivo original em base64
+        // (MBs) estourava a quota de ~5MB da origem e quebrava outros saves.
+        function reduzirFotoParaCache(dataUrl, cb) {
+            try {
+                const img = new Image();
+                img.onload = function() {
+                    try {
+                        const MAX = 256;
+                        const escala = Math.min(1, MAX / Math.max(img.width, img.height));
+                        const w = Math.max(1, Math.round(img.width * escala));
+                        const h = Math.max(1, Math.round(img.height * escala));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        cb(canvas.toDataURL('image/jpeg', 0.8));
+                    } catch (_) { cb(null); }
+                };
+                img.onerror = function() { cb(null); };
+                img.src = dataUrl;
+            } catch (_) { cb(null); }
         }
 
         function updatePhotoPreview(imageData) {

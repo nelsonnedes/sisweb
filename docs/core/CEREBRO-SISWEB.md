@@ -1727,3 +1727,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Fix:** `espelharCacheConfig()` com try/catch + warn (`nf-config.js`); `saveConfig`/`saveConfigSection` usam o helper; fallback em `notas-fiscais.html:3472` também guardado.
 - **Trava:** `tests/nf-config-cache-quota.test.mjs` (2 testes).
 - **Gates:** lint OK, typecheck OK, `npm test` 1434/1433/0/1. Commit + push + hosting (só web).
+
+## Sessao 2026-10-15 (cont. 23) — Correcao: writer `userPhoto` sem guarda/teto
+
+- **Diretriz do usuário (permanente):** sem suposição/invenção/chute; só após testes e com certeza. Investigação da quota reenquadrada: ranking de "culpado" anterior descartado como hipótese; medição real no browser do usuário (snippet DevTools) segue pendente como gate de confirmação.
+- **Defeito provado no código (corrigido):** fallback de foto em `user-profile.html` gravava o arquivo original em base64 via `setItem` sem resize, sem teto e sem `try/catch` — único writer ilimitado restante. Fix: `reduzirFotoParaCache()` (max 256px, JPEG q0.8, ~30–60KB) + `try/catch` com warn; preview continua funcionando em memória mesmo se a quota estourar.
+- **Não alterado (fora do provado):** teto 2.5MB de `clients`, `company_info`, `cache_*` — sem evidência de culpa, sem tuning por palpite.
+- **Trava:** `tests/user-profile-photo-cache.test.mjs` (2 testes).
+- **Gates:** lint OK, typecheck OK, `npm test` 1436/1435/0/1. Commit + push + hosting (só web).
