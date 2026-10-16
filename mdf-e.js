@@ -25,62 +25,67 @@ function normalizeCompanyForMdfeReport(raw = {}) {
     const address = src.endereco && typeof src.endereco !== 'object'
         ? src.endereco
         : (src.address || [enderecoObj.logradouro, enderecoObj.numero, enderecoObj.bairro].filter(Boolean).join(', '));
-    return {
+    const out = {
         name,
         cnpj: src.cnpj || configuracoesMdfe.cnpjEmitente || '-',
         ie: src.stateRegistration || src.inscricaoEstadual || src.ie || src.IE || '',
-        logoDataUrl: [/^data:image\//i.test(String(src.logoDataUrl || '')) ? src.logoDataUrl : '',
-            /^data:image\//i.test(String(src.logo || '')) ? src.logo : ''].find(Boolean) || '',
-        logoUrl: [src.logoUrl, src.logoURL, src.logoDownloadURL, src.downloadURL,
-            /^https?:\/\//i.test(String(src.logo || '')) ? src.logo : ''].find((u) => u && !/^data:/i.test(String(u))) || '',
+        logoDataUrl: mdfeNormalizeLogo(src.logoDataUrl || src.logoBase64 || src.logoData || ''),
+        logoUrl: mdfeNormalizeLogo(src.logoUrl || src.logoURL || src.logoDownloadURL || src.downloadURL || ''),
         logoStoragePath: src.logoStoragePath || src.logoPath || src.storagePath || '',
         address: address || '-',
         city: src.cidade || src.city || src.municipio || enderecoObj.municipio || '-',
         state: src.estado || src.state || src.uf || enderecoObj.uf || configuracoesMdfe.ufEmitente || '-',
         phone: src.telefone || src.phone || '-'
     };
+    // Logo em campo genérico (mesma tolerância dos pedidos: base64 cru vira data:).
+    if (!out.logoDataUrl && !out.logoUrl) {
+        const generico = mdfeNormalizeLogo(src.logo || '');
+        if (/^data:image\//i.test(generico)) out.logoDataUrl = generico;
+        else if (/^https?:\/\//i.test(generico)) out.logoUrl = generico;
+    }
+    // Espelhar PT/EN (padrão dos pedidos — fontes diversas usam chaves diversas).
+    out.nome = out.name; out.endereco = out.address; out.cidade = out.city;
+    out.estado = out.state; out.telefone = out.phone;
+    return out;
 }
 
-// Resolve a logo da emitente p/ o DAMDFE (paridade com o DANFE: mesmos campos
-// de nfPickLogoFieldsForDanfe; Storage via getStorageDataURL/getDownloadURL).
-// Retorna dataURL ou https — ou '' (DAMDFE sai sem logo, sem quebrar).
+// Normaliza logo (mesma regra dos pedidos de vendas/compras): data:, https,
+// base64 cru (>80 chars vira data:image/png) ou path relativo/extensão.
+// O render do DAMDFE filtra p/ https|data:image (nunca javascript:).
+function mdfeNormalizeLogo(value) {
+    if (!value) return '';
+    const s = String(value).trim();
+    if (!s) return '';
+    if (/^(data:|blob:|https?:|file:)/i.test(s)) return s;
+    if (/^[A-Za-z0-9+/=]+$/.test(s) && s.length > 80) return `data:image/png;base64,${s}`;
+    if (/^(\.\/|\.\.\/|\/)/.test(s) || /\.(png|jpg|jpeg|webp|svg)$/i.test(s)) return s;
+    return s;
+}
+
+// Resolve a logo da emitente p/ o DAMDFE (campos já normalizados por
+// normalizeCompanyForMdfeReport; Storage via getStorageDataURL/getDownloadURL
+// como no DANFE). Retorna dataURL ou https — ou '' (sem logo, sem quebrar).
 async function mdfeResolverLogoEmpresa(empresa) {
     try {
         const emp = empresa && typeof empresa === 'object' ? empresa : {};
         if (/^data:image\//i.test(String(emp.logoDataUrl || ''))) return emp.logoDataUrl;
-        let path = String(emp.logoStoragePath || '');
-        let url = String(emp.logoUrl || '');
-        if (!url && !path) {
-            try {
-                const svc0 = window.firebaseService || {};
-                if (typeof svc0.getCompanyProfileForReport === 'function') {
-                    const central = await svc0.getCompanyProfileForReport();
-                    const data = central && central.success !== false ? (central.data || central) : null;
-                    if (data && typeof data === 'object') {
-                        const norm = normalizeCompanyForMdfeReport(data);
-                        if (/^data:image\//i.test(String(norm.logoDataUrl || ''))) return norm.logoDataUrl;
-                        url = String(norm.logoUrl || '');
-                        path = String(norm.logoStoragePath || '');
-                    }
-                }
-            } catch (_) {}
-        }
+        if (/^https?:\/\//i.test(String(emp.logoUrl || ''))) return emp.logoUrl;
+        const path = String(emp.logoStoragePath || '');
+        if (!path) return '';
         const svc = window.firebaseService || {};
-        if (path && !url) {
-            try {
-                if (typeof svc.getStorageDataURL === 'function') {
-                    const dataUrl = await svc.getStorageDataURL(path);
-                    if (/^data:image\//i.test(String(dataUrl || '')) && String(dataUrl).length < 2 * 1024 * 1024) return dataUrl;
-                }
-            } catch (_) {}
-            try {
-                if (typeof svc.getDownloadURL === 'function') {
-                    const dl = await svc.getDownloadURL(path);
-                    if (/^https?:\/\//i.test(String(dl || ''))) url = String(dl);
-                }
-            } catch (_) {}
-        }
-        return /^https?:\/\//i.test(url) ? url : '';
+        try {
+            if (typeof svc.getStorageDataURL === 'function') {
+                const dataUrl = await svc.getStorageDataURL(path);
+                if (/^data:image\//i.test(String(dataUrl || '')) && String(dataUrl).length < 2 * 1024 * 1024) return dataUrl;
+            }
+        } catch (_) {}
+        try {
+            if (typeof svc.getDownloadURL === 'function') {
+                const dl = await svc.getDownloadURL(path);
+                if (/^https?:\/\//i.test(String(dl || ''))) return String(dl);
+            }
+        } catch (_) {}
+        return '';
     } catch (_) { return ''; }
 }
 
@@ -92,6 +97,17 @@ async function obterDadosEmpresaMdfe() {
             const data = central && central.success !== false ? (central.data || central) : null;
             if (data && typeof data === 'object') return normalizeCompanyForMdfeReport(data);
         }
+        // Perfil direto (paridade com nfAplicarLogoEmpresaAoDanfe da NF-e).
+        const tid = mdfeResolverTenantId();
+        if (tid && svc && typeof svc.loadFromFirebase === 'function') {
+            try {
+                const profile = await svc.loadFromFirebase(`companies/${tid}/profile`);
+                const data = profile && profile.success !== false ? (profile.data || profile) : null;
+                if (data && typeof data === 'object' && (data.nome || data.name || data.razaoSocial)) {
+                    return normalizeCompanyForMdfeReport({ ...data, companyId: tid });
+                }
+            } catch (_) {}
+        }
     } catch (_) {}
     try {
         const raw = localStorage.getItem('company_info');
@@ -100,6 +116,23 @@ async function obterDadosEmpresaMdfe() {
     } catch (_) {
         return normalizeCompanyForMdfeReport({});
     }
+}
+
+// Tenant p/ perfil da empresa (mesma ordem dos pedidos: módulo → SDK → local).
+function mdfeResolverTenantId() {
+    if (tenantIdMdfe) return tenantIdMdfe;
+    try {
+        const svc = window.firebaseService || window.firebaseServiceTL || window.FirebaseService || {};
+        if (typeof svc.getCurrentTenantId === 'function' && svc.getCurrentTenantId()) return String(svc.getCurrentTenantId());
+        if (typeof svc.getTenantId === 'function' && svc.getTenantId()) return String(svc.getTenantId());
+    } catch (_) {}
+    try {
+        const raw = localStorage.getItem('company_info');
+        const obj = raw ? JSON.parse(raw) : {};
+        const id = obj && (obj.companyId || obj.companyID || obj.tenantId || obj.id);
+        if (id) return String(id);
+    } catch (_) {}
+    return null;
 }
 
 function escapeHtmlMdfe(value) {
@@ -1900,7 +1933,9 @@ window.__mdfeDamdfeInternals = {
     mdfeDamdfeConteudo,
     mdfeDamdfeDocumento,
     mdfeResolverLogoEmpresa,
+    mdfeNormalizeLogo,
     normalizeCompanyForMdfeReport,
+    obterDadosEmpresaMdfe,
 };
 
 console.log('🚛 Sistema MDF-e carregado com sucesso!'); 

@@ -106,13 +106,13 @@ test('logo: resolver usa dataURL direto; vazio sem fonte', async () => {
   assert.equal(await internals.mdfeResolverLogoEmpresa(null), '');
 });
 
-test('logo: resolver busca perfil central quando local não tem', async () => {
+test('logo: resolver NÃO refaz busca central (cascata vive no obterDadosEmpresaMdfe)', async () => {
   const { internals } = loadDamdfe({
     firebaseService: {
       getCompanyProfileForReport: async () => ({ success: true, data: { nome: 'C', logoUrl: 'https://x.test/c.png' } }),
     },
   });
-  assert.equal(await internals.mdfeResolverLogoEmpresa({ name: 'C' }), 'https://x.test/c.png');
+  assert.equal(await internals.mdfeResolverLogoEmpresa({ name: 'C' }), '', 'sem logo nos campos → vazio, sem chamada extra');
 });
 
 test('wiring S4: form + coleta + prefill + remember + CSS logo', () => {
