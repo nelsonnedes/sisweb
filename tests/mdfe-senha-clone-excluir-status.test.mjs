@@ -47,7 +47,7 @@ test('ações: Clonar sempre disponível; Excluir só sem vínculo fiscal', () =
   assert.equal((js.match(/__mdfePreencherFormularioDoRegistro\(mdfe\);/g) || []).length, 2);
   // Repõe também as UFs do percurso (campo novo p/ cStat 663)
   assert.match(js, /percEl\.value = Array\.isArray\(mdfe\.percursoUfs\)\s*\n\s*\? mdfe\.percursoUfs\.join\(', '\)\s*\n\s*: String\(mdfe\.percursoUfs \|\| ''\);/);
-  assert.match(js, /mdfeEditando = null;\s*\n\s*document\.getElementById\('mdfeNumero'\)\.value = numeroAtualMdfe\.toString\(\)\.padStart\(9, '0'\);/);
+  assert.match(js, /mdfeEditando = null;\s*\n\s*\/\/ Recalcula \(contador pode estar desatualizado — outra aba\/sessão emitiu\)\.\s*\n\s*try \{ definirProximoNumeroMdfe\(\); \} catch \(\_\) \{\}\s*\n\s*document\.getElementById\('mdfeNumero'\)\.value = numeroAtualMdfe\.toString\(\)\.padStart\(9, '0'\);/);
   assert.match(js, /const permitidos = \['rascunho', 'rejeitado', 'erro_envio', 'erro_encerramento'\];/);
   assert.match(js, /svc\.removeFromFirebase\(`companies\/\$\{tenantIdMdfe\}\/fiscal\/mdfe\/\$\{id\}`\)/);
   assert.match(js, /if \(res && res\.success === false\) throw new Error\(res\.error \|\| 'Falha ao excluir no servidor\.'\);/);

@@ -347,6 +347,13 @@ function configurarEventos() {
     if (filterSelect) {
         filterSelect.addEventListener('change', consultarMdfes);
     }
+
+    // Calendário nativo de Data/Hora: devolve o foco ao escolher (o controle
+    // é do browser; sem isto alguns mantêm o picker aberto após o clique).
+    const emissaoInput = document.getElementById('mdfeDataEmissao');
+    if (emissaoInput) {
+        emissaoInput.addEventListener('change', function() { try { emissaoInput.blur(); } catch (_) {} });
+    }
 }
 
 function configurarLocalizacaoMdfe() {
@@ -1779,6 +1786,8 @@ function clonarMdfe(id) {
     if (!mdfe) { notifyUser('MDF-e não encontrado'); return; }
     __mdfePreencherFormularioDoRegistro(mdfe);
     mdfeEditando = null;
+    // Recalcula (contador pode estar desatualizado — outra aba/sessão emitiu).
+    try { definirProximoNumeroMdfe(); } catch (_) {}
     document.getElementById('mdfeNumero').value = numeroAtualMdfe.toString().padStart(9, '0');
     const agora = new Date();
     const dataHoraLocal = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000).toISOString().slice(0, 16);

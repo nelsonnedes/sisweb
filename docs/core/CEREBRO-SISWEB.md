@@ -1790,3 +1790,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **DAMDFE:** `Rota: PA → TO → GO → BA` (percursoUfs do registro); `município/UF` em carreg/descarreg; linha REBOQUE quando existe. Verificado funcional: DAMDFE-OK.
 - **Testes:** novo `mdfe-localizacao-reboque.test.mjs` 7/7 (2 falhas investigadas: status ausente no fixture; `deepEqual` entre realms do vm; typo `rntrc:` vs `rntc:` no teste — código certo).
 - **Gates:** lint OK, typecheck OK, `npm test` 1472/1471/0/1. Commit + push + hosting (só web; `?v=` mdf-e.js atualizado).
+
+## Sessao 2026-10-16 (cont. 30) — Calendário blur + clone recalcula (sinceridade no número)
+
+- **Calendário:** `datetime-local` é controle nativo do browser (fechar ao escolher é dele, não há API p/ forçar); adicionado `blur()` no `change` (melhor esforço honesto p/ browsers que mantêm o picker aberto). Trava de wiring.
+- **Número no clone/editar (análise sincera):** o clone JÁ avançava desde a impl. original (`clonarMdfe`, commit `410e17e`) — prova comportamental em vm: com contador íntegro mostra o seguinte. O único cenário real de "não atualiza" é contador desatualizado (outra aba/sessão emitiu): fix com `definirProximoNumeroMdfe()` recalculado no clone (teste com contador sabotado em 5 → mostra 21). Editar rascunho MANTÉM o número de propósito (é o mesmo documento; número exibido é provisório — a SEFAZ reserva o definitivo na emissão). Se o usuário viu outra coisa, preciso dos números exatos vistos.
+- **Testes:** `tests/mdfe-clone-numero-calendario.test.mjs` 3/3 (vm com stubs); `mdfe-senha-clone-excluir-status` atualizado p/ nova sequência.
+- **Gates:** lint OK, typecheck OK, `npm test` 1475/1474/0/1. Commit + push + hosting (só web; `?v=` mdf-e.js atualizado).
