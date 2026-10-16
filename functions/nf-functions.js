@@ -64,6 +64,18 @@ const SEFAZ_EP = {
     // UF próprias
     SP: { NfeAutorizacao4: 'https://nfe.fazenda.sp.gov.br/ws/nfeautorizacao4.asmx' },
     MG: { NfeAutorizacao4: 'https://nfe.fazenda.mg.gov.br/nfe2/services/NFeAutorizacao4' },
+    AM: {
+      NfeAutorizacao4:    'https://nfe.sefaz.am.gov.br/services2/services/NfeAutorizacao4',
+      NfeRetAutorizacao4: 'https://nfe.sefaz.am.gov.br/services2/services/NfeRetAutorizacao4',
+      NfeConsultaProtocolo4: 'https://nfe.sefaz.am.gov.br/services2/services/NfeConsulta4',
+      NFeRecepcaoEvento4: 'https://nfe.sefaz.am.gov.br/services2/services/RecepcaoEvento4',
+      NfeInutilizacao4:   'https://nfe.sefaz.am.gov.br/services2/services/NfeInutilizacao4',
+    },
+    MT: {
+      status: 'PENDENTE_VALIDAÇÃO_ENDPOINT',
+      // Sem URL própria informada pelo Portal Nacional da NF-e
+      // Não apontar para SVRS nem para AM
+    },
   },
   // P5 SVC (catálogo NFePHP wsnfe_4.00, blocos SVCAN/SVCRS — homolog+produção,
   // todos os serviços; SVC-RS compartilha a infra/hosts do SVRS, distinguido
@@ -124,8 +136,22 @@ function getEndpoint(servico, ambiente, uf, tpEmis) {
     return SEFAZ_EP[svc][ambiente][servico];
   }
   const env = SEFAZ_EP[ambiente] || SEFAZ_EP.homologacao;
-  // UF própria?
-  if (ambiente === 'producao' && env[uf] && env[uf][servico]) return env[uf][servico];
+  // UF própria (autorizador distinto do SVRS)?
+  if (ambiente === 'producao' && env[uf]) {
+    const ufConfig = env[uf];
+    if (ufConfig.status === 'PENDENTE_VALIDAÇÃO_ENDPOINT') {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        `UF ${uf} não possui endpoint de autorização válido (PENDENTE_VALIDAÇÃO_ENDPOINT).`
+      );
+    }
+    if (ufConfig[servico]) return ufConfig[servico];
+    // UF própria mas sem este serviço específico: não faz fallback automático
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      `UF ${uf} não possui endpoint para o serviço ${servico}.`
+    );
+  }
   return env[servico] || SEFAZ_EP.homologacao[servico];
 }
 
@@ -133,13 +159,13 @@ function getEndpoint(servico, ambiente, uf, tpEmis) {
 // NFePHP Contingency.md; gêmea de exibição em nf-config.js SVC_POR_UF).
 // Tenant pode forçar o tipo (override explícito), nunca inventado.
 const SVC_POR_UF = {
-  'AC': 'SVC-AN', 'AL': 'SVC-AN', 'AP': 'SVC-AN', 'CE': 'SVC-AN',
-  'DF': 'SVC-AN', 'ES': 'SVC-AN', 'MG': 'SVC-AN', 'PA': 'SVC-AN',
+  'AC': 'svc-rs', 'AL': 'SVC-AN', 'AP': 'svc-rs', 'CE': 'SVC-AN',
+  'DF': 'SVC-AN', 'ES': 'SVC-AN', 'MG': 'SVC-AN', 'PA': 'svc-rs',
   'PB': 'SVC-AN', 'PI': 'SVC-AN', 'RJ': 'SVC-AN', 'RN': 'SVC-AN',
-  'RO': 'SVC-AN', 'RR': 'SVC-AN', 'RS': 'SVC-AN', 'SC': 'SVC-AN',
+  'RO': 'svc-rs', 'RR': 'SVC-AN', 'RS': 'SVC-AN', 'SC': 'SVC-AN',
   'SE': 'SVC-AN', 'SP': 'SVC-AN', 'TO': 'SVC-AN',
-  'AM': 'SVC-RS', 'BA': 'SVC-RS', 'GO': 'SVC-RS', 'MA': 'SVC-RS',
-  'MS': 'SVC-RS', 'MT': 'SVC-RS', 'PE': 'SVC-RS', 'PR': 'SVC-RS',
+  'AM': 'am', 'BA': 'SVC-RS', 'GO': 'SVC-RS', 'MA': 'svc-an',
+  'MS': 'SVC-RS', 'MT': 'mt', 'PE': 'SVC-RS', 'PR': 'SVC-RS',
 };
 function resolverTipoSVC(uf, override) {
   const fixo = String(override || '').trim().toUpperCase();

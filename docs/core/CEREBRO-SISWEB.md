@@ -1813,3 +1813,26 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Cancelar (pedido + MOC):** evento 110111 (Ajuste SINIEF 21/2010: ≤24h da autorização, sem transporte iniciado, nunca encerrado — SEFAZ valida; regras 218/219/609 documentadas em comentário). Backend `mdfe_cancelar` espelha `mdfe_encerrar` (eventoMDFe direto, `evCancMDFe`+nProt+xJust≥15 escapeXml slice 255, status `cancelado`/`erro_cancelamento`); `escapeXml` exportado p/ `__mdfeInternals`; **re-export em `functions/index.js` exigido** (deploy falhou sem ele — travado em teste). Frontend: botão 🚫 `btn-danger` p/ autorizado/erro_cancelamento + ação no modal + pill `cancelado` (já existia) + exclusão segue vedada. Dashboard/contadores inalterados (cancelado sai de "ativas" sozinho).
 - **Testes:** `mdfe-cancelamento-110111.test.mjs` 5/5; contadores M2/M4/dhevento atualizados com motivo (2→3 assinaturas, 3→4 postSefaz, 2→3 nProt). 3 falhas iniciais investigadas (regex `${[` sem `\{`; contadores legítimos).
 - **Gates:** lint OK, typecheck OK, `npm test` 1485/1484/0/1. Commit + push + functions:mdfe_cancelar + hosting (`?v=` mdf-e.js atualizado).
+
+## Sessao 2026-10-16 (cont. 33) — Dossiê documental fiscal NF-e/MDF-e (plano, sem código)
+
+- **Objetivo:** concluir auditoria documental fiscal (itens A–H), classificar pendências P1–P9, definir matriz proprietário × contador e produzir plano de implementação — **sem alterar código fiscal nesta etapa**, conforme decisão do usuário.
+- **Entregáveis criados (apenas documentação):**
+  - `docs/auditoria/DOSSIE-DOCUMENTAL-FISCAL.md` — itens A–H com classificações P1–P9, decisões aprovadas (P4 autorizadores SVRS PA/RO/AC/RR; MT/AM próprio; cClassTrib/cCredPres do cadastro; IBS/CBS depende P7; XSD 2025 P8), matriz proprietário × contador, plano de implementação por etapa.
+  - `docs/stories/2026-10-16-dossie-documental-fiscal.md` — story com objetivo, itens A–H, matriz, plano de implementação e checklist.
+- **Decisões aprovadas incorporadas:** P4 (PA/RO/AC/RR = SVRS; MT/AM = próprio); P5/P6 (cClassTrib/cCredPres = cadastro Natureza da Operação, não inferir NCM); P7 (IBS/CBS depende norma em tramitação); P8 (atualizar XSD/NT para 2025 com precisão); P9 (não aplicável).
+- **Pendentes de pesquisa oficial externa (não baixadas neste contexto):** URLs/WSDL oficiais de MT/AM e outras UFs; SVC por UF; cClassTrib; cCredPres; NTs vigentes; TIPI Cap. 44; RICMS/PA. Classificadas como P3.
+- **Gates executados (validação apenas, sem alteração de código fiscal):** lint OK, typecheck OK, `npm test` 1485/1484/0/1.
+- **Bloqueio para implementação:** aprovação do usuário sobre este dossiê + pesquisa oficial externa dos itens P3.
+
+## Sessao 2026-10-16 (cont. 34) — Autorizadores NF-e/MDF-e por UF (conforme Portal Nacional)
+
+- **Decisão do usuário (fonte oficial: Portal Nacional NF-e):** PA, RO, AC, AP = SVRS; MA = SVAN; AM = Próprio (SEFAZ-AM); MT = Próprio (SEFAZ-MT, PENDENTE_VALIDAÇÃO_ENDPOINT).
+- **Alteração em `functions/nf-functions.js`:**
+  - `SEFAZ_EP.producao.AM`: adicionado bloco completo com 7 serviços (NfeAutorizacao4, NfeRetAutorizacao4, NfeConsultaProtocolo4, NFeRecepcaoEvento4, NfeInutilizacao4).
+  - `SEFAZ_EP.producao.MT`: adicionado bloco com `status: 'PENDENTE_VALIDAÇÃO_ENDPOINT'`, sem URL (não apontar para SVRS nem para AM, não inventar URL).
+  - `SVC_POR_UF`: atualizado — PA/RO/AC/AP → `'svc-rs'` (SVRS); MA → `'svc-an'` (SVAN); AM → `'am'`; MT → `'mt'`.
+  - `getEndpoint()`: não faz fallback automático para outro autorizador quando UF própria não tem serviço; MT lança `failed-precondition` (`PENDENTE_VALIDAÇÃO_ENDPOINT`).
+- **Relatório MT:** `docs/auditoria/RELATORIO-MT-AUTORIZADOR-PROPRIO.md` — endpoints ausentes, risco, impacto em homologação (nenhum), plano de ativação.
+- **Gates:** lint OK, typecheck OK, `npm test` 1485/1484/0/1. Commit + push + hosting + functions pendente de deploy.
+

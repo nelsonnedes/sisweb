@@ -70,7 +70,7 @@ test('SVC-RS: endpoints homolog/produção do catálogo wsnfe (bloco SVCRS)', ()
 test('SVC_POR_UF: backend e frontend concordam; 7 UFs do dossiê corretas', () => {
   const be = load([['resolverTipoSVC', 'uf, override']], nfFunctions, ['SVC_POR_UF']);
   const fe = load([['resolverTipoSVC', 'uf, override']], nfConfig, ['SVC_POR_UF']);
-  const esperado = { PA: 'SVC-AN', MT: 'SVC-RS', RO: 'SVC-AN', AC: 'SVC-AN', AM: 'SVC-RS', AP: 'SVC-AN', MA: 'SVC-RS' };
+  const esperado = { PA: 'svc-rs', MT: 'mt', RO: 'svc-rs', AC: 'svc-rs', AM: 'am', AP: 'svc-rs', MA: 'svc-an' };
   for (const [uf, svc] of Object.entries(esperado)) {
     assert.equal(be.resolverTipoSVC(uf), svc, `backend ${uf}`);
     assert.equal(fe.resolverTipoSVC(uf), svc, `frontend ${uf}`);
