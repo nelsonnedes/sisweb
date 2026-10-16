@@ -1041,8 +1041,14 @@ async function emitirMdfe() {
     limparFormularioMdfe();
     definirProximoNumeroMdfe();
     atualizarDashboard();
-    // Pós-autorização: atualiza a Consulta (mais recente primeiro) e leva o
-    // usuário até ela — paridade com a NF-e.
+    // Pós-autorização: limpa os filtros (o nº novo precisa aparecer), atualiza
+    // a Consulta (mais recente primeiro) e leva o usuário até ela.
+    try {
+        const buscaEl = document.getElementById('searchMdfe');
+        if (buscaEl) buscaEl.value = '';
+        const filtroEl = document.getElementById('filterStatusMdfe');
+        if (filtroEl) filtroEl.value = '';
+    } catch (_) {}
     try { consultarMdfes(); } catch (_) {}
     try { if (typeof window.showTab === 'function') window.showTab('consulta'); } catch (_) {}
     
@@ -1292,7 +1298,7 @@ function atualizarTabelaMdfes(mdfesParaExibir) {
                     <i class="fas fa-file-pdf"></i>
                 </button>
                 ${mdfe.status === 'autorizado' ? `
-                    <button type="button" onclick="encerrarMdfeRapido('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-warning btn-small" title="Encerrar" aria-label="Encerrar MDF-e">
+                    <button type="button" onclick="encerrarMdfeRapido('${escapeHtmlMdfe(mdfe.id)}')" class="btn btn-danger btn-small" title="Encerrar" aria-label="Encerrar MDF-e">
                         <i class="fas fa-check"></i>
                     </button>
                 ` : ''}
@@ -1530,8 +1536,9 @@ function mdfeDamdfeCss() {
         + '.damdfe-row{display:flex;}.damdfe-row>div{flex:1;}'
         + '.damdfe-box{border:1px solid #000;padding:5px 7px;}'
         + '.damdfe-lbl{font-size:8px;font-weight:700;letter-spacing:.4px;}'
-        + '.damdfe-emit{font-size:12px;}.damdfe-emit strong{font-size:13px;}'
-        + '.damdfe-logo{float:left;max-width:22mm;max-height:18mm;margin:0 8px 4px 0;}'
+        + '.damdfe-emit{font-size:12px;display:flex;gap:8px;align-items:flex-start;}.damdfe-emit strong{font-size:13px;}'
+        + '.damdfe-logo{flex:0 0 auto;max-width:22mm;max-height:18mm;margin:2px 0 0;}'
+        + '.damdfe-scope{background:#fff;color:#000;color-scheme:light;}'
         + '.damdfe-doc{text-align:center;}.damdfe-doc .t{font-size:16px;font-weight:700;}'
         + '.damdfe-tab{width:100%;border-collapse:collapse;margin:4px 0;font-size:10px;}'
         + '.damdfe-tab th,.damdfe-tab td{border:1px solid #000;padding:3px 5px;text-align:left;}'
@@ -1598,10 +1605,10 @@ function mdfeDamdfeConteudo(mdfe, empresa) {
         + (qrSvg ? `<br><span class="damdfe-qr">${qrSvg}</span><br>Consulta de autenticidade no Portal Nacional do MDF-e` : '')
         + `</div>`;
     return `<div class="damdfe">`
-        + `<div class="damdfe-row"><div class="damdfe-box damdfe-emit"><span class="damdfe-lbl">IDENTIFICAÇÃO DO EMITENTE</span><br>`
+        + `<div class="damdfe-row"><div class="damdfe-box"><span class="damdfe-lbl">IDENTIFICAÇÃO DO EMITENTE</span><div class="damdfe-emit">`
         + (logoSrc ? `<img class="damdfe-logo" src="${esc(logoSrc)}" alt="" onerror="this.remove()">` : '')
-        + `<strong>${esc(emp.name || 'Empresa não informada')}</strong><br>${esc(endEmit || '-')}<br>`
-        + `CNPJ: ${esc(emp.cnpj || '-')}${emp.ie ? ` &nbsp; IE: ${esc(emp.ie)}` : ''}<br>Fone: ${esc(emp.phone || '-')}</div>`
+        + `<div><strong>${esc(emp.name || 'Empresa não informada')}</strong><br>${esc(endEmit || '-')}<br>`
+        + `CNPJ: ${esc(emp.cnpj || '-')}${emp.ie ? ` &nbsp; IE: ${esc(emp.ie)}` : ''}<br>Fone: ${esc(emp.phone || '-')}</div></div></div>`
         + `<div class="damdfe-box damdfe-doc"><span class="t">DAMDFE</span><br>Documento Auxiliar do Manifesto Eletrônico de Documentos Fiscais<br>`
         + `Nº <strong>${esc(m.numero != null ? m.numero : '-')}</strong> · SÉRIE ${esc(m.serie != null ? m.serie : '-')}<br>`
         + `DATA DE EMISSÃO: ${dataEmissao}<br>MODAL: RODOVIÁRIO · EMISSÃO: ${formaEmissao}</div>`
@@ -1639,7 +1646,7 @@ function mdfeDamdfeDocumento(mdfe, empresa) {
     const voltar = `<div class="sisweb-print-back"><button type="button" onclick="try{window.close()}catch(e){}if(!window.closed){try{history.back()}catch(e2){}}" style="min-height:40px;padding:0 16px;border-radius:6px;font-weight:700;cursor:pointer;">&#8592; Voltar</button><button type="button" onclick="window.focus();window.print()" style="min-height:40px;padding:0 16px;border-radius:6px;font-weight:700;cursor:pointer;">Imprimir / Salvar PDF</button></div>`;
     return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">`
         + `<title>DAMDFE ${escapeHtmlMdfe(mdfe && mdfe.numero != null ? String(mdfe.numero) : '')}</title><style>${css}</style></head>`
-        + `<body>${voltar}${mdfeDamdfeConteudo(mdfe, empresa)}</body></html>`;
+        + `<body>${voltar}<div class="damdfe-scope">${mdfeDamdfeConteudo(mdfe, empresa)}</div></body></html>`;
 }
 
 // Preview em modal (paridade com o modal de detalhes da NF-e/MDF-e)
@@ -1663,6 +1670,7 @@ async function mdfeAbrirPreviewDamdfe(mdfe) {
     css.textContent = mdfeDamdfeCss();
     box.appendChild(css);
     const body = document.createElement('div');
+    body.className = 'damdfe-scope';
     body.innerHTML = conteudo;
     box.appendChild(body);
     const footer = document.createElement('div');

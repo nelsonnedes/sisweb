@@ -128,5 +128,5 @@ test('wiring S4: form + coleta + prefill + remember + CSS logo', () => {
   assert.match(js, /fillIfEmpty\('veiculoUf'/);
   assert.match(js, /fillIfEmpty\('veiculoRntrc'/);
   assert.match(js, /empresa\.logoSrc = await mdfeResolverLogoEmpresa\(empresa\)/);
-  assert.match(js, /\.damdfe-logo\{float:left;max-width:22mm;max-height:18mm/);
+  assert.match(js, /\.damdfe-logo\{flex:0 0 auto;max-width:22mm;max-height:18mm/);
 });

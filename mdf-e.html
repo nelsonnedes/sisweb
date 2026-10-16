@@ -33,6 +33,7 @@
             }
         })();
     </script>
+    <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
     <link rel="stylesheet" href="layout-comum.css?v=1b361ca57beb">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="romaneio-comum.css?v=cdd20d69a92f">
@@ -206,56 +207,9 @@
             justify-content: flex-start;
         }
 
-        .btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #1a252f;
-        }
-
-        .btn-success {
-            background-color: var(--success-color);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background-color: #27ae60;
-        }
-
-        .btn-warning {
-            background-color: var(--warning-color);
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background-color: var(--sw-brand);
-        }
-
-        .btn-danger {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background-color: var(--sw-danger);
-            filter: brightness(0.88);
-        }
-
+        /* Botões: padrão do sistema (ui-components.css, paridade com a NF-e).
+           O bloco legado foi removido: usava vars fora do padrão sem o CSS
+           que as define, deixando os botões sem fundo nos dois temas. */
         .btn-small {
             padding: 5px 8px;
             font-size: 12px;
@@ -1524,7 +1478,7 @@
     <script src="assets/vendor/jsbarcode.min.js?v=67f69bf13b87"></script>
     <script src="assets/vendor/qrcode-generator.js?v=4c79be167960"></script>
     <script src="mdfe-xml-builder.js?v=15a70924f230"></script>
-    <script src="mdf-e.js?v=803fd1cc61ef"></script>
+    <script src="mdf-e.js?v=bdcc43c4a63e"></script>
     <script src="js/sisweb-loading.js?v=b693454010f9"></script>
 </body>
 </html>

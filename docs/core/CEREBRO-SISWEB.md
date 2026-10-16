@@ -1797,3 +1797,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Número no clone/editar (análise sincera):** o clone JÁ avançava desde a impl. original (`clonarMdfe`, commit `410e17e`) — prova comportamental em vm: com contador íntegro mostra o seguinte. O único cenário real de "não atualiza" é contador desatualizado (outra aba/sessão emitiu): fix com `definirProximoNumeroMdfe()` recalculado no clone (teste com contador sabotado em 5 → mostra 21). Editar rascunho MANTÉM o número de propósito (é o mesmo documento; número exibido é provisório — a SEFAZ reserva o definitivo na emissão). Se o usuário viu outra coisa, preciso dos números exatos vistos.
 - **Testes:** `tests/mdfe-clone-numero-calendario.test.mjs` 3/3 (vm com stubs); `mdfe-senha-clone-excluir-status` atualizado p/ nova sequência.
 - **Gates:** lint OK, typecheck OK, `npm test` 1475/1474/0/1. Commit + push + hosting (só web; `?v=` mdf-e.js atualizado).
+
+## Sessao 2026-10-16 (cont. 31) — Filtros reset + botões padrão + emitente flex
+
+- **Filtros mantidos (fix):** pós-autorização zera `searchMdfe` + `filterStatusMdfe` antes de `consultarMdfes()` — o nº novo sempre aparece. Reset SÓ no emit (init/aba preservam filtros do usuário). Trava em `mdfe-pos-emissao-tema.test.mjs`.
+- **Botões sem cor (causa raiz):** `mdf-e.html` tinha bloco `.btn-*` próprio usando `var(--primary-color)` etc., definidas SOMENTE no `:root` de `ui-components.css` (`ui-components.css:10-18`) — que a NF-e carrega e o MDF-e não. Fundo transparente + texto branco = botões fantasmas nos dois temas. Fix: link `ui-components.css` (mesmo `?v=` da NF-e) + bloco legado removido (só `btn-small`, ausente no padrão, preservado).
+- **Semântica (paridade NF-e):** Encerrar (ação final destrutiva) `btn-warning` → `btn-danger` (igual Cancelar da NF-e); Editar segue `btn-warning` (igual Editar da NF-e).
+- **Emitente:** flex logo+texto (fim do float que desalinhava/sobrepunha); preview e impressão com `.damdfe-scope` (`#fff/#000`, `color-scheme:light` — imune ao tema).
+- **Testes:** `mdfe-pos-emissao-tema.test.mjs` 5/5; ajuste em `mdfe-veiculo-rntrc-logo` (CSS novo). Verificação funcional: FLEX/SCOPE OK.
+- **Gates:** lint OK, typecheck OK, `npm test` 1480/1479/0/1. Commit + push + hosting (só web; `?v=` mdf-e.js atualizado).
