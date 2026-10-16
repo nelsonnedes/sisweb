@@ -174,10 +174,10 @@ test("alterarTipoProduto tem branch 'romaneio' p/ 3 seções + limpar campos est
 });
 
 // ─── 4. Comportamental via vm ───────────────────────────────────────────────
-test("descricaoConamaNFe('Maçaranduba','Viga') === 'Maçaranduba Madeira em Viga'", () => {
+test("descricaoConamaNFe('Maçaranduba','Viga') === 'Maçaranduba Madeira Serrada em Viga'", () => {
   const { api } = loadNFe();
-  assert.equal(api.descricaoConamaNFe('Maçaranduba', 'Viga'), 'Maçaranduba Madeira em Viga');
-  assert.equal(api.descricaoConamaNFe('Ipê', 'Tora'), 'Ipê Madeira em Tora');
+  assert.equal(api.descricaoConamaNFe('Maçaranduba', 'Viga'), 'Maçaranduba Madeira Serrada em Viga');
+  assert.equal(api.descricaoConamaNFe('Ipê', 'Tora'), 'Ipê Madeira Serrada em Tora');
 });
 
 test('classificarCategoriaNFe nos limites + ouro idêntico a vendas.js', () => {

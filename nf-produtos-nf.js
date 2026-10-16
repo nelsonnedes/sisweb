@@ -556,6 +556,16 @@ const NFProdutosNF = (() => {
     }
   }
 
+  // ─── Formatar data para exibição BR (DD/MM/YYYY) ─────────────────────────
+  function formatarDataBR(d) {
+    if (!d) return '';
+    try {
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return String(d).slice(0, 10);
+      return dt.toLocaleDateString('pt-BR');
+    } catch (_) { return String(d).slice(0, 10); }
+  }
+
   // ─── Popular select de romaneios + limpar preview/campos ───────────────────
   function popularSelectRomaneioNF(romaneios) {
     const sel = document.getElementById('nfRomaneioSelect');
@@ -565,8 +575,18 @@ const NFProdutosNF = (() => {
       const opt = document.createElement('option');
       opt.value = String(i);
       const numero = r.numero || r.numeroRomaneio || r.id || r.firebaseKey || `#${i + 1}`;
-      const data = r.data || r.dataRomaneio || r.createdAt || '';
-      opt.textContent = data ? `Romaneio ${numero} — ${String(data).slice(0, 10)}` : `Romaneio ${numero}`;
+      const dataFmt = formatarDataBR(r.data || r.dataRomaneio || r.createdAt);
+      const nomeForn = String(r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || '').trim();
+      const itens = Array.isArray(r.itens) ? r.itens : [];
+      const volTotal = r.totais?.volumeSerraria || r.totais?.volumeTotal || itens.reduce((acc, i) => acc + (parseFloat(i.volumeLiquido) || parseFloat(i.volume) || 0), 0);
+      const valTotal = r.totais?.valorTotal || itens.reduce((acc, i) => acc + (parseFloat(i.valorTotal) || parseFloat(i.valor) || parseFloat(i.precoUnitario) * (parseFloat(i.quantidade) || 1)), 0);
+      const partes = [];
+      if (dataFmt) partes.push(dataFmt);
+      if (nomeForn) partes.push(nomeForn);
+      if (volTotal > 0) partes.push(volTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' m³');
+      if (valTotal > 0) partes.push('R$ ' + valTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      if (numero) partes.push(`Nº ${numero}`);
+      opt.textContent = partes.join(' - ');
       sel.appendChild(opt);
     });
     const prev = document.getElementById('nfPreviewRomaneioNFe');
@@ -766,7 +786,7 @@ const NFProdutosNF = (() => {
   }
 
   function descricaoConamaNFe(especie, categoriaBase) {
-    return `${String(especie || '').trim()} Madeira em ${String(categoriaBase || '').trim()}`;
+    return `${String(especie || '').trim()} Madeira Serrada em ${String(categoriaBase || '').trim()}`;
   }
 
   // ─── Busca no catálogo NF-e por nome normalizado (NCM/preço vêm do cadastro — nunca inventados)
