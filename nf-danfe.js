@@ -6,7 +6,7 @@
  *
  * DEPENDÊNCIAS (adicionar ao notas-fiscais.html antes deste script):
  *   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
- *   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+ *   <script src="assets/vendor/qrcode-generator.js"></script>  (QR da NFC-e, 100% local)
  */
 
 const NFDanfe = (() => {
@@ -27,33 +27,36 @@ const NFDanfe = (() => {
     } catch (_) { return iso.slice(0, 10); }
   }
 
-  // ─── Gerar QR Code como Data URL (canvas) ────────────────────────────────
+  // ─── Gerar QR Code como Data URL PNG (100% local) ─────────────────────
+  // Usa qrcode-generator (MIT, vendored em assets/vendor). O qrcodejs via
+  // CDN era bloqueado pelo CSP e o fallback api.qrserver.com, além de
+  // bloqueado, enviava a chave do documento a terceiro. Sem a lib, retorna
+  // null e o chamador imprime o texto alternativo (sem vazar nada).
   async function gerarQRCodeDataURL(texto, size = 80) {
-    return new Promise((resolve) => {
-      try {
-        const container = document.createElement('div');
-        container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
-        document.body.appendChild(container);
-        // Usar QRCode.js se disponível
-        if (window.QRCode) {
-          const qr = new window.QRCode(container, {
-            text: texto, width: size, height: size,
-            colorDark: '#000000', colorLight: '#ffffff',
-            correctLevel: window.QRCode.CorrectLevel.M,
-          });
-          setTimeout(() => {
-            const img = container.querySelector('img') || container.querySelector('canvas');
-            const dataUrl = img ? (img.src || img.toDataURL('image/png')) : null;
-            document.body.removeChild(container);
-            resolve(dataUrl);
-          }, 200);
-        } else {
-          // Fallback: tentar via API pública
-          document.body.removeChild(container);
-          resolve(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(texto)}`);
+    try {
+      if (typeof qrcode !== 'function' || !texto) return null;
+      if (typeof document === 'undefined' || !document.createElement) return null;
+      const qr = qrcode(0, 'M');
+      qr.addData(String(texto));
+      qr.make();
+      const n = qr.getModuleCount();
+      const px = Math.max(1, Math.floor(Number(size) / n)) || 1;
+      const canvas = document.createElement('canvas');
+      canvas.width = n * px;
+      canvas.height = n * px;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#000000';
+      for (let r = 0; r < n; r++) {
+        for (let c = 0; c < n; c++) {
+          if (qr.isDark(r, c)) ctx.fillRect(c * px, r * px, px, px);
         }
-      } catch (_) { resolve(null); }
-    });
+      }
+      const url = canvas.toDataURL('image/png');
+      return url && url.startsWith('data:') ? url : null;
+    } catch (_) { return null; }
   }
 
   // ─── URL de consulta da NFC-e (SEFAZ) ────────────────────────────────────
@@ -1294,6 +1297,10 @@ const NFDanfe = (() => {
     gerarDACCe,
     abrirDACCe,
     buildQRCodeUrl,
+    gerarQRCodeDataURL,
+    buildCode128CValues,
+    drawCode128C,
+    CODE128_PATTERNS,
     prepararDANFEComAssets,
     normalizarNFeParaDANFE,
   };

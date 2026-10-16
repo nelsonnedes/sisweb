@@ -1751,3 +1751,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Libs vendored (CSP bloqueia CDN — `script-src` sem jsdelivr):** `assets/vendor/jsbarcode.min.js` (MIT, CODE128C) + `assets/vendor/qrcode-generator.js` (MIT, QR em SVG puro) + `hosting-files.json` + script tags com `?v=` hash. Precedente: jspdf já vendored.
 - **Testes:** `mdfe-damdfe.test.mjs` 9/9 (QR real no vm, fórmula SVRS, banners homolog/conting, IE, fallback sem JsBarcode, legado, XSS, wiring). Preview verificado com dados reais do MDF-e 20 (QR OK, banner homolog OK, wiring barcode OK).
 - **Gates:** lint OK, typecheck OK, `npm test` 1445/1444/0/1. Commit + push + hosting (só web).
+
+## Sessao 2026-10-16 (cont. 25) — SVRS: S1 arquivado + S2/S3 (DANFE QR local + CODE128 travado)
+
+- **Fonte:** `dfe-portal.svrs.rs.gov.br/MDFE|NFE/Servicos` — endpoints NF-e/MDF-e SVRS do repo idênticos aos oficiais (prod/homolog, v4.00/v3.00); QR MDF-e = URL oficial única. Sem divergência de endpoints.
+- **S1 ARQUIVADO por evidência:** QR do DANFE cai SOMENTE em `gerarDANFENFCe` (`nf-danfe.js:1065`) — mod 55 (`gerarDANFE:530`) sem QR. Conforme MOC (QR só NFC-e). Nada a fazer.
+- **S3 (privacidade+offline):** `gerarQRCodeDataURL` reescrito 100% local via `qrcode-generator` vendored (canvas→PNG, `isDark`); removidos `qrcodejs` CDN (tag morta, bloqueada pelo CSP) e fallback `api.qrserver.com` (morto + vazava a chave a terceiro). Sem lib → null e texto alternativo (comportamento já previsto no chamador). `?v=` do nf-danfe.js atualizado.
+- **S2 (robustez sem refator):** em vez de migrar o barcode p/ JsBarcode (rasterizaria e arriscaria regressão de nitidez nos 300dpi do MOC), travei a tabela transcrita com testes estruturais: 107 entradas, somas 11/13, START C `211232`, STOP, DV mod 103, 277 módulos p/ 44 dígitos, 76 retângulos. Exportados p/ teste: `gerarQRCodeDataURL`, `buildCode128CValues`, `drawCode128C`, `CODE128_PATTERNS`.
+- **Testes:** `tests/nf-danfe-code128-qr.test.mjs` 5/5 (QR real no vm com canvas mockado; 2 falhas iniciais investigadas: limite de barras corrigido p/ 76 exatos e regex do comentário).
+- **Gates:** lint OK, typecheck OK, `npm test` 1450/1449/0/1. Commit + push + hosting (só web).
