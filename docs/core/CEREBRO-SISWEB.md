@@ -26,6 +26,7 @@
 - **`firebaseService.js`** = camada compat de serviços (`firebaseService.saveData`, `callFunction`, monitoramento de conexão). `firebase-compat-bridge.js` fornece `push()` síncrono com `.key` para chamadores legados.
 - **Backend financeiro** (`functions/finance-functions.js`): juros, dias de atraso, validação de estado (`assertRegisterMutation`), histórico de pagamentos. Valida pelo **dia civil do negócio (America/Sao_Paulo)**, não UTC. Helpers críticos: `todayDayNumber(nowIso)`, `dateToDayNumber(value)`, `currentFinancialState`.
 - **Cache-busters:** `inject-cachebusters.mjs` injeta `?v=<sha256 curto>` em `<script src>` e `<link rel=stylesheet>`. **Só processa `<script>`** (não `<link>`)—cache-buster de CSS é manual. Arquivos dependentes (ex.: `sw.js`, códigos inline de páginas) têm versão manual (ex.: `APP_VERSION`, `romaneio-comum.css?v=...`).
+- **Cache-Control imutável em JS/CSS:** `firebase.json` define `public, max-age=31536000, immutable` para `**/*.js` e `**/*.css` (perfomance). **Consequência:** qualquer alteração em JS/CSS exige **cachebuster novo** (ex.: `mdf-e.js?v=73d8b47e7004` → `mdf-e.js?v=73d8b47e7005`) no HTML que o referencia, senão o navegador (mesmo em aba anônima / hard refresh) continua servindo a versão antiga do Firebase CDN. Sempre que editar um `.js` ou `.css` publicado no hosting, atualizar o respectivo `?v=` no HTML correspondente.
 - **Service worker** (`sw.js`): `APP_VERSION` controla invalidação de cache PWA; `SISWEB_PWA_UPDATED` alerta release check.
 
 ## 3. Mapa de módulos e áreas
