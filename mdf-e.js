@@ -303,6 +303,15 @@ async function carregarDados() {
             condutores: condutores.length
         });
 
+        // Sincroniza o select "Ambiente SEFAZ:" do MDF-e com o ambiente salvo
+        // na config fiscal da NF-e (cfg.nfe.ambiente), evitando que o MDF-e seja
+        // enviado/consultado em Homologação quando a empresa já opera em Produção.
+        const ambienteConfigNF = configuracaoFiscalMdfe?.nfe?.ambiente;
+        const selAmbiente = document.getElementById('mdfeAmbiente');
+        if (selAmbiente && ambienteConfigNF) {
+            selAmbiente.value = ambienteConfigNF;
+        }
+
         // Pré-preenche veículo/condutor do último MDF-e (poupa redigitação)
         mdfePreencherUltimoVeiculoCondutor();
         
