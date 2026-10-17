@@ -327,12 +327,9 @@ async function resolveCompanyIdForUser(uid, email, tokenClaims, existingUser) {
     if (candidate) return candidate;
     const inferred = await inferCompanyIdByEmailOrMembership(uid, email);
     if (inferred) return inferred;
-    const directMap = {
-        'jnmadeirasm@hotmail.com': '1749492103278',
-        'madeportes27@gmail.com': '1773405515226'
-    };
-    const byEmail = directMap[String(email || '').trim().toLowerCase()] || '';
-    return byEmail || '';
+    // Sem mapeamento de e-mail hardcoded: a empresa é resolvida por claims/token
+    // ou por vínculo cadastrado em companies/{id}/users/{uid}. Fail-closed.
+    return '';
 }
 
 async function getCompanyIdFromLatestRequest(uid) {
