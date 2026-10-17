@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-10-15 (cont. 21: fix dataCompetencia criar conta + mapa SVC oficial preservado)
+> Atualizado em: 2026-10-15 (cont. 22: fix dataCompetencia + alinha SVC frontend ao oficial + commit+push)
 > Perfil global OpenCode Zen registrado em 2026-10-09 — ver seção 18 (protocolo de uso do Cérebro).
 
 ---
@@ -1820,6 +1820,15 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Achado no caminho (nao e regressão deste fix):** os mapas `SVC_POR_UF` backend (`nf-functions.js`) e frontend (`nf-config.js`) divergem desde o commit `be6a1e7` (cont. 34, decisão Portal Nacional: PA/RO/AC/AP→SVRS, MA→SVAN, AM/MT→próprio — backend minúsculo). O teste `nfe-contingencia-svc.test.mjs:70` (concordância backend↔frontend) **ja falhava antes** (o próprio commit registra "teste 708 aguarda atualização"). **Correção técnica aplicada:** `resolverAmbienteSVC` normaliza caixa (`trim().toUpperCase()`) — valores 'SVC-AN'/'SVC-RS' vindos de override/config hoje cairiam em null; decisão oficial dos mapas INTACTA. **Débito fiscal pendente (require aprovação):** alinhar o frontend `nf-config.js` à decisão oficial (hoje PA→SVC-AN etc.). Até lá, a concordância frontend fica com `test.skip` explícito e documentado.
 - **Gates:** lint OK, typecheck OK, `validate:pr` 6/6 (1487 testes / 1485 pass / 0 fail / 2 skip esperados — emulator + concordância SVC). Deploys: `financeCreateAccounts` + 6 NF functions (mapa oficial restaurado) + hosting (nf-config.js). Produção verificada: preflight 204, mapa oficial no ar.
 - **Pendente:** commit + push (nao executados). Teste de concordância SVC segue skipado por decisão fiscal documentada.
+
+## Sessao 2026-10-15 (cont. 22) — Alinha SVC frontend ao oficial + reativa teste + commit+push
+
+- **Alinhamento SVC frontend (decisão oficial Portal Nacional, cont. 34):** `nf-config.js` SVC_Por_UF agora espelha exatamente o mapa do backend (PA/RO/AC/AP→svc-rs, MA→svc-an, AM→am, MT→mt, demais conforme backend). Remove ponto-e-vírgula duplicado no fechamento do mapa.
+- **`tpEmisDeTipoSVC` normalizado:** usa `trim().toUpperCase()` antes de comparar, aceitando valores minúsculos ('svc-rs'/'svc-an') e caixa alta ('SVC-RS'/'SVC-AN') do override de configuração.
+- **Teste de concordância reativado:** `tests/nfe-contingencia-svc.test.mjs` valida que backend e frontend retornam os mesmos valores para as 7 UFs do dossiê, incluindo case-insensitive e override explícito. O `test.skip` do débito fiscal foi removido (decisão aplicada).
+- **Gates:** lint OK, typecheck OK, `validate:pr` 6/6 (1487 testes / 1485 pass / 0 fail / 2 skip esperados). Deploys: functions (financeCreateAccounts + 6 NF) + hosting.
+- **Commit efetuado:** `efb57f0 fix(finance): aceita dataCompetencia na criação manual; alinha mapa SVC ao oficial` (7 arquivos, +104/-26).
+- **Pendente:** push para origin (abaixo).
 
 ## Sessao 2026-10-16 (cont. 33) — Dossiê documental fiscal NF-e/MDF-e (plano, sem código)
 
