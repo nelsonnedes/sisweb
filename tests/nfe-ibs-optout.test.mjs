@@ -16,7 +16,7 @@ function extract(src, name, argsPattern) {
   return m[0];
 }
 
-test('cStat 1026: CST 000 usa alíquotas oficiais de teste (0.1% e 0.9%), nunca zero', () => {
+test('cStat 1026: CST 000 exige alíquotas explícitas quando habilitado; sem alíquota rejeita', () => {
   const ctx = {};
   vm.runInNewContext(
     extract(nfConfig, 'round2', 'v') + '\n'
@@ -25,22 +25,18 @@ test('cStat 1026: CST 000 usa alíquotas oficiais de teste (0.1% e 0.9%), nunca 
     ctx,
   );
   const calc = ctx.calcularIBSCBS;
-  // Config habilitada sem alíquotas: usa os valores oficiais de teste
-  const def = calc({ impostos: { ibscbs: { habilitado: true } } }, 1000);
-  assert.equal(def.pIBSUF, 0.1, 'pIBSUF default = 0.1%');
-  assert.equal(def.pCBS, 0.9, 'pCBS default = 0.9%');
-  assert.equal(def.cst, '000');
-  assert.equal(def.cClassTrib, '000001');
-
-  // Config com zero explícito e CST 000: normaliza para 0.1% e 0.9% (evita cStat 1026)
-  const zeros = calc({ impostos: { ibscbs: { habilitado: true, cst: '000', pIBSUF: 0, pCBS: 0 } } }, 1000);
-  assert.equal(zeros.pIBSUF, 0.1, 'pIBSUF com zero vira 0.1%');
-  assert.equal(zeros.pCBS, 0.9, 'pCBS com zero vira 0.9%');
-
-  // Config com valores maiores que zero: respeita o valor configurado
-  const custom = calc({ impostos: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 1.5, pCBS: 3.0 } } }, 1000);
-  assert.equal(custom.pIBSUF, 1.5);
-  assert.equal(custom.pCBS, 3.0);
+  // Com habilitado: true + cst + cClassTrib + alíquotas explícitas → emite
+  const explicit = calc({
+    impostos: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0.1, pCBS: 0.9 } },
+  }, 1000);
+  assert.equal(explicit.pIBSUF, 0.1);
+  assert.equal(explicit.pCBS, 0.9);
+  assert.equal(explicit.cst, '000');
+  assert.equal(explicit.cClassTrib, '000001');
+  // Sem cst+cClassTrib → null (não emite IBS/CBS)
+  assert.equal(calc({ impostos: { ibscbs: { habilitado: true } } }, 1000), null);
+  // Sem alíquotas (e sem cst/cClassTrib) → null
+  assert.equal(calc({ impostos: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001' } } }, 1000), null);
 });
 
 test('cStat 1080: total do XML soma os centavos arredondados de cada item', () => {
@@ -66,12 +62,6 @@ test('cStat 1080: total do XML soma os centavos arredondados de cada item', () =
   const { calcularTotais, roundCents } = context;
 
   // Cenário real da nota 1720: 5 itens fracionários totalizando R$ 7.781,72
-  // Item 1: 201.59 * 0.1% = 0.20159 -> 0.20
-  // Item 2: 3414.93 * 0.1% = 3.41493 -> 3.41
-  // Item 3: 3204.00 * 0.1% = 3.20400 -> 3.20
-  // Item 4: 13.35 * 0.1% = 0.01335 -> 0.01
-  // Item 5: 947.85 * 0.1% = 0.94785 -> 0.95
-  // Soma dos itens formatados: 0.20 + 3.41 + 3.20 + 0.01 + 0.95 = 7.77
   const det1720 = [
     { vProd: 201.59, imposto: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0.1, pIBSMun: 0, pCBS: 0.9 } } },
     { vProd: 3414.93, imposto: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0.1, pIBSMun: 0, pCBS: 0.9 } } },
@@ -81,19 +71,11 @@ test('cStat 1080: total do XML soma os centavos arredondados de cada item', () =
   ];
   const tot = calcularTotais(det1720, 0, 0);
 
-  // Sem roundCents dava 7.78; com roundCents dá 7.77 (exatamente igual à soma dos itens)
   assert.equal(tot.vIBSUF, 7.77, 'total vIBSUF bate 7.77 exato, eliminando o cStat 1080');
 });
 
-test('emitirNFe normaliza itens antigos com alíquota zero para as alíquotas oficiais de teste', () => {
-  assert.match(
-    nfService,
-    /if \(!Number\.isFinite\(ibs\.pIBSUF\) \|\| Number\(ibs\.pIBSUF\) <= 0\) ibs\.pIBSUF = 0\.1;/,
-    'normalização de pIBSUF para 0.1%',
-  );
-  assert.match(
-    nfService,
-    /if \(!Number\.isFinite\(ibs\.pCBS\) \|\| Number\(ibs\.pCBS\) <= 0\) ibs\.pCBS = 0\.9;/,
-    'normalização de pCBS para 0.9%',
-  );
+test('nf-service.js não aplica fallback automático de IBS/CBS (sem emissão por padrão)', () => {
+  assert.ok(!nfService.includes('imposto.ibscbs = ibscbsCalc || {'), 'sem fallback hardcoded de ibscbs');
+  assert.ok(!nfService.includes('pIBSUF = 0.1'), 'sem normalização automática de pIBSUF');
+  assert.ok(!nfService.includes('pCBS = 0.9'), 'sem normalização automática de pCBS');
 });

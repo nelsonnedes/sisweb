@@ -396,39 +396,31 @@ const NFConfigService = (() => {
   // dado legado. Desabilitar = remover CST/cClassTrib (não só o flag).
   function calcularIBSCBS(config, valorProduto) {
     const g = (config.impostos && config.impostos.ibscbs) || {};
-    if (g.habilitado === false) return null;
+    // Só emite IBS/CBS quando o usuário habilitou explicitamente (decisão do
+    // projeto: não implementar Reforma Tributária por padrão). Sem habilitação
+    // explícita, retorna null → builder não emite <IBSCBS> nem <IBSCBSTot>.
+    if (g.habilitado !== true) return null;
     const hasTrib = String(g.cst || '').trim() !== '' && String(g.cClassTrib || '').trim() !== '';
-    if (!g.habilitado && !hasTrib) return null;
-    // Em homologação/produção (leiaute PL_010f e NT 2024.002), a SEFAZ exige
-    // o grupo <IBSCBS> em todo item (cStat 1115 se omitido). Para CST 000
-    // (tributada integralmente), a SEFAZ exige alíquota válida (cStat 1026
-    // se 0.0000%). Alíquotas oficiais do período de teste (IT 2025.002 v1.70):
-    // pIBSUF = 0.1% e pCBS = 0.9%.
-    const cst = String(g.cst || '000').trim() || '000';
-    const cClassTrib = String(g.cClassTrib || '000001').trim() || '000001';
-    let pIBSUF = Number(g.pIBSUF);
-    let pCBS = Number(g.pCBS);
-    if (!Number.isFinite(pIBSUF) || (cst === '000' && pIBSUF <= 0)) pIBSUF = 0.1;
-    if (!Number.isFinite(pCBS) || (cst === '000' && pCBS <= 0)) pCBS = 0.9;
-    const neutro = String(g.cst || '000').trim() === '000'
-      && String(g.cClassTrib || '000001').trim() === '000001'
-      && !(Number(g.pIBSUF) > 0) && !(Number(g.pIBSMun) > 0) && !(Number(g.pCBS) > 0);
+    if (!hasTrib) return null;
+    const cst = String(g.cst || '000').trim();
+    const cClassTrib = String(g.cClassTrib || '000001').trim();
+    const pIBSUF = Number(g.pIBSUF);
+    const pIBSMun = Number(g.pIBSMun);
+    const pCBS = Number(g.pCBS);
+    if (!Number.isFinite(pIBSUF) || !Number.isFinite(pCBS)) return null;
     const out = {
       habilitado: true,
       cst,
       cClassTrib,
       pIBSUF,
-      pIBSMun: Number(g.pIBSMun) || 0,
+      pIBSMun: pIBSMun || 0,
       pCBS,
       vBC: round2(valorProduto),
     };
-    if (neutro && g.neutroConfirmado !== true) out.defaultNeutro = true;
     if (Number(g.pRedAliq) > 0) out.pRedAliq = Number(g.pRedAliq);
     if (Number(g.pDif) > 0) out.pDif = Number(g.pDif);
     if (g.credPresOper && g.credPresOper.cCredPres) out.credPresOper = { ...g.credPresOper };
-    // Doação (TTribNFe indDoacao=1 — Fase C): flag da config fiscal
     if (g.indDoacao === '1' || g.indDoacao === 1) out.indDoacao = '1';
-    // Grupos alternativos/opcionais do TTribNFe (passthrough quando informados)
     ['transfCred', 'ajusteCompet', 'estornoCred', 'credPresIBSZFM', 'mono', 'tribRegular', 'tribCompraGov', 'alcZfm', 'indDoacao'].forEach((k) => {
       if (g[k] && typeof g[k] === 'object') out[k] = { ...g[k] };
       else if (k === 'indDoacao' && (g[k] === '1' || g[k] === 1)) out[k] = '1';

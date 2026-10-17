@@ -16,27 +16,19 @@ function loadCalcularIBSCBS() {
   return context.calcularIBSCBS;
 }
 
-test('neutro por default marca defaultNeutro; explícito não marca', () => {
+test('calcularIBSCBS: habilitado:false retorna null; habilitado:true sem cst+cClassTrib retorna null', () => {
   const calc = loadCalcularIBSCBS();
-  const padrao = calc({ impostos: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001' } } }, 100);
-  assert.equal(padrao.defaultNeutro, true);
-  const confirmado = calc({ impostos: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', neutroConfirmado: true } } }, 100);
-  assert.equal(confirmado.defaultNeutro, undefined);
-  const comAliquota = calc({ impostos: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pCBS: 0.9 } } }, 100);
-  assert.equal(comAliquota.defaultNeutro, undefined);
-  const outraClass = calc({ impostos: { ibscbs: { habilitado: true, cst: '010', cClassTrib: '010001' } } }, 100);
-  assert.equal(outraClass.defaultNeutro, undefined);
-  const desligado = calc({ impostos: { ibscbs: { habilitado: false } } }, 100);
-  assert.equal(desligado, null);
+  assert.equal(calc({ impostos: { ibscbs: { habilitado: false } } }, 100), null);
+  assert.equal(calc({ impostos: { ibscbs: { habilitado: true } } }, 100), null);
+  // habilitado:true + cst+cClassTrib + alíquotas → emite
+  const emit = calc({ impostos: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0.1, pCBS: 0.9 } } }, 100);
+  assert.equal(emit.habilitado, true);
+  assert.equal(emit.pIBSUF, 0.1);
+  assert.equal(emit.pCBS, 0.9);
 });
 
-test('emissão bloqueia antes de consumir número sem ciência do neutro', () => {
-  assert.match(nfService, /usaNeutroDefault[\s\S]{0,400}defaultNeutro === true/);
-  assert.match(nfService, /err\.code = 'IBS_NEUTRO_CONFIRMACAO'/);
-  const gatePos = nfService.indexOf("err.code = 'IBS_NEUTRO_CONFIRMACAO'");
-  const numeroPos = nfService.indexOf('incrementarNumero(_tenantId, 55');
-  assert.ok(gatePos >= 0 && numeroPos >= 0 && gatePos < numeroPos, 'gate antes da reserva de número');
-  assert.match(nfService, /imposto\.ibscbs = ibscbsCalc \|\| \{/, 'fallback com alíquotas oficiais de teste');
+test('nf-service.js não tem fallback automático de IBS/CBS (sem emissão por padrão)', () => {
+  assert.doesNotMatch(nfService, /imposto\.ibscbs = ibscbsCalc \|\| \{/, 'sem fallback hardcoded de ibscbs');
 });
 
 test('UI: opt-in com confirmDialog + registro na config + retry único', () => {

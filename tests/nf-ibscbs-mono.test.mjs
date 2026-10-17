@@ -138,13 +138,16 @@ test('cStat 1115: builder omite IBSCBS ausente (validador barra antes de enviar)
   assert.doesNotMatch(xml, /<IBSCBS>/, 'sem ibscbs no item = sem grupo');
 });
 
-test('calcularIBSCBS: legado com CST+cClassTrib emite; vazio retorna null', () => {
+test('calcularIBSCBS: só emite quando habilitado explicitamente; sem habilitação retorna null', () => {
   const cfgSrc = fs.readFileSync('nf-config.js', 'utf8');
   const C = new Function('window', 'console', cfgSrc + '; return window.NFConfigService;')({ window: {} }, console);
+  // Sem habilitado: null (mesmo com CST+cClassTrib — projeto não emite IBS/CBS por padrão)
   assert.equal(C.calcularIBSCBS({ impostos: { ibscbs: {} } }, 100), null);
-  const legado = C.calcularIBSCBS({ impostos: { ibscbs: { cst: '000', cClassTrib: '000001' } } }, 100);
-  assert.equal(legado.habilitado, true, 'dado legado com CST+cClassTrib emite');
-  assert.equal(legado.cst, '000');
+  assert.equal(C.calcularIBSCBS({ impostos: { ibscbs: { cst: '000', cClassTrib: '000001' } } }, 100), null);
+  // Com habilitado: true explícito, emite
+  const habilitado = C.calcularIBSCBS({ impostos: { ibscbs: { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0.1, pCBS: 0.9 } } }, 100);
+  assert.equal(habilitado.habilitado, true);
+  assert.equal(habilitado.cst, '000');
 });
 
 test('validador: regime inválido e lado sem blocos', () => {
