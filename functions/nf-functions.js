@@ -382,9 +382,9 @@ function getModKey(modelo) {
 }
 
 function getFiscalNoteRefs(db, tenantId, modKey, nfId) {
+  // Namespace canônico: companies/{tenantId}. Não escreve espelho em tenants/.
   return [
-    db.ref(`companies/${tenantId}/fiscal/notas/${modKey}/${nfId}`),
-    db.ref(`tenants/${tenantId}/notas-fiscais/${modKey}/${nfId}`)
+    db.ref(`companies/${tenantId}/fiscal/notas/${modKey}/${nfId}`)
   ];
 }
 
@@ -393,9 +393,9 @@ function getTenantCertificateStoragePrefix(tenantId) {
 }
 
 function getCertificateMetadataRefs(db, tenantId) {
+  // Namespace canônico: companies/{tenantId}. Não escreve espelho em tenants/.
   return [
-    db.ref(`companies/${tenantId}/fiscal/certificado`),
-    db.ref(`tenants/${tenantId}/config-fiscal/certificado`)
+    db.ref(`companies/${tenantId}/fiscal/certificado`)
   ];
 }
 
@@ -1907,8 +1907,7 @@ exports.nf_inutilizarNumeracao = onFiscalCall(async (data, context) => {
       updatedAt: nowIso,
     };
     await Promise.all([
-      db.ref(`companies/${tenantId}/fiscal/notas/inutilizacoes/${recordId}`).set(payload),
-      db.ref(`tenants/${tenantId}/notas-fiscais/inutilizacoes/${recordId}`).set(payload).catch(() => {})
+      db.ref(`companies/${tenantId}/fiscal/notas/inutilizacoes/${recordId}`).set(payload)
     ]);
     return {
       autorizada: ret.autorizada,
@@ -1999,7 +1998,6 @@ exports.nf_removerCertificado = onFiscalCall(async (data, context) => {
     const bucket = admin.storage().bucket();
     await deleteTenantCertificateFiles(bucket, tenantId);
     await clearCertificateMetadata(db, tenantId);
-    await admin.database().ref(`tenants/${tenantId}/config-fiscal/certificado/pfxEnc`).remove().catch(() => {});
     return { ok: true };
   } catch (e) {
     throw new functions.https.HttpsError('internal', e.message);

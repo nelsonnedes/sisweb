@@ -59,7 +59,7 @@ test('backend de certificado A1 usa metadado canonico e uploadedBy para descript
   assert.match(source, /const context = isV2CallableRequest \? requestOrData : maybeContext;/);
   assert.match(source, /function getCertificateMetadataRefs\(db, tenantId\)/);
   assert.match(source, /db\.ref\(`companies\/\$\{tenantId\}\/fiscal\/certificado`\)/);
-  assert.match(source, /db\.ref\(`tenants\/\$\{tenantId\}\/config-fiscal\/certificado`\)/);
+  assert.doesNotMatch(source, /db\.ref\(`tenants\/\$\{tenantId\}\/config-fiscal\/certificado`\)/, 'sem espelho em tenants/');
   assert.match(source, /exports\.nf_uploadCertificadoA1 = onFiscalCall/);
   assert.match(source, /exports\.nf_salvarReferenciaCertificado = onFiscalCall/);
   assert.match(source, /exports\.nf_obterResumoCertificadoFiscal = onFiscalCall/);

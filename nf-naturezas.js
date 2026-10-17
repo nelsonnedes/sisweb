@@ -129,7 +129,7 @@ const NFNaturezas = (() => {
   // ─── Seed: salvar naturezas padrão se lista vazia ─────────────────────────
   async function _seedPadrao(tenantId) {
     try {
-      const basePath = getPath(tenantId); // tenants/{tenantId}/config-fiscal/naturezas-operacao
+      const basePath = getPath(tenantId); // companies/{tenantId}/fiscal/naturezas-operacao
       for (const nat of NATUREZAS_PADRAO) {
         const payload = { ...nat, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
         // saveToFirebase(path, key, data) — key é o ID do nó filho
