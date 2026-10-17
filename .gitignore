@@ -103,6 +103,11 @@ logs-*.md
 *.xlsm
 !assets/modelos/*.xlsx
 
+# Dumps de sessão do agente (não versionar)
+sessao--*.json
+session_export.json
+session_messages.json
+
 # PWA icon backups gerados do favicon
 assets/icons/*.bak
 
