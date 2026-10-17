@@ -589,14 +589,14 @@ const NFConfigService = (() => {
   // abaixo do MOC, acima do código). Gêmea no backend (SVC_POR_UF em
   // nf-functions.js) — manter sincronizadas. Tenant pode forçar o tipo
   // (override explícito), nunca inventado em silêncio.
-  const SVC_POR_UF = {
-    'AC': 'SVC-AN', 'AL': 'SVC-AN', 'AP': 'SVC-AN', 'CE': 'SVC-AN',
-    'DF': 'SVC-AN', 'ES': 'SVC-AN', 'MG': 'SVC-AN', 'PA': 'SVC-AN',
+    const SVC_POR_UF = {
+    'AC': 'svc-rs', 'AL': 'SVC-AN', 'AP': 'svc-rs', 'CE': 'SVC-AN',
+    'DF': 'SVC-AN', 'ES': 'SVC-AN', 'MG': 'SVC-AN', 'PA': 'svc-rs',
     'PB': 'SVC-AN', 'PI': 'SVC-AN', 'RJ': 'SVC-AN', 'RN': 'SVC-AN',
-    'RO': 'SVC-AN', 'RR': 'SVC-AN', 'RS': 'SVC-AN', 'SC': 'SVC-AN',
+    'RO': 'svc-rs', 'RR': 'SVC-AN', 'RS': 'SVC-AN', 'SC': 'SVC-AN',
     'SE': 'SVC-AN', 'SP': 'SVC-AN', 'TO': 'SVC-AN',
-    'AM': 'SVC-RS', 'BA': 'SVC-RS', 'GO': 'SVC-RS', 'MA': 'SVC-RS',
-    'MS': 'SVC-RS', 'MT': 'SVC-RS', 'PE': 'SVC-RS', 'PR': 'SVC-RS',
+    'AM': 'am', 'BA': 'SVC-RS', 'GO': 'SVC-RS', 'MA': 'svc-an',
+    'MS': 'SVC-RS', 'MT': 'mt', 'PE': 'SVC-RS', 'PR': 'SVC-RS',
   };
   function resolverTipoSVC(uf, override) {
     const fixo = String(override || '').trim().toUpperCase();
@@ -604,8 +604,9 @@ const NFConfigService = (() => {
     return SVC_POR_UF[String(uf || '').trim().toUpperCase()] || '';
   }
   function tpEmisDeTipoSVC(tipo) {
-    if (tipo === 'SVC-RS') return '7';
-    if (tipo === 'SVC-AN') return '6';
+    const t = String(tipo || '').trim().toUpperCase();
+    if (t === 'SVC-RS') return '7';
+    if (t === 'SVC-AN') return '6';
     return '1';
   }
   // Valida o bloco contingencia da config (ativação manual explícita).

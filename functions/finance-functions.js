@@ -78,6 +78,7 @@ const EDITABLE_ACCOUNT_FIELDS = new Set([
     'valorTotal',
     'anexos',
     'pedidoNumero',
+    'dataCompetencia',
 ]);
 const CREATABLE_MANUAL_ACCOUNT_FIELDS = new Set([
     'id',
@@ -112,6 +113,7 @@ const CREATABLE_MANUAL_ACCOUNT_FIELDS = new Set([
     'numero',
     'pedidoNumero',
     'created',
+    'dataCompetencia',
 ]);
 
 let configuredSuperAdminResolver = async () => false;
@@ -896,6 +898,16 @@ function buildCanonicalCreatedAccount(item, request, companyId, nowIso) {
     const status = dueDay !== null && todayDay !== null && dueDay < todayDay
         ? 'vencido'
         : 'pendente';
+    const rawCompetencia = source.dataCompetencia;
+    const parsedCompetencia = (
+        rawCompetencia === undefined
+        || rawCompetencia === null
+        || String(rawCompetencia).trim() === ''
+    )
+        ? null
+        : normalizeDate(rawCompetencia, 'dataCompetencia', false);
+    const dataCompetencia = parsedCompetencia
+        ?? (source.dataEmissao ? String(source.dataEmissao).trim() : dueDate);
     const account = {
         id: item.accountId,
         descricao: normalizeNullableText(String(source.descricao || ''), 'descricao', 2000),
@@ -906,6 +918,7 @@ function buildCanonicalCreatedAccount(item, request, companyId, nowIso) {
         // dataEmissao: omitido se vazio para evitar null vs undefined no RTDB; atribuído condicionalmente abaixo no final do bloco
         // dataEmissao: source.dataEmissao ? String(source.dataEmissao).trim() : undefined,
         dataVencimento: dueDate,
+        dataCompetencia,
         status,
         categoria: normalizeNullableText(String(source.categoria || ''), 'categoria', 160),
         tipo: normalizeNullableText(String(source.tipo || ''), 'tipo', 160),

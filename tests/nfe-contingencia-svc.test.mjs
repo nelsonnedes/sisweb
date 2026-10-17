@@ -66,8 +66,30 @@ test('SVC-RS: endpoints homolog/produção do catálogo wsnfe (bloco SVCRS)', ()
   }
 });
 
-// ─── 2. Mapa UF→SVC idêntico nos dois lados ──────────────────────────────────
-test('SVC_POR_UF: backend e frontend concordam; 7 UFs do dossiê corretas', () => {
+// ─── 2. Mapa UF→SVC — decisão oficial (Portal Nacional, commit be6a1e7) ────
+test('SVC_POR_UF: backend segue decisão oficial (PA/RO/AC/AP→SVRS; MA→SVAN; AM/MT→próprio)', () => {
+  const be = load([['resolverTipoSVC', 'uf, override']], nfFunctions, ['SVC_POR_UF']);
+  const esperado = { PA: 'svc-rs', MT: 'mt', RO: 'svc-rs', AC: 'svc-rs', AM: 'am', AP: 'svc-rs', MA: 'svc-an' };
+  for (const [uf, svc] of Object.entries(esperado)) {
+    assert.equal(be.resolverTipoSVC(uf), svc, `backend ${uf}`);
+  }
+  assert.equal(be.resolverTipoSVC('pa'), 'svc-rs', 'case-insensitive');
+  assert.equal(be.resolverTipoSVC('PA', 'SVC-RS'), 'SVC-RS', 'override explícito vence');
+  assert.equal(be.resolverTipoSVC('XX'), '', 'UF desconhecida não inventa');
+  assert.equal(be.resolverTipoSVC('PA', 'EPEC'), 'svc-rs', 'override inválido cai no mapa');
+  assert.equal(ctx_fe_tp().tpEmisDeTipoSVC('SVC-AN'), '6');
+  assert.equal(ctx_fe_tp().tpEmisDeTipoSVC('SVC-RS'), '7');
+  const beEnv = load([['resolverAmbienteSVC', 'tpEmis']], nfFunctions, ['SVC_POR_UF']);
+  assert.equal(beEnv.resolverAmbienteSVC('svc-an'), 'svc-an', 'mapa minusculo resolve ambiente');
+  assert.equal(beEnv.resolverAmbienteSVC('SVC-RS'), 'svc-rs', 'override caixa alto tambem resolve');
+  assert.equal(beEnv.resolverAmbienteSVC('am'), null, 'UF propria nao inventa ambiente');
+  assert.equal(ctx_fe_tp().tpEmisDeTipoSVC(''), '1');
+});
+
+// Concordância frontend = backend (decisão oficial Portal Nacional, cont. 34).
+// Ambos os lados usam o mesmo mapa SVC_POR_UF; o frontend normaliza tpEmis via
+// tpEmisDeTipoSVC com toUpperCase, então aceita minúsculos e caixa alta.
+test('SVC_POR_UF: frontend concorda com backend (decisão oficial Portal Nacional)', () => {
   const be = load([['resolverTipoSVC', 'uf, override']], nfFunctions, ['SVC_POR_UF']);
   const fe = load([['resolverTipoSVC', 'uf, override']], nfConfig, ['SVC_POR_UF']);
   const esperado = { PA: 'svc-rs', MT: 'mt', RO: 'svc-rs', AC: 'svc-rs', AM: 'am', AP: 'svc-rs', MA: 'svc-an' };
@@ -75,13 +97,10 @@ test('SVC_POR_UF: backend e frontend concordam; 7 UFs do dossiê corretas', () =
     assert.equal(be.resolverTipoSVC(uf), svc, `backend ${uf}`);
     assert.equal(fe.resolverTipoSVC(uf), svc, `frontend ${uf}`);
   }
-  assert.equal(be.resolverTipoSVC('pa'), 'SVC-AN', 'case-insensitive');
-  assert.equal(be.resolverTipoSVC('PA', 'SVC-RS'), 'SVC-RS', 'override explícito vence');
-  assert.equal(be.resolverTipoSVC('XX'), '', 'UF desconhecida não inventa');
-  assert.equal(be.resolverTipoSVC('PA', 'EPEC'), 'SVC-AN', 'override inválido cai no mapa');
-  assert.equal(ctx_fe_tp().tpEmisDeTipoSVC('SVC-AN'), '6');
-  assert.equal(ctx_fe_tp().tpEmisDeTipoSVC('SVC-RS'), '7');
-  assert.equal(ctx_fe_tp().tpEmisDeTipoSVC(''), '1');
+  assert.equal(fe.resolverTipoSVC('pa'), 'svc-rs', 'frontend case-insensitive');
+  assert.equal(fe.resolverTipoSVC('PA', 'SVC-RS'), 'SVC-RS', 'frontend override explícito vence');
+  assert.equal(fe.resolverTipoSVC('XX'), '', 'frontend UF desconhecida não inventa');
+  assert.equal(fe.resolverTipoSVC('PA', 'EPEC'), 'svc-rs', 'frontend override inválido cai no mapa');
 });
 
 function ctx_fe_tp() {

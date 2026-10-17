@@ -166,16 +166,16 @@ const SVC_POR_UF = {
   'SE': 'SVC-AN', 'SP': 'SVC-AN', 'TO': 'SVC-AN',
   'AM': 'am', 'BA': 'SVC-RS', 'GO': 'SVC-RS', 'MA': 'svc-an',
   'MS': 'SVC-RS', 'MT': 'mt', 'PE': 'SVC-RS', 'PR': 'SVC-RS',
-};
+};;;
 function resolverTipoSVC(uf, override) {
   const fixo = String(override || '').trim().toUpperCase();
   if (fixo === 'SVC-AN' || fixo === 'SVC-RS') return fixo;
   return SVC_POR_UF[String(uf || '').trim().toUpperCase()] || '';
 }
 function resolverAmbienteSVC(tpEmis) {
-  const t = String(tpEmis ?? '').trim();
-  if (t === '6') return 'svc-an';
-  if (t === '7') return 'svc-rs';
+  const t = String(tpEmis ?? '').trim().toUpperCase();
+  if (t === '6' || t === 'SVC-AN') return 'svc-an';
+  if (t === '7' || t === 'SVC-RS') return 'svc-rs';
   return null;
 }
 // tpEmis persistido no registro da nota (fonte da verdade do roteamento);
