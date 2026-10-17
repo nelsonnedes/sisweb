@@ -112,14 +112,15 @@ test('cross-check NFePHP: vTot = vMono + vMonoReten (sem Ret, sem bio)', () => {
   assert.equal(tot.vMonoRetenCBS, 0.3);
 });
 
-test('cStat 1115: item sem IBSCBS é barrado no validador antes da SEFAZ', () => {
+test('cStat 1115: item sem IBSCBS NÃO é barrado (IBS/CBS opcional — projeto não implementa)', () => {
   const semIbs = itemBase(undefined);
   delete semIbs.imposto.ibscbs;
   const r = V.validarItem(semIbs, 0);
-  assert.equal(r.valid, false);
-  assert.match(r.errors.join('|'), /IBS\/CBS não informado.*cStat 1115/);
+  assert.equal(r.valid, true, 'item sem IBS/CBS é válido (opcional)');
+  assert.equal(r.errors.length, 0, 'sem erros de IBS/CBS');
+  // IBS/CBS presente mas desabilitado: ignora (não emite)
   const flagOff = V.validarItem(itemBase({ habilitado: false, cst: '000', cClassTrib: '000001' }), 0);
-  assert.equal(flagOff.valid, false, 'habilitado=false explícito também barra');
+  assert.equal(flagOff.valid, true, 'habilitado=false explícito é ignorado (não emite)');
 });
 
 test('cStat 1115: builder omite IBSCBS ausente (validador barra antes de enviar)', () => {

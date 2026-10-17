@@ -6077,19 +6077,12 @@ renderizarVolumesNF();
           if (ufSel) { ufSel.disabled = false; ufSel.value = dest.endereco?.uf || ''; ufSel.disabled = true; }
         }
 
-        // Recarregar itens (recalcula IBSCBS neutro se o item legado não tinha —
-        // ex.: rejeitada 1115 por IBS/CBS não informado)
+        // Recarregar itens (sem IBS/CBS automático — projeto não implementa
+        // Reforma Tributária por padrão; injetar alíquotas zeradas causaria
+        // cStat 1076 na SEFAZ. IBS/CBS só é emitido quando habilitado
+        // explicitamente na config fiscal).
         _itensNF = (nf.det || []).map((it, idx) => {
           let imposto = it.imposto || {};
-          try {
-            if (!imposto.ibscbs || !imposto.ibscbs.cst || !imposto.ibscbs.cClassTrib) {
-              const cfg0 = window.NFService?.getConfig?.() || {};
-              const tot0 = parseFloat(it.vProd || it.total) || 0;
-              const ib0 = window.NFConfigService?.calcularIBSCBS?.(cfg0, tot0)
-                || { habilitado: true, cst: '000', cClassTrib: '000001', pIBSUF: 0, pIBSMun: 0, pCBS: 0, vBC: tot0 };
-              imposto = { ...imposto, ibscbs: ib0 };
-            }
-          } catch (_) {}
           return {
             id:     `it_rascunho_${idx}`,
             cProd:  it.cProd || it.id || String(idx),

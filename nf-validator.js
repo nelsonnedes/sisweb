@@ -284,14 +284,14 @@ const NFValidator = (() => {
         erros.push(`Item ${n}: ${tag} CST ${cstPC} inválido (MOC: 01–99)`);
       }
     }
-    // IBS/CBS (cStat 1115): grupo EXIGIDO em todo item (fonte: NFePHP
-    // sped-nfe master — flagIBSCBS ligada por cClassTrib presente). Ausência
-    // = rejeição SEFAZ, então o validador bloqueia antes de transmitir.
-    // cClassTrib: validação ESTRUTURAL oficial (IT 2024.001 — prefixo = CST),
-    // sem select obsoleto (tabela atualizada por IT no Portal NF-e).
+    // IBS/CBS (opcional — projeto não implementa Reforma Tributária por padrão).
+    // Se estiver presente, valida os campos; ausência não bloqueia (sem IBS/CBS
+    // não há grupo <IBSCBS> no XML, sem cStat 1115 por ausência).
     const gIbs = item.imposto?.ibscbs;
-    if (!gIbs || !gIbs.cst || !gIbs.cClassTrib || gIbs.habilitado === false) {
-      erros.push(`Item ${n}: IBS/CBS não informado (grupo <IBSCBS> obrigatório — cStat 1115). Habilite IBS/CBS na Configuração fiscal`);
+    if (!gIbs) {
+      // Sem IBS/CBS configurado — sem emissão do grupo, sem bloqueio.
+    } else if (!gIbs.cst || !gIbs.cClassTrib || gIbs.habilitado === false) {
+      // IBS/CBS presente mas incompleto ou desabilitado: ignora (não emite).
     } else {
       if (window.NFTaxTables?.validarCClassTrib) {
         const cc = window.NFTaxTables.validarCClassTrib(gIbs.cst, gIbs.cClassTrib);

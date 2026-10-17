@@ -32,9 +32,11 @@ test('reenvio reaproveita id + número (não consome numeração nova)', () => {
   assert.match(svc, /stReenvio === 'rejeitada' \|\| stReenvio === 'erro_envio'/, 'condição de reenvio');
 });
 
-test('edição de rejeitada recalcula IBSCBS neutro (caso 1115)', () => {
-  assert.match(html, /Recarregar itens \(recalcula IBSCBS neutro se o item legado não tinha/, 'fallback na carga');
-  assert.ok(html.includes('calcularIBSCBS?.(cfg0, tot0)'), 'recalcula pela config atual');
+test('edição de rejeitada NÃO injeta IBS/CBS neutro (sem fallback hardcoded)', () => {
+  // Projeto não implementa Reforma Tributária por padrão: não injetar IBS/CBS
+  // com alíquotas zeradas ao recarregar itens (evitaria cStat 1076 na SEFAZ).
+  assert.doesNotMatch(html, /Recarregar itens \(recalcula IBSCBS neutro/, 'sem fallback de IBSCBS neutro');
+  assert.doesNotMatch(html, /calcularIBSCBS\?.\(cfg0, tot0\)/, 'sem recalculo automático de IBSCBS na carga');
 });
 
 test('mensagem pós-edição orienta sobre o reenvio (cStat + motivo)', () => {
