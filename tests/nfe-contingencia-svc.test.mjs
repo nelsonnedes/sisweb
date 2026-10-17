@@ -147,7 +147,7 @@ test('validarDhContXJust: só exige quando tpEmis ≠ 1', () => {
 // ─── 5. Chave e ide ─────────────────────────────────────────────────────────
 test('gerarChave: dígito tpEmis na posição 34; DV válido; fora de escopo lança', () => {
   const ctx = load(
-    [['getCUF', 'uf'], ['calcDV', 'chave43'], ['toBrasiliaDateTime', 'value'], ['gerarChave', 'emit, ide']],
+    [['getCUF', 'uf'], ['calcDV', 'chave43'], ['toBrasiliaDateTime', 'value, uf'], ['gerarChave', 'emit, ide']],
     nfBuilder,
   );
   const emit = { cnpj: '11222333000181', endereco: { uf: 'PA' } };
@@ -166,7 +166,7 @@ test('buildIde: tpEmis do ide; dhCont/xJust só em contingência, após verProc'
   const ctx = load(
     [
       ['esc', 'v'], ['getCUF', 'uf'], ['requireCodigoMunicipio', 'value, label'],
-      ['toBrasiliaDateTime', 'value'], ['buildCompraGov', 'cg'], ['buildIde', 'ide, chaveInfo'],
+      ['toBrasiliaDateTime', 'value, uf'], ['buildCompraGov', 'cg'], ['buildIde', 'ide, chaveInfo'],
     ],
     nfBuilder,
   );

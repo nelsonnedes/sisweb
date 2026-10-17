@@ -36,16 +36,16 @@ test('fórmula local: 01:00Z (offset -180) → dia anterior local', () => {
 
 test('builder NF-e: dhEmi/dhSaiEnt deslocam o instante para Brasília antes de rotular -03:00', () => {
   const builder = readFileSync('nf-xml-builder.js', 'utf8');
-  assert.match(builder, /function toBrasiliaDateTime\(value\) \{/);
-  assert.match(builder, /const dhEmi = toBrasiliaDateTime\(ide\.dhEmi\);/);
-  assert.match(builder, /const dhSaiEnt = toBrasiliaDateTime\(ide\.dhSaiEnt\);/);
-  assert.match(builder, /toBrasiliaDateTime\(ide\.dhEmi\)\.slice\(2, 7\)/);
+  assert.match(builder, /function toBrasiliaDateTime\(value, uf\) \{/);
+  assert.match(builder, /const dhEmi = toBrasiliaDateTime\(ide\.dhEmi, ide\.ufEmit\);/);
+  assert.match(builder, /const dhSaiEnt = toBrasiliaDateTime\(ide\.dhSaiEnt, ide\.ufEmit\);/);
+  assert.match(builder, /toBrasiliaDateTime\(ide\.dhEmi, emit\.endereco\?\.uf\)\.slice\(2, 7\)/);
   assert.doesNotMatch(
     builder,
     /new Date\(ide\.dhEmi\)\.toISOString\(\)\.replace\(\/\\\.\\d\{3\}Z\$\//,
     'nunca rotular UTC como -03:00 sem deslocar (cStat 703)',
   );
-  const match = builder.match(/function toBrasiliaDateTime\(value\) \{[\s\S]*?\n  \}/);
+  const match = builder.match(/function toBrasiliaDateTime\(value, uf\) \{[\s\S]*?\n  \}/);
   const contexto = {};
   vm.runInNewContext(`${match[0]}; this.toBrasiliaDateTime = toBrasiliaDateTime;`, contexto);
   const f = contexto.toBrasiliaDateTime;

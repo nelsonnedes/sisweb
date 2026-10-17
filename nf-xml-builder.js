@@ -81,15 +81,23 @@ const NFXmlBuilder = (() => {
   }
 
   // ─── Data/hora fiscal (TDateTimeUTC, offset -03:00, sem milissegundos) ────
-  // Converte o INSTANTE recebido para a hora de Brasília ANTES de rotular
-  // -03:00. Rotular UTC como -03:00 empurra +3h no futuro → cStat 703
-  // ("Data-Hora de Emissão posterior ao horário de recebimento"; mesma classe
-  // do fix M3 do MDF-e). Idempotente para entradas já em -03:00.
-  function toBrasiliaDateTime(value) {
+  // Converte o INSTANTE recebido para a hora local da UF do emitente ANTES de
+  // rotular o offset. Para UFs fora de Brasília (MT/RO/AM/AC) evita cStat 703
+  // ("Data-Hora de Emissão posterior ao horário de recebimento") e AAMM de chave
+  // incorreta. uf opcional: default '-03:00' (sem regressão para PA/AP/MA).
+  function toBrasiliaDateTime(value, uf) {
     if (!value) return '';
     const t = new Date(value).getTime();
     if (!Number.isFinite(t)) return '';
-    return new Date(t - 3 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, '-03:00');
+    const offMap = { AC: -5, AM: -4, MA: -3, AP: -3, PA: -3, MT: -4, RO: -4 };
+    const off = offMap[String(uf || '').trim().toUpperCase()] ?? -3;
+    const local = new Date(t + off * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, '');
+    const neg = off < 0;
+    const abs = Math.abs(off);
+    const h = String(Math.floor(abs)).padStart(2, '0');
+    const m = String(Math.round((abs % 1) * 60)).padStart(2, '0');
+    const label = `${neg ? '-' : '+'}${h}:${m}`;
+    return `${local}${label}`;
   }
 
   // ─── Gerar chave NF-e (44 dígitos) ────────────────────────────────────────
@@ -99,7 +107,7 @@ const NFXmlBuilder = (() => {
   function gerarChave(emit, ide) {
     const cuf  = getCUF(emit.endereco?.uf || 'SP').padStart(2, '0');
     // AAMM da chave = ano/mês LOCAL de emissão (mesma base do dhEmi do XML)
-    const aamm = toBrasiliaDateTime(ide.dhEmi).slice(2, 7).replace('-', '');
+    const aamm = toBrasiliaDateTime(ide.dhEmi, emit.endereco?.uf).slice(2, 7).replace('-', '');
     const cnpj = String(emit.cnpj || '').replace(/\D/g, '').padStart(14, '0');
     const mod  = String(ide.mod  || 55).padStart(2, '0');
     const serie= String(ide.serie || 1).padStart(3, '0');
@@ -133,10 +141,10 @@ const NFXmlBuilder = (() => {
   }
 
   function buildIde(ide, chaveInfo) {
-    // TDateTimeUTC: sem milissegundos, offset -03:00 (validado no schema oficial)
-    const dhEmi = toBrasiliaDateTime(ide.dhEmi);
+    // TDateTimeUTC: sem milissegundos, offset da UF do emitente (validado no schema oficial)
+    const dhEmi = toBrasiliaDateTime(ide.dhEmi, ide.ufEmit);
     // dhSaiEnt (Fase C, opcional): data/hora da saída ou entrada da mercadoria
-    const dhSaiEnt = toBrasiliaDateTime(ide.dhSaiEnt);
+    const dhSaiEnt = toBrasiliaDateTime(ide.dhSaiEnt, ide.ufEmit);
     // P5: tpEmis do ide (default 1 = XML idêntico ao anterior). dhCont/xJust
     // SÓ quando tpEmis ≠ 1, após verProc e antes de NFref (ordem do XSD oficial).
     const tpEmis = String(ide.tpEmis ?? '1').trim() || '1';
