@@ -227,12 +227,31 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
   const pfx = await descriptografarPFXdoStorage(tenantId, access.uid, senhaA1);
   const payload = `<consSitMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="3.00"><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><xServ>CONSULTAR</xServ><chMDFe>${key}</chMDFe></consSitMDFe>`;
   const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeConsulta, mdfeSoap('MDFeConsulta', payload, key.slice(0, 2)), pfx, senhaA1, mdfeSoapAction('MDFeConsulta'));
-  // Retorno PRINCIPAL da consulta = primeiro cStat (o último pode ser do
-  // evento vinculado — ex.: MDF-e encerrado devolvia 135 em vez de 100).
   const result = parseSefazResponse(response.body, ['100', '101', '150'], { first: true });
   const bodyConsulta = String(response.body || '');
-  if (result.cStat === '999') {
-    functions.logger.warn(`[mdfe_consultar] Resposta não parseada | HTTP ${response.status} | body: ${bodyConsulta.slice(0, 1200)}`);
+  // A resposta da SEFAZ pode conter múltiplos <cStat>: um do documento MDF-e
+  // principal e outro(s) de evento(s) vinculado(s) (ex.: NF-e referenciada
+  // cancelada → cStat 677 no documento, 216 no evento). O parseSefazResponse
+  // com { first: true } pegava o primeiro do XML, que podia ser do evento.
+  // Selecionamos o cStat do documento principal: excluímos códigos de evento
+  // vinculado (135/136/155 MDF-e, 215/216/217 NF-e) e, se restar algum, usamos
+  // o primeiro não-evento; fallback para o primeiro do XML se todos forem evento.
+  const eventoCodes = new Set(['135', '136', '155', '215', '216', '217']);
+  const allCStat = result.allCStat || [result.cStat];
+  const allXMotivo = String(response.body || '').matchAll(/<xMotivo>([^<]+)<\/xMotivo>/g);
+  const xMotivos = Array.from(allXMotivo).map((m) => m[1]);
+  let cStatIdx = 0;
+  if (allCStat.length > 1) {
+    const naoEvento = allCStat.findIndex((c) => !eventoCodes.has(c));
+    cStatIdx = naoEvento >= 0 ? naoEvento : 0;
+  }
+  const cStatPrincipal = allCStat[cStatIdx] || '999';
+  const xMotivoPrincipal = xMotivos[cStatIdx] || result.xMotivo || 'Resposta não parseada';
+
+  const result2 = { ...result, cStat: cStatPrincipal, xMotivo: xMotivoPrincipal };
+  functions.logger.info(`[mdfe_consultar] cStat principal=${cStatPrincipal} (todos=${allCStat.join(',')}) | xMotivo=${xMotivoPrincipal}`);
+  if (cStatPrincipal === '999') {
+    functions.logger.warn(`[mdfe_consultar] Resposta não parseada | HTTP ${response.status} | body: ${String(response.body || '').slice(0, 1200)}`);
   }
   // Situação real: eventos vinculados no procEventoMDFe (110112 encerramento /
   // 110111 cancelamento) definem se o documento está Encerrado/Cancelado.
@@ -243,8 +262,8 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
   const eventoOk = ['135', '136', '155', '101'].includes(cStatEvento);
   const situacao = ((tpEvento === '110111' || tpEvento === '110112') && eventoOk)
     ? (tpEvento === '110112' ? 'encerrado' : 'cancelado')
-    : (['100', '150'].includes(result.cStat) ? 'autorizado'
-      : (result.cStat === '217' ? 'nao_encontrado' : 'indefinida'));
+    : (['100', '150'].includes(cStatPrincipal) ? 'autorizado'
+      : (cStatPrincipal === '217' ? 'nao_encontrado' : 'indefinida'));
   const statusDerivado = situacao === 'encerrado' ? 'encerrado'
     : (situacao === 'cancelado' ? 'cancelado'
       : (situacao === 'autorizado' ? 'autorizado' : ''));
@@ -255,8 +274,8 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
     chaveAcesso: key,
     ...(statusDerivado ? { status: statusDerivado } : {}),
     ultimaConsultaSefaz: {
-      cStat: result.cStat,
-      xMotivo: result.xMotivo,
+      cStat: cStatPrincipal,
+      xMotivo: xMotivoPrincipal,
       situacao,
       tpEvento,
       cStatEvento,
@@ -267,9 +286,9 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
     autorizada: situacao === 'autorizado' || situacao === 'encerrado',
     cancelado: situacao === 'cancelado',
     situacao,
-    cStat: result.cStat,
-    xMotivo: result.xMotivo,
-    protocolo: result.nProt,
+    cStat: cStatPrincipal,
+    xMotivo: xMotivoPrincipal,
+    protocolo: result2.nProt,
     tpEvento,
     cStatEvento,
   };

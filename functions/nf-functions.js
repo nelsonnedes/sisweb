@@ -1225,6 +1225,7 @@ function parseSefazResponse(xmlResp, successCodes = ['100', '150'], opts = {}) {
     dhRecbto: dhRecbtoMatch ? dhRecbtoMatch[1] : '',
     autorizada: successCodes.includes(cStat),
     xmlRetorno: xmlResp,
+    allCStat: cStatMatches,
   };
 }
 
