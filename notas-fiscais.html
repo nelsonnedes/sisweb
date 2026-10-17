@@ -5109,7 +5109,7 @@ renderizarVolumesNF();
           <td data-label="Destinatário">${escapeHtmlNF(n.dest?.nome || '—')}</td>
           <td data-label="Valor Total" style="text-align:right;font-weight:600">${fmtMoedaForm(val)}</td>
           <td data-label="Chave / Protocolo" style="font-family:monospace;font-size:11px">${chave}${prot}</td>
-          <td data-label="Status"><span onclick="nfMostrarDetalheStatus('${n.id}')" title="Ver detalhes do status" style="cursor:pointer;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:var(--sw-text-1);background:color-mix(in srgb, var(--sw-${tok}) 25%, transparent);border:1px solid var(--sw-${tok});">${label}</span></td>
+          <td data-label="Status"><span onclick="nfMostrarDetalheStatus('${n.id}')" title="Ver detalhes do status" style="cursor:pointer;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;color:var(--sw-text-1);background:color-mix(in srgb, var(--sw-${tok}) 25%, transparent);border:1px solid var(--sw-${tok});white-space:nowrap;">${label}</span></td>
           <td data-label="Ações" class="nf-actions-cell">
             ${window.NFDanfe ? `<button class="btn btn-primary btn-small" onclick="abrirDANFENota('${n.id}')" title="DANFE"><i class="fas fa-file-pdf"></i></button>` : ''}
             ${n.status==='autorizada' ? `<button class="btn btn-primary btn-small" onclick="baixarXMLNotaNF('${n.id}')" title="Baixar XML autorizado"><i class="fas fa-file-code"></i></button>` : ''}

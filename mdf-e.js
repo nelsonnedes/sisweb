@@ -2045,7 +2045,10 @@ async function consultarMdfeFiscal(id) {
             mdfeId: mdfe.id,
             chave: mdfe.chaveAcesso,
             senhaA1,
-            ambiente: document.getElementById('mdfeAmbiente')?.value || 'homologacao',
+            // Usa o ambiente gravado no próprio MDF-e na emissão; só cai no
+            // select (padrão homologacao) quando não houver ambiente salvo,
+            // evitando consultar Produção em Homologação (cStat 101) e vice-versa.
+            ambiente: (mdfe && mdfe.ambiente) || document.getElementById('mdfeAmbiente')?.value || 'homologacao',
         });
         // Verdade da consulta (não o cStat do último EVENTO): situação real
         const situacaoTxt = {
