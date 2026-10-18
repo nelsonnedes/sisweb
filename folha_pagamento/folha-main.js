@@ -1996,6 +1996,18 @@ let folhaSystem;
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('📄 DOM carregado, inicializando Sistema de Folha de Pagamento...');
 
+    // Overlay de carregamento (mesmo padrão de Vendas/Compras): exibe durante
+    // a inicialização e some no sucesso/erro (e por failsafe em 20s).
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+    try {
+        if (loadingText) loadingText.textContent = 'Carregando Folha de Pagamento...';
+        if (loadingOverlay) loadingOverlay.classList.add('active');
+        setTimeout(() => {
+            try { loadingOverlay && loadingOverlay.classList.remove('active'); } catch (_) {}
+        }, 20000);
+    } catch (_) {}
+
     try {
         folhaSystem = new FolhaPagamentoSystem();
         window.folhaSystem = folhaSystem;
