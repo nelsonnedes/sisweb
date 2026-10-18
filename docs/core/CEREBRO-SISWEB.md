@@ -1866,4 +1866,9 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Service Worker `Failed to fetch`:** `sw.js` `networkFirst`, `staleWhileRevalidate` e `cacheFirst` faziam `throw error` quando não havia cache e rede falhava, gerando `Uncaught (in promise) TypeError: Failed to fetch` no console. Corrigido para retornar resposta 503 offline controlada (`<html>Sem conexão — Sisweb offline</html>`).
 - **Gates:** lint OK, typecheck OK, `npm test` 1485/1484/0/1 (a única falha é `parseSefazResponse` pré-existente, não relacionada). Commit + deploy pendente.
 - **Deploy necessário (backend):** `firebase deploy --only functions:mdfe_consultar` para publicar a correção do `result.nProt` no Firebase (o frontend local consome as funções já deployadas).
+- **Deploy realizado em produção 2026-10-18:**
+  - `git push origin main` — commit `a6ad972` publicado no remote
+  - `firebase deploy --only functions:mdfe_consultar` — função corrigida publicada (resolve erro INTERNAL na consulta SEFAZ MDF-e)
+  - `npm run deploy:hosting` — 545 arquivos publicados com correções de loader/UI (overlay sem fundo retangular, cores do tema, ordem correta de carregamento de scripts)
+- **Produção verificada:** `https://sisweb-7ce82.web.app` servindo a nova versão com todas as correções ativas.
 
