@@ -218,7 +218,7 @@
         .table-container {
             overflow-x: auto;
             margin-top: 15px;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--sw-border);
             border-radius: 4px;
         }
 
@@ -232,7 +232,7 @@
         .data-table td {
             padding: 8px 12px;
             text-align: left;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid var(--sw-border);
             font-size: 13px;
         }
 
@@ -634,59 +634,77 @@
             }
 
             .mdfe-table {
+                display: block;
                 width: 100%;
-                border-collapse: collapse;
                 background: transparent;
+                border-collapse: collapse;
             }
 
             .mdfe-table thead {
-                display: table-header-group;
+                display: none;
             }
 
-            .mdfe-table tbody {
-                display: table-row-group;
+            .mdfe-table tbody,
+            .mdfe-table tr {
+                display: block;
+                width: 100%;
             }
 
             .mdfe-table tr {
-                display: table-row;
+                margin-bottom: 12px;
+                padding: 10px;
+                background: var(--sw-surface);
+                border: 1px solid var(--sw-border);
+                border-radius: 6px;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
             }
 
-            .mdfe-table th,
             .mdfe-table td {
-                display: table-cell;
-                padding: 8px 12px;
-                border: 1px solid #dee2e6;
-                text-align: left;
-                vertical-align: middle;
-            }
-
-            .mdfe-table th {
-                background: #2c3e50;
-                color: #fff;
-                font-weight: 600;
-                font-size: 13px;
-            }
-
-            .mdfe-table tr:nth-child(even) {
-                background: rgba(0,0,0,0.02);
-            }
-
-            .mdfe-table .mdfe-empty {
-                display: table-cell;
-                text-align: center;
-                padding: 20px;
+                display: grid;
+                grid-template-columns: minmax(8rem, 42%) 1fr;
+                gap: 8px;
+                width: 100%;
+                padding: 7px 4px;
                 border: 0;
+                text-align: right;
+                overflow-wrap: anywhere;
+            }
+
+            .mdfe-table td::before {
+                content: attr(data-label);
+                color: var(--primary-color);
+                font-weight: 700;
+                text-align: left;
+            }
+
+            .mdfe-table td:last-child {
+                display: block;
+                padding-top: 10px;
+                border-top: 1px solid var(--sw-border);
+                text-align: left;
+            }
+
+            .mdfe-table td:last-child::before {
+                display: block;
+                margin-bottom: 6px;
             }
 
             .mdfe-table .mdfe-actions {
                 display: flex;
-                gap: 6px;
+                gap: 8px;
             }
 
             .mdfe-table .mdfe-actions .btn {
-                min-height: 28px;
-                padding: 4px 8px;
-                font-size: 12px;
+                min-height: 36px;
+            }
+
+            .mdfe-table .mdfe-empty {
+                display: block;
+                text-align: center;
+            }
+
+            .mdfe-table .mdfe-empty::before {
+                display: none;
             }
         }
     </style>
@@ -1026,7 +1044,7 @@
                     </thead>
                     <tbody id="mdfesTable">
                         <tr>
-                            <td colspan="8" style="text-align: center; color: var(--sw-text-2) ; font-style: italic;">Nenhum MDF-e encontrado</td>
+                            <td colspan="8" style="text-align: center; color: var(--sw-text-2) ; font-style: italic;">⏳ Carregando...</td>
                         </tr>
                     </tbody>
                 </table>

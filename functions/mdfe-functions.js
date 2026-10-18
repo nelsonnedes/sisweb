@@ -224,76 +224,84 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
   if (!senhaA1) throw httpsError('invalid-argument', 'Senha do certificado A1 é obrigatória.');
   const access = await assertMdfeAdmin(context, tenantId);
   const env = environment(data.ambiente);
-  const pfx = await descriptografarPFXdoStorage(tenantId, access.uid, senhaA1);
-  const payload = `<consSitMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="3.00"><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><xServ>CONSULTAR</xServ><chMDFe>${key}</chMDFe></consSitMDFe>`;
-  const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeConsulta, mdfeSoap('MDFeConsulta', payload, key.slice(0, 2)), pfx, senhaA1, mdfeSoapAction('MDFeConsulta'));
-  const result = parseSefazResponse(response.body, ['100', '101', '150'], { first: true });
-  const bodyConsulta = String(response.body || '');
-  
-  // A SEFAZ pode retornar múltiplos <cStat>: um do documento MDF-e principal
-  // e outro(s) de evento(s) vinculado(s) (ex.: NF-e referenciada cancelada
-  // com cStat 216, ou MDF-e encerrado com cStat 135).
-  // O parseSefazResponse retorna allCStat com TODOS os cStat encontrados.
-  // Precisamos selecionar o cStat do DOCUMENTO PRINCIPAL, não do evento.
-  const eventoCodes = new Set(['135', '136', '155', '215', '216', '217']);
-  const allCStat = result.allCStat || [result.cStat];
-  const allXMotivo = result.allXMotivo || [result.xMotivo];
-  
-  // Selecionar o cStat do documento principal (não do evento vinculado)
-  let cStatIdx = 0;
-  if (allCStat.length > 1) {
-    // Procurar o primeiro cStat que NÃO é de evento vinculado
-    const naoEvento = allCStat.findIndex((c) => !eventoCodes.has(c));
-    cStatIdx = naoEvento >= 0 ? naoEvento : 0;
-  }
-  
-  const cStatPrincipal = allCStat[cStatIdx] || '999';
-  const xMotivoPrincipal = allXMotivo[cStatIdx] || result.xMotivo || 'Resposta não parseada';
-  
-  functions.logger.info(`[mdfe_consultar] cStat principal=${cStatPrincipal} (todos=${allCStat.join(',')}) | xMotivo=${xMotivoPrincipal}`);
-  
-  if (cStatPrincipal === '999') {
-    functions.logger.warn(`[mdfe_consultar] Resposta não parseada | HTTP ${response.status} | body: ${bodyConsulta.slice(0, 1200)}`);
-  }
-  // Situação real: eventos vinculados no procEventoMDFe (110112 encerramento /
-  // 110111 cancelamento) definem se o documento está Encerrado/Cancelado.
-  // Extração tolerante a prefixo/namespace: resposta com <ns2:tpEvento>
-  // voltava "indefinida" e permitia reencerramento.
-  const tpEvento = extrairConteudoTag(bodyConsulta, 'tpEvento');
-  const cStatEvento = extrairConteudoTag(extrairBlocoTag(bodyConsulta, 'retEventoMDFe'), 'cStat');
-  const eventoOk = ['135', '136', '155', '101'].includes(cStatEvento);
-  const situacao = ((tpEvento === '110111' || tpEvento === '110112') && eventoOk)
-    ? (tpEvento === '110112' ? 'encerrado' : 'cancelado')
-    : (['100', '150'].includes(cStatPrincipal) ? 'autorizado'
-      : (cStatPrincipal === '217' ? 'nao_encontrado' : 'indefinida'));
-  const statusDerivado = situacao === 'encerrado' ? 'encerrado'
-    : (situacao === 'cancelado' ? 'cancelado'
-      : (situacao === 'autorizado' ? 'autorizado' : ''));
-  // O cStat/xMotivo DO DOCUMENTO não é sobrescrito pela consulta — a verdade
-  // da consulta vai em ultimaConsultaSefaz; o status é reconciliado quando a
-  // SEFAZ confirma encerramento/cancelamento/autorização.
-  await updateMdfe(tenantId, mdfeId, {
-    chaveAcesso: key,
-    ...(statusDerivado ? { status: statusDerivado } : {}),
-    ultimaConsultaSefaz: {
+
+  try {
+    const pfx = await descriptografarPFXdoStorage(tenantId, access.uid, senhaA1);
+    const payload = `<consSitMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="3.00"><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><xServ>CONSULTAR</xServ><chMDFe>${key}</chMDFe></consSitMDFe>`;
+    const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeConsulta, mdfeSoap('MDFeConsulta', payload, key.slice(0, 2)), pfx, senhaA1, mdfeSoapAction('MDFeConsulta'));
+    const result = parseSefazResponse(response.body, ['100', '101', '150'], { first: true });
+    const bodyConsulta = String(response.body || '');
+
+    // A SEFAZ pode retornar múltiplos <cStat>: um do documento MDF-e principal
+    // e outro(s) de evento(s) vinculado(s) (ex.: NF-e referenciada cancelada
+    // com cStat 216, ou MDF-e encerrado com cStat 135).
+    const eventoCodes = new Set(['135', '136', '155', '215', '216', '217']);
+    const allCStat = result.allCStat || [result.cStat];
+    const allXMotivo = result.allXMotivo || [result.xMotivo];
+
+    let cStatIdx = 0;
+    if (allCStat.length > 1) {
+      const naoEvento = allCStat.findIndex((c) => !eventoCodes.has(c));
+      cStatIdx = naoEvento >= 0 ? naoEvento : 0;
+    }
+
+    const cStatPrincipal = allCStat[cStatIdx] || '999';
+    const xMotivoPrincipal = allXMotivo[cStatIdx] || result.xMotivo || 'Resposta não parseada';
+
+    functions.logger.info(`[mdfe_consultar] cStat principal=${cStatPrincipal} (todos=${allCStat.join(',')}) | xMotivo=${xMotivoPrincipal}`);
+
+    if (cStatPrincipal === '999') {
+      functions.logger.warn(`[mdfe_consultar] Resposta não parseada | HTTP ${response.status} | body: ${bodyConsulta.slice(0, 1200)}`);
+    }
+    // Situação real: eventos vinculados no procEventoMDFe (110112 encerramento /
+    // 110111 cancelamento) definem se o documento está Encerrado/Cancelado.
+    const tpEvento = extrairConteudoTag(bodyConsulta, 'tpEvento');
+    const cStatEvento = extrairConteudoTag(extrairBlocoTag(bodyConsulta, 'retEventoMDFe'), 'cStat');
+    const eventoOk = ['135', '136', '155', '101'].includes(cStatEvento);
+    const situacao = ((tpEvento === '110111' || tpEvento === '110112') && eventoOk)
+      ? (tpEvento === '110112' ? 'encerrado' : 'cancelado')
+      : (['100', '150'].includes(cStatPrincipal) ? 'autorizado'
+        : (cStatPrincipal === '217' ? 'nao_encontrado' : 'indefinida'));
+    const statusDerivado = situacao === 'encerrado' ? 'encerrado'
+      : (situacao === 'cancelado' ? 'cancelado'
+        : (situacao === 'autorizado' ? 'autorizado' : ''));
+    await updateMdfe(tenantId, mdfeId, {
+      chaveAcesso: key,
+      ...(statusDerivado ? { status: statusDerivado } : {}),
+      ultimaConsultaSefaz: {
+        cStat: cStatPrincipal,
+        xMotivo: xMotivoPrincipal,
+        situacao,
+        tpEvento,
+        cStatEvento,
+        em: new Date().toISOString(),
+      },
+    });
+    return {
+      autorizada: situacao === 'autorizado' || situacao === 'encerrado',
+      cancelado: situacao === 'cancelado',
+      situacao,
       cStat: cStatPrincipal,
       xMotivo: xMotivoPrincipal,
-      situacao,
+      protocolo: result.nProt,
       tpEvento,
       cStatEvento,
-      em: new Date().toISOString(),
-    },
-  });
-  return {
-    autorizada: situacao === 'autorizado' || situacao === 'encerrado',
-    cancelado: situacao === 'cancelado',
-    situacao,
-    cStat: cStatPrincipal,
-    xMotivo: xMotivoPrincipal,
-    protocolo: result.nProt,
-    tpEvento,
-    cStatEvento,
-  };
+    };
+  } catch (error) {
+    functions.logger.error('[mdfe_consultar] Erro:', (error && error.message) || error, (error && error.stack) || '');
+    if (error instanceof functions.https.HttpsError) throw error;
+    const msg = String((error && error.message) || error || '');
+    if (/senha|mac verify|pkcs12|password/i.test(msg)) {
+      throw httpsError('invalid-argument', 'Senha do certificado A1 inválida.');
+    }
+    if (/certificado|pfx|chave privada/i.test(msg)) {
+      throw httpsError('failed-precondition', 'Certificado A1 não configurado ou inválido para esta empresa.');
+    }
+    if (/timeout/i.test(msg)) {
+      throw httpsError('deadline-exceeded', 'A SEFAZ não respondeu a tempo. Tente novamente.');
+    }
+    throw httpsError('internal', `Falha na consulta do MDF-e: ${msg || 'erro desconhecido'}`);
+  }
 });
 
 exports.mdfe_encerrar = onMdfeCall(async (data, context) => {
