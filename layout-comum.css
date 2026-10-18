@@ -153,17 +153,18 @@
 .columns-item button { height: 28px !important; min-width: 28px !important; }
 .columns-item label { display: inline-flex !important; align-items: center !important; gap: 6px !important; }
 
-/* Loading Overlay Global */
+/* Loading Overlay Global — padrão Sisweb (sem card/fundo retangular, cores do tema) */
 .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.8);
     display: none;
     justify-content: center;
     align-items: center;
+    flex-direction: column;
     z-index: 99999;
     backdrop-filter: blur(2px);
     transition: opacity 0.3s ease;
@@ -174,23 +175,18 @@
     opacity: 1;
 }
 
-.loading-content {
-    background: var(--sw-surface);
-    padding: 30px;
-    border-radius: 12px;
-    text-align: center;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    border: 1px solid #f0f0f0;
+html[data-theme="dark"] .loading-overlay {
+    background: rgba(0, 0, 0, 0.7);
 }
 
 .loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #3498db;
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--sw-border);
+    border-top: 4px solid var(--sw-brand);
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin: 0 auto 15px auto;
+    margin: 0 auto 12px auto;
 }
 
 @keyframes spin {
@@ -199,20 +195,10 @@
 }
 
 .loading-text {
-    color: var(--sw-text-1);
-    font-size: 16px;
+    color: var(--sw-text-2);
+    font-size: 15px;
     font-weight: 500;
-    margin-top: 10px;
-}
-
-/* Loading Overlay acompanha o tema: no escuro o véu é escuro (antes era
-   sempre branco e o overlay ficava "tudo branco" no dark). Claro/sem
-   data-theme mantém o comportamento atual. */
-html[data-theme="dark"] .loading-overlay {
-    background: rgba(0, 0, 0, 0.7);
-}
-.loading-content {
-    border-color: var(--sw-border, #f0f0f0);
+    margin-top: 0;
 }
 
 /* === MOBILE APP-LIKE FIX (2026-09-17) - trava scroll lateral e comportamento app === */

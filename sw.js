@@ -144,7 +144,12 @@ async function networkFirst(request) {
       return cached;
     }
 
-    throw error;
+    // Sem cache e sem rede: retorna resposta offline controlada
+    // em vez de lançar erro não capturado no console.
+    return new Response(
+      '<html><body>Sem conexão — Sisweb offline</body></html>',
+      { status: 503, statusText: 'Service Unavailable', headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    );
   }
 }
 
@@ -162,7 +167,10 @@ async function staleWhileRevalidate(request) {
       return response;
     } catch (error) {
       if (cached) return cached;
-      throw error;
+      return new Response(
+        '<html><body>Sem conexão — Sisweb offline</body></html>',
+        { status: 503, statusText: 'Service Unavailable', headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+      );
     }
   })();
 
@@ -187,6 +195,9 @@ async function cacheFirst(request) {
     }
     return response;
   } catch (error) {
-    throw error;
+    return new Response(
+      '<html><body>Sem conexão — Sisweb offline</body></html>',
+      { status: 503, statusText: 'Service Unavailable', headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    );
   }
 }

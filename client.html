@@ -217,37 +217,6 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             #modalForm .modal-footer {
                 border-radius: 0;
             }
-        }
-
-        /* Loading Overlay */
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.8);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--sw-border);
-            border-top: 4px solid var(--sw-brand);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         /* Toast Notifications */
         #toast-container {
             position: fixed;
@@ -548,7 +517,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <div id="toast-container"></div>
     
     <div id="loadingOverlay" class="loading-overlay">
-        <div class="spinner"></div>
+        <div class="loading-spinner"></div>
         <p style="margin-top: 15px; color: var(--sw-text-2) ;">Processando...</p>
     </div>
 
@@ -559,6 +528,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     </script>
     <!-- ✅ FIX: Correção Unificada de Clientes (Salvar/Excluir/Multi-tenant) -->
     <script src="romaneios-client-save-fix.js?v=95d795703c1c"></script>
+    <script src="js/sisweb-loading.js?v=b693454010f9"></script>
     <script type="module" src="js/client.js?v=53f0dc90177b"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
 

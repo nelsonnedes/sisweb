@@ -2773,6 +2773,7 @@
     <script src="nf-xml-builder.js?v=78c47e16feef"></script>
     <script src="nf-fiscal-events.js?v=4a67d0a21c7c"></script>
     <script src="nf-storage.js?v=46f3910730cf"></script>
+    <script src="js/sisweb-loading.js?v=b693454010f9"></script>
     <script src="nf-service.js?v=bb52a7dd2fb0"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="nf-dashboard.js?v=3c7aac3519cc"></script>
@@ -2784,7 +2785,6 @@
     <script src="assets/vendor/qrcode-generator.js?v=18ae399f8118"></script>
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
     <script src="nf-danfe.js?v=0accdb14437e"></script>
-    <script src="js/sisweb-loading.js?v=b693454010f9"></script>
     <script>
     // ─── Inicialização NFService ──────────────────────────────────────────────
     function isFirebaseOfflineModeNF() {
@@ -7310,5 +7310,10 @@ renderizarVolumesNF();
             return new Date(data).toLocaleDateString('pt-BR');
         }
     </script>
+    <!-- Loading Overlay Global (padrão Sisweb) -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Carregando...</div>
+    </div>
 </body>
 </html>

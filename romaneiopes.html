@@ -1487,14 +1487,15 @@
     <script src="client-service.js?v=b95ca0dfb346"></script>
     <script src="schema-migration-contatos.js?v=3a574e7e3324"></script>
     <script src="romaneios-client-save-fix.js?v=95d795703c1c"></script>
+    <script src="js/sisweb-loading.js?v=b693454010f9"></script>
     <script src="pre-romaneio-selector.js?v=25012edb1794"></script>
     <script src="romaneio-table-enhancements.js?v=290d67a3557c"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="romaneio-print-config.js?v=179c8544dedf"></script>
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pes" data-target="clientListBody"></script>
-    <script src="modules/core/romaneio-list-columns.js?v=210bbf18cbc0" data-page="pes" data-target="romaneioListBody"></script>
     <script src="js/sisweb-loading.js?v=b693454010f9"></script>
+    <script src="modules/core/romaneio-list-columns.js?v=210bbf18cbc0" data-page="pes" data-target="romaneioListBody"></script>
     <script>
         let itens = [];
         let itemEmEdicaoIndex = -1; // Para controlar edição de itens
@@ -5478,6 +5479,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     } catch(_) {}
 });
-</script>
+    </script>
+    <!-- Loading Overlay Global (padrão Sisweb) -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Carregando...</div>
+    </div>
 </body>
 </html>

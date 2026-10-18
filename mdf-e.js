@@ -282,6 +282,13 @@ async function carregarDados() {
             throw new Error('Serviço Firebase do MDF-e indisponível.');
         }
 
+        // Mostrar estado de carregamento na tabela antes de buscar os dados
+        const tbody = document.getElementById('mdfesTable');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="8" class="mdfe-empty" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">⏳ Carregando...</td></tr>';
+        }
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Carregando MDF-e...'); } catch (_) {}
+
         const context = await svc.resolveAuthenticatedTenant({ timeoutMs: 5000, reason: 'mdfe_init' });
         tenantIdMdfe = String(context?.companyId || '').trim();
         if (!tenantIdMdfe) throw new Error('Empresa autenticada não identificada para o MDF-e.');
@@ -318,6 +325,12 @@ async function carregarDados() {
     } catch (error) {
         console.error('❌ Erro ao carregar dados:', error);
         mdfes = [];
+        const tbody = document.getElementById('mdfesTable');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="8" class="mdfe-empty" style="text-align:center;color:red;">Erro: ${error.message}</td></tr>`;
+        }
+    } finally {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
     }
 }
 
@@ -1191,6 +1204,10 @@ function mdfeOrdenarPorNumeroDesc(a, b) {
 }
 
 function consultarMdfes(resetPage = true) {
+    const tbody = document.getElementById('mdfesTable');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="8" class="mdfe-empty" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">⏳ Carregando...</td></tr>';
+    }
     const busca = document.getElementById('searchMdfe').value.toLowerCase();
     const statusFiltro = document.getElementById('filterStatusMdfe').value;
     

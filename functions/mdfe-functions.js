@@ -290,7 +290,7 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
     situacao,
     cStat: cStatPrincipal,
     xMotivo: xMotivoPrincipal,
-    protocolo: result2.nProt,
+    protocolo: result.nProt,
     tpEvento,
     cStatEvento,
   };

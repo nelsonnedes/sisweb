@@ -16,16 +16,15 @@
 
     var CSS = ''
         + '#' + OVERLAY_ID + '{position:fixed;top:0;left:0;width:100%;height:100%;'
-        + 'background:rgba(255,255,255,0.9);display:none;justify-content:center;'
-        + 'align-items:center;z-index:99999;backdrop-filter:blur(2px);}'
+        + 'background:rgba(255,255,255,0.8);display:none;justify-content:center;'
+        + 'align-items:center;flex-direction:column;z-index:99999;backdrop-filter:blur(2px);}'
         + '#' + OVERLAY_ID + '.active{display:flex;}'
         + 'html[data-theme="dark"] #' + OVERLAY_ID + '{background:rgba(0,0,0,0.7);}'
-        + '#' + OVERLAY_ID + ' .loading-content{background:var(--sw-surface,#fff);padding:30px;border-radius:12px;'
-        + 'text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.1);border:1px solid var(--sw-border,#f0f0f0);}'
-        + '#' + OVERLAY_ID + ' .loading-spinner{width:50px;height:50px;border:4px solid #f3f3f3;'
-        + 'border-top:4px solid #3498db;border-radius:50%;'
-        + 'animation:sisweb-loading-spin 1s linear infinite;margin:0 auto 15px auto;}'
-        + '#' + OVERLAY_ID + ' .loading-text{color:var(--sw-text-1,#111);font-size:14px;}'
+        + '#' + OVERLAY_ID + ' .loading-spinner{width:40px;height:40px;border:4px solid var(--sw-border,#ccc);'
+        + 'border-top:4px solid var(--sw-brand,#3498db);border-radius:50%;'
+        + 'animation:sisweb-loading-spin 1s linear infinite;margin:0 auto 12px auto;}'
+        + '#' + OVERLAY_ID + ' .loading-text{color:var(--sw-text-1,#111);font-size:15px;font-weight:500;margin-top:0;}'
+        + '/* tema: var(--sw-surface), var(--sw-text-1) */'
         + '@keyframes sisweb-loading-spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}';
 
     var depth = 0;
@@ -47,16 +46,13 @@
         overlay.id = OVERLAY_ID;
         overlay.className = 'loading-overlay';
         overlay.style.display = 'none';
-        var content = document.createElement('div');
-        content.className = 'loading-content';
         var spinner = document.createElement('div');
         spinner.className = 'loading-spinner';
         var text = document.createElement('div');
         text.className = 'loading-text';
         text.textContent = 'Carregando...';
-        content.appendChild(spinner);
-        content.appendChild(text);
-        overlay.appendChild(content);
+        overlay.appendChild(spinner);
+        overlay.appendChild(text);
         document.body.appendChild(overlay);
         return overlay;
     }

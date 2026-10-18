@@ -2972,15 +2972,13 @@
     <script src="modules/romaneiopct/preservar-propriedades-financeiras.js?v=557f1791c0db"></script>
     
     <!-- 3. Sistema de carregamento de dados PCT -->
+    <script src="js/sisweb-loading.js?v=b693454010f9"></script>
     <script src="modules/romaneiopct/carregar-romaneio-pct.js?v=426ecc5650ec"></script>
     <script src="modules/core/romaneio-messages.js?v=114b5f8a30f6"></script>
     
     <!-- 4. Modal de Lista de Romaneios PCT -->
     <script src="modules/core/romaneio-list-columns.js?v=210bbf18cbc0" data-page="pct" data-target="listaRomaneios"></script>
     <script src="modules/romaneiopct/modal-lista-romaneios-pct.js?v=6186c5ed768a"></script>
-    <script src="js/sisweb-loading.js?v=b693454010f9"></script>
-    
-    <!-- 5. Modal de Clientes PCT -->
     <script src="modules/romaneiopct/modal-clientes-pct.js?v=9e4ec7627a36"></script>
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pct" data-target="clientListTable"></script>
     
@@ -4444,5 +4442,10 @@
         initializeRomaneioPctPage();
     }
     </script>
+    <!-- Loading Overlay Global (padrão Sisweb) -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Carregando...</div>
+    </div>
 </body>
 </html>
