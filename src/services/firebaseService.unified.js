@@ -52,7 +52,7 @@ function waitForFirebaseGlobal() {
  * Baseada em .firebaserc e configuração atual do sistema
  */
 const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
+    apiKey: "AIzaSyCe5-eh5wS49YswbHEonvKHGQicNnjKfsU",
     authDomain: "sisweb-7ce82.firebaseapp.com",
     databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "sisweb-7ce82",

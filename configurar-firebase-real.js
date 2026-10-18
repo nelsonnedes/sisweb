@@ -43,7 +43,7 @@ console.log('🔧 Configurador Firebase Real v1.0');
 function updateFirebaseConfig() {
     // 🔥 CONFIGURAÇÃO REAL DO PROJETO SISWEB-7CE82:
     return {
-        apiKey: "AIzaSyCF_9e067URYnB6iGnTAahPfaTMl-RQ77k",
+        apiKey: "AIzaSyCe5-eh5wS49YswbHEonvKHGQicNnjKfsU",
         authDomain: "sisweb-7ce82.firebaseapp.com",
         databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "sisweb-7ce82",
