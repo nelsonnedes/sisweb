@@ -282,12 +282,11 @@ async function carregarDados() {
             throw new Error('Serviço Firebase do MDF-e indisponível.');
         }
 
-        // Mostrar estado de carregamento na tabela antes de buscar os dados
+        // Mostrar estado de carregamento na tabela antes de buscar os dados (paridade com NF-e)
         const tbody = document.getElementById('mdfesTable');
         if (tbody) {
             tbody.innerHTML = '<tr><td colspan="8" class="mdfe-empty" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">⏳ Carregando...</td></tr>';
         }
-        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Carregando MDF-e...'); } catch (_) {}
 
         const context = await svc.resolveAuthenticatedTenant({ timeoutMs: 5000, reason: 'mdfe_init' });
         tenantIdMdfe = String(context?.companyId || '').trim();
