@@ -1907,3 +1907,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Gates:** `npm test` **1492 pass / 0 fail / 1 skip** (1493 testes); lint, typecheck e functions lint OK.
 - **Deploy:** funções que usam o default precisam ser republicadas (emissão/eventos/inutilização MDF-e). Consultas não mudam (first:true).
 
+## Sessao 2026-10-18 (cont. 6) — NF-e: sem flash de texto e sem rolagem/tremor ao abrir
+
+- **Flash "Clique em Atualizar para carregar" → "Carregando...":** o `<tbody id="notasTable">` inicial agora já nasce com `⏳ Carregando...` (paridade MDF-e), eliminando a troca visível de texto no primeiro paint.
+- **Rolagem/tremor ao abrir (causa real):** a correção anterior de `irParaEtapaNF(..., { scroll:false })` atingiu a chamada **pós-emissão** (linha ~4839), não a da **inicialização** (linha ~3641), que continuava rolando a página para o painel (scrollY ≈ 341). Corrigida a chamada de init; `limparFormularioNF` mantém scroll (ação do usuário).
+- **Estabilização da barra de rolagem:** `html { scrollbar-gutter: stable; }` em `layout-comum.css` evita o deslocamento horizontal quando a lista carrega e a barra vertical aparece/desaparece.
+- **Validação em produção (agent-browser):** `scrollY = 0` estável em 3s de amostragem; `clientWidth` constante (1247); HTML servido com `⏳ Carregando...` (0 ocorrências de "Clique em Atualizar para carregar"); CSS novo com `scrollbar-gutter`.
+- **Gates:** suíte 1492 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `aee5bab` + push; hosting publicado (545 arquivos).
+
