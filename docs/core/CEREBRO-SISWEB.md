@@ -1932,3 +1932,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Fix:** no `DOMContentLoaded` de `folha-main.js`: `loadingText = 'Carregando Folha de Pagamento...'` + `loadingOverlay.classList.add('active')` antes de `folhaSystem.init()`; hide mantido no sucesso/erro + failsafe de 20s. Cachebuster `folha-main.js?v=ea48be1ade0c` (o injector não cobre `folha_pagamento/`, atualizado manualmente).
 - **Validação em produção:** overlay existe, `active=false` após o boot (não fica preso), texto atualizado; 6 seções visíveis. Suíte 1492 pass / 0 fail / 1 skip.
 
+## Sessao 2026-10-18 (cont. 9) — Remoção de indicadores de conexão (Finanças/Folha)
+
+- **Pedido:** remover "Modo Online/Offline" em Finanças e o pill "Online" na Folha (UI desnecessária).
+- **Finanças:** removido o `<span id="connectionBadge">` de `financas.html`. `updateOfflineBadge()` continua calculando `financeOffline`/`finance:status` (lógica intacta), apenas sem badge.
+- **Folha:** `updateConnectionStatus()` em `folha-firebase-manager.js` não cria mais `#firebase-status` (e remove o legado se existir). Estado permanece em `this.isConnected`/`getStats()`. Cachebuster `folha-firebase-manager.js?v=fa253a8b024f` (injector não cobre `folha_pagamento/`).
+- **Validação em produção:** `connectionBadge=0` no HTML de Finanças e ausente no DOM; `#firebase-status` ausente na Folha; textos "Modo Online/Offline" não aparecem (0 ocorrências). Suíte 1492 pass / 0 fail / 1 skip.
+
