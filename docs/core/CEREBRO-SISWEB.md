@@ -1890,3 +1890,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Gates:** `mdfe-*` + `loader-rollout-e*` 110/110; lint, typecheck e `npm --prefix functions run lint` OK.
 - **Deploy:** commit `1c921d7` + push; `firebase deploy --only functions:mdfe_consultar` OK; `npm run deploy:hosting` OK.
 
+## Sessao 2026-10-18 (cont. 4) — Cachebuster, rolagem NF-e e verdade da consulta MDF-e
+
+- **CAUSA RAIZ de "correção não reflete":** o `build:hosting` NÃO injeta cachebusters. Com `Cache-Control: immutable` em JS/CSS, o browser continuava servindo o `mdf-e.js` antigo (`?v=73d8b47e7005`). Executado `node tools/inject-cachebusters.mjs` (26 HTMLs) e `node scripts/sync-css-cachebusters.mjs --resync` (17 trocas em 14 HTMLs). `sw.js` APP_VERSION e `menu-component.js` PWA_VERSION → `2026-10-18-mdfe-loader-v1` (purga cache PWA); 6 testes de versão atualizados.
+- **NF-e rolagem ao abrir:** `irParaEtapaNF()` chamava `scrollIntoView` na inicialização (DOMContentLoaded linha ~3641). Agora aceita `opts.scroll` e a inicialização usa `irParaEtapaNF('operacao', { scroll: false })` — a página não rola sozinha.
+- **NF-e "sobrescrevendo":** auditoria do bloco inline legado (a partir de ~6805): define `window.showTab` (sobrescreve o fallback de 1249, mas é superset e chama dashboard) e `configurarEventos()` com IDs antigos (`btn-nova-nota` etc., todos com guard). `atualizarTabelaNotas()` legado só é alcançável por botões legados inexistentes. Sem ação destrutiva; documentado.
+- **MDF-e consulta 216 × 677:** `eventoCodes` não deve incluir 215/216/217 (são rejeições, não status de evento). Agora só 135/136/155; 215/216/217 → `situacao='nao_encontrado'`. O banner mostra a consulta e, quando ela não confirma (nao_encontrado/indefinida), acrescenta `Documento (último envio): <STATUS> — cStat <doc> — <motivo>` (ex.: REJEITADO — cStat 677), sem sobrescrever o documento.
+- **Gates:** 1485 pass / 1 fail pré-existente (`parseSefazResponse`) / 1 skip; lint, typecheck e functions lint OK; `mdfe-*` + `nf-*` + `nfe-*` + `loader-*` 395/395.
+- **Deploy:** commit desta sessão + push; `firebase deploy --only functions:mdfe_consultar`; `npm run deploy:hosting`.
+

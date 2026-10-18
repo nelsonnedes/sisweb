@@ -2096,7 +2096,7 @@ async function consultarMdfeFiscal(id) {
             encerrado: 'ENCERRADO (evento 110112 registrado na SEFAZ)',
             cancelado: 'CANCELADO (evento 110111 registrado na SEFAZ)',
             autorizado: 'AUTORIZADO (ainda não encerrado)',
-            nao_encontrado: 'NÃO CONSTA na base da SEFAZ',
+            nao_encontrado: 'NÃO CONSTA / NÃO AUTORIZADO na base da SEFAZ',
             indefinida: 'INDEFINIDA (veja cStat/motivo)',
         }[result?.situacao] || 'INDEFINIDA (veja cStat/motivo)';
         mdfe.ultimaConsultaSefaz = result?.ultimaConsultaSefaz || { cStat: result?.cStat, xMotivo: result?.xMotivo, situacao: result?.situacao, em: new Date().toISOString() };
@@ -2105,7 +2105,17 @@ async function consultarMdfeFiscal(id) {
         else if (result?.situacao === 'autorizado') mdfe.status = 'autorizado';
         mdfe.protocolo = result?.protocolo || mdfe.protocolo || '';
         const tipo = ['encerrado', 'autorizado'].includes(result?.situacao) ? 'ok' : 'warn';
-        mdfeMostrarAlerta(`MDF-e Nº ${mdfe.numero || ''} — Consulta SEFAZ: cStat ${result?.cStat || '?'} — ${result?.xMotivo || 'sem motivo'}\nSituação real: ${situacaoTxt}`, tipo);
+        // Quando a SEFAZ não confirma o documento (216/217/999 etc.), a consulta
+        // NÃO sobrescreve o cStat/xMotivo do documento. Exibimos também o último
+        // resultado do envio (ex.: rejeição 677) para não induzir a leitura errada.
+        const consultaNaoConfirma = ['nao_encontrado', 'indefinida'].includes(result?.situacao);
+        const docStatusTxt = String(mdfe.status || '').toUpperCase();
+        const docCStat = String(mdfe.cStat || '').trim();
+        const docMotivo = String(mdfe.xMotivo || '').trim();
+        const linhaDocumento = (consultaNaoConfirma && docCStat)
+            ? `\nDocumento (último envio): ${docStatusTxt || '—'} — cStat ${docCStat}${docMotivo ? ` — ${docMotivo}` : ''}`
+            : '';
+        mdfeMostrarAlerta(`MDF-e Nº ${mdfe.numero || ''} — Consulta SEFAZ: cStat ${result?.cStat || '?'} — ${result?.xMotivo || 'sem motivo'}\nSituação real: ${situacaoTxt}${linhaDocumento}`, tipo);
         consultarMdfes();
     } catch (error) {
         console.error('❌ Erro ao consultar MDF-e:', error);

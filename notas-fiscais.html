@@ -42,7 +42,7 @@
         })();
     </script>
     <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
-    <link rel="stylesheet" href="layout-comum.css?v=1b361ca57beb">
+    <link rel="stylesheet" href="layout-comum.css?v=d870e07bb193">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="romaneio-comum.css?v=cdd20d69a92f">
     <link rel="stylesheet" href="status-styles.css?v=e70a1566a169">
@@ -2756,29 +2756,29 @@
     </script>
     <script src="auth.js?v=4173d8da9343"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=1148ebbe47e4"></script>
+<script src="menu-component.js?v=989a78e33468"></script>
     <script src="cities-loader.js?v=b537d6225e16"></script>
     <script src="client-service.js?v=b95ca0dfb346"></script>
     <script src="openNewClientModal.js?v=e302cd671b8c"></script>
     <script src="storageService.js?v=26c2875bf32d"></script>
     <!-- Módulos Fiscais -->
     <script src="nf-tables.js?v=e817068adb54"></script>
-    <script src="nf-config.js?v=e39460ebe102"></script>
+    <script src="nf-config.js?v=f2b77bc0af1a"></script>
     <!-- node-forge: necessário para extrair metadados do certificado .pfx no browser -->
     <script src="https://unpkg.com/node-forge@1.3.1/dist/forge.min.js"></script>
     <script src="nf-cert.js?v=b522cff21ec4"></script>
-    <script src="nf-validator.js?v=f4c0b16f4a49"></script>
+    <script src="nf-validator.js?v=a02e65d4fe09"></script>
     <script src="nf-tax-tables.js?v=3d160df3c943"></script>
-    <script src="nf-itens.js?v=f99076e33765"></script>
-    <script src="nf-xml-builder.js?v=78c47e16feef"></script>
+    <script src="nf-itens.js?v=f6f2d9c96f68"></script>
+    <script src="nf-xml-builder.js?v=553663a16c21"></script>
     <script src="nf-fiscal-events.js?v=4a67d0a21c7c"></script>
     <script src="nf-storage.js?v=46f3910730cf"></script>
-    <script src="js/sisweb-loading.js?v=b693454010f9"></script>
-    <script src="nf-service.js?v=bb52a7dd2fb0"></script>
+    <script src="js/sisweb-loading.js?v=982110809b2c"></script>
+    <script src="nf-service.js?v=5c0ae99d2815"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="nf-dashboard.js?v=3c7aac3519cc"></script>
     <!-- Novos módulos Fase 0 -->
-    <script src="nf-naturezas.js?v=23c18a5d9e91"></script>
+    <script src="nf-naturezas.js?v=c6e8d0c27b26"></script>
     <script src="nf-preferencias.js?v=b5a49347dcd0"></script>
     <script src="nf-produtos-nf.js?v=0c988a0cd4cd"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4468,15 +4468,19 @@
       atualizarResumoFiscalNF();
     }
 
-    function irParaEtapaNF(step) {
+    function irParaEtapaNF(step, opts = {}) {
       if (!NF_STEP_ORDER.includes(step)) return;
       _nfEtapaAtual = step;
       document.querySelectorAll('.nf-step-panel[data-nf-step]').forEach((panel) => {
         panel.hidden = panel.dataset.nfStep !== step;
       });
       atualizarStepperNF();
-      const currentPanel = document.querySelector(`.nf-step-panel[data-nf-step="${step}"]`);
-      currentPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Scroll só em navegação do usuário/etapas. Na inicialização usamos
+      // { scroll:false } para a página NÃO rolar sozinha ao abrir.
+      if (opts.scroll !== false) {
+        const currentPanel = document.querySelector(`.nf-step-panel[data-nf-step="${step}"]`);
+        currentPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
 
     function avancarEtapaNF() {
@@ -4832,7 +4836,7 @@ renderizarVolumesNF();
         renderizarReboquesNF();
         atualizarTotaisNF();
         invalidarRevisaoNF();
-        irParaEtapaNF('operacao');
+      irParaEtapaNF('operacao', { scroll: false });
         // Ir para aba Consultar e recarregar lista (emissão concluída)
         if (typeof showTab === 'function') showTab('consulta');
         if (typeof consultarNotas === 'function') setTimeout(() => consultarNotas(), 500);

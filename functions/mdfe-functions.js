@@ -235,7 +235,10 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
     // A SEFAZ pode retornar múltiplos <cStat>: um do documento MDF-e principal
     // e outro(s) de evento(s) vinculado(s) (ex.: NF-e referenciada cancelada
     // com cStat 216, ou MDF-e encerrado com cStat 135).
-    const eventoCodes = new Set(['135', '136', '155', '215', '216', '217']);
+    // 135/136/155 são status de EVENTO vinculado (encerramento/cancelamento).
+    // 215/216/217 são REJEIÇÕES de evento/serviço — não devem ser tratadas
+    // como "status do evento" nem escolhidas como cStat do documento.
+    const eventoCodes = new Set(['135', '136', '155']);
     const allCStat = result.allCStat || [result.cStat];
     const allXMotivo = result.allXMotivo || [result.xMotivo];
 
@@ -261,7 +264,7 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
     const situacao = ((tpEvento === '110111' || tpEvento === '110112') && eventoOk)
       ? (tpEvento === '110112' ? 'encerrado' : 'cancelado')
       : (['100', '150'].includes(cStatPrincipal) ? 'autorizado'
-        : (cStatPrincipal === '217' ? 'nao_encontrado' : 'indefinida'));
+        : (['215', '216', '217'].includes(cStatPrincipal) ? 'nao_encontrado' : 'indefinida'));
     const statusDerivado = situacao === 'encerrado' ? 'encerrado'
       : (situacao === 'cancelado' ? 'cancelado'
         : (situacao === 'autorizado' ? 'autorizado' : ''));

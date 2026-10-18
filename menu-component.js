@@ -65,7 +65,7 @@
     }
     watchFirebaseReadiness();
 
-    const PWA_VERSION = '2026-10-09-fin-grid';
+    const PWA_VERSION = '2026-10-18-mdfe-loader-v1';
     const state = {
         deferredPrompt: null,
         floatingButton: null,
