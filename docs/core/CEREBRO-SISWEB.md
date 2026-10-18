@@ -1925,3 +1925,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Resultado medido:** `syncMyAdminClaims` e `getCompanyLogoDataUrl` deixaram de aparecer no carregamento; DCL ~974ms/load ~987ms com TTFB 291ms; `getMyPartnerStatus` movido para ~6s; boot ready registrado para acompanhamento.
 - **Gates:** suíte 1492 pass / 0 fail / 1 skip; auth/vendas/security/menu 118/118; lint/typecheck OK.
 
+## Sessao 2026-10-18 (cont. 8) — Overlay de carregamento na Folha
+
+- **Pedido:** a Folha deve exibir o overlay ao carregar, como Vendas/Compras.
+- **Causa:** `folha-main.js` apenas removia `.active` (sucesso/erro) e nunca adicionava; o overlay existia oculto.
+- **Fix:** no `DOMContentLoaded` de `folha-main.js`: `loadingText = 'Carregando Folha de Pagamento...'` + `loadingOverlay.classList.add('active')` antes de `folhaSystem.init()`; hide mantido no sucesso/erro + failsafe de 20s. Cachebuster `folha-main.js?v=ea48be1ade0c` (o injector não cobre `folha_pagamento/`, atualizado manualmente).
+- **Validação em produção:** overlay existe, `active=false` após o boot (não fica preso), texto atualizado; 6 seções visíveis. Suíte 1492 pass / 0 fail / 1 skip.
+
