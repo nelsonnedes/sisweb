@@ -202,7 +202,7 @@ html[data-theme="dark"] .loading-overlay {
 }
 
 /* === MOBILE APP-LIKE FIX (2026-09-17) - trava scroll lateral e comportamento app === */
-html { overflow-x: clip; overscroll-behavior-x: none; }
+html { overflow-x: clip; overscroll-behavior-x: none; scrollbar-gutter: stable; }
 body { max-width: 100%; overflow-x: clip; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .table-responsive, .table-container { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
 @media (max-width: 768px) {
