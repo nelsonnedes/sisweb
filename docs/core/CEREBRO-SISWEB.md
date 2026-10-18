@@ -1899,3 +1899,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Gates:** 1485 pass / 1 fail pré-existente (`parseSefazResponse`) / 1 skip; lint, typecheck e functions lint OK; `mdfe-*` + `nf-*` + `nfe-*` + `loader-*` 395/395.
 - **Deploy:** commit desta sessão + push; `firebase deploy --only functions:mdfe_consultar`; `npm run deploy:hosting`.
 
+## Sessao 2026-10-18 (cont. 5) — parseSefazResponse: default = último cStat (falha antiga corrigida)
+
+- **Bug antigo:** `parseSefazResponse` documentava default `last` ("preserva autorização") mas sempre retornava `cStatMatches[0]`. Isso mantinha `tests/consulta-sefaz-verdade.test.mjs` vermelho desde antes desta sessão.
+- **Correção:** `cStatIdx = opts.first ? 0 : cStatMatches.length - 1`; `xMotivo` alinhado ao mesmo índice. Consultas (`nf_consultarNFe`, `mdfe_consultar`) seguem com `{ first: true }` explícito (sem mudança de comportamento). Emissão/eventos/inutilização (default) passam a pegar o status final do protocolo (ex.: 103 do lote → 100 do protNFe; 135/155 do retEvento).
+- **Teste dedicado:** `tests/parse-sefaz-response.test.mjs` (6 casos): default=último, first=primeiro, autorização 103→100, cStat único, sem cStat (999), `autorizada` respeitando o cStat escolhido, `allCStat/allXMotivo`, `nProt/chNFe/dhRecbto`.
+- **Gates:** `npm test` **1492 pass / 0 fail / 1 skip** (1493 testes); lint, typecheck e functions lint OK.
+- **Deploy:** funções que usam o default precisam ser republicadas (emissão/eventos/inutilização MDF-e). Consultas não mudam (first:true).
+

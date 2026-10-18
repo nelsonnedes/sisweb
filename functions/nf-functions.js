@@ -1213,10 +1213,13 @@ function parseSefazResponse(xmlResp, successCodes = ['100', '150'], opts = {}) {
   const nProtMatch  = xml.match(/<nProt>(\d+)<\/nProt>/);
   const chNFeMatch  = xml.match(/<chNFe>(\d+)<\/chNFe>/);
   const dhRecbtoMatch = xml.match(/<dhRecbto>([^<]+)<\/dhRecbto>/);
-  // SEMPRE retornar o primeiro cStat encontrado (pode ser do documento principal ou de evento vinculado)
-  const cStat = cStatMatches.length ? cStatMatches[0] : '999';
-  const cStatIdxX = opts.first ? 0 : xMotivoMatches.length - 1;
-  const xMotivo = xMotivoMatches.length ? xMotivoMatches[Math.max(0, Math.min(cStatIdxX, xMotivoMatches.length - 1))] : 'Resposta não parseada';
+  // Default = ÚLTIMO cStat (status final do lote/protocolo/autorização).
+  // opts.first = PRIMEIRO (retorno principal da consulta, ex.: consSit*),
+  // onde o último pode pertencer a um evento/protocolo interno.
+  const cStatIdx = opts.first ? 0 : Math.max(0, cStatMatches.length - 1);
+  const cStat = cStatMatches.length ? cStatMatches[cStatIdx] : '999';
+  const xMotivoIdx = opts.first ? 0 : Math.max(0, xMotivoMatches.length - 1);
+  const xMotivo = xMotivoMatches.length ? xMotivoMatches[Math.max(0, Math.min(xMotivoIdx, xMotivoMatches.length - 1))] : 'Resposta não parseada';
   return {
     cStat,
     xMotivo,
