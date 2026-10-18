@@ -4,7 +4,7 @@
 > sessão (Codex, opencode, deepseek) retomar contexto sem regressões e sem perder
 > o "porquê" das decisões já tomadas. SEMPRE consultar antes de implementar.
 >
-> Atualizado em: 2026-10-15 (cont. 22: fix dataCompetencia + alinha SVC frontend ao oficial + commit+push)
+> Atualizado em: 2026-10-18 (cont. 23: auditoria completa, cachebuster, fuso horário, logo compartilhado removido, cache-control imutável, agent-browser ativo, diagnóstico MDF-e cStat 216 documentado)
 > Perfil global OpenCode Zen registrado em 2026-10-09 — ver seção 18 (protocolo de uso do Cérebro).
 
 ---
@@ -28,6 +28,9 @@
 - **Cache-busters:** `inject-cachebusters.mjs` injeta `?v=<sha256 curto>` em `<script src>` e `<link rel=stylesheet>`. **Só processa `<script>`** (não `<link>`)—cache-buster de CSS é manual. Arquivos dependentes (ex.: `sw.js`, códigos inline de páginas) têm versão manual (ex.: `APP_VERSION`, `romaneio-comum.css?v=...`).
 - **Cache-Control imutável em JS/CSS:** `firebase.json` define `public, max-age=31536000, immutable` para `**/*.js` e `**/*.css` (perfomance). **Consequência:** qualquer alteração em JS/CSS exige **cachebuster novo** (ex.: `mdf-e.js?v=73d8b47e7004` → `mdf-e.js?v=73d8b47e7005`) no HTML que o referencia, senão o navegador (mesmo em aba anônima / hard refresh) continua servindo a versão antiga do Firebase CDN. Sempre que editar um `.js` ou `.css` publicado no hosting, atualizar o respectivo `?v=` no HTML correspondente.
 - **Service worker** (`sw.js`): `APP_VERSION` controla invalidação de cache PWA; `SISWEB_PWA_UPDATED` alerta release check.
+- **agent-browser** (`agent-browser` skill): ferramenta de automação de browser via CDP (Chrome/Chromium) disponível para auditoria, teste e diagnóstico de UI web. Usar `agent-browser open <url>`, `agent-browser snapshot -i`, `agent-browser click @eN`, `agent-browser fill @eN "valor"`. Útil para testar fluxos de autenticação, emissão, consulta SEFAZ e outras interações com a UI. Não requer dependências Playwright/Puppeteer.
+- **Cloud Functions:** `functions/index.js` é o ponto de entrada. Funções v1 (`functions.https.onCall`) e v2 (`onCallV2`). Deploy individual: `firebase deploy --only functions:<nome>` (evitar lote devido quota CPU Cloud Run).
+- **Cloud Functions v2 MDF-e (`mdfe_consultar`):** usa `postSefaz` para consultar SEFAZ. Atenção: a resposta SEFAZ pode conter múltiplos `<cStat>` (um do documento MDF-e e outros de eventos vinculados). O código extrai o cStat do documento principal filtrando códigos de evento (135/136/155 MDF-e, 215/216/217 NF-e vinculada). Se a SEFAZ retornar apenas um cStat (ex.: 216), não há como exibir outro. Verificar logs no Firebase Console → Functions → mdfe_consultar → Logs em caso de divergência.
 
 ## 3. Mapa de módulos e áreas
 
