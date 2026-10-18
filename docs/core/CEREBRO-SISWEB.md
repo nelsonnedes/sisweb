@@ -1880,3 +1880,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
   - `git push origin main` — commit `651524a` publicado no remote
   - `npm run deploy:hosting` — 545 arquivos publicados com correções de UI/UX da tabela MDF-e
 
+## Sessao 2026-10-18 (cont. 3) — Revisão das 4 solicitações: loader/tabela MDF-e + erros SEFAZ
+
+- **Loader de carregamento (paridade NF-e):** o HTML inicial do `<tbody id="mdfesTable">` passa a exibir `⏳ Carregando...` (antes "Nenhum MDF-e encontrado"), e `carregarDados()`/`consultarMdfes()` mantêm o loader dentro da tabela. **Sem** `SiswebLoading.show()` na carga inicial — o overlay global só é usado em operações (emitir/salvar/cancelar/excluir/consultar).
+- **Tabela MDF-e (desktop):** o problema real era cor hardcoded: `.table-container` e `.data-table td` usavam `#dee2e6` (cinza claro) e no tema escuro criavam linhas berrantes diferentes da NF-e, que usa `var(--sw-border)`. Trocado para `var(--sw-border)` (container + células). Layout de tabela (`display:table`, `th/td=table-cell`) confirmado idêntico ao da NF-e.
+- **Mobile sem regressão:** restaurado o layout de cards do MDF-e (`display:block`, `td::before data-label`), que havia sido substituído por tabela tradicional na sessão anterior; borda do card agora usa `var(--sw-border)`.
+- **Erro "INTERNAL" na consulta SEFAZ:** causa raiz já corrigida (`result2.nProt` → `result.nProt`). Adicionado `try/catch` no `mdfe_consultar` com mensagens expressivas: senha A1 inválida (`invalid-argument`), certificado ausente/inválido (`failed-precondition`), timeout SEFAZ (`deadline-exceeded`) e fallback `internal` com a mensagem real. Log de erro com stack em `functions.logger.error`.
+- **Validação visual em produção (agent-browser):** estilos computados MDF-e × NF-e idênticos (`table`, `table-cell`, th `rgb(254,106,0)`, border-bottom `rgb(229,231,235)`); overlay `display:none` na abertura; `⏳ Carregando...` no primeiro paint. Screenshots: `mdfe-consulta-final.png` e `nfe-consulta-final.png`.
+- **Gates:** `mdfe-*` + `loader-rollout-e*` 110/110; lint, typecheck e `npm --prefix functions run lint` OK.
+- **Deploy:** commit `1c921d7` + push; `firebase deploy --only functions:mdfe_consultar` OK; `npm run deploy:hosting` OK.
+
