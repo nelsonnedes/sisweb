@@ -811,22 +811,13 @@ class FirebaseConnectionManager {
     /**
      * 🎭 Atualizar indicador visual de conexão
      */
-    updateConnectionStatus(connected) {
-        let indicator = document.getElementById('firebase-status');
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'firebase-status';
-            // Estilos de posição/cores agora controlados via CSS (folha-loading-styles.css)
-            document.body.appendChild(indicator);
-        }
-        
-        if (connected && this.isOnline) {
-            indicator.className = 'firebase-online';
-            indicator.textContent = '🟢 Online';
-        } else {
-            indicator.className = 'firebase-offline';
-            indicator.textContent = '🔴 Offline';
-        }
+    updateConnectionStatus(/* connected */) {
+        // Indicador visual "Online/Offline" removido da UI (pedido do usuário).
+        // O estado continua disponível em this.isConnected / getStats().
+        try {
+            const legacy = document.getElementById('firebase-status');
+            if (legacy) legacy.remove();
+        } catch (_) {}
     }
     
     /**
