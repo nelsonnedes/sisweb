@@ -888,6 +888,24 @@ async function inicializarSistema() {
 
 async function carregarDados() {
     try {
+        // Pagamentos do carrego são independentes dos pedidos: dispara em paralelo.
+        const __pagamentosCarregoPromise = (async () => {
+            try {
+                if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
+                    const pr = await window.firebaseService.loadFromFirebase('vendas/pagamentos_carrego');
+                    const d = pr && pr.data ? pr.data : null;
+                    let arr = [];
+                    if (Array.isArray(d)) arr = d.filter(Boolean);
+                    else if (d && typeof d === 'object') arr = Object.values(d || {});
+                    try {
+                        const storageKey = getStorageKey('vendas/pagamentos_carrego');
+                        persistLocalValue(storageKey, arr);
+                    } catch (_) {}
+                    console.log(`CarregoPagamentos sincronizados: ${arr.length} registro(s)`);
+                }
+            } catch (_) {}
+        })();
+
         // Carregar pedidos (preferir Firebase com fallback localStorage)
         try {
             if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
@@ -922,20 +940,8 @@ async function carregarDados() {
                 return p;
             });
         }
-        try {
-            if (window.firebaseService && typeof window.firebaseService.loadFromFirebase === 'function') {
-                const pr = await window.firebaseService.loadFromFirebase('vendas/pagamentos_carrego');
-                const d = pr && pr.data ? pr.data : null;
-                let arr = [];
-                if (Array.isArray(d)) arr = d.filter(Boolean);
-                else if (d && typeof d === 'object') arr = Object.values(d || {});
-                try {
-                    const storageKey = getStorageKey('vendas/pagamentos_carrego');
-                    persistLocalValue(storageKey, arr);
-                } catch (_) {}
-                console.log(`CarregoPagamentos sincronizados: ${arr.length} registro(s)`);
-            }
-        } catch (_) {}
+        // Aguarda a leitura paralela de pagamentos (já iniciada acima).
+        await __pagamentosCarregoPromise;
         
         // 🚀 LAZY LOAD: Carregar produtos e clientes em background (sem travar o Dashboard de Vendas)
         window.produtos = [];
