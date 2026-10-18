@@ -1213,8 +1213,8 @@ function parseSefazResponse(xmlResp, successCodes = ['100', '150'], opts = {}) {
   const nProtMatch  = xml.match(/<nProt>(\d+)<\/nProt>/);
   const chNFeMatch  = xml.match(/<chNFe>(\d+)<\/chNFe>/);
   const dhRecbtoMatch = xml.match(/<dhRecbto>([^<]+)<\/dhRecbto>/);
-  const cStatPick = opts.first ? 0 : cStatMatches.length - 1;
-  const cStat = cStatMatches.length ? cStatMatches[cStatPick] : '999';
+  // SEMPRE retornar o primeiro cStat encontrado (pode ser do documento principal ou de evento vinculado)
+  const cStat = cStatMatches.length ? cStatMatches[0] : '999';
   const cStatIdxX = opts.first ? 0 : xMotivoMatches.length - 1;
   const xMotivo = xMotivoMatches.length ? xMotivoMatches[Math.max(0, Math.min(cStatIdxX, xMotivoMatches.length - 1))] : 'Resposta não parseada';
   return {
@@ -1225,7 +1225,8 @@ function parseSefazResponse(xmlResp, successCodes = ['100', '150'], opts = {}) {
     dhRecbto: dhRecbtoMatch ? dhRecbtoMatch[1] : '',
     autorizada: successCodes.includes(cStat),
     xmlRetorno: xmlResp,
-    allCStat: cStatMatches,
+    allCStat: cStatMatches,      // TODOS os cStat encontrados no XML
+    allXMotivo: xMotivoMatches,  // TODOS os xMotivo encontrados no XML
   };
 }
 
