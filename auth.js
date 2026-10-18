@@ -664,7 +664,12 @@ function normalizeAdminPermissions(input) {
 
 async function hasAdminPageAccess(pageKey) {
     try {
-        if (await isSuperAdminSession({ allowClaimSync: true })) return true;
+        // Só sincroniza claims (callable + refresh de token, ~1s) em superfícies
+        // de admin. Em páginas operacionais (vendas/estoque/etc.) isso era feito
+        // para todo usuário e atrasava o boot sem benefício.
+        const isAdminSurface = !!pageKey || (typeof window !== 'undefined'
+            && /(^|\/)admin([.-][^/]*)?\.html$/i.test(window.location.pathname || ''));
+        if (await isSuperAdminSession({ allowClaimSync: isAdminSurface })) return true;
         const details = await getCurrentUserDetails();
         const uid = details && (details.uid || details.id || details.userId) ? String(details.uid || details.id || details.userId) : '';
         if (!uid) return false;

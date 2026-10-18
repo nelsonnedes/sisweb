@@ -809,11 +809,15 @@ function schedulePrintLogoWarmUpVendas() {
                     .catch(() => {});
             } catch (_) {}
         };
-        if (typeof requestIdleCallback === 'function') {
-            requestIdleCallback(warmUp, { timeout: 8000 });
-        } else {
-            setTimeout(warmUp, 3000);
-        }
+        // Adia o warm-up da logo (callable ~3s) para depois do boot: evita
+        // disputar rede/CPU com pedidos, clientes e produtos no carregamento.
+        setTimeout(() => {
+            if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(warmUp, { timeout: 6000 });
+            } else {
+                warmUp();
+            }
+        }, 10000);
     } catch (_) {}
 }
 async function inicializarSistema() {
