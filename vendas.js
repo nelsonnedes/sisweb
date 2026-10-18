@@ -724,6 +724,7 @@ function renderOperationalAccessStateVendas(contexto = {}) {
 function clearOperationalAccessStateVendas() {
     window.__siswebVendasOperationalReady = true;
     window.__siswebVendasBootState = 'ready';
+    try { window.__siswebVendasBootReadyAt = Math.round(performance.now()); } catch (_) {}
     window.__siswebVendasLastContext = null;
     setOperationalActionsDisabledVendas(false);
     const panel = document.getElementById('vendasOperationalAccessState');

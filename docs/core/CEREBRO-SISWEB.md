@@ -1915,3 +1915,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção (agent-browser):** `scrollY = 0` estável em 3s de amostragem; `clientWidth` constante (1247); HTML servido com `⏳ Carregando...` (0 ocorrências de "Clique em Atualizar para carregar"); CSS novo com `scrollbar-gutter`.
 - **Gates:** suíte 1492 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `aee5bab` + push; hosting publicado (545 arquivos).
 
+## Sessao 2026-10-18 (cont. 7) — Performance de carregamento da página Vendas
+
+- **Medição (produção, agent-browser):** DCL ~971ms, load ~983ms, TTFB ~322ms; `vendas.js` 547 KB. Gargalos identificados: `syncMyAdminClaims` + refresh de token (~809ms + 259ms + `accounts:lookup` 479ms) em TODA página; `getCompanyLogoDataUrl` (callable ~3,1s) no idle; `getMyPartnerStatus` (~763ms) no menu mobile.
+- **`auth.js` — `hasAdminPageAccess`:** passou a pedir `allowClaimSync` só em superfície admin (`pageKey` ou `/admin*.html`). Em páginas operacionais não sincroniza claims nem força refresh de token. (Login continua sincronizando; painel admin idem.)
+- **`vendas.js`:** `vendas/pedidos` e `vendas/pagamentos_carrego` agora são lidos em paralelo (`Promise`) e aguardados juntos; lazy load de produtos/clientes permanece em background; warm-up da logo de impressão adiado 10s (não disputa rede no boot); `__siswebVendasBootReadyAt` registra o ms do boot ready (diagnóstico).
+- **`vendas.html`:** `sisweb-theme`, `menu-component` e `legacy-deprecation` com `defer` (não bloqueiam o parse); `preconnect` para cdnjs, RTDB, identitytoolkit e securetoken.
+- **`menu-component.js`:** checagem de parceiro do sidebar mobile adiada para 6s/10s (não disputa rede com o boot; cache de 5min inalterado).
+- **Resultado medido:** `syncMyAdminClaims` e `getCompanyLogoDataUrl` deixaram de aparecer no carregamento; DCL ~974ms/load ~987ms com TTFB 291ms; `getMyPartnerStatus` movido para ~6s; boot ready registrado para acompanhamento.
+- **Gates:** suíte 1492 pass / 0 fail / 1 skip; auth/vendas/security/menu 118/118; lint/typecheck OK.
+

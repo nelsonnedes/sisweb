@@ -1484,8 +1484,10 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     }
                 } catch (_) {}
             };
-            try { check(); } catch (_) {}
-            try { setTimeout(check, 4000); } catch (_) {}
+            // Adia a checagem (callable ~0,8s): só afeta o link de parceiro no
+            // sidebar mobile e não deve disputar rede com o boot da página.
+            try { setTimeout(check, 6000); } catch (_) {}
+            try { setTimeout(check, 10000); } catch (_) {}
         }
 
         setupDropdowns() {
