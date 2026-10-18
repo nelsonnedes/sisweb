@@ -1872,3 +1872,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
   - `npm run deploy:hosting` — 545 arquivos publicados com correções de loader/UI (overlay sem fundo retangular, cores do tema, ordem correta de carregamento de scripts)
 - **Produção verificada:** `https://sisweb-7ce82.web.app` servindo a nova versão com todas as correções ativas.
 
+## Sessao 2026-10-18 (cont. 2) — Correções UI/UX MDF-e Consulta
+
+- **Loader de carregamento:** Removido `SiswebLoading.show()` do `carregarDados()` em `mdf-e.js`. Agora mostra apenas o texto `⏳ Carregando...` dentro da tabela (paridade com a NF-e), sem o overlay global. Mantido `SiswebLoading.hide()` no `finally` para não vazar overlay.
+- **Tabela MDF-e:** Corrigido CSS em `mdf-e.html` — substituído layout de cards (`display:block` em thead/tbody/tr/td) por tabela tradicional com bordas (`border-collapse`, `thead` visível com fundo escuro, `tr`/`td` como `table-cell`, zebra striping, alinhamento à esquerda). Agora a tabela MDF-e tem bordas 1px solid #dee2e6, igual à NF-e.
+- **Deploy realizado em produção 2026-10-18:**
+  - `git push origin main` — commit `651524a` publicado no remote
+  - `npm run deploy:hosting` — 545 arquivos publicados com correções de UI/UX da tabela MDF-e
+
