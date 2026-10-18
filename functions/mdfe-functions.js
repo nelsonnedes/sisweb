@@ -222,10 +222,10 @@ exports.mdfe_consultar = onMdfeCall(async (data, context) => {
   const key = requireAccessKey(data.chave);
   const senhaA1 = String(data.senhaA1 || '');
   if (!senhaA1) throw httpsError('invalid-argument', 'Senha do certificado A1 é obrigatória.');
-  const access = await assertMdfeAdmin(context, tenantId);
   const env = environment(data.ambiente);
 
   try {
+    const access = await assertMdfeAdmin(context, tenantId);
     const pfx = await descriptografarPFXdoStorage(tenantId, access.uid, senhaA1);
     const payload = `<consSitMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="3.00"><tpAmb>${env === 'producao' ? 1 : 2}</tpAmb><xServ>CONSULTAR</xServ><chMDFe>${key}</chMDFe></consSitMDFe>`;
     const response = await postSefaz(MDFe_ENDPOINTS[env].MDFeConsulta, mdfeSoap('MDFeConsulta', payload, key.slice(0, 2)), pfx, senhaA1, mdfeSoapAction('MDFeConsulta'));

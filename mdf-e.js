@@ -9,6 +9,10 @@ let numeroAtualMdfe = 1;
 let mdfeEditando = null;
 let tenantIdMdfe = null;
 let configuracaoFiscalMdfe = {};
+// Guard de carregamento: enquanto false, a Consulta mantém "⏳ Carregando..."
+// (paridade com a NF-e) em vez de exibir "Nenhum MDF-e encontrado" antes da hora.
+let __mdfesCarregados = false;
+let __mdfesErro = false;
 
 // Configurações
 const configuracoesMdfe = {
@@ -277,6 +281,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Carregar dados do tenant autenticado no Firebase
 async function carregarDados() {
     try {
+        __mdfesCarregados = false;
+        __mdfesErro = false;
         const svc = window.firebaseService;
         if (!svc || typeof svc.resolveAuthenticatedTenant !== 'function' || typeof svc.loadFromFirebase !== 'function') {
             throw new Error('Serviço Firebase do MDF-e indisponível.');
@@ -320,10 +326,13 @@ async function carregarDados() {
 
         // Pré-preenche veículo/condutor do último MDF-e (poupa redigitação)
         mdfePreencherUltimoVeiculoCondutor();
+        __mdfesCarregados = true;
         
     } catch (error) {
         console.error('❌ Erro ao carregar dados:', error);
         mdfes = [];
+        __mdfesCarregados = true;
+        __mdfesErro = true;
         const tbody = document.getElementById('mdfesTable');
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="8" class="mdfe-empty" style="text-align:center;color:red;">Erro: ${error.message}</td></tr>`;
@@ -1204,6 +1213,13 @@ function mdfeOrdenarPorNumeroDesc(a, b) {
 
 function consultarMdfes(resetPage = true) {
     const tbody = document.getElementById('mdfesTable');
+    if (!__mdfesCarregados) {
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="8" class="mdfe-empty" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">⏳ Carregando...</td></tr>';
+        }
+        return;
+    }
+    if (__mdfesErro) return; // preserva a mensagem de erro do carregamento
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="8" class="mdfe-empty" style="text-align:center;color: var(--sw-text-2) ;font-style:italic;">⏳ Carregando...</td></tr>';
     }
