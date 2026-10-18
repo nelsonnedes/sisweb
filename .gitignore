@@ -83,6 +83,7 @@ Thumbs.db
 
 # Logs de smoke test / nested worktrees / editor config (hygiene)
 logs-*.md
+logs.md
 /.codex-worktrees/
 .vscode/
 
