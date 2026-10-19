@@ -4702,14 +4702,15 @@ function volumeSerradoProduto(p) {
 function dimensoesEstoqueSerrado(p) {
     const num = (v) => parseFloat(v) || 0;
     const pecas = num(p && p.pecas);
-    // volumeM3 zerado/ausente: tenta o estoque legado e, por fim, deriva das
-    // dimensões × peças (produto com peças mas volume gravado 0).
-    let vol = num(p && p.volumeM3) || num(p && p.estoque);
+    // volumeM3 zerado/ausente: deriva das dimensões × peças quando possível
+    // (fonte lógica p/ produto serrado); estoque legado só se não houver dims.
+    let vol = num(p && p.volumeM3);
     if (!(vol > 0)) {
         const e = num(p && p.espessura), l = num(p && p.largura), c = num(p && p.comprimento);
         const q = num(p && p.pecas), pp = num(p && p.pecasPorPacote) || 1;
         if (e > 0 && l > 0 && c > 0 && q > 0) vol = Math.round((e * l * c / 1e6) * q * pp * 1000) / 1000;
     }
+    if (!(vol > 0)) vol = num(p && p.estoque);
     let ml = 0;
     try { ml = (typeof metrosLinearesDe === 'function') ? metrosLinearesDe(p) : 0; } catch (_) { ml = 0; }
     const area = (num(p && p.largura) / 100) * (num(p && p.comprimento) / 100) * pecas;
@@ -5448,12 +5449,13 @@ function disponibilidadeGrupoRomaneio(g) {
             if (Number(p.comprimento) !== Number(g.comprimento)) return;
             achou = true;
             estPecas += parseFloat(p.pecas) || 0;
-            let pVol = parseFloat(p.volumeM3) || parseFloat(p.estoque) || 0;
+            let pVol = parseFloat(p.volumeM3) || 0;
             if (!(pVol > 0)) {
                 const e = parseFloat(p.espessura) || 0, l = parseFloat(p.largura) || 0, c = parseFloat(p.comprimento) || 0;
                 const q = parseFloat(p.pecas) || 0;
                 if (e > 0 && l > 0 && c > 0 && q > 0) pVol = Math.round((e * l * c / 1e6) * q * (parseFloat(p.pecasPorPacote) || 1) * 1000) / 1000;
             }
+            if (!(pVol > 0)) pVol = parseFloat(p.estoque) || 0;
             estVol += pVol;
             estMl += parseFloat(p.metrosLineares) || 0;
         });
