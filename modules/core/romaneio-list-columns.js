@@ -410,6 +410,47 @@
                             clean[labelNow] = clamp(px, labelNow === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH, MAX_WIDTH);
                         }
                     });
+                    // Reencaixa no container preservando a coluna arrastada:
+                    // as demais cedem proporcionalmente (sem overflow).
+                    var target = Number(table.__rlcTargetWidth) || 0;
+                    if (target > 0) {
+                        var draggedKey = contract(p)[index];
+                        var minThis = draggedKey === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
+                        var others = [];
+                        headersNow.forEach(function (h, idx) {
+                            var key = contract(p)[idx];
+                            if (!key || idx === index) return;
+                            var w = clean[key] || parseFloat(h.style.width) || 0;
+                            if (w > 0) others.push({ th: h, w: w, min: key === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH });
+                        });
+                        var minOthers = others.reduce(function (s, o) { return s + o.min; }, 0);
+                        var dragged = Math.max(minThis, Math.min(clean[draggedKey] || th.getBoundingClientRect().width, target - minOthers));
+                        setColumnWidth(th, dragged);
+                        clean[draggedKey] = dragged;
+                        var remaining = Math.max(minOthers, target - dragged);
+                        var otherSum = others.reduce(function (s, o) { return s + o.w; }, 0);
+                        var factor = otherSum ? remaining / otherSum : 1;
+                        others.forEach(function (o) { o.nw = Math.max(o.min, Math.round(o.w * factor)); });
+                        var sum = others.reduce(function (s, o) { return s + o.nw; }, 0);
+                        var diff = remaining - sum;
+                        var guard = 0;
+                        while (diff !== 0 && guard++ < 2000) {
+                            var changed = false;
+                            for (var oi = 0; oi < others.length && diff !== 0; oi++) {
+                                var o = others[oi];
+                                if (diff > 0 && o.nw < MAX_WIDTH) { o.nw += 1; diff -= 1; changed = true; }
+                                else if (diff < 0 && o.nw > o.min) { o.nw -= 1; diff += 1; changed = true; }
+                            }
+                            if (!changed) break;
+                        }
+                        others.forEach(function (o) { setColumnWidth(o.th, o.nw); });
+                        ensureFixedLayout(table, target);
+                        clean = {};
+                        headersNow.forEach(function (h, idx) {
+                            var px = parseFloat(h.style.width);
+                            if (isFinite(px) && px > 0) clean[contract(p)[idx]] = clamp(px, MIN_WIDTH, MAX_WIDTH);
+                        });
+                    }
                     table.__rlcResizing = false;
                     table.__rlcUserResized = true;
                     scheduleSave(sanitizeWidths(clean, p), p);
