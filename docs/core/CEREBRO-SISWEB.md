@@ -2065,3 +2065,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção (agent-browser):** TL 1280 → tabela 1139/container 1141, colunas `[102,279,226,75,124,140,193]`; PES 1024 → 912/914, colunas `[85,237,190,103,117,180]`; todos `fits:true`, Ações ≤220. NF-e 390: as 6 etapas sem overflow; 3 itens → container 1203px `max-height:none` e ações sticky visíveis; Consulta `max-height:420px/overflow:auto`.
 - **Gates:** suíte 1517 pass / 0 fail / 1 skip; lint/typecheck OK. Commits `73cfca5`, `943055a`, `510babc`; hosting publicado.
 
+
+## Sessao 2026-10-19 (cont. 26) — Estoque de Madeira Serrada (pagina propria)
+
+- **Nova pagina `estoque-madeira-serrada.html` + `js/estoque-madeira-serrada.js`**, link no dropdown **Estoque → Estoque de Madeira Serrada**. Le/escreve o mesmo no dos produtos de vendas (`produtos`) via `firebaseService`; validado criando um produto na pagina nova e vendo-o em `window.produtos` do `vendas.html` (o vendas mescla especies na exibicao, por isso a contagem difere).
+- **Lista:** busca por codigo/nome/especie/dimensoes/unidade/preco, codigo exato priorizado, paginacao padrao 10/25/50/100 (default 25) e cards mobile via `commerce-responsive.js`.
+- **Modal Novo/Editar:** tipo **Produto Manual / Produto Romaneio**; no manual, stage com codigo/nome/preco/estoque/unidade/descricao + **Preview - Resumo**, Adicionar item/Limpar/Adicionar Estoque; no romaneio, Tipo TL/PCT/PES, Romaneio, Carregar Itens/Limpar, preview por especie+dimensoes com volume, checkboxes (grupos ja em estoque desabilitados), campos de dimensoes/pecas/volume e Adicionar Estoque. Edicao usa Salvar direto; botoes sao exibidos com `display` inline important (CSS global forçava Salvar visivel no novo).
+- **Validacao em producao (agent-browser):** manual 9002 estoque 2,5 → `2,500 m³`; romaneio TL → 5 grupos Tatajuba com volumes/precos, adicao gerou 5 produtos e o mesmo romaneio reabriu com os 5 checkboxes desabilitados ("ja em estoque"); registros de teste removidos. Mobile 390: modal 359px, campos empilhados, cards na tabela.
+- **Gates:** suite 1520 pass / 0 fail / 1 skip; lint/typecheck OK. Commits `9f71e72`, `40dda62`, `6af6a3c`, `cc69bab`; hosting publicado.
