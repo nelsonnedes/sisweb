@@ -324,6 +324,7 @@
             data.forEach(function (p, i) { if (p && typeof p === 'object') out.push(Object.assign({}, p, { __key: String(p.firebaseKey || p.key || p.id || i) })); });
         } else if (data && typeof data === 'object') {
             Object.keys(data).forEach(function (k) {
+                if (k === '_metadata' || k === 'metadata') return;
                 var p = data[k];
                 if (p && typeof p === 'object') out.push(Object.assign({}, p, { __key: String(p.firebaseKey || p.key || p.id || k) }));
             });
