@@ -1953,3 +1953,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Spinner do overlay:** `user-profile.html` definia `.loading-spinner{display:none}` e o CSS injetado do `SiswebLoading` não declarava `display` — a bolinha não aparecia. Adicionado `display:block;box-sizing:border-box` em `#globalLoadingOverlay .loading-spinner` (`js/sisweb-loading.js`).
 - **Validação em produção:** Fluxo com 4 KPIs (R$ 8.211,98 / R$ 15.534,97 / -R$ 7.322,99 / 13), 3 datasets com 5 labels mensais (08–12/2026); spinner com `display:block`, 40×40, animação `sisweb-loading-spin` e borda na cor da marca. Suíte 1492 pass / 0 fail / 1 skip.
 
+## Sessao 2026-10-18 (cont. 12) — Sino de alertas unificado (Admin + empresa)
+
+- **Pedido:** alertas vindos do painel Admin (superadmin → tenant) apareciam antes dos alertas da própria empresa; unificar em uma lista única com apenas um divisor em destaque, mantendo as cores do tema.
+- **Implementação (`menu-component.js`):** `renderAlerts()` agora particiona por `alertOrigin()` (`origin/source = admin` ou id `partner_reminder__*` → admin; demais → tenant), renderiza admin primeiro, insere um único `<div class="alerts-divider"><span>Da sua empresa</span></div>` e segue com os do tenant. Limite total de 8 itens mantido; `alertItemHtml()` extraído para reuso. `computeAlertsForUser` marca `partnerReminders` com `origin:'admin'`.
+- **Tema:** divisor usa `var(--sw-border)` nas linhas e `var(--sw-brand)` no texto (sem hardcode).
+- **Validação em produção:** com um alerta admin + um tenant, a ordem ficou `admin → DIVIDER ("Da sua empresa", rgb(254,106,0)) → tenant`; borda do divisor `rgb(229,231,235)` (var do tema). Store de teste restaurado. Suíte 1492 pass / 0 fail / 1 skip.
+
