@@ -247,19 +247,26 @@
         if (!total) return clean;
         var target = Math.max(minTotal, available - 2);
         var factor = target / total;
+        var minOf = function (label) { return label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH; };
         var out = {};
         var sum = 0;
         keys.forEach(function (label) {
-            var min = label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
-            var width = Math.max(min, Math.round((Number(clean[label]) || 0) * factor));
+            var width = Math.max(minOf(label), Math.round((Number(clean[label]) || 0) * factor));
             out[label] = width;
             sum += width;
         });
+        // Algumas colunas batem no mínimo (Ações=140) e a soma passa do alvo.
+        // Redistribui 1px por coluna ajustável até fechar exatamente o container.
         var diff = target - sum;
-        if (diff) {
-            var last = keys[keys.length - 1];
-            var lastMin = last === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
-            out[last] = Math.max(lastMin, out[last] + diff);
+        var guard = 0;
+        while (diff !== 0 && guard++ < 5000) {
+            var changed = false;
+            for (var i = 0; i < keys.length && diff !== 0; i++) {
+                var label = keys[i];
+                if (diff > 0 && out[label] < MAX_WIDTH) { out[label] += 1; diff -= 1; changed = true; }
+                else if (diff < 0 && out[label] > minOf(label)) { out[label] -= 1; diff += 1; changed = true; }
+            }
+            if (!changed) break;
         }
         table.__rlcTargetWidth = target;
         return out;
