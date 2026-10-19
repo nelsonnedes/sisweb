@@ -27,7 +27,7 @@
     // novo para não reaproveitar larguras deslocadas.
     // Reset único de larguras: versões antigas ficaram inconsistentes após o
     // novo fit/coluna Ações. PES também mudou de contrato (7→6).
-    var WIDTHS_VERSION = { tl: 'v2', pct: 'v2', pes: 'v4', tora: 'v2', preromaneio: 'v2' };
+    var WIDTHS_VERSION = { tl: 'v2', pct: 'v2', pes: 'v5', tora: 'v2', preromaneio: 'v2' };
 
     var DEFAULTS = {
         'Data': 95,
