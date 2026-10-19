@@ -129,9 +129,25 @@
         return clean;
     }
 
+    // Cache/remoto antigo pode não ter todas as colunas (ex.: PES salvo sem
+    // Ações) — completa com o default antes de dimensionar, senão a coluna
+    // ausente mantém largura antiga e a tabela estoura o modal.
+    function completeWidths(clean, pageKey) {
+        var p = pageKey || PAGE || 'tl';
+        var out = {};
+        contract(p).forEach(function (label) {
+            var value = clean && clean[label] != null ? Number(clean[label]) : NaN;
+            if (!isFinite(value) || value <= 0) {
+                value = DEFAULTS[label] || (label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH);
+            }
+            out[label] = value;
+        });
+        return out;
+    }
+
     function getWidthsSync(pageKey) {
         var p = pageKey || PAGE || 'tl';
-        if (widthsCache[p] && Object.keys(widthsCache[p]).length > 0) return widthsCache[p];
+        if (widthsCache[p] && Object.keys(widthsCache[p]).length > 0) return completeWidths(widthsCache[p], p);
         try {
             var raw = localStorage.getItem(localStorageKey(p));
             if (raw) {
@@ -139,7 +155,7 @@
                 var sanitized = sanitizeWidths(parsed, p);
                 if (Object.keys(sanitized).length > 0) {
                     widthsCache[p] = sanitized;
-                    return sanitized;
+                    return completeWidths(sanitized, p);
                 }
             }
         } catch (_) {}
@@ -275,6 +291,7 @@
     function applyWidths(table, clean, pageKey) {
         if (!table || !clean) return;
         var p = pageKey || PAGE || 'tl';
+        clean = completeWidths(clean, p);
         var fitted = fitWidthsToContainer(table, clean);
         if (fitted) {
             clean = fitted;
