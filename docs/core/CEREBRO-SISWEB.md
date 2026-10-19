@@ -2023,3 +2023,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção (agent-browser, regime lucroReal em memória):** natureza `nat_compra_merc` → select CST `00`, sem opção `102`, zero toasts; item criado com `00`. Regime Simples → `102` (comportamento preservado). Config restaurada, nada emitido.
 - **Gates:** suíte 1500 pass / 0 fail / 1 skip; lint/typecheck OK; novo `tests/nf-crt3-natureza.test.mjs`. Commits `1713ee8` + `41af000`; hosting publicado.
 
+## Sessao 2026-10-19 (cont. 21) — Produtos Fiscais: código automático/busca/paginação + largura do modal de romaneios
+
+- **Código automático (`js/produtos-fiscais.js`):** `nextCodigo()` gera o próximo sequencial numérico (preserva zeros à esquerda; não colide com códigos existentes). O campo é pré-preenchido ao abrir "Novo" e, se o usuário limpar, é gerado no save; segue editável. Edições mantêm o código existente.
+- **Busca:** `productBlob()` cobre todas as colunas visíveis + equivalentes `fiscal.*` (NCM/CFOP/UN/CST/pauta) e preço formatado, com normalização sem acento/caixa. Correspondência **exata de código é priorizada** (digitar `4` mostra primeiro o produto de código 4, não só NCM/preço que contêm "4").
+- **Paginação padrão Consulta NF-e:** opções 10/25/50/100 (default 25), preferência por tenant+usuário (`pf_produtos_*_items_per_page`), `<<< < 1.. > >>>`, info `Pág. X/Y · N produto(s)` e classes `.nf-pagination-bar` (CSS copiado para a página).
+- **Lista de Romaneios (largura):** `romaneio-comum.css` ganhou `min-width: min(95vw,1200px)` no `.modal-content` e, antes do `RomaneioListColumns` aplicar `.rlc-fixed`, a tabela ocupa `width/min-width:100%`. Elimina o encolhimento no estado "Carregando..." mantendo a compatibilidade com larguras fixas/scroll.
+- **Validação em produção (QA):** código novo `1` → próximo `2`; 26 registros → `Pág. 1/2 · 26`, 10/página → `Pág. 1/3`, página 2 com 10 linhas; busca `4` → código 4 em 1º; NCM/CFOP/preço filtrando; catálogo de teste limpo. Romaneios PCT: `contentW` 1199 em carregado e carregando (tabela 1165→1140, sem colapso).
+- **Gates:** suíte 1504 pass / 0 fail / 1 skip; lint/typecheck OK; novo `tests/produtos-fiscais-ui.test.mjs`. Commits `7e8a2a5`, `8b1bfa6`, `46798f7`; hosting publicado.
+
