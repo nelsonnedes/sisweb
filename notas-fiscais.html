@@ -2776,7 +2776,7 @@
     <!-- Novos módulos Fase 0 -->
     <script src="nf-naturezas.js?v=c6e8d0c27b26"></script>
     <script src="nf-preferencias.js?v=b5a49347dcd0"></script>
-    <script src="nf-produtos-nf.js?v=037ad1a6a358"></script>
+    <script src="nf-produtos-nf.js?v=728bc08a472f"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="assets/vendor/qrcode-generator.js?v=18ae399f8118"></script>
     <script src="commerce-pdf-share.js?v=c25876264ea7"></script>
@@ -6305,7 +6305,8 @@ renderizarVolumesNF();
       const nome  = (document.getElementById('itemDescricaoRom')?.value || '').trim();
       const qtd   = parseFloat(document.getElementById('itemQuantidadeRom')?.value) || 0;
       const vUnit = parseMoeda(document.getElementById('itemValorUnitarioRom')?.value);
-      const ncm   = (document.getElementById('itemNCMRom')?.value || '').replace(/\D/g,'').padStart(8,'0');
+      const ncmRaw = (document.getElementById('itemNCMRom')?.value || '').replace(/\D/g,'');
+      const ncm   = ncmRaw ? ncmRaw.padStart(8,'0') : '44079990';
       const cfop  = document.getElementById('itemCFOPRom')?.value || '5102';
 
       const v = window.NFItens?.validarEntradaItem

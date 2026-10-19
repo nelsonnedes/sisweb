@@ -270,3 +270,22 @@ test('fail-closed: NCM vazio/genérico nunca vira item válido; registrar só re
   assert.doesNotMatch(regBody, /00000000/, 'sem default genérico');
   assert.doesNotMatch(regBody, /44\d{6}/, 'sem NCM hardcoded');
 });
+
+test('autoPreencherRomaneio: sem catálogo usa NCM CONAMA 44079990 e não inventa preço', () => {
+  const { api } = loadNFe();
+  const r = api.autoPreencherRomaneio('Maçaranduba Madeira Serrada em Viga');
+  assert.equal(r.ncm, '44079990');
+  assert.equal(r.precoVenda, 0, 'preço só vem do catálogo');
+  const body = extract(html, 'adicionarItemNFRomaneio');
+  assert.match(body, /'44079990'/, 'fallback do botão Adicionar (campo segue editável)');
+});
+
+test('autoPreencherRomaneio: NCM específico do catálogo prevalece (editável)', async () => {
+  const { api } = loadNFe({
+    loadData: [{ nome: 'Maçaranduba Madeira Serrada em Viga', ncm: '44071100', precoVenda: 88 }],
+  });
+  await api.carregarProdutosNFe('t1');
+  const r = api.autoPreencherRomaneio('Maçaranduba Madeira Serrada em Viga');
+  assert.equal(r.ncm, '44071100');
+  assert.equal(r.precoVenda, 88);
+});

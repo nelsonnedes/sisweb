@@ -892,23 +892,24 @@ const NFProdutosNF = (() => {
 
   // ─── Autofill do modo romaneio — mesma precedência de autoPreencherPorProduto
   // (natureza > produto). CFOP do produto só se campo vazio/'5102' E sem natureza.
+  // Sem produto no catálogo, NCM cai no genérico CONAMA 44079990 (editável);
+  // NCM específico já cadastrado pelo usuário prevalece.
   function autoPreencherRomaneio(descricaoOuId) {
     if (descricaoOuId == null || String(descricaoOuId).trim() === '') return null;
     const chave = String(descricaoOuId).trim();
     const prod = (_produtosNFe.find((p) => p && (String(p.id) === chave || String(p.codigo || '') === chave)) || null)
       || _findNoCatalogoNFe(chave);
-    if (!prod) return null;
-    const ncm = prod.ncm || prod.NCM || '';
-    const preco = parseFloat(prod.precoVenda ?? prod.preco ?? prod.valorUnitario) || 0;
+    const ncm = (prod && (prod.ncm || prod.NCM)) || '44079990';
+    const preco = prod ? (parseFloat(prod.precoVenda ?? prod.preco ?? prod.valorUnitario) || 0) : 0;
     const ncmEl = document.getElementById('itemNCMRom');
-    if (ncmEl && ncm) ncmEl.value = ncm;
+    if (ncmEl) ncmEl.value = ncm;
     const valorEl = document.getElementById('itemValorUnitarioRom');
     if (valorEl && preco > 0) valorEl.value = 'R$ ' + preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
     const natId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
     const nat = natId && window.NFNaturezas?.getById ? window.NFNaturezas.getById(natId) : null;
     const cfopEl = document.getElementById('itemCFOPRom');
     if (cfopEl && !nat?.cfopPadrao) {
-      const cfopProd = prod.cfopPadrao || prod.cfop || '';
+      const cfopProd = prod ? (prod.cfopPadrao || prod.cfop || '') : '';
       if (cfopProd && (cfopEl.value === '5102' || !cfopEl.value)) cfopEl.value = cfopProd;
     }
     return { ncm, precoVenda: preco };
