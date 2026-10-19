@@ -410,6 +410,7 @@
                         }
                     });
                     table.__rlcResizing = false;
+                    if (Object.keys(clean).length) applyWidths(table, clean, p);
                     scheduleSave(sanitizeWidths(clean, p), p);
                 }
 
