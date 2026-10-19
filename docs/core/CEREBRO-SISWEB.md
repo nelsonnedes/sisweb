@@ -2080,3 +2080,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Scroll do modal:** `body.ems-modal-open { overflow:hidden }` + `#emsModal`/`form` flex com `min-height:0`; o body rola dentro do modal (client 623 / scroll 1331 com 8 itens) e a pagina atras nao rola.
 - **Estoque zerado:** causa raiz no `temDimsSerrado` do Vendas — produto manual nasce com `pecas:1` e dims 0, era tratado como serrado e escapava do filtro. Agora exige dims reais (>0) ou volume+pecas; `estoqueZeradoNaLista` oculta manual zerado e serrado sem pecas/volume. A pagina nova usa `hasStock` equivalente. Produto 9003 (estoque 0) ficou oculto nas duas.
 - **Gates:** suite 1520 pass / 0 fail / 1 skip; lint/typecheck OK. Commits `3eac171`, `2d4b079`, `716df4e`, `97a9cf5`, `cda8f1b`; hosting publicado.
+
+## Sessao 2026-10-19 (cont. 28) — Ordem por data dos romaneios no Estoque de Vendas
+
+- **Vendas → Estoque de Madeira Serrada → Romaneio:** o select deixou de seguir a ordem de `getRomaneiosMerged` (última atualização no topo) e passou a ordenar **por data** (dataEmissao/data/dataRomaneio/dataHora/createdAt/timestamp), ascendente, com empate pelo `numeroExibicao` — igual à página nova. `romaneioDateValue`/`sortRomaneiosProdutoByDate` em `vendas.js`; aplicado em `carregarRomaneiosEm`.
+- **Página nova:** `loadRomaneios` também ordena explicitamente por `romDateMs` (mesma direção/tie-break), garantindo paridade.
+- **Preview existente preservado:** avisos “EM USO · Ped. …” e botão Excluir da aba de Vendas não foram removidos; o pedido era só a ordenação por data.
+- **Validação em produção:** TL no Vendas exibiu `19/03/2026 - ALEXANDRE - 1,775 m³ - Nº 1` e depois `30/03/2026 - ROSVALDO ... - 0,006 m³ - Nº 2`; PCT com 1 registro. Nova página usa a mesma sequência.
+- **Gates:** suite 1520 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `977dfe3`; hosting publicado.
