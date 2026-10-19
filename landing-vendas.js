@@ -207,7 +207,8 @@ function initShareButton(){
   if(!btn || !popover || !waLink || !copyBtn) return;
 
   // Prepara link do WhatsApp com texto comercial codificado
-  const waUrl = 'https://wa.me/5591991311049?text=' + encodeURIComponent(SHARE_COMMERCIAL_TEXT);
+  // Compartilhar = escolher contato (não abrir conversa com o próprio número).
+  const waUrl = 'https://wa.me/?text=' + encodeURIComponent(SHARE_COMMERCIAL_TEXT);
   waLink.href = waUrl;
 
   // Toggle popover

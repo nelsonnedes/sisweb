@@ -21,6 +21,7 @@ test('compartilhamento: texto profissional, sem emojis e links do domínio novo'
   assert.match(landingJs, /https:\/\/siswebsoftware\.com\.br\/landing-vendas\.html\?v=20261019#simulador/);
   assert.match(landingJs, /https:\/\/siswebsoftware\.com\.br\/login\.html\?mode=register/);
   assert.match(landingJs, /encodeURIComponent\(SHARE_COMMERCIAL_TEXT\)/);
+  assert.match(landingJs, /https:\/\/wa\.me\/\?text=/, 'compartilhar escolhe contato');
   assert.doesNotMatch(landingJs, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
   assert.match(landingHtml, /og:image" content="https:\/\/siswebsoftware\.com\.br\/assets\/brand\/og-sisweb\.png"/);
 });
