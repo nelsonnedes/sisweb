@@ -339,7 +339,7 @@
         if (!host) return;
         var last = host.clientWidth;
         table.__rlcHostObserver = new ResizeObserver(function () {
-            if (table.__rlcResizing) return;
+            if (table.__rlcResizing || table.__rlcUserResized) return;
             var width = host.clientWidth;
             if (width < 240 || Math.abs(width - last) < 2) { last = width; return; }
             last = width;
@@ -379,6 +379,7 @@
                 var startX = e.clientX;
                 var startWidth = th.getBoundingClientRect().width;
                 table.__rlcResizing = true;
+                table.__rlcUserResized = true;
                 th.classList.add('rlc-resizing');
                 try {
                     handle.setPointerCapture(e.pointerId);
@@ -410,7 +411,7 @@
                         }
                     });
                     table.__rlcResizing = false;
-                    if (Object.keys(clean).length) applyWidths(table, clean, p);
+                    table.__rlcUserResized = true;
                     scheduleSave(sanitizeWidths(clean, p), p);
                 }
 
@@ -1160,7 +1161,7 @@
 
         if (resolveUid() !== 'anon') {
             loadRemote(p).then(function (remote) {
-                if (tableElement && tableElement.__rlcResizing) return;
+                if (tableElement && (tableElement.__rlcResizing || tableElement.__rlcUserResized)) return;
                 if (remote && Object.keys(remote).length > 0 && tableElement) {
                     widthsCache[p] = remote;
                     applyWidths(tableElement, remote, p);
