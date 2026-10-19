@@ -6267,7 +6267,12 @@ renderizarVolumesNF();
       const ncm   = (document.getElementById('itemNCM')?.value || '').replace(/\D/g,'').padStart(8,'0');
       const cfop  = document.getElementById('itemCFOP')?.value || '5102';
       const un    = document.getElementById('itemUN')?.value || 'UN';
-      const csosn = document.getElementById('itemCSOSN')?.value || '102';
+      const cfg   = window.NFService?.getConfig?.() || {};
+      const crt   = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+      const codPadrao = String(crt) === '3'
+        ? (cfg.impostos?.icms?.cst || '00')
+        : (cfg.impostos?.icms?.csosn || '102');
+      const csosn = document.getElementById('itemCSOSN')?.value || codPadrao;
       const cestMan = (document.getElementById('itemCEST')?.value || '').replace(/\D/g, '');
       const origMan = document.getElementById('itemOrig')?.value || '0';
       const importadoMan = !!document.getElementById('itemImportado')?.checked;
@@ -6277,7 +6282,6 @@ renderizarVolumesNF();
         : { valid: !!nome && qtd > 0 && vUnit > 0 && ncm.length === 8 && !/^0{8}$/.test(ncm) && /^[1-9]\d{3}$/.test(cfop) };
       if (!v.valid) return mostrarAlertaEmissao('⚠️ ' + (v.erro || 'Campos do item inválidos'), 'warn');
 
-      const cfg = window.NFService?.getConfig?.() || {};
       const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
       const natOpId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
 
@@ -6384,7 +6388,12 @@ renderizarVolumesNF();
       const ncm     = (document.getElementById('itemNCMCad')?.value || '').replace(/\D/g,'').padStart(8,'0');
       const cfop    = document.getElementById('itemCFOPCad')?.value || '5102';
       const un      = document.getElementById('itemUNCad')?.value || 'UN';
-      const csosn   = document.getElementById('itemCSOSNCad')?.value || '102';
+      const cfg     = window.NFService?.getConfig?.() || {};
+      const crt     = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+      const codPadrao = String(crt) === '3'
+        ? (cfg.impostos?.icms?.cst || '00')
+        : (cfg.impostos?.icms?.csosn || '102');
+      const csosn   = document.getElementById('itemCSOSNCad')?.value || codPadrao;
       const cestCad = (document.getElementById('itemCESTCad')?.value || '').replace(/\D/g, '');
       const origCad = document.getElementById('itemOrigCad')?.value || '0';
       const importadoCad = !!document.getElementById('itemImportadoCad')?.checked;
@@ -6397,7 +6406,6 @@ renderizarVolumesNF();
         : { valid: !!nomeProd && qtd > 0 && vUnit > 0 && ncm.length === 8 && !/^0{8}$/.test(ncm) && /^[1-9]\d{3}$/.test(cfop) };
       if (!v.valid) return mostrarAlertaEmissao('⚠️ ' + (v.erro || 'Campos do item inválidos'), 'warn');
 
-      const cfg = window.NFService?.getConfig?.() || {};
       const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
       const natOpId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
 
