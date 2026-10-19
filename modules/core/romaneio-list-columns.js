@@ -25,7 +25,9 @@
     var SAVE_DEBOUNCE_MS = 400;
     // PES trocou de 7 para 6 colunas: preferências antigas ficam num namespace
     // novo para não reaproveitar larguras deslocadas.
-    var WIDTHS_VERSION = { pes: 'v4' };
+    // Reset único de larguras: versões antigas ficaram inconsistentes após o
+    // novo fit/coluna Ações. PES também mudou de contrato (7→6).
+    var WIDTHS_VERSION = { tl: 'v2', pct: 'v2', pes: 'v4', tora: 'v2', preromaneio: 'v2' };
 
     var DEFAULTS = {
         'Data': 95,
