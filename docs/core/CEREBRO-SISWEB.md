@@ -2015,3 +2015,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção:** sem catálogo → campo `44079990`; alteração manual para `44071100` aceita; com produto de teste NCM `44071100` no catálogo → autofill mantém `44071100` (não sobrescreve).
 - **Gates:** suíte 1494 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `293661c`; hosting publicado. NCM genérico é exceção explícita à regra antiga "não inventar NCM" (decisão do usuário; 4407.99.90 já era o NCM madeireiro documentado).
 
+## Sessao 2026-10-19 (cont. 20) — Natureza × CRT 3: fim do CSOSN 102 (cStat 931)
+
+- **Sintoma:** ao trocar para "Compra de Mercadoria" (CRT 3/Regime Normal), o toast `CSOSN 102 com CRT 3 ... use CST ICMS (cStat 931)` e o item nascia com 102.
+- **Causa raiz (4 pontos):** naturezas padrão guardam `csosn` do Simples; `nfAplicarNatOp` inseria/selecionava o código sem gate e só avisava; `NFItens.criarItemFiscal` e `recalcularImpostosItem` reaplicavam `nat.csosn` por cima do CST; romaneio/manual/cadastrado/edit tinham fallback `'102'`.
+- **Fix:** o código da natureza só prevalece se `NFTaxTables.validarCodigoICMS(crt, cod)` aprovar; senão mantém o CST já selecionado (sem criar opção inválida e sem toast). Fallbacks passam a ser por regime: CRT 3 → `cfg.impostos.icms.cst` (default `00`); CRT 1/2 → `csosn` (default `102`). Gate aplicado em `criarItemFiscal`, `recalcularImpostosItem`, manual/cadastrado/romaneio e edição de item.
+- **Validação em produção (agent-browser, regime lucroReal em memória):** natureza `nat_compra_merc` → select CST `00`, sem opção `102`, zero toasts; item criado com `00`. Regime Simples → `102` (comportamento preservado). Config restaurada, nada emitido.
+- **Gates:** suíte 1500 pass / 0 fail / 1 skip; lint/typecheck OK; novo `tests/nf-crt3-natureza.test.mjs`. Commits `1713ee8` + `41af000`; hosting publicado.
+
