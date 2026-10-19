@@ -183,14 +183,14 @@
         var rom = document.getElementById('emsRomaneioSection');
         if (manual) manual.style.display = isRom ? 'none' : 'block';
         if (rom) rom.style.display = isRom ? 'block' : 'none';
-        var addItem = document.getElementById('emsAddItemBtn');
-        var clearItems = document.getElementById('emsClearItemsBtn');
-        if (addItem) addItem.style.display = state.editingKey ? 'none' : 'inline-flex';
-        if (clearItems) clearItems.style.display = state.editingKey ? 'none' : 'inline-flex';
-        var save = document.getElementById('emsSaveBtn');
-        var addStock = document.getElementById('emsAddStockBtn');
-        if (save) save.style.display = state.editingKey ? 'inline-flex' : 'none';
-        if (addStock) addStock.style.display = state.editingKey ? 'none' : 'inline-flex';
+        var showBtn = function (id, visible) {
+            var el = document.getElementById(id);
+            if (el) el.style.setProperty('display', visible ? 'inline-flex' : 'none', 'important');
+        };
+        showBtn('emsAddItemBtn', !state.editingKey);
+        showBtn('emsClearItemsBtn', !state.editingKey);
+        showBtn('emsSaveBtn', !!state.editingKey);
+        showBtn('emsAddStockBtn', !state.editingKey);
     }
     function currentType() { var r = document.querySelector('input[name="emsTipo"]:checked'); return r ? r.value : 'manual'; }
     function resetStage() { state.stage = []; renderManualPreview(); }
