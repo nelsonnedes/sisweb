@@ -49,10 +49,17 @@
         .pf-empty { text-align: center; padding: 18px; color: var(--sw-text-2); font-style: italic; }
         .pf-actions { white-space: nowrap; text-align: center; }
         .pf-actions .btn { width: 32px; height: 32px; padding: 0; justify-content: center; }
-        #pfPagination { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; }
-        #pfPagination button { min-width: 34px; height: 34px; border: 1px solid var(--sw-border); background: var(--sw-surface); color: var(--sw-text-1); border-radius: 6px; cursor: pointer; }
-        #pfPagination button:disabled { opacity: .45; cursor: default; }
-        .pf-page-info { font-size: 12px; color: var(--sw-text-2); }
+        /* Paginação padrão (mesmo .nf-pagination-bar da Consulta de NF-e) */
+        .nf-pagination-bar { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .nf-pagination-bar:empty { display: none; }
+        .nf-pagination-bar .pagination-size-control { display: inline-flex; align-items: center; gap: 6px; color: var(--sw-text-2); font-size: 13px; margin-right: auto; }
+        .nf-pagination-bar .pagination-size-control select { width: auto; min-width: 76px; height: 34px; padding: 4px 8px; font-size: 13px; color: var(--sw-text-1); background: var(--sw-surface); border: 1px solid var(--sw-border); border-radius: 6px; }
+        .nf-pagination-bar .pagination-page-buttons { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .nf-pagination-bar .pagination-page-buttons button { min-width: 34px; height: 34px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: var(--sw-text-1); background: var(--sw-surface); border: 1px solid var(--sw-border); border-radius: 6px; cursor: pointer; }
+        .nf-pagination-bar .pagination-page-buttons button:hover:not(:disabled) { border-color: var(--sw-brand); color: var(--sw-brand); }
+        .nf-pagination-bar .pagination-page-buttons button.active { background: var(--sw-brand); border-color: var(--sw-brand); color: #fff; }
+        .nf-pagination-bar .pagination-page-buttons button:disabled { opacity: .45; cursor: default; }
+        .nf-pagination-bar .pagination-total-info { font-size: 12px; color: var(--sw-text-2); }
         #pfModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9999; align-items: center; justify-content: center; padding: 16px; }
         #pfModal.active { display: flex; }
         #pfModal .modal-content { max-width: 820px; width: 100%; max-height: calc(100dvh - 40px); display: flex; flex-direction: column; }
@@ -102,7 +109,7 @@
                 </tbody>
             </table>
         </div>
-        <div id="pfPagination"></div>
+        <div id="pfPagination" class="nf-pagination-bar"></div>
     </div>
 
     <div id="pfModal" role="dialog" aria-modal="true" aria-labelledby="pfModalTitle">
@@ -119,7 +126,7 @@
                         <input type="text" id="pfNome" required placeholder="Ex: Madeira serrada - Angelim">
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label for="pfCodigo">Código</label><input type="text" id="pfCodigo" placeholder="Código interno"></div>
+                        <div class="form-group"><label for="pfCodigo">Código (automático)</label><input type="text" id="pfCodigo" placeholder="Gerado automaticamente (editável)"></div>
                         <div class="form-group"><label for="pfNcm">NCM</label><input type="text" id="pfNcm" maxlength="8" inputmode="numeric" placeholder="8 dígitos"></div>
                         <div class="form-group"><label for="pfCfop">CFOP padrão</label><input type="text" id="pfCfop" maxlength="4" inputmode="numeric" placeholder="Ex: 5102"></div>
                     </div>
@@ -154,7 +161,7 @@
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
-    <script src="js/produtos-fiscais.js?v=1fe56159305f"></script>
+    <script src="js/produtos-fiscais.js?v=4371243992b8"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
 </body>
 </html>

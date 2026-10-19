@@ -3,7 +3,9 @@
     'use strict';
 
     var NODE = 'fiscal/produtos-nfe';
-    var state = { tenant: '', items: [], filtered: [], page: 1, pageSize: 10 };
+    var PF_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+    var PF_PAGE_SIZE_DEFAULT = 25;
+    var state = { tenant: '', items: [], filtered: [], page: 1, pageSize: PF_PAGE_SIZE_DEFAULT };
 
     function svc() {
         return window.firebaseService || window.firebaseServiceTL || window.FirebaseService || null;
@@ -103,6 +105,7 @@
         loading(true, 'Carregando produtos fiscais...');
         try {
             var tid = await resolveTenant();
+            restorePageSize();
             var res = await svc().loadFromFirebase('companies/' + tid + '/' + NODE);
             var data = res && res.data !== undefined ? res.data : res;
             state.items = normalizeList(data).sort(function (a, b) {
@@ -116,12 +119,35 @@
         }
     }
 
+    function norm(v) {
+        return String(v == null ? '' : v)
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+    }
+
+    function productBlob(p) {
+        var f = p.fiscal || {};
+        var preco = p.precoVenda != null ? p.precoVenda : (p.preco != null ? p.preco : f.valorPauta);
+        // Inclui TODAS as colunas visíveis (código/nome/NCM/CFOP/UN/preço) e os
+        // equivalentes aninhados em fiscal.* — antes um NCM/CFOP só em fiscal
+        // não filtrava, e o preço ficava fora da busca.
+        return norm([
+            p.nome, p.descricao, p.name,
+            p.codigo, p.cod, p.code, p.codigoProduto,
+            p.ncm, f.ncm,
+            p.cfopPadrao, p.cfop, f.cfop,
+            p.unidade, f.unidade,
+            f.cst, f.valorPauta,
+            preco, money(preco)
+        ].join(' '));
+    }
+
     function applyFilter() {
-        var q = String((document.getElementById('pfSearch') || {}).value || '').trim().toLowerCase();
+        var q = String((document.getElementById('pfSearch') || {}).value || '').trim();
         if (!q) { state.filtered = state.items.slice(); return; }
+        var qn = norm(q);
         state.filtered = state.items.filter(function (p) {
-            var blob = [p.nome, p.codigo, p.ncm, p.cfopPadrao, p.cfop, p.unidade].join(' ').toLowerCase();
-            return blob.indexOf(q) >= 0;
+            return productBlob(p).indexOf(qn) >= 0;
         });
     }
 
@@ -140,10 +166,126 @@
         return n ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—';
     }
 
+    function pageSizeKey() {
+        var tid = state.tenant || '';
+        var uid = '';
+        try { uid = (window.firebaseService && window.firebaseService.currentUser && window.firebaseService.currentUser.uid) || ''; } catch (_) {}
+        try { if (!uid) uid = (svc() && svc().currentUser && svc().currentUser.uid) || ''; } catch (_) {}
+        return 'pf_produtos_' + (tid || 'default') + '_' + (uid || 'anon') + '_items_per_page';
+    }
+
+    function restorePageSize() {
+        try {
+            var v = parseInt(localStorage.getItem(pageSizeKey()) || '', 10);
+            if (PF_PAGE_SIZE_OPTIONS.indexOf(v) >= 0) state.pageSize = v;
+        } catch (_) {}
+    }
+
+    function setPageSize(value) {
+        var size = parseInt(value, 10);
+        if (PF_PAGE_SIZE_OPTIONS.indexOf(size) < 0) return;
+        state.pageSize = size;
+        state.page = 1;
+        try { localStorage.setItem(pageSizeKey(), String(size)); } catch (_) {}
+        render();
+    }
+
+    function goPage(page) {
+        var pages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+        state.page = Math.min(Math.max(1, parseInt(page, 10) || 1), pages);
+        render();
+    }
+
+    // Código automático ao salvar: sequencial numérico, preservando zeros à
+    // esquerda quando os códigos existentes usam esse formato.
+    function nextCodigo() {
+        var max = 0;
+        var width = 1;
+        var used = {};
+        state.items.forEach(function (p) {
+            var c = String(p.codigo == null ? '' : p.codigo).trim();
+            if (!c) return;
+            used[c] = true;
+            if (/^\d+$/.test(c)) {
+                var n = parseInt(c, 10) || 0;
+                if (n > max) max = n;
+                if (c.length > width) width = c.length;
+            }
+        });
+        var fmt = function (v) {
+            var s = String(v);
+            while (s.length < width) s = '0' + s;
+            return s;
+        };
+        var n = max + 1;
+        while (used[fmt(n)] || used[String(n)]) n++;
+        return fmt(n);
+    }
+
+    function renderPagination(total, pages) {
+        var pag = document.getElementById('pfPagination');
+        if (!pag) return;
+        pag.innerHTML = '';
+        if (!total) return;
+        var label = document.createElement('label');
+        label.className = 'pagination-size-control';
+        var caption = document.createElement('span');
+        caption.textContent = 'Itens por página:';
+        label.appendChild(caption);
+        var sel = document.createElement('select');
+        PF_PAGE_SIZE_OPTIONS.forEach(function (opt) {
+            var o = document.createElement('option');
+            o.value = String(opt);
+            o.textContent = String(opt);
+            if (opt === state.pageSize) o.selected = true;
+            sel.appendChild(o);
+        });
+        sel.addEventListener('change', function () { setPageSize(sel.value); });
+        label.appendChild(sel);
+        pag.appendChild(label);
+        if (pages <= 1) {
+            var only = document.createElement('span');
+            only.className = 'pagination-total-info';
+            only.textContent = total + ' produto(s)';
+            pag.appendChild(only);
+            return;
+        }
+        var host = document.createElement('span');
+        host.className = 'pagination-page-buttons';
+        pag.appendChild(host);
+        var addBtn = function (text, page, disabled, active) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = text;
+            if (active) btn.classList.add('active');
+            btn.disabled = !!disabled;
+            btn.onclick = function () { goPage(page); };
+            host.appendChild(btn);
+        };
+        addBtn('<<<', 1, state.page === 1);
+        addBtn('<', state.page - 1, state.page === 1);
+        var startPage = Math.max(1, state.page - 2);
+        var endPage = Math.min(pages, state.page + 2);
+        if (startPage > 1) {
+            addBtn('1', 1, false, state.page === 1);
+            if (startPage > 2) { var dots = document.createElement('span'); dots.textContent = '...'; host.appendChild(dots); }
+        }
+        for (var i = startPage; i <= endPage; i++) addBtn(String(i), i, false, i === state.page);
+        if (endPage < pages) {
+            if (endPage < pages - 1) { var dots2 = document.createElement('span'); dots2.textContent = '...'; host.appendChild(dots2); }
+            addBtn(String(pages), pages, false, state.page === pages);
+        }
+        addBtn('>', state.page + 1, state.page === pages);
+        addBtn('>>>', pages, state.page === pages);
+        var info = document.createElement('span');
+        info.className = 'pagination-total-info';
+        info.textContent = 'Pág. ' + state.page + '/' + pages + ' · ' + total + ' produto(s)';
+        pag.appendChild(info);
+    }
+
     function render() {
         applyFilter();
         var tbody = document.getElementById('pfTableBody');
-        var pag = document.getElementById('pfPagination');
         if (!tbody) return;
         var total = state.filtered.length;
         var pages = Math.max(1, Math.ceil(total / state.pageSize));
@@ -151,7 +293,8 @@
         var ini = (state.page - 1) * state.pageSize;
         var fatia = state.filtered.slice(ini, ini + state.pageSize);
         if (!fatia.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="pf-empty">Nenhum produto fiscal cadastrado.</td></tr>';
+            var msg = state.items.length ? 'Nenhum produto encontrado.' : 'Nenhum produto fiscal cadastrado.';
+            tbody.innerHTML = '<tr><td colspan="7" class="pf-empty">' + msg + '</td></tr>';
         } else {
             tbody.innerHTML = fatia.map(function (p) {
                 var id = esc(recordKey(p));
@@ -169,21 +312,7 @@
                 '</tr>';
             }).join('');
         }
-        if (pag) {
-            pag.innerHTML = '';
-            if (total > 0) {
-                var info = document.createElement('span');
-                info.className = 'pf-page-info';
-                info.textContent = 'Pág. ' + state.page + '/' + pages + ' · ' + total + ' produto(s)';
-                var prev = document.createElement('button');
-                prev.type = 'button'; prev.textContent = '‹'; prev.disabled = state.page === 1;
-                prev.onclick = function () { state.page -= 1; render(); };
-                var next = document.createElement('button');
-                next.type = 'button'; next.textContent = '›'; next.disabled = state.page === pages;
-                next.onclick = function () { state.page += 1; render(); };
-                pag.appendChild(prev); pag.appendChild(info); pag.appendChild(next);
-            }
-        }
+        renderPagination(total, pages);
     }
 
     function setVal(id, v) {
@@ -197,7 +326,7 @@
         document.getElementById('pfModalTitle').textContent = item ? 'Editar Produto Fiscal' : 'Novo Produto Fiscal';
         setVal('pfId', item ? recordKey(item) : '');
         setVal('pfNome', item && (item.nome || item.descricao) || '');
-        setVal('pfCodigo', item && item.codigo || '');
+        setVal('pfCodigo', item ? (item.codigo || '') : nextCodigo());
         setVal('pfNcm', item && (item.ncm || (item.fiscal && item.fiscal.ncm)) || '');
         setVal('pfCfop', item && (item.cfopPadrao || item.cfop || (item.fiscal && item.fiscal.cfop)) || '');
         setVal('pfUnidade', item && (item.unidade || (item.fiscal && item.fiscal.unidade)) || 'M3');
@@ -229,10 +358,12 @@
         var preco = parseMoneyInput((document.getElementById('pfPreco') || {}).value);
         var valorPauta = parseMoneyInput((document.getElementById('pfValorPauta') || {}).value);
         var unidade = String((document.getElementById('pfUnidade') || {}).value || 'M3').toUpperCase();
+        var codigo = String((document.getElementById('pfCodigo') || {}).value || '').trim();
+        if (!codigo) codigo = nextCodigo();
         var payload = {
             id: id,
             nome: nome,
-            codigo: String((document.getElementById('pfCodigo') || {}).value || '').trim(),
+            codigo: codigo,
             ncm: ncm,
             cfopPadrao: cfop,
             unidade: unidade,
