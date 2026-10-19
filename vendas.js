@@ -2201,15 +2201,49 @@ function editarItem(itemId) {
             // O item permanece na lista até o "Adicionar" confirmar a atualização
             break;
         case 'cadastrado':
-        default:
-    document.getElementById('produtoSelect').value = item.produtoId;
-    document.getElementById('quantidade').value = item.quantidade;
-    document.getElementById('precoUnitario').value = formatCurrency(item.precoUnitario);
-    try {
-        const unEl = document.getElementById('unidadeItem');
-        if (unEl) unEl.value = item.unidade || 'UN';
-    } catch (_) {}
+        default: {
+            const selectProduto = document.getElementById('produtoSelect');
+            const buscaProduto = document.getElementById('produtoBusca');
+            if (buscaProduto) buscaProduto.value = '';
+            let produtoId = String(item.produtoId || '');
+            if (selectProduto) {
+                // Item histórico pode apontar para produto sem estoque (fora do
+                // select) ou removido do catálogo: recria a opção com os dados
+                // do próprio pedido para não abrir o campo vazio na edição.
+                const produto = (window.produtos || []).find(p =>
+                    (produtoId && String(p.id) === produtoId)
+                    || (produtoId && String(p.firebaseKey || '') === produtoId)
+                    || (!produtoId && item.produtoCodigo && String(p.codigo || '') === String(item.produtoCodigo)
+                        && String(p.nome || p.name || '') === String(item.produtoNome || ''))
+                );
+                if (!produtoId && produto) produtoId = String(produto.id || '');
+                if (produtoId && !Array.from(selectProduto.options).some(o => String(o.value) === produtoId)) {
+                    const option = document.createElement('option');
+                    option.value = produtoId;
+                    const codigo = item.produtoCodigo || (produto && produto.codigo) || '';
+                    const nome = item.produtoNome || (produto && (produto.nome || produto.name)) || 'Produto do pedido';
+                    option.textContent = (codigo ? `${codigo} - ` : '') + nome;
+                    option.dataset.nome = String(nome);
+                    option.dataset.codigo = String(codigo);
+                    option.dataset.itemHistorico = '1';
+                    selectProduto.appendChild(option);
+                }
+                selectProduto.value = produtoId;
+                if (!item.produtoId && produtoId) item.produtoId = produtoId;
+            }
+            try {
+                if (typeof window.filtrarSelectPorBusca === 'function') {
+                    window.filtrarSelectPorBusca('produtoSelect', 'produtoBusca');
+                }
+            } catch (_) {}
+            document.getElementById('quantidade').value = item.quantidade;
+            document.getElementById('precoUnitario').value = formatCurrency(item.precoUnitario);
+            try {
+                const unEl = document.getElementById('unidadeItem');
+                if (unEl) unEl.value = item.unidade || 'UN';
+            } catch (_) {}
             break;
+        }
         case 'romaneio_agrupado': {
             // ✅ DESAGRUPAR + CARREGAR em 1 clique: expande o grupo e já carrega
             // o primeiro item no formulário (sem pergunta de confirmação).

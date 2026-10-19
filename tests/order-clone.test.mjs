@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import vm from 'node:vm';
 
 const vendas = fs.readFileSync(new URL('../vendas.js', import.meta.url), 'utf8');
 const compras = fs.readFileSync(new URL('../compras.js', import.meta.url), 'utf8');
@@ -95,4 +96,45 @@ test('validacao de estoque desconta a quantidade do item em edicao', () => {
   assert.match(vendas, /function validarEstoque\(produtoId, quantidadeDesejada, itemEmEdicao, unidadeItem\)/);
   assert.match(vendas, /String\(itemEmEdicao\.id\) === String\(itemNoCarrinho && itemNoCarrinho\.id\)/);
   assert.match(vendas, /validarEstoque\(produtoId, quantidade, itemEdicao,/);
+});
+
+test('editarItem recria opcao de produto historico fora do select (estoque 0)', () => {
+  const start = vendas.indexOf('function editarItem(itemId)');
+  const open = vendas.indexOf('{', start);
+  let depth = 0, end = -1;
+  for (let i = open; i < vendas.length; i++) {
+    if (vendas[i] === '{') depth++;
+    if (vendas[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+  }
+  assert.ok(start > 0 && end > start, 'editarItem localizado');
+  const makeEl = (id) => ({ id, value: '', options: [], appendChild(o) { this.options.push(o); } });
+  const els = {
+    produtoSelect: makeEl('produtoSelect'),
+    produtoBusca: makeEl('produtoBusca'),
+    quantidade: makeEl('quantidade'),
+    precoUnitario: makeEl('precoUnitario'),
+    unidadeItem: makeEl('unidadeItem'),
+  };
+  const document = {
+    getElementById: (id) => (els[id] || (els[id] = makeEl(id))),
+    createElement: (tag) => ({ tagName: tag, value: '', textContent: '', dataset: {} }),
+  };
+  const item = {
+    id: 'IT-B', tipo: 'cadastrado', produtoId: 'P-ZERO', produtoNome: 'Produto Zerado',
+    produtoCodigo: '000123', quantidade: 1, unidade: 'UN', precoUnitario: 10,
+  };
+  const sb = {
+    document, window: { produtos: [] }, itensCarrinho: [item], itemEmEdicaoId: null,
+    alterarTipoProduto: () => {}, formatCurrency: (v) => String(v),
+    ToastManager: { info: () => {}, success: () => {} }, console,
+  };
+  vm.createContext(sb);
+  vm.runInContext(vendas.slice(start, end), sb);
+  sb.editarItem('IT-B');
+  assert.equal(els.produtoBusca.value, '');
+  assert.equal(els.produtoSelect.value, 'P-ZERO');
+  const opt = els.produtoSelect.options.find(o => o.value === 'P-ZERO');
+  assert.ok(opt, 'opção histórica recriada');
+  assert.equal(opt.textContent, '000123 - Produto Zerado');
+  assert.equal(sb.itemEmEdicaoId, 'IT-B');
 });
