@@ -6935,6 +6935,10 @@ exports.mdfe_consultar = mdfeFunctions.mdfe_consultar;
 exports.mdfe_encerrar = mdfeFunctions.mdfe_encerrar;
 exports.mdfe_cancelar = mdfeFunctions.mdfe_cancelar;
 
+const romaneioFunctions = require('./romaneio-functions');
+romaneioFunctions.configure({ isCallerSuperAdmin });
+exports.romaneioReservarNumero = romaneioFunctions.romaneioReservarNumero;
+
 const financeFunctions = require('./finance-functions');
 financeFunctions.configure({ isCallerSuperAdmin });
 exports.financeNextSequence = financeFunctions.financeNextSequence;

@@ -233,7 +233,7 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((error) => {
+  main().then(() => process.exit(0)).catch((error) => {
     console.error('ERRO:', error && error.message ? error.message : error);
     process.exit(1);
   });
