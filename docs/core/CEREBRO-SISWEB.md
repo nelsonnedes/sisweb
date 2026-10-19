@@ -1946,3 +1946,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **user-profile.html:** incluído `js/sisweb-loading.js`; `show('Carregando perfil...')` + `hide(true)` em `finally` (failsafe 20s).
 - **Validação em produção:** romaneiotl sem `#firebase-status`/texto Online; `#globalLoadingOverlay` existe e fica `display:none` após o boot em Company ("Carregando empresa...") e Perfil ("Carregando perfil..."). Suíte 1492 pass / 0 fail / 1 skip.
 
+## Sessao 2026-10-18 (cont. 11) — Gráficos do Fluxo de Caixa + spinner do overlay
+
+- **Finanças / Fluxo de Caixa:** adicionados 4 KPIs reais (Entradas, Saídas, Saldo do Período, Dias com Movimento) reutilizando `.dashboard-cards`/`.dashboard-card`. O gráfico principal virou composto: barras Entradas × Saídas (eixo esquerdo) + linha de Saldo Acumulado (eixo direito), tooltip em BRL e legenda em ponto. Dois doughnuts "por categoria" (Entradas/Saídas) usando `eachMovimentoFluxo` (realizado + previsto) e `categoria` da conta, top 6 + Outros, com estado vazio.
+- **Agregação inteligente:** `calcularFluxoPeriodo` passou a retornar `datas` (ISO). `agruparFluxoParaGrafico` mantém diário até 62 dias e agrega por mês acima disso (o default do período é ~5 meses → 5 barras legíveis; título indica "(por mês)").
+- **Spinner do overlay:** `user-profile.html` definia `.loading-spinner{display:none}` e o CSS injetado do `SiswebLoading` não declarava `display` — a bolinha não aparecia. Adicionado `display:block;box-sizing:border-box` em `#globalLoadingOverlay .loading-spinner` (`js/sisweb-loading.js`).
+- **Validação em produção:** Fluxo com 4 KPIs (R$ 8.211,98 / R$ 15.534,97 / -R$ 7.322,99 / 13), 3 datasets com 5 labels mensais (08–12/2026); spinner com `display:block`, 40×40, animação `sisweb-loading-spin` e borda na cor da marca. Suíte 1492 pass / 0 fail / 1 skip.
+
