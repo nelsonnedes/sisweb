@@ -339,6 +339,7 @@
         if (!host) return;
         var last = host.clientWidth;
         table.__rlcHostObserver = new ResizeObserver(function () {
+            if (table.__rlcResizing) return;
             var width = host.clientWidth;
             if (width < 240 || Math.abs(width - last) < 2) { last = width; return; }
             last = width;
@@ -377,6 +378,7 @@
                 var min = label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
                 var startX = e.clientX;
                 var startWidth = th.getBoundingClientRect().width;
+                table.__rlcResizing = true;
                 th.classList.add('rlc-resizing');
                 try {
                     handle.setPointerCapture(e.pointerId);
@@ -407,7 +409,7 @@
                             clean[labelNow] = clamp(px, labelNow === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH, MAX_WIDTH);
                         }
                     });
-                    if (Object.keys(clean).length) applyWidths(table, clean, p);
+                    table.__rlcResizing = false;
                     scheduleSave(sanitizeWidths(clean, p), p);
                 }
 
@@ -1157,6 +1159,7 @@
 
         if (resolveUid() !== 'anon') {
             loadRemote(p).then(function (remote) {
+                if (tableElement && tableElement.__rlcResizing) return;
                 if (remote && Object.keys(remote).length > 0 && tableElement) {
                     widthsCache[p] = remote;
                     applyWidths(tableElement, remote, p);
