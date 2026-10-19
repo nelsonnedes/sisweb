@@ -1960,3 +1960,9 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Tema:** divisor usa `var(--sw-border)` nas linhas e `var(--sw-brand)` no texto (sem hardcode).
 - **Validação em produção:** com um alerta admin + um tenant, a ordem ficou `admin → DIVIDER ("Da sua empresa", rgb(254,106,0)) → tenant`; borda do divisor `rgb(229,231,235)` (var do tema). Store de teste restaurado. Suíte 1492 pass / 0 fail / 1 skip.
 
+## Sessao 2026-10-18 (cont. 13) — Paginação no Fluxo + Dashboard financeiro aprimorado
+
+- **Fluxo de Caixa — paginação (padrão NF-e):** tabela agora paginada com opções 10/25/50/100 (persistência por tenant+usuário em `fin_fluxo_*_items_per_page`), botões `<<< < 1.. > >>>`, info `Pág. X/Y · N dia(s)` e reset para página 1 ao gerar novo fluxo. Saldo acumulado continua **global** (pré-calculado antes do slice, não reinicia por página). Container `#paginacaoConsultaFluxo` + CSS `.nf-pagination-bar` copiado do padrão.
+- **Dashboard financeiro:** gráfico principal virou composto (barras Entradas/Saídas + linha Saldo acumulado no eixo direito, tooltips BRL) para os próximos 30 dias. O antigo `summary-box` virou 4 KPIs em `.dashboard-cards` (Vencidas Receber/Pagar, Vencendo Hoje, Próximos 7 dias) mantendo os IDs do JS. Dois doughnuts "em aberto por categoria" (Receber/Pagar) com `valorRestanteFluxo` real, paleta verde/vermelha e estado vazio.
+- **Validação em produção:** Dashboard com 4 cards reais (R$ 8.211,98 / R$ 14.664,87 / R$ 0,00 / R$ 174,90), 3 datasets e 2 doughnuts; Fluxo com 10 linhas/página, 16 páginas (153 dias), troca para 25 → `Pág. 1/7`, página 2 → `Pág. 2/7`; preferência restaurada para 10. Suíte 1492 pass / 0 fail / 1 skip; financas/finance 104/104.
+
