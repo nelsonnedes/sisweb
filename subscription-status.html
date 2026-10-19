@@ -39,7 +39,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=a0ebe6edc1c6"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=49ee37fa1891"></script>
+<script src="menu-component.js?v=fbe67ea72e75"></script>
     <style>
         * {
             margin: 0;
@@ -1503,7 +1503,7 @@
         </div>
     </div>
 
-    <script src="auth.js?v=03fd76e8236a"></script>
+    <script src="auth.js?v=536aa475568a"></script>
     <script type="module">
         import { authService, isFirebaseOperational, getSubscriptionSettings, requestSubscriptionExtension, getAll, loadFromFirebase, getTenantId, getCurrentUid, grantReadOnlyGrace } from './firebaseService.js?v=fdef24272f49';
         
@@ -1997,7 +1997,12 @@
                 const title = String(item.title || 'Mensagem').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const message = String(item.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const date = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : '';
-                return `<div style="border: 1px solid var(--sw-border) ;border-radius:8px;padding:8px 10px;background: var(--sw-surface);"><strong style="display:block;color:var(--sw-text-1);">${title}</strong><span style="display:block;color:var(--sw-text-2);font-size:13px;">${message}</span><small style="color:var(--sw-text-3);">${date}</small></div>`;
+                const href = String(item.href || '').replace(/"/g, '&quot;');
+                const body = `<strong style="display:block;color:var(--sw-text-1);">${title}</strong><span style="display:block;color:var(--sw-text-2);font-size:13px;">${message}</span>`;
+                const content = href
+                    ? `<a href="${href}" style="display:block;text-decoration:none;color:inherit;">${body}<small style="color:var(--sw-brand);font-weight:700;">Abrir ticket →</small></a>`
+                    : body;
+                return `<div style="border: 1px solid var(--sw-border) ;border-radius:8px;padding:8px 10px;background: var(--sw-surface);">${content}<small style="color:var(--sw-text-3);">${date}</small></div>`;
             }).join('');
         }
 

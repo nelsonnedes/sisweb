@@ -829,6 +829,22 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     .alerts-item.sev-warning { border-left: 4px solid #f59e0b; background: #fffbeb; }
                     .alerts-item.sev-info { border-left: 4px solid #2563eb; background: #eff6ff; }
                     .alerts-item.sev-success { border-left: 4px solid #16a34a; background: #f0fdf4; }
+                    .alerts-item.alerts-item-support {
+                        border-left-color: var(--sw-brand, #f97316);
+                        cursor: pointer;
+                        text-decoration: none;
+                        color: inherit;
+                    }
+                    .alerts-item.alerts-item-support:hover {
+                        background: var(--sw-surface-2, #f1f5f9);
+                    }
+                    .alerts-item-cta {
+                        display: block;
+                        margin-top: 4px;
+                        color: var(--sw-brand, #f97316);
+                        font-size: 11px;
+                        font-weight: 700;
+                    }
                     .alerts-item:last-child { border-bottom: 0; }
                     .alerts-divider {
                         display: flex;
@@ -1652,8 +1668,8 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     });
                     alertsDropdown.classList.add('show-dropdown');
                     alertsTrigger.setAttribute('aria-expanded', 'true');
-                    try { this.recomputeSystemAlerts(); } catch (_) {}
-                    try { this.renderAlerts(); } catch (_) {}
+                        try { this.recomputeSystemAlerts(true); } catch (_) {}
+                        try { this.renderAlerts(); } catch (_) {}
                 };
                 const closeAlerts = () => {
                     alertsDropdown.classList.remove('show-dropdown');
@@ -1991,6 +2007,12 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             return this.getAdminContext().isAdmin;
         }
 
+        isSupportAlert(a) {
+            return String((a && (a.source || a.origin)) || '').toLowerCase() === 'support'
+                || !!(a && String(a.ticketId || '').trim())
+                || /supportTicket=|ticket=/i.test(String((a && a.href) || ''));
+        }
+
         alertItemHtml(a) {
             const esc = (v) => String(v == null ? '' : v).replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const title = esc(a && a.title || 'Alerta');
@@ -2009,10 +2031,18 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             const cls = `alerts-item${sev ? ' ' + sev : ''}${a && a.read ? '' : ' unread'}`;
             const hrefEscaped = href.replace(/"/g, '&quot;');
             const targetAttr = /^https?:\/\//i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
+            const titleHtml = `<strong class="alerts-item-title">${title}</strong>`;
+            const isSupport = this.isSupportAlert(a);
+            if (isSupport && href) {
+                return `<a class="${cls} alerts-item-support" href="${hrefEscaped}"${targetAttr}>`
+                    + titleHtml
+                    + `<span class="alerts-item-message">${message}</span>`
+                    + '<span class="alerts-item-cta">Abrir ticket →</span></a>';
+            }
             const messageHtml = href
                 ? `<a class="alerts-item-message" href="${hrefEscaped}"${targetAttr}>${message}</a>`
                 : `<span class="alerts-item-message">${message}</span>`;
-            return `<div class="${cls}"><strong class="alerts-item-title">${title}</strong>${messageHtml}</div>`;
+            return `<div class="${cls}">${titleHtml}${messageHtml}</div>`;
         }
 
         alertOrigin(a) {
@@ -2044,6 +2074,8 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                 alerts.forEach((a) => {
                     (this.alertOrigin(a) === 'admin' ? adminAlerts : tenantAlerts).push(a);
                 });
+                // Resposta do Suporte primeiro dentro da empresa (evidência).
+                tenantAlerts.sort((a, b) => (this.isSupportAlert(b) ? 1 : 0) - (this.isSupportAlert(a) ? 1 : 0));
                 const max = 8;
                 const parts = [];
                 let count = 0;
@@ -2863,6 +2895,45 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                 });
             } catch (_) {}
 
+            // Respostas do Suporte (SuperAdmin) gravadas pelo backend em
+            // users/{uid}/notifications — o sino lia só localStorage e perdia.
+            try {
+                if (ctx.uid && ctx.uid !== 'anon') {
+                    try {
+                        if (window.firebaseService && typeof window.firebaseService.invalidateReadCacheForPath === 'function') {
+                            window.firebaseService.invalidateReadCacheForPath(`users/${ctx.uid}/notifications`);
+                        }
+                    } catch (_) {}
+                    const raw = await this.loadNamespaced(`users/${ctx.uid}/notifications`);
+                    const entries = raw && typeof raw === 'object'
+                        ? (Array.isArray(raw) ? raw.map((n, i) => [String(i), n]) : Object.entries(raw))
+                        : [];
+                    entries
+                        .map(([key, n]) => ({ key, n: n && typeof n === 'object' ? n : {} }))
+                        .filter(({ n }) => String(n.source || '') === 'support' && n.read !== true)
+                        .sort((a, b) => String(b.n.createdAt || '').localeCompare(String(a.n.createdAt || '')))
+                        .slice(0, 5)
+                        .forEach(({ key, n }) => {
+                            const ticketId = String(n.ticketId || '').trim()
+                                || (String(n.message || '').match(/Ticket\s+([^:\s]+)\s*:/i) || [])[1]
+                                || '';
+                            alerts.push({
+                                id: `support_notif__${key}`,
+                                title: n.title || 'Nova resposta do Suporte Sisweb',
+                                message: n.message || 'Abra o ticket para ver a resposta.',
+                                href: this.resolveUrl('subscription-status.html'
+                                    + (ticketId ? '?supportTicket=' + encodeURIComponent(ticketId) : '')),
+                                severity: 'info',
+                                origin: 'tenant',
+                                source: 'support',
+                                ticketId,
+                                createdAt: n.createdAt || now.toISOString(),
+                                read: false
+                            });
+                        });
+                }
+            } catch (_) {}
+
             return alerts;
         }
 
@@ -2893,13 +2964,13 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             return alerts;
         }
 
-        async recomputeSystemAlerts() {
+        async recomputeSystemAlerts(force) {
             // ✅ CORREÇÃO: Throttle interno para evitar execuções paralelas/simultâneas.
             // Se já há uma execução em andamento (_recomputeInFlight), aguarda ela terminar
             // antes de iniciar outra, ou descarta se chamada em menos de 2s.
             if (this._recomputeInFlight) return;
             const now = Date.now();
-            if (this._lastRecomputeAt && (now - this._lastRecomputeAt) < 2000) return;
+            if (!force && this._lastRecomputeAt && (now - this._lastRecomputeAt) < 2000) return;
             this._recomputeInFlight = true;
             this._lastRecomputeAt = now;
             try {
@@ -4552,6 +4623,30 @@ function __siswebInitGlobalModals() {
                 const supportModal = ensureSystemSupportModal();
                 if (supportModal) supportModal.style.display = 'none';
             };
+        }
+        if (typeof window.openSiswebSupportTicket !== 'function') {
+            window.openSiswebSupportTicket = async function(ticketId) {
+                const id = String(ticketId || '').trim();
+                if (!id) return;
+                if (typeof window.showSupport === 'function') window.showSupport();
+                if (typeof window.switchSiswebSupportView === 'function') {
+                    window.switchSiswebSupportView('tickets');
+                }
+                await new Promise((resolve) => setTimeout(resolve, 120));
+                await __siswebOpenSupportTicket(id);
+            };
+        }
+        if (!window.__siswebSupportTicketDeepLink) {
+            window.__siswebSupportTicketDeepLink = true;
+            setTimeout(function() {
+                try {
+                    const params = new URLSearchParams(window.location.search || '');
+                    const id = params.get('supportTicket') || params.get('ticket') || '';
+                    if (id && typeof window.openSiswebSupportTicket === 'function') {
+                        window.openSiswebSupportTicket(id);
+                    }
+                } catch (_) {}
+            }, 1500);
         }
         if (typeof window.sendSiswebSupportWhatsApp !== 'function') {
             window.sendSiswebSupportWhatsApp = function() {

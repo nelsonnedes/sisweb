@@ -780,7 +780,9 @@ function upsertSubscriptionAlerts(statusKey, userDetails) {
         const uid = userDetails && (userDetails.uid || userDetails.id || userDetails.userId) ? String(userDetails.uid || userDetails.id || userDetails.userId) : '';
         if (readCachedSuperAdminFlag() || isSuperAdminUid(uid)) return;
         const user = userDetails || {};
-        const userNotifications = user && user.notifications && typeof user.notifications === 'object' ? Object.values(user.notifications) : [];
+        const userNotifications = user && user.notifications && typeof user.notifications === 'object'
+            ? Object.values(user.notifications).filter((n) => n && String(n.source || '') !== 'support')
+            : [];
         userNotifications.slice(-5).forEach((n) => {
             if (!n || typeof n !== 'object') return;
             pushSystemAlert({

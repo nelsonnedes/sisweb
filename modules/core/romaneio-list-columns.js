@@ -12,7 +12,7 @@
     var CONTRACT_BY_PAGE = {
         tl: ['Data', 'Cliente', 'Espécies', 'Itens', 'Volume (m³)', 'Valor Total', 'Ações'],
         pct: ['Data', 'Cliente', 'Espécies', 'Itens', 'Volume (m³)', 'Valor Total', 'Ações'],
-        pes: ['Data', 'Cliente', 'Espécies', 'Itens', 'Volume (m³)', 'Valor Total', 'Ações'],
+        pes: ['Data', 'Cliente', 'Espécies', 'Volume (m³)', 'Valor Total', 'Ações'],
         tora: ['Data', 'Fornecedor', 'Espécies', 'Itens', 'Volume (m³)', 'Valor Total', 'Ações'],
         preromaneio: ['Data', 'Cliente', 'Tipo', 'Volume', 'Valor', 'Ações']
     };
@@ -218,9 +218,59 @@
         table.style.setProperty('max-width', '100%', 'important');
     }
 
+    // Normaliza a SOMA das colunas para a largura real do container do modal.
+    // Sem isso, defaults/larguras salvas (ex.: 1020px) podem estourar um modal
+    // de ~970px e as larguras remotas reaplicadas depois dos dados mudam a
+    // tabela "no ar" (coluna Ações some/é cortada).
+    function fitWidthsToContainer(table, clean) {
+        var keys = Object.keys(clean || {});
+        if (!keys.length) return clean;
+        if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return clean;
+        var host = table.closest('.table-container, .table-responsive') || table.parentElement;
+        var available = host ? host.clientWidth : 0;
+        if (!available || available < 240) return null;
+        var total = 0;
+        var minTotal = 0;
+        keys.forEach(function (label) {
+            total += Math.max(0, Number(clean[label]) || 0);
+            minTotal += label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
+        });
+        if (!total) return clean;
+        var target = Math.max(minTotal, available - 2);
+        var factor = target / total;
+        var out = {};
+        var sum = 0;
+        keys.forEach(function (label) {
+            var min = label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
+            var width = Math.max(min, Math.round((Number(clean[label]) || 0) * factor));
+            out[label] = width;
+            sum += width;
+        });
+        var diff = target - sum;
+        if (diff) {
+            var last = keys[keys.length - 1];
+            var lastMin = last === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
+            out[last] = Math.max(lastMin, out[last] + diff);
+        }
+        return out;
+    }
+
     function applyWidths(table, clean, pageKey) {
         if (!table || !clean) return;
         var p = pageKey || PAGE || 'tl';
+        var fitted = fitWidthsToContainer(table, clean);
+        if (fitted) {
+            clean = fitted;
+            table.__rlcFitTries = 0;
+        } else if (!table.__rlcFitRetry && (table.__rlcFitTries || 0) < 3) {
+            // PES inicializa a tabela antes do modal visível; reaplica quando
+            // o container já tem largura (sem loop se continuar oculto).
+            table.__rlcFitTries = (table.__rlcFitTries || 0) + 1;
+            table.__rlcFitRetry = setTimeout(function () {
+                table.__rlcFitRetry = null;
+                applyWidths(table, clean, pageKey);
+            }, 100);
+        }
         var headers = table.querySelectorAll('thead th');
         contract(p).forEach(function (label, index) {
             if (index >= headers.length || !clean[label]) return;

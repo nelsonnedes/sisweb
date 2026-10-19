@@ -1342,6 +1342,8 @@ async function pushUserNotification(uid, payload) {
         createdAt: new Date().toISOString(),
         source: sanitizeText(payload && payload.source ? payload.source : 'subscription', 'subscription')
     };
+    const ticketId = sanitizeText(payload && payload.ticketId ? payload.ticketId : '', '');
+    if (ticketId) item.ticketId = ticketId;
     await admin.database().ref(`users/${uid}/notifications`).push(item);
 }
 
@@ -3785,7 +3787,8 @@ async function notifySupportCustomer(ticket, messagePayload) {
         source: 'support',
         type: 'info',
         title: 'Nova resposta do Suporte Sisweb',
-        message: `Ticket ${ticket.id || ''}: ${sanitizeSupportText(messagePayload.message || '', '', 180)}`
+        message: `Ticket ${ticket.id || ''}: ${sanitizeSupportText(messagePayload.message || '', '', 180)}`,
+        ticketId: ticket.id || ''
     });
 }
 
