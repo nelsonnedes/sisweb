@@ -2096,3 +2096,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Fix:** `volumeSerradoProduto(p)`/`volumeProduto(p)` com precedência **volumeM3 > 0 → E×L×C/1e6 × peças × ppp → estoque legado**; aplicado em `dimensoesEstoqueSerrado`, exibição do catálogo/select/lista/impressão, baixa/reversão e resumo de disponibilidade. `aplicarBaixaSerrado` usa a base derivada; `converterItemSerradoParaM3` mantém fallback por fórmula. Nova pagina usa `volumeProduto` na coluna Estoque.
 - **Validado em producao (mock 9500/9501, removidos):** `vol=0.01`, `ml=1`, `area=1`; Vendas lista/select exibem `1 pç · 0,010 m³ · 1,00 ml · 1,00 m²`; pagina nova exibe `0,010`. Zero estoque continua oculto pelo `estoqueZeradoNaLista`/`hasStock`.
 - **Gates:** suite 1520 pass / 0 fail / 1 skip; lint/typecheck OK. Commits `2f6a5ac`, `574150a`; hosting publicado.
+
+## Sessao 2026-10-19 (cont. 30) — Baixa por unidade e estoque detalhado
+
+- **Auditoria da baixa:** `razaoBaixaSerrado` agora devolve `pedido` na dimensão base (PC cru multiplica `pecasPorPacote`, DZ ×12); área de M2 inclui ppp. `empurrarSerrado` valida o pedido na dimensão vendida (UN/DZ/PC em peças; M3/ML/M2 em volume/ml/área) e envia ao servidor `base:'pecas'` ou `'vol'`, com `consumir.vol`/`consumir.pecas` proporcionais — o servidor só escala volume/peças.
+- **Peças fracionadas:** baixa/estorno no cliente e em `functions/finance-functions.js` arredondam peças em 3 casas (antes `Math.round` forçava inteiro e divergia do volume em venda parcial).
+- **Página nova:** coluna Estoque exibe `1 pç · 0,010 m³ · 1,00 ml · 1,00 m²` e o nome recebe sufixo `· Serrado`; teste unitário cobre a formatação.
+- **Testes novos:** baixa M2, UN fracionada, PC→peças/volume, estouro de M2 e estorno fracionário (`produto-romaneio`, `estoque-baixa-atomica`, `estoque-madeira-serrada`).
+- **Gates:** suite 1524 pass / 0 fail / 1 skip; lint/typecheck/functions lint OK. Function `estoqueAplicarMovimento` e Hosting publicados; commit `db22095` + push.
+- **Pendente de validação viva:** QA não tem produto serrado representativo; usar mock para conferir M2/parcial na UI.
