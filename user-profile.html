@@ -38,6 +38,7 @@
         })();
     </script>
     <script src="auth.js?v=b5aee5a1f3c6"></script>
+    <script src="js/sisweb-loading.js?v=982110809b2c"></script>
     <script src="superadmin-mfa.js?v=27ab1839aafe"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
@@ -983,10 +984,17 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
-            await loadUserProfile(true);
-            setupEventListeners();
-            loadUserPhoto();
-            initMfaCard();
+            try { window.SiswebLoading?.show('Carregando perfil...'); } catch (_) {}
+            const __hideProfileLoading = () => { try { window.SiswebLoading?.hide(true); } catch (_) {} };
+            setTimeout(__hideProfileLoading, 20000);
+            try {
+                await loadUserProfile(true);
+                setupEventListeners();
+                loadUserPhoto();
+                initMfaCard();
+            } finally {
+                __hideProfileLoading();
+            }
         });
 
         async function loadUserProfile(showFeedback = false) {

@@ -911,6 +911,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     </div>
 
     <script src="auth.js?v=b5aee5a1f3c6"></script>
+    <script src="js/sisweb-loading.js?v=982110809b2c"></script>
     <script src="cities-loader.js?v=b537d6225e16"></script>
     <script src="commerce-pdf-share.js?v=9d00810a1242"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -2685,6 +2686,9 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
         // Aguardar Firebase estar pronto
         document.addEventListener('DOMContentLoaded', async function() {
             console.log("🏢 === INICIALIZANDO SISTEMA DE EMPRESAS ===");
+            try { window.SiswebLoading?.show('Carregando empresa...'); } catch (_) {}
+            const __hideCompanyLoading = () => { try { window.SiswebLoading?.hide(true); } catch (_) {} };
+            setTimeout(__hideCompanyLoading, 20000);
             const access = await resolveCompanyPageAccess();
             if (!access.allow) {
                 notifyUser('Acesso restrito para gerenciamento de empresa nesta sessão.');
@@ -2796,6 +2800,7 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
             } catch (error) {
                 console.warn("⚠️ Erro na inicialização:", error);
             }
+            __hideCompanyLoading();
         });
 
         // Adicionar evento de submit ao formulário

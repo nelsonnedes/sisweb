@@ -158,6 +158,14 @@
     }
 
     updateConnectionStatus(connected) {
+      // Páginas que não querem o pill "Online/Offline" ligam esta flag.
+      if (typeof window !== 'undefined' && window.__SISWEB_DISABLE_CONNECTION_INDICATOR__ === true) {
+        try {
+          const legacy = document.getElementById('firebase-status');
+          if (legacy) legacy.remove();
+        } catch (_) {}
+        return;
+      }
       let indicator = document.getElementById('firebase-status');
       if (!indicator) {
         indicator = document.createElement('div');
