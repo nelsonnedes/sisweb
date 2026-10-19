@@ -2073,3 +2073,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Modal Novo/Editar:** tipo **Produto Manual / Produto Romaneio**; no manual, stage com codigo/nome/preco/estoque/unidade/descricao + **Preview - Resumo**, Adicionar item/Limpar/Adicionar Estoque; no romaneio, Tipo TL/PCT/PES, Romaneio, Carregar Itens/Limpar, preview por especie+dimensoes com volume, checkboxes (grupos ja em estoque desabilitados), campos de dimensoes/pecas/volume e Adicionar Estoque. Edicao usa Salvar direto; botoes sao exibidos com `display` inline important (CSS global forçava Salvar visivel no novo).
 - **Validacao em producao (agent-browser):** manual 9002 estoque 2,5 → `2,500 m³`; romaneio TL → 5 grupos Tatajuba com volumes/precos, adicao gerou 5 produtos e o mesmo romaneio reabriu com os 5 checkboxes desabilitados ("ja em estoque"); registros de teste removidos. Mobile 390: modal 359px, campos empilhados, cards na tabela.
 - **Gates:** suite 1520 pass / 0 fail / 1 skip; lint/typecheck OK. Commits `9f71e72`, `40dda62`, `6af6a3c`, `cc69bab`; hosting publicado.
+
+## Sessao 2026-10-19 (cont. 27) — Ajustes do Estoque de Madeira Serrada
+
+- **Romaneio igual ao Vendas:** o select agora usa o mesmo rotulo da aba Estoque de Vendas (`data - cliente - volume m³ - Nº N`), com `numeroExibicao` e volume agregado (`totalVolume`/`volumeTotal`/itens).
+- **Scroll do modal:** `body.ems-modal-open { overflow:hidden }` + `#emsModal`/`form` flex com `min-height:0`; o body rola dentro do modal (client 623 / scroll 1331 com 8 itens) e a pagina atras nao rola.
+- **Estoque zerado:** causa raiz no `temDimsSerrado` do Vendas — produto manual nasce com `pecas:1` e dims 0, era tratado como serrado e escapava do filtro. Agora exige dims reais (>0) ou volume+pecas; `estoqueZeradoNaLista` oculta manual zerado e serrado sem pecas/volume. A pagina nova usa `hasStock` equivalente. Produto 9003 (estoque 0) ficou oculto nas duas.
+- **Gates:** suite 1520 pass / 0 fail / 1 skip; lint/typecheck OK. Commits `3eac171`, `2d4b079`, `716df4e`, `97a9cf5`, `cda8f1b`; hosting publicado.
