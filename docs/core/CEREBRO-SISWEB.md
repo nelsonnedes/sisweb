@@ -1939,3 +1939,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Folha:** `updateConnectionStatus()` em `folha-firebase-manager.js` não cria mais `#firebase-status` (e remove o legado se existir). Estado permanece em `this.isConnected`/`getStats()`. Cachebuster `folha-firebase-manager.js?v=fa253a8b024f` (injector não cobre `folha_pagamento/`).
 - **Validação em produção:** `connectionBadge=0` no HTML de Finanças e ausente no DOM; `#firebase-status` ausente na Folha; textos "Modo Online/Offline" não aparecem (0 ocorrências). Suíte 1492 pass / 0 fail / 1 skip.
 
+## Sessao 2026-10-18 (cont. 10) — Pill Online no Romaneio TL e overlay em Company/Perfil
+
+- **Romaneio TL:** o "Online" não vinha de `connectionBadge` (inexistente no arquivo), mas do `firebase-connection-manager-compat.js`, que injeta `#firebase-status` ("🟢 Online"). Adicionada flag `window.__SISWEB_DISABLE_CONNECTION_INDICATOR__ = true` antes do script em `romaneiotl.html`; o compat, quando a flag está ativa, remove o legado e não cria mais o pill. Estado de conexão preservado. Cachebuster do compat atualizado via inject (`0ca2a3812d70`).
+- **company.html:** incluído `js/sisweb-loading.js`; `SiswebLoading.show('Carregando empresa...')` no início do DOMContentLoaded e `hide(true)` no fim (failsafe 20s).
+- **user-profile.html:** incluído `js/sisweb-loading.js`; `show('Carregando perfil...')` + `hide(true)` em `finally` (failsafe 20s).
+- **Validação em produção:** romaneiotl sem `#firebase-status`/texto Online; `#globalLoadingOverlay` existe e fica `display:none` após o boot em Company ("Carregando empresa...") e Perfil ("Carregando perfil..."). Suíte 1492 pass / 0 fail / 1 skip.
+
