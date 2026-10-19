@@ -34,7 +34,7 @@ Do pátio à nota fiscal, em um só sistema.
 Sem fidelidade. Feito no Pará.
 
 *Simule sua economia:*
-https://siswebsoftware.com.br/landing-vendas.html#simulador
+https://siswebsoftware.com.br/landing-vendas.html?v=20261019#simulador
 
 *Crie sua conta grátis:*
 https://siswebsoftware.com.br/login.html?mode=register
@@ -237,7 +237,7 @@ function initShareButton(){
 
   // Copiar link da landing
   copyBtn.addEventListener('click', async ()=>{
-    const url = 'https://siswebsoftware.com.br/landing-vendas.html';
+    const url = 'https://siswebsoftware.com.br/landing-vendas.html?v=20261019';
     try{
       if(navigator.clipboard && navigator.clipboard.writeText){
         await navigator.clipboard.writeText(url);

@@ -18,7 +18,7 @@ test('compartilhamento: texto profissional, sem emojis e links do domínio novo'
   assert.match(landingJs, /\*Sisweb - Gestão completa para madeireiras e serrarias\*/);
   assert.match(landingJs, /- Romaneios de toras e serrados/);
   assert.match(landingJs, /\*30 dias grátis\*/);
-  assert.match(landingJs, /https:\/\/siswebsoftware\.com\.br\/landing-vendas\.html#simulador/);
+  assert.match(landingJs, /https:\/\/siswebsoftware\.com\.br\/landing-vendas\.html\?v=20261019#simulador/);
   assert.match(landingJs, /https:\/\/siswebsoftware\.com\.br\/login\.html\?mode=register/);
   assert.match(landingJs, /encodeURIComponent\(SHARE_COMMERCIAL_TEXT\)/);
   assert.doesNotMatch(landingJs, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
