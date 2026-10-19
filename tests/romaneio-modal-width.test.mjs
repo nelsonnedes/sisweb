@@ -7,11 +7,12 @@ const css = fs.readFileSync('romaneio-comum.css', 'utf8');
 
 test('romaneios: larguras normalizadas para a largura real do container', () => {
   assert.match(columns, /function fitWidthsToContainer\(table, clean\)/);
-  assert.match(columns, /var target = Math\.max\(minTotal, Math\.min\(total, available - 2\)\)/);
+  assert.match(columns, /var target = Math\.round\(Math\.max\(minTotal, available\)\)/);
+  assert.match(columns, /MIN_ACTIONS_WIDTH = 180/);
   assert.match(columns, /__rlcFitRetry/);
   assert.match(columns, /table\.__rlcFitTries/);
-  assert.match(columns, /rectW - 20/);
   assert.match(columns, /ensureHostObserver/);
+  assert.match(columns, /\(max-width: 768px\)'\)\.matches\) return;/, 'mobile não aplica larguras inline');
 });
 
 test('romaneios: contrato PES alinhado às 6 colunas reais (sem deslocar Ações)', () => {

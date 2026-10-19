@@ -44,7 +44,7 @@
     <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
     <link rel="stylesheet" href="layout-comum.css?v=c8c40e4b104d">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="romaneio-comum.css?v=bb37bf7189a5">
+    <link rel="stylesheet" href="romaneio-comum.css?v=f27bfc33b764">
     <link rel="stylesheet" href="status-styles.css?v=e70a1566a169">
     <style>
         :root {
@@ -801,25 +801,26 @@
                 flex-direction: column;
             }
 
+            /* 6 etapas visíveis de uma vez (3x2), sem esconder atrás de swipe. */
             .nf-stepper {
-                display: flex;
-                overflow-x: auto;
-                grid-template-columns: none;
-                gap: 8px;
-                margin: 0 -20px;
-                padding: 10px 20px 12px;
-                scroll-snap-type: x proximity;
-                -webkit-overflow-scrolling: touch;
+                display: grid !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                overflow: visible !important;
+                gap: 6px;
+                margin: 0;
+                padding: 0 0 8px;
+                scroll-snap-type: none;
             }
 
-            /* 6 etapas: ~3 visíveis por vez no celular (antes só 2), com snap. */
             .nf-step {
-                min-width: 92px;
-                flex: 0 0 auto;
+                min-width: 0 !important;
+                width: 100%;
                 text-align: center;
-                font-size: 11.5px;
-                padding: 8px 6px;
-                scroll-snap-align: start;
+                font-size: 11px;
+                line-height: 1.2;
+                padding: 8px 4px;
+                white-space: normal;
+                scroll-snap-align: none;
             }
 
             .nf-summary-bar {
@@ -865,7 +866,37 @@
             .nf-mobile-table-container,
             .nf-volume-list {
                 min-width: 0 !important;
+                max-height: none !important;
+                height: auto !important;
                 overflow: visible !important;
+            }
+
+            /* Consulta: mantém a lista com scroll interno e paginação no rodapé,
+               igual ao MDF-e (cards não podem transbordar o card). */
+            #consulta .nf-mobile-table-container {
+                max-height: min(55vh, 420px) !important;
+                overflow: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Transporte: minmax(280px) não cabe no card de 248px em 390px. */
+            .nf-subsection-grid {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            /* Revisão: chave/protocolo de 44 dígitos sem espaço. */
+            .nf-review-line {
+                align-items: flex-start !important;
+            }
+
+            .nf-review-line strong {
+                flex: 0 0 auto;
+            }
+
+            .nf-review-line span {
+                min-width: 0;
+                overflow-wrap: anywhere;
+                text-align: right;
             }
 
             .nf-card-table {
@@ -1831,7 +1862,7 @@
               </div>
 
               <!-- Tabela de itens -->
-              <div class="table-container nf-mobile-table-container">
+              <div class="table-container nf-mobile-table-container nf-items-table-container">
                  <table class="data-table nf-card-table nf-items-table" id="tabelaItensNF">
                   <thead>
                     <tr>

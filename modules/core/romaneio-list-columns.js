@@ -19,7 +19,9 @@
 
     var MIN_WIDTH = 60;
     var MAX_WIDTH = 500;
-    var MIN_ACTIONS_WIDTH = 140;
+    // 4 botões de 32px + gaps + padding da célula (~180px reais).
+    var MIN_ACTIONS_WIDTH = 180;
+    var MAX_ACTIONS_WIDTH = 220;
     var SAVE_DEBOUNCE_MS = 400;
     // PES trocou de 7 para 6 colunas: preferências antigas ficam num namespace
     // novo para não reaproveitar larguras deslocadas.
@@ -261,12 +263,9 @@
             return clean;
         }
         var host = table.closest('.table-container, .table-responsive') || table.parentElement;
-        var rectW = host ? host.getBoundingClientRect().width : 0;
-        var available = host ? host.clientWidth : 0;
-        // Reserva o gutter/scrollbar vertical (17–18px): no primeiro paint ele
-        // ainda não entrou no clientWidth e a tabela era ajustada ~8px larga,
-        // estourando o modal quando os dados/cache chegavam.
-        if (rectW) available = Math.min(available || rectW, Math.max(0, rectW - 20));
+        // clientWidth já desconta o scrollbar/gutter reservado. Inteiro evita
+        // diff fracionário no loop de redistribuição (que rodava até o guard).
+        var available = host ? Math.floor(host.clientWidth) - 2 : 0;
         if (!available || available < 240) return null;
         var total = 0;
         var minTotal = 0;
@@ -275,27 +274,27 @@
             minTotal += label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
         });
         if (!total) return clean;
-        // Não estica colunas para preencher o modal: usa a largura natural
-        // (defaults/salva) e só reduz quando a soma passa do container.
-        var target = Math.max(minTotal, Math.min(total, available - 2));
+        // Preenche exatamente a largura útil do modal; mantém Ações contida.
+        var target = Math.round(Math.max(minTotal, available));
         var factor = target / total;
         var minOf = function (label) { return label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH; };
+        var maxOf = function (label) { return label === 'Ações' ? MAX_ACTIONS_WIDTH : MAX_WIDTH; };
         var out = {};
         var sum = 0;
         keys.forEach(function (label) {
-            var width = Math.max(minOf(label), Math.round((Number(clean[label]) || 0) * factor));
+            var width = Math.round((Number(clean[label]) || 0) * factor);
+            width = Math.max(minOf(label), Math.min(maxOf(label), width));
             out[label] = width;
             sum += width;
         });
-        // Algumas colunas batem no mínimo (Ações=140) e a soma passa do alvo.
-        // Redistribui 1px por coluna ajustável até fechar exatamente o container.
+        // Fecha a diferença (inteira) respeitando mínimos/máximos.
         var diff = target - sum;
         var guard = 0;
         while (diff !== 0 && guard++ < 5000) {
             var changed = false;
             for (var i = 0; i < keys.length && diff !== 0; i++) {
                 var label = keys[i];
-                if (diff > 0 && out[label] < MAX_WIDTH) { out[label] += 1; diff -= 1; changed = true; }
+                if (diff > 0 && out[label] < maxOf(label)) { out[label] += 1; diff -= 1; changed = true; }
                 else if (diff < 0 && out[label] > minOf(label)) { out[label] -= 1; diff += 1; changed = true; }
             }
             if (!changed) break;
@@ -306,6 +305,9 @@
 
     function applyWidths(table, clean, pageKey) {
         if (!table || !clean) return;
+        // Mobile usa cards via CSS; larguras inline/fixed do motor conflitavam
+        // com `.mobile-cards` e com a tabela 100% (divergência entre páginas).
+        if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return;
         var p = pageKey || PAGE || 'tl';
         clean = completeWidths(clean, p);
         var fitted = fitWidthsToContainer(table, clean);
@@ -415,22 +417,28 @@
                     var target = Number(table.__rlcTargetWidth) || 0;
                     if (target > 0) {
                         var draggedKey = contract(p)[index];
-                        var minThis = draggedKey === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
+                        var isActions = draggedKey === 'Ações';
+                        var minThis = isActions ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
+                        var maxThis = isActions ? MAX_ACTIONS_WIDTH : MAX_WIDTH;
                         var others = [];
                         headersNow.forEach(function (h, idx) {
                             var key = contract(p)[idx];
                             if (!key || idx === index) return;
                             var w = clean[key] || parseFloat(h.style.width) || 0;
-                            if (w > 0) others.push({ th: h, w: w, min: key === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH });
+                            if (w > 0) others.push({
+                                th: h, w: w,
+                                min: key === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH,
+                                max: key === 'Ações' ? MAX_ACTIONS_WIDTH : MAX_WIDTH
+                            });
                         });
                         var minOthers = others.reduce(function (s, o) { return s + o.min; }, 0);
-                        var dragged = Math.max(minThis, Math.min(clean[draggedKey] || th.getBoundingClientRect().width, target - minOthers));
+                        var dragged = Math.max(minThis, Math.min(maxThis, clean[draggedKey] || th.getBoundingClientRect().width, target - minOthers));
                         setColumnWidth(th, dragged);
                         clean[draggedKey] = dragged;
                         var remaining = Math.max(minOthers, target - dragged);
                         var otherSum = others.reduce(function (s, o) { return s + o.w; }, 0);
                         var factor = otherSum ? remaining / otherSum : 1;
-                        others.forEach(function (o) { o.nw = Math.max(o.min, Math.round(o.w * factor)); });
+                        others.forEach(function (o) { o.nw = Math.max(o.min, Math.min(o.max, Math.round(o.w * factor))); });
                         var sum = others.reduce(function (s, o) { return s + o.nw; }, 0);
                         var diff = remaining - sum;
                         var guard = 0;
@@ -438,7 +446,7 @@
                             var changed = false;
                             for (var oi = 0; oi < others.length && diff !== 0; oi++) {
                                 var o = others[oi];
-                                if (diff > 0 && o.nw < MAX_WIDTH) { o.nw += 1; diff -= 1; changed = true; }
+                                if (diff > 0 && o.nw < o.max) { o.nw += 1; diff -= 1; changed = true; }
                                 else if (diff < 0 && o.nw > o.min) { o.nw -= 1; diff += 1; changed = true; }
                             }
                             if (!changed) break;

@@ -34,7 +34,7 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="romaneio-comum.css?v=bb37bf7189a5">
+    <link rel="stylesheet" href="romaneio-comum.css?v=f27bfc33b764">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
 <script src="menu-component.js?v=23d8df568d6f"></script>
@@ -1495,7 +1495,7 @@
     <script src="commerce-pdf-share.js?v=c25876264ea7"></script>
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pes" data-target="clientListBody"></script>
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
-    <script src="modules/core/romaneio-list-columns.js?v=24705bfbfebf" data-page="pes" data-target="romaneioListBody"></script>
+    <script src="modules/core/romaneio-list-columns.js?v=19313d3c41ff" data-page="pes" data-target="romaneioListBody"></script>
     <script>
         let itens = [];
         let itemEmEdicaoIndex = -1; // Para controlar edição de itens
@@ -4139,6 +4139,9 @@
                 });
             }
 
+            // Exibir antes de inicializar: clientWidth 0 fazia o fit falhar.
+            romaneioListModal.style.display = 'block';
+
             // Inicializar colunas e redimensionamento na tabela
             const tableEl = romaneioListModal.querySelector('table');
             if (tableEl && window.RomaneioListColumns && typeof window.RomaneioListColumns.initTable === 'function') {
@@ -4169,9 +4172,6 @@
                     });
                 }
             }
-            
-            // Exibir o modal imediatamente
-            romaneioListModal.style.display = 'block';
             
             const romaneioListFilter = document.getElementById('romaneioListFilter');
             const filtroTermo = String((romaneioListFilter && romaneioListFilter.value) || '').trim().toLowerCase();

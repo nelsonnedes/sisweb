@@ -3872,3 +3872,21 @@ html body #romaneioListModal .modal-body > [id$="Pagination"] {
         min-width: 0 !important;
     }
 }
+
+/* Fonte unica de layout das 5 listas: neutraliza min-width/% divergentes
+   das paginas antes/depois do RomaneioListColumns. A largura final em px e
+   definida inline pelo modulo (quando desktop). */
+html body #listaModal .table,
+html body #romaneioListModal .table {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+}
+html body #listaModal .table-container,
+html body #listaModal .table-responsive,
+html body #romaneioListModal .table-container,
+html body #romaneioListModal .table-responsive {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
