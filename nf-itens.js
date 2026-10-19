@@ -86,9 +86,14 @@
     const nat = natOpId && window.NFNaturezas?.getById ? window.NFNaturezas.getById(natOpId) : null;
     const cfopNat = (nat?.cfopPadrao || '').trim();
     const codNat = (nat?.csosn || '').trim();
+    const crt = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+    // Naturezas padrão guardam CSOSN (Simples). Em CRT 3 (Regime Normal) o
+    // CSOSN é rejeitado pela SEFAZ (cStat 931) — só prevalece se for válido.
+    const codNatOk = codNat && (!window.NFTaxTables?.validarCodigoICMS
+      || window.NFTaxTables.validarCodigoICMS(crt, codNat).ok);
 
     let cfopEff = (cfopNat && cfopCanonicoValido(cfopNat)) ? cfopNat : cfop;
-    let csosnEff = codNat || csosn;
+    let csosnEff = codNatOk ? codNat : csosn;
 
     const item = {
       id,
@@ -122,7 +127,6 @@
     // 3. Calcular Impostos
     item.imposto = item.imposto || {};
     const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-    const crt = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
 
     // ICMS
     const icmsCalc = window.NFConfigService?.calcularICMS
@@ -170,13 +174,20 @@
     const nat = natOpId && window.NFNaturezas?.getById ? window.NFNaturezas.getById(natOpId) : null;
     const cfopNat = (nat?.cfopPadrao || '').trim();
     const codNat = (nat?.csosn || '').trim();
+    const crt = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+    const codNatOk = codNat && (!window.NFTaxTables?.validarCodigoICMS
+      || window.NFTaxTables.validarCodigoICMS(crt, codNat).ok);
 
     if (cfopNat && cfopCanonicoValido(cfopNat)) item.cfop = cfopNat;
-    const codEff = codNat || item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst || '102';
+    const codPadrao = String(crt) === '3'
+      ? (cfg.impostos?.icms?.cst || '00')
+      : (cfg.impostos?.icms?.csosn || '102');
+    const codEff = (codNatOk ? codNat : '')
+      || item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst
+      || codPadrao;
     item.csosn = codEff;
 
     const ufOrig = cfg.empresa?.endereco?.uf || 'SP';
-    const crt = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
 
     const imposto = {
       ...(item.imposto || {}),

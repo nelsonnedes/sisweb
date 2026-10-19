@@ -2765,7 +2765,7 @@
     <script src="nf-cert.js?v=b522cff21ec4"></script>
     <script src="nf-validator.js?v=a02e65d4fe09"></script>
     <script src="nf-tax-tables.js?v=3d160df3c943"></script>
-    <script src="nf-itens.js?v=f6f2d9c96f68"></script>
+    <script src="nf-itens.js?v=7069633ec726"></script>
     <script src="nf-xml-builder.js?v=553663a16c21"></script>
     <script src="nf-fiscal-events.js?v=4a67d0a21c7c"></script>
     <script src="nf-storage.js?v=46f3910730cf"></script>
@@ -3742,7 +3742,12 @@
       const un = (document.getElementById('nfEditItemUN')?.value || 'UN').trim().toUpperCase();
       const qtd = parseFloat(document.getElementById('nfEditItemQtd')?.value) || 0;
       const vUnit = parseMoeda(document.getElementById('nfEditItemValor')?.value);
-      const csosn = (document.getElementById('nfEditItemCSOSN')?.value || '102').trim();
+      const cfgEdit = window.NFService?.getConfig?.() || {};
+      const crtEdit = window.NFConfigService?.getCRT?.(cfgEdit.empresa?.regime) ?? 1;
+      const codPadraoEdit = String(crtEdit) === '3'
+        ? (cfgEdit.impostos?.icms?.cst || '00')
+        : (cfgEdit.impostos?.icms?.csosn || '102');
+      const csosn = (document.getElementById('nfEditItemCSOSN')?.value || codPadraoEdit).trim();
       if (!nome) return mostrarAlertaEmissao('⚠️ Informe o nome do produto', 'warn');
       const ncmValEdit = window.NFItens?.validarNCM ? window.NFItens.validarNCM(ncm) : { valid: ncm.length === 8 && !/^0{8}$/.test(ncm), erro: 'NCM deve ter 8 dígitos' };
       if (!ncmValEdit.valid) return mostrarAlertaEmissao('⚠️ ' + ncmValEdit.erro, 'warn');
@@ -6317,6 +6322,12 @@ renderizarVolumesNF();
       const cfg = window.NFService?.getConfig?.() || {};
       const ufDest = document.getElementById('nfClienteUf')?.value || cfg.empresa?.endereco?.uf || 'SP';
       const natOpId = document.getElementById('nfNatOpId')?.value || document.getElementById('nfNatOpSelect')?.value || '';
+      // Sem select CSOSN/CST no modo romaneio: usa o código do regime (CRT 3
+      // rejeita CSOSN 102 — cStat 931). A natureza só sobrescreve se válida.
+      const crtRom = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
+      const csosnRom = String(crtRom) === '3'
+        ? (cfg.impostos?.icms?.cst || '00')
+        : (cfg.impostos?.icms?.csosn || '102');
 
       const item = window.NFItens?.criarItemFiscal
         ? window.NFItens.criarItemFiscal({
@@ -6324,10 +6335,10 @@ renderizarVolumesNF();
             cProd: 'ROMANEIO_' + Date.now(),
             xProd: nome,
             ncm, cfop, uCom: 'M³', qCom: qtd, vUnCom: vUnit,
-            csosn: '102', cest: '', orig: '0', importado: false,
+            csosn: csosnRom, cest: '', orig: '0', importado: false,
             natOpId, cfg, ufDest,
           })
-        : { id: 'it_' + Date.now(), cProd: 'ROMANEIO_' + Date.now(), xProd: nome, ncm, cfop, uCom: 'M³', uTrib: 'M³', qCom: qtd, vUnCom: vUnit, vProd: qtd * vUnit, csosn: '102', imposto: {} };
+        : { id: 'it_' + Date.now(), cProd: 'ROMANEIO_' + Date.now(), xProd: nome, ncm, cfop, uCom: 'M³', uTrib: 'M³', qCom: qtd, vUnCom: vUnit, vProd: qtd * vUnit, csosn: csosnRom, imposto: {} };
 
       _itensNF.push(item);
       invalidarRevisaoNF();
@@ -6430,20 +6441,40 @@ renderizarVolumesNF();
       }
       natIdHidden.value = nat.id || id;
       // A natureza é a fonte fiscal da operação: CFOP e CSOSN/CST dela
-      // SEMPRE prevalecem nos campos do item (manual E cadastrado). Se o
-      // código da natureza conflitar com o regime (CRT) da empresa, avisa —
-      // o validador barra na emissão (gate CRT×código, Fase A).
+      // SEMPRE prevalecem nos campos do item (manual E cadastrado) QUANDO o
+      // código é válido para o regime (CRT). Naturezas padrão guardam CSOSN
+      // (Simples); em CRT 3 (Regime Normal) isso gerava CSOSN 102 no select
+      // de CST e rejeição 931 — nesse caso mantém o CST já selecionado.
+      let crtNat = '';
+      try {
+        const cfg = window.NFService?.getConfig?.() || {};
+        const regimeNat = cfg.empresa?.regime;
+        // Sem regime carregado não gateia (getCRT(undefined) retorna 3, o que
+        // classificaria Simples como Normal antes do init da config).
+        crtNat = regimeNat ? (window.NFConfigService?.getCRT?.(regimeNat) ?? '') : '';
+      } catch (_) {}
       const aplicaCodigo = (selId) => {
         const el = document.getElementById(selId);
-        if (!el) return;
-        if (nat.csosn) {
-          if (window.NFTaxTables && !el.querySelector(`option[value="${nat.csosn}"]`)) {
-            const o = document.createElement('option');
-            o.value = nat.csosn; o.textContent = `${nat.csosn} — (natureza)`;
-            el.appendChild(o);
+        if (!el || !nat.csosn) return;
+        const gate = (crtNat && window.NFTaxTables?.validarCodigoICMS)
+          ? window.NFTaxTables.validarCodigoICMS(crtNat, nat.csosn)
+          : { ok: true };
+        if (!gate.ok) {
+          // Sem valor prévio (ex.: selects ainda não populados), aplica a
+          // lista/default do regime para nunca deixar o campo vazio.
+          if (!el.value && typeof nfPopularCodigoICMSItem === 'function') {
+            nfPopularCodigoICMSItem(selId);
           }
-          el.value = nat.csosn;
+          console.warn('[NF-e] Natureza "' + nat.descricao + '": ' + gate.erro
+            + ' Código mantido: ' + (el.value || '(vazio)'));
+          return;
         }
+        if (window.NFTaxTables && !el.querySelector(`option[value="${nat.csosn}"]`)) {
+          const o = document.createElement('option');
+          o.value = nat.csosn; o.textContent = `${nat.csosn} — (natureza)`;
+          el.appendChild(o);
+        }
+        el.value = nat.csosn;
       };
       const cfopIds = ['itemCFOP', 'itemCFOPCad', 'itemCFOPRom'];
       cfopIds.forEach((fid) => {
@@ -6479,14 +6510,6 @@ renderizarVolumesNF();
       } catch (_) {}
       aplicaCodigo('itemCSOSN');
       aplicaCodigo('itemCSOSNCad');
-      try {
-        const cfg = window.NFService?.getConfig?.() || {};
-        const crt = window.NFConfigService?.getCRT?.(cfg.empresa?.regime) ?? 1;
-        if (window.NFTaxTables?.validarCodigoICMS && nat.csosn) {
-          const g = window.NFTaxTables.validarCodigoICMS(crt, nat.csosn);
-          if (!g.ok) notifyUser('⚠️ Natureza "' + nat.descricao + '": ' + g.erro);
-        }
-      } catch (_) {}
       // A8: tipo da natureza × tpNF — natureza de entrada com tpNF saída
       // (ou vice-versa) gera CFOP/natureza incoerentes. Sugere o ajuste.
       try {

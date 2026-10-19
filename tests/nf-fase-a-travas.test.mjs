@@ -153,3 +153,10 @@ test('UI Fase A: selects por regime, finNFe/indPres, config CST Normal', () => {
   assert.ok(html.includes('nf-tax-tables.js'), 'módulo de tabelas carregado');
   assert.match(html, /CRT 1\/2.*SOMENTE CSOSN/, 'documenta o gate');
 });
+
+test('nfAplicarNatOp: CSOSN incompatível com CRT 3 não é aplicado (sem cStat 931)', () => {
+  assert.match(html, /const gate = \(crtNat && window\.NFTaxTables\?\.validarCodigoICMS\)/);
+  assert.match(html, /if \(!gate\.ok\) \{[\s\S]*?Código mantido[\s\S]*?return;[\s\S]*?\}/, 'mantém o CST do regime');
+  assert.match(html, /el\.value = nat\.csosn;/, 'código válido continua prevalecendo');
+  assert.doesNotMatch(html, /notifyUser\('⚠️ Natureza "' \+ nat\.descricao/, 'sem toast de erro na troca de natureza');
+});
