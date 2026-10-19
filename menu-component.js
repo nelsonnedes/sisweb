@@ -828,6 +828,25 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     .alerts-item.sev-info { border-left: 4px solid #2563eb; background: #eff6ff; }
                     .alerts-item.sev-success { border-left: 4px solid #16a34a; background: #f0fdf4; }
                     .alerts-item:last-child { border-bottom: 0; }
+                    .alerts-divider {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        margin: 8px 12px 4px;
+                        color: var(--sw-text-2, #64748b);
+                        font-size: 11px;
+                        font-weight: 700;
+                        letter-spacing: .04em;
+                        text-transform: uppercase;
+                    }
+                    .alerts-divider::before,
+                    .alerts-divider::after {
+                        content: '';
+                        flex: 1;
+                        height: 1px;
+                        background: var(--sw-border, #e2e8f0);
+                    }
+                    .alerts-divider span { color: var(--sw-brand, #f97316); }
                     .alerts-item-title {
                         display: block;
                         font-size: 12px;
@@ -1969,6 +1988,39 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             return this.getAdminContext().isAdmin;
         }
 
+        alertItemHtml(a) {
+            const esc = (v) => String(v == null ? '' : v).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const title = esc(a && a.title || 'Alerta');
+            const message = esc(a && a.message || '').replace(/\n/g, '<br>');
+            const href = a && a.href ? String(a.href) : '';
+            const sevRaw = String((a && (a.severity || a.type)) || '').toLowerCase();
+            const sev = (sevRaw === 'error' || sevRaw === 'danger')
+                ? 'sev-error'
+                : (sevRaw === 'warning' || sevRaw === 'warn')
+                    ? 'sev-warning'
+                    : (sevRaw === 'success')
+                        ? 'sev-success'
+                        : sevRaw
+                            ? 'sev-info'
+                            : '';
+            const cls = `alerts-item${sev ? ' ' + sev : ''}${a && a.read ? '' : ' unread'}`;
+            const hrefEscaped = href.replace(/"/g, '&quot;');
+            const targetAttr = /^https?:\/\//i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
+            const messageHtml = href
+                ? `<a class="alerts-item-message" href="${hrefEscaped}"${targetAttr}>${message}</a>`
+                : `<span class="alerts-item-message">${message}</span>`;
+            return `<div class="${cls}"><strong class="alerts-item-title">${title}</strong>${messageHtml}</div>`;
+        }
+
+        alertOrigin(a) {
+            const src = String((a && (a.origin || a.source || '')) || '').toLowerCase();
+            if (src === 'admin' || src === 'administrador') return 'admin';
+            // Alertas antigos não têm origin: lembrete do parceiro é enviado pelo
+            // painel Admin (superadmin) para o tenant.
+            if (/^partner_reminder__/.test(String((a && a.id) || ''))) return 'admin';
+            return 'tenant';
+        }
+
         renderAlerts() {
             try {
                 const listEl = this.querySelector('.alerts-list');
@@ -1982,28 +2034,29 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     listEl.innerHTML = '<div class="alerts-empty">Nenhum alerta no momento.</div>';
                     return;
                 }
-                listEl.innerHTML = alerts.slice(0, 8).map((a) => {
-                    const title = String(a.title || 'Alerta').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    const message = String(a.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-                    const href = a && a.href ? String(a.href) : '';
-                    const sevRaw = String((a && (a.severity || a.type)) || '').toLowerCase();
-                    const sev = (sevRaw === 'error' || sevRaw === 'danger')
-                        ? 'sev-error'
-                        : (sevRaw === 'warning' || sevRaw === 'warn')
-                            ? 'sev-warning'
-                            : (sevRaw === 'success')
-                                ? 'sev-success'
-                                : sevRaw
-                                    ? 'sev-info'
-                                    : '';
-                    const cls = `alerts-item${sev ? ' ' + sev : ''}${a && a.read ? '' : ' unread'}`;
-                    const hrefEscaped = href.replace(/"/g,'&quot;');
-                    const targetAttr = /^https?:\/\//i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
-                    const messageHtml = href
-                        ? `<a class="alerts-item-message" href="${hrefEscaped}"${targetAttr}>${message}</a>`
-                        : `<span class="alerts-item-message">${message}</span>`;
-                    return `<div class="${cls}"><strong class="alerts-item-title">${title}</strong>${messageHtml}</div>`;
-                }).join('');
+                // Lista única: primeiro os alertas do Administrador, depois os da
+                // empresa, separados por um divisor destacado (não dois blocos).
+                const adminAlerts = [];
+                const tenantAlerts = [];
+                alerts.forEach((a) => {
+                    (this.alertOrigin(a) === 'admin' ? adminAlerts : tenantAlerts).push(a);
+                });
+                const max = 8;
+                const parts = [];
+                let count = 0;
+                const pushItems = (arr) => {
+                    for (const a of arr) {
+                        if (count >= max) break;
+                        parts.push(this.alertItemHtml(a));
+                        count += 1;
+                    }
+                };
+                pushItems(adminAlerts);
+                if (adminAlerts.length && tenantAlerts.length && count < max) {
+                    parts.push('<div class="alerts-divider" role="separator"><span>Da sua empresa</span></div>');
+                }
+                pushItems(tenantAlerts);
+                listEl.innerHTML = parts.join('');
             } catch (_) {}
         }
 
@@ -2800,6 +2853,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         message: String(r.message || 'Parceiro informa mensalidade em atraso. Regularize em Minha Assinatura.').slice(0, 280),
                         href: this.resolveUrl('subscription-status.html'),
                         severity: 'warning',
+                        origin: 'admin',
                         createdAt: r.createdAt || now.toISOString(),
                         read: false
                     });
