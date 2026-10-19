@@ -48,6 +48,10 @@ test('encerramento 110112 envia eventoMDFe direto (sem envEventoMDFe) com evEncM
   assert.match(mdfeFunctions, /const payload = signedEvent;/, 'eventoMDFe direto (NFePHP sefazEvento)');
   assert.doesNotMatch(mdfeFunctions, /<envEventoMDFe/, 'wrapper gerava cStat 215 (element is not declared)');
   const js = readFileSync('mdf-e.js', 'utf8');
+  // Cancelamento mantém o protocolo direto; encerramento (form e rápido)
+  // passou a validar 15 dígitos antes de chamar a SEFAZ.
   assert.match(js, /nProt: mdfe\.protocolo \|\| ''/);
-  assert.equal((js.match(/nProt: mdfe\.protocolo \|\| ''/g) || []).length, 3, 'encerramento (form + rápido) + cancelamento');
+  assert.match(js, /nProt: nProtRapido,/);
+  assert.match(js, /\^\\d\{15\}\$\/\.test\(nProt\)/);
+  assert.match(js, /\^\\d\{15\}\$\/\.test\(nProtRapido\)/);
 });

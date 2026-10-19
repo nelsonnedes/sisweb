@@ -14,6 +14,15 @@ let configuracaoFiscalMdfe = {};
 let __mdfesCarregados = false;
 let __mdfesErro = false;
 
+// Dashboard (padrão NF-e): KPIs + gráficos + tabela paginada
+const MDFE_DASH_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const MDFE_DASH_PAGE_SIZE_DEFAULT = 25;
+let __mdfeDashPagina = 1;
+let __mdfeDashFiltrados = [];
+let mdfeChartDiaria = null;
+let mdfeChartStatus = null;
+let mdfeChartUf = null;
+
 // Configurações
 const configuracoesMdfe = {
     serie: '1',
@@ -1437,7 +1446,13 @@ async function encerrarMdfe() {
         notifyUser('MDF-e não encontrado');
         return;
     }
-    
+
+    const nProt = String(mdfe.protocolo || '').replace(/\D/g, '');
+    if (!/^\d{15}$/.test(nProt)) {
+        mdfeMostrarAlerta('Protocolo de autorização ausente/inválido. Consulte o MDF-e na SEFAZ (aba Consulta) para atualizar o protocolo antes de encerrar.', 'erro');
+        return;
+    }
+
     try {
         // Senha no modal central (padrão NF-e)
         const senhaA1 = await mdfeSolicitarSenhaA1({
@@ -1450,11 +1465,11 @@ async function encerrarMdfe() {
             tenantId: tenantIdMdfe,
             mdfeId: mdfe.id,
             chave: mdfe.chaveAcesso,
-            nProt: mdfe.protocolo || '',
+            nProt,
             cMunEnc,
             dtEnc: dataEncerramento,
             senhaA1,
-            ambiente: document.getElementById('mdfeAmbiente')?.value || 'homologacao',
+            ambiente: (mdfe && mdfe.ambiente) || document.getElementById('mdfeAmbiente')?.value || 'homologacao',
         });
         if (!result?.encerrado) throw new Error(result?.xMotivo || 'SEFAZ não autorizou o encerramento.');
         mdfe.status = 'encerrado';
@@ -1474,6 +1489,9 @@ async function encerrarMdfe() {
     try { document.getElementById('ufEncerramento').value = ''; } catch (_) {}
     document.getElementById('municipioEncerramento').value = '';
     document.getElementById('protocoloEncerramento').value = '';
+    try { carregarMdfesParaEncerramento(); } catch (_) {}
+    try { consultarMdfes(); } catch (_) {}
+    try { atualizarDashboard(); } catch (_) {}
     
     atualizarDashboard();
     carregarMdfesParaEncerramento();
@@ -1485,6 +1503,11 @@ async function encerrarMdfe() {
 async function encerrarMdfeRapido(id) {
     const mdfe = mdfes.find(m => m.id === id);
     if (!mdfe) return;
+    const nProtRapido = String(mdfe.protocolo || '').replace(/\D/g, '');
+    if (!/^\d{15}$/.test(nProtRapido)) {
+        mdfeMostrarAlerta('Protocolo de autorização ausente/inválido. Consulte o MDF-e na SEFAZ antes de encerrar.', 'erro');
+        return;
+    }
     // Município e senha via modal central (mesmo padrão da NF-e)
     const municipio = typeof window.promptDialog === 'function'
         ? await window.promptDialog({
@@ -1511,11 +1534,11 @@ async function encerrarMdfeRapido(id) {
             tenantId: tenantIdMdfe,
             mdfeId: mdfe.id,
             chave: mdfe.chaveAcesso,
-            nProt: mdfe.protocolo || '',
+            nProt: nProtRapido,
             cMunEnc,
             dtEnc: new Date().toISOString().slice(0, 10),
             senhaA1,
-            ambiente: document.getElementById('mdfeAmbiente')?.value || 'homologacao',
+            ambiente: (mdfe && mdfe.ambiente) || document.getElementById('mdfeAmbiente')?.value || 'homologacao',
         });
         if (!result?.encerrado) throw new Error(result?.xMotivo || 'SEFAZ não autorizou o encerramento.');
         mdfe.status = 'encerrado';
@@ -1948,20 +1971,284 @@ async function excluirMdfe(id) {
 }
 
 // Atualizar dashboard
+function mdfeDashISO(d) {
+    const x = new Date(d);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${x.getFullYear()}-${p(x.getMonth() + 1)}-${p(x.getDate())}`;
+}
+
+function mdfeDashDataISO(m) {
+    const raw = String((m && m.dataEmissao) || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '';
+}
+
+function mdfeDashPageKey() {
+    try {
+        const u = (() => { try { return String(window.firebaseService?.currentUser?.uid || 'anon'); } catch (_) { return 'anon'; } })();
+        return `mdfe_dashboard_${tenantIdMdfe || 'default'}_${u}_items_per_page`;
+    } catch (_) { return 'mdfe_dashboard_default_anon_items_per_page'; }
+}
+
+function mdfeDashPageSize() {
+    try {
+        const v = parseInt(localStorage.getItem(mdfeDashPageKey()) || '', 10);
+        if (MDFE_DASH_PAGE_SIZE_OPTIONS.includes(v)) return v;
+    } catch (_) {}
+    return MDFE_DASH_PAGE_SIZE_DEFAULT;
+}
+
+function mdfeDashSetPageSize(value) {
+    const size = parseInt(value, 10);
+    if (!MDFE_DASH_PAGE_SIZE_OPTIONS.includes(size)) return;
+    try { localStorage.setItem(mdfeDashPageKey(), String(size)); } catch (_) {}
+    __mdfeDashPagina = 1;
+    renderizarTabelaDashboardMdfe();
+}
+window.mdfeDashSetPageSize = mdfeDashSetPageSize;
+
+function mdfeDashMudarPagina(page) {
+    const size = mdfeDashPageSize();
+    const total = Math.max(1, Math.ceil(__mdfeDashFiltrados.length / size));
+    __mdfeDashPagina = Math.min(Math.max(1, parseInt(page, 10) || 1), total);
+    renderizarTabelaDashboardMdfe();
+}
+window.mdfeDashMudarPagina = mdfeDashMudarPagina;
+
+function renderizarPaginacaoDashboardMdfe(totalItems, paginaAtual, pageSize) {
+    const container = document.getElementById('paginacaoDashboardMdfe');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!totalItems) return;
+    const totalPaginas = Math.ceil(totalItems / pageSize);
+
+    const label = document.createElement('label');
+    label.className = 'pagination-size-control';
+    label.innerHTML = `<span>Itens por página:</span>
+        <select onchange="mdfeDashSetPageSize(this.value)">
+            ${MDFE_DASH_PAGE_SIZE_OPTIONS.map((opt) => `<option value="${opt}" ${opt === pageSize ? 'selected' : ''}>${opt}</option>`).join('')}
+        </select>`;
+    container.appendChild(label);
+
+    if (!totalPaginas || totalPaginas <= 1) {
+        const info = document.createElement('span');
+        info.className = 'pagination-total-info';
+        info.textContent = `${totalItems} MDF-e(s)`;
+        container.appendChild(info);
+        return;
+    }
+
+    const host = document.createElement('span');
+    host.className = 'pagination-page-buttons';
+    container.appendChild(host);
+    const addBtn = (text, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.textContent = text;
+        btn.type = 'button';
+        if (active) btn.classList.add('active');
+        btn.disabled = disabled;
+        btn.onclick = () => mdfeDashMudarPagina(page);
+        host.appendChild(btn);
+    };
+    addBtn('<<<', 1, paginaAtual === 1);
+    addBtn('<', paginaAtual - 1, paginaAtual === 1);
+    const startPage = Math.max(1, paginaAtual - 2);
+    const endPage = Math.min(totalPaginas, paginaAtual + 2);
+    if (startPage > 1) {
+        addBtn('1', 1, false, paginaAtual === 1);
+        if (startPage > 2) { const s = document.createElement('span'); s.textContent = '...'; host.appendChild(s); }
+    }
+    for (let i = startPage; i <= endPage; i++) addBtn(String(i), i, false, i === paginaAtual);
+    if (endPage < totalPaginas) {
+        if (endPage < totalPaginas - 1) { const s = document.createElement('span'); s.textContent = '...'; host.appendChild(s); }
+        addBtn(String(totalPaginas), totalPaginas, false, paginaAtual === totalPaginas);
+    }
+    addBtn('>', paginaAtual + 1, paginaAtual === totalPaginas);
+    addBtn('>>>', totalPaginas, paginaAtual === totalPaginas);
+    const info = document.createElement('span');
+    info.className = 'pagination-total-info';
+    info.textContent = `Pág. ${paginaAtual}/${totalPaginas} · ${totalItems} MDF-e(s)`;
+    container.appendChild(info);
+}
+
+function renderizarTabelaDashboardMdfe() {
+    const tbody = document.getElementById('mdfeDashboardTable');
+    if (!tbody) return;
+    const size = mdfeDashPageSize();
+    const total = __mdfeDashFiltrados.length;
+    const totalPaginas = Math.max(1, Math.ceil(total / size));
+    if (__mdfeDashPagina > totalPaginas) __mdfeDashPagina = totalPaginas;
+    const inicio = (__mdfeDashPagina - 1) * size;
+    const fatia = __mdfeDashFiltrados.slice(inicio, inicio + size);
+    if (!fatia.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="mdfe-empty">Sem dados no período.</td></tr>';
+        renderizarPaginacaoDashboardMdfe(0, 1, size);
+        return;
+    }
+    tbody.innerHTML = fatia.map((mdfe) => `
+        <tr>
+            <td data-label="Número">${escapeHtmlMdfe(mdfe.numero)}</td>
+            <td data-label="Série">${escapeHtmlMdfe(mdfe.serie)}</td>
+            <td data-label="Data">${escapeHtmlMdfe(formatarDataHora(mdfe.dataEmissao))}</td>
+            <td data-label="Placa">${escapeHtmlMdfe(mdfe.veiculo?.placa)}</td>
+            <td data-label="Condutor">${escapeHtmlMdfe(mdfe.condutor?.nome)}</td>
+            <td data-label="UF">${escapeHtmlMdfe(mdfe.ufInicio)}/${escapeHtmlMdfe(mdfe.ufFim)}</td>
+            <td data-label="Status">${mdfeStatusPill(mdfe)}</td>
+        </tr>
+    `).join('');
+    renderizarPaginacaoDashboardMdfe(total, __mdfeDashPagina, size);
+}
+
+function renderizarGraficosDashboardMdfe(basePeriodo, filtrados) {
+    if (typeof Chart === 'undefined') return;
+    const ini = document.getElementById('relMdfePeriodoInicio')?.value || '';
+    const fim = document.getElementById('relMdfePeriodoFim')?.value || '';
+
+    // Série diária (ou mensal em períodos longos)
+    const porDia = new Map();
+    (basePeriodo || []).forEach((m) => {
+        const iso = mdfeDashDataISO(m);
+        if (iso) porDia.set(iso, (porDia.get(iso) || 0) + 1);
+    });
+    const labels = [];
+    const values = [];
+    if (ini && fim) {
+        const dias = Math.round((new Date(fim + 'T00:00:00') - new Date(ini + 'T00:00:00')) / 86400000) + 1;
+        if (dias > 62) {
+            const acc = new Map();
+            (basePeriodo || []).forEach((m) => {
+                const iso = mdfeDashDataISO(m);
+                if (!iso) return;
+                const k = iso.slice(0, 7);
+                acc.set(k, (acc.get(k) || 0) + 1);
+            });
+            Array.from(acc.keys()).sort().forEach((k) => {
+                labels.push(`${k.slice(5, 7)}/${k.slice(0, 4)}`);
+                values.push(acc.get(k));
+            });
+        } else {
+            for (let d = new Date(ini + 'T00:00:00'); d <= new Date(fim + 'T00:00:00'); d.setDate(d.getDate() + 1)) {
+                const iso = mdfeDashISO(d);
+                labels.push(`${iso.slice(8, 10)}/${iso.slice(5, 7)}`);
+                values.push(porDia.get(iso) || 0);
+            }
+        }
+    }
+
+    const canvasDiaria = document.getElementById('mdfeChartDiaria');
+    if (canvasDiaria) {
+        if (mdfeChartDiaria) { try { mdfeChartDiaria.destroy(); } catch (_) {} }
+        mdfeChartDiaria = new Chart(canvasDiaria.getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'MDF-e(s)', data: values, backgroundColor: 'rgba(249,115,22,.85)', borderColor: '#f97316', borderWidth: 1, borderRadius: 4, maxBarThickness: 26 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(148,163,184,.18)' } }
+                }
+            }
+        });
+    }
+
+    // Status
+    const statusOrder = ['autorizado', 'encerrado', 'cancelado', 'rejeitado', 'rascunho', 'erro_envio', 'erro_encerramento', 'erro_cancelamento'];
+    const statusCount = new Map();
+    (filtrados || []).forEach((m) => {
+        const s = String(m.status || 'indefinido');
+        statusCount.set(s, (statusCount.get(s) || 0) + 1);
+    });
+    const statusLabels = statusOrder.filter((s) => statusCount.get(s)).concat(
+        Array.from(statusCount.keys()).filter((s) => !statusOrder.includes(s))
+    );
+    const canvasStatus = document.getElementById('mdfeChartStatus');
+    if (canvasStatus) {
+        if (mdfeChartStatus) { try { mdfeChartStatus.destroy(); } catch (_) {} }
+        const semDados = !statusLabels.length;
+        mdfeChartStatus = new Chart(canvasStatus.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: semDados ? ['Sem movimentações'] : statusLabels.map((s) => String(s).replace(/_/g, ' ')),
+                datasets: [{
+                    data: semDados ? [1] : statusLabels.map((s) => statusCount.get(s)),
+                    backgroundColor: semDados ? ['#cbd5e1'] : ['#22c55e', '#3b82f6', '#ef4444', '#f97316', '#eab308', '#a855f7', '#64748b', '#94a3b8'],
+                    borderColor: 'transparent', borderWidth: 2, hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '58%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 9, padding: 10 } },
+                    tooltip: { enabled: !semDados }
+                }
+            }
+        });
+    }
+
+    // Top UFs destino
+    const ufCount = new Map();
+    (filtrados || []).forEach((m) => {
+        const uf = String(m.ufFim || '—').toUpperCase();
+        ufCount.set(uf, (ufCount.get(uf) || 0) + 1);
+    });
+    const topUf = Array.from(ufCount.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const canvasUf = document.getElementById('mdfeChartUf');
+    if (canvasUf) {
+        if (mdfeChartUf) { try { mdfeChartUf.destroy(); } catch (_) {} }
+        const semUf = !topUf.length;
+        mdfeChartUf = new Chart(canvasUf.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: semUf ? ['Sem dados'] : topUf.map(([uf]) => uf),
+                datasets: [{ label: 'MDF-e(s)', data: semUf ? [0] : topUf.map(([, n]) => n), backgroundColor: '#fb923c', borderRadius: 4 }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(148,163,184,.18)' } }, y: { grid: { display: false } } }
+            }
+        });
+    }
+}
+
 function atualizarDashboard() {
-    const totalEmitidos = mdfes.length;
-    const totalAutorizados = mdfes.filter(m => m.status === 'autorizado').length;
-    const totalEncerrados = mdfes.filter(m => m.status === 'encerrado').length;
-    const viagensAtivas = mdfes.filter(m => m.status === 'autorizado').length;
-    
-    const _elMdfEmitidos = document.getElementById('totalMdfesEmitidos');
-    const _elMdfAutorizados = document.getElementById('totalMdfesAutorizados');
-    const _elMdfEncerrados = document.getElementById('totalMdfesEncerrados');
-    const _elViagensAtivas = document.getElementById('totalViagensAtivas');
-    if (_elMdfEmitidos) _elMdfEmitidos.textContent = totalEmitidos;
-    if (_elMdfAutorizados) _elMdfAutorizados.textContent = totalAutorizados;
-    if (_elMdfEncerrados) _elMdfEncerrados.textContent = totalEncerrados;
-    if (_elViagensAtivas) _elViagensAtivas.textContent = viagensAtivas;
+    const iniEl = document.getElementById('relMdfePeriodoInicio');
+    const fimEl = document.getElementById('relMdfePeriodoFim');
+    if (iniEl && !iniEl.value) {
+        const d = new Date();
+        d.setDate(d.getDate() - 29);
+        iniEl.value = mdfeDashISO(d);
+    }
+    if (fimEl && !fimEl.value) fimEl.value = mdfeDashISO(new Date());
+
+    const ini = iniEl?.value || '';
+    const fim = fimEl?.value || '';
+    const statusFiltro = document.getElementById('filterStatusMdfeDashboard')?.value || '';
+
+    const basePeriodo = (mdfes || []).filter((m) => {
+        const iso = mdfeDashDataISO(m);
+        if (!iso) return false;
+        if (ini && iso < ini) return false;
+        if (fim && iso > fim) return false;
+        return true;
+    });
+    const filtrados = statusFiltro
+        ? basePeriodo.filter((m) => String(m.status || '') === statusFiltro)
+        : basePeriodo;
+
+    const count = (s) => basePeriodo.filter((m) => String(m.status || '') === s).length;
+    const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    set('totalMdfesEmitidos', basePeriodo.length);
+    set('totalMdfesAutorizados', count('autorizado'));
+    set('totalMdfesEncerrados', count('encerrado'));
+    set('totalMdfesCancelados', count('cancelado'));
+    set('totalMdfesRejeitados', count('rejeitado'));
+    set('totalMdfesRascunhos', count('rascunho'));
+
+    __mdfeDashFiltrados = filtrados.slice().sort(mdfeOrdenarPorNumeroDesc);
+    __mdfeDashPagina = 1;
+    renderizarTabelaDashboardMdfe();
+    renderizarGraficosDashboardMdfe(basePeriodo, filtrados);
 }
 
 // Gerar relatório

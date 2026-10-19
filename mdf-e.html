@@ -1108,7 +1108,7 @@
             <div class="stats-cards">
                 <div class="stat-card">
                     <h3 id="totalMdfesEmitidos">0</h3>
-                    <p>MDF-es Emitidos</p>
+                    <p>MDF-es no Período</p>
                 </div>
                 <div class="stat-card">
                     <h3 id="totalMdfesAutorizados">0</h3>
@@ -1119,30 +1119,97 @@
                     <p>Encerrados</p>
                 </div>
                 <div class="stat-card">
-                    <h3 id="totalViagensAtivas">0</h3>
-                    <p>Viagens Ativas</p>
+                    <h3 id="totalMdfesCancelados">0</h3>
+                    <p>Cancelados</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalMdfesRejeitados">0</h3>
+                    <p>Rejeitados</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalMdfesRascunhos">0</h3>
+                    <p>Rascunhos</p>
                 </div>
             </div>
 
             <div class="form-section">
-                <h3><i class="fas fa-chart-line"></i> Relatórios</h3>
+                <h3><i class="fas fa-chart-line"></i> MDF-es por dia</h3>
+                <div style="position:relative;height:300px;">
+                    <canvas id="mdfeChartDiaria"></canvas>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+                <div class="form-section" style="margin:0;">
+                    <h3>Por status</h3>
+                    <div style="position:relative;height:260px;">
+                        <canvas id="mdfeChartStatus"></canvas>
+                    </div>
+                </div>
+                <div class="form-section" style="margin:0;">
+                    <h3>Top UFs destino</h3>
+                    <div style="position:relative;height:260px;">
+                        <canvas id="mdfeChartUf"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-filter"></i> Filtros do Dashboard</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="relMdfePeriodoInicio">Data Início:</label>
-                        <input type="date" id="relMdfePeriodoInicio">
+                        <input type="date" id="relMdfePeriodoInicio" onchange="atualizarDashboard()">
                     </div>
                     <div class="form-group">
                         <label for="relMdfePeriodoFim">Data Fim:</label>
-                        <input type="date" id="relMdfePeriodoFim">
+                        <input type="date" id="relMdfePeriodoFim" onchange="atualizarDashboard()">
+                    </div>
+                    <div class="form-group">
+                        <label for="filterStatusMdfeDashboard">Status:</label>
+                        <select id="filterStatusMdfeDashboard" onchange="atualizarDashboard()">
+                            <option value="">Todos os status</option>
+                            <option value="rascunho">Rascunho</option>
+                            <option value="autorizado">Autorizado</option>
+                            <option value="encerrado">Encerrado</option>
+                            <option value="cancelado">Cancelado</option>
+                            <option value="rejeitado">Rejeitado</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>&nbsp;</label>
-                        <button onclick="gerarRelatorioMdfe()" class="btn btn-primary">
-                            <i class="fas fa-chart-bar"></i> Gerar Relatório
+                        <button onclick="atualizarDashboard()" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Atualizar
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button onclick="gerarRelatorioMdfe()" class="btn btn-secondary">
+                            <i class="fas fa-print"></i> Imprimir Relatório
                         </button>
                     </div>
                 </div>
             </div>
+
+            <div class="table-container">
+                <table class="data-table mdfe-table">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Série</th>
+                            <th>Data</th>
+                            <th>Placa</th>
+                            <th>Condutor</th>
+                            <th>UF</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mdfeDashboardTable">
+                        <tr><td colspan="7" class="mdfe-empty">Sem dados no período.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="paginacaoDashboardMdfe" class="nf-pagination-bar"></div>
         </div>
     </div>
 
@@ -1169,7 +1236,7 @@
 
     <script src="auth.js?v=b5aee5a1f3c6"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=c06b2ab8d1c5"></script>
+<script src="menu-component.js?v=9fb5a30ab4be"></script>
     <script src="cities-loader.js?v=b537d6225e16"></script>
     <!-- Legacy inline implementation kept as a non-executable migration reference. -->
     <script type="text/plain" id="legacy-mdfe-implementation">
@@ -1479,8 +1546,9 @@
     <script src="assets/vendor/jsbarcode.min.js?v=52e032534c3f"></script>
     <script src="assets/vendor/qrcode-generator.js?v=18ae399f8118"></script>
     <script src="mdfe-xml-builder.js?v=0357503575e2"></script>
-    <script src="js/sisweb-loading.js?v=982110809b2c"></script>
-    <script src="mdf-e.js?v=6593b8ed229f"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
+    <script src="mdf-e.js?v=a61ce07241fa"></script>
     <!-- Loading Overlay Global (padrão Sisweb) -->
     <div id="loadingOverlay" class="loading-overlay" style="display: none;">
         <div class="loading-spinner"></div>

@@ -2902,10 +2902,22 @@ if (window.customElements && !window.customElements.get('main-menu')) {
             try {
                 const ctx = this.getAlertsContext();
                 if (!ctx.uid) return;
+                // Contexto transitório (sem tenant resolvido) não pode sobrescrever
+                // o store: isso apagava alertas do Admin/tenant por alguns segundos.
+                if (!ctx.isAdmin && (!ctx.tenantId || ctx.tenantId === 'default')) return;
                 const existing = this.readAlertsStore();
                 const existingReadById = new Map(existing.map((a) => [String(a && a.id), !!(a && a.read)]));
                 const computed = ctx.isAdmin ? await this.computeAlertsForAdmin(ctx) : await this.computeAlertsForUser(ctx);
-                const merged = (computed || []).map((a) => ({
+                // Alertas de origem Admin que ainda não foram recomputados (ex.:
+                // falha transitória de leitura) são preservados por até 30 dias.
+                const computedIds = new Set((computed || []).map((a) => String(a && a.id)));
+                const preservedAdmin = existing.filter((a) => {
+                    if (this.alertOrigin(a) !== 'admin') return false;
+                    if (computedIds.has(String(a && a.id))) return false;
+                    const created = Date.parse(String(a && a.createdAt || '')) || 0;
+                    return created > 0 && (Date.now() - created) < 30 * 24 * 60 * 60 * 1000;
+                });
+                const merged = [...preservedAdmin, ...(computed || [])].map((a) => ({
                     ...a,
                     read: existingReadById.has(String(a.id)) ? existingReadById.get(String(a.id)) : !!a.read
                 }));
