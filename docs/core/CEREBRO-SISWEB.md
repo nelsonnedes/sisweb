@@ -1991,3 +1991,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Vendas/Compras:** rótulos de romaneio sem `()` e `#`, usando ` - ` (`... m³ - Nº 01`, ` - USADO Ped. Nº ...`); fallback sem id cru (`Romaneio`). PDF: `Pedido - N` (sem `#`).
 - **Gates:** suíte 1492 pass / 0 fail / 1 skip; html/sentry/nf/vendas/compras 251/251. Commits `c7f5b31`, `1b446fd`, `5017c26`; hosting publicado.
 
+## Sessao 2026-10-18 (cont. 17) — Menu no Produtos Fiscais + rótulo de romaneio na NF-e
+
+- **`produtos-fiscais.html` sem menu do topo:** faltavam `js/sisweb-theme.js` e `menu-component.js`. Adicionados; validado `main-menu` com 43 links/Home.
+- **CRUD confiável:** `js/produtos-fiscais.js` agora faz boot imediato (sem depender do DOMContentLoaded atrasado pelo módulo), `bind()` idempotente e `waitSvc()` aguardando o `firebaseService` canônico. Validado em produção: criar → editar → excluir (registro de teste removido).
+- **Select Romaneio da NF-e = padrão de Vendas:** rótulo `data - cliente/fornecedor - volume - valor - Nº`. Data usa a mesma lista de candidatos de `formatRomaneioDateLabel` (dataEmissao/data/createdAt/etc.); volume usa agregados (volumeTotal/totalVolume/totais) ou itens (`items`/`itens`, geometria de tora quando aplicável, serrados somam o total); valor usa `totalValue`/`totais.valor`/`totais.valorTotal` ou itens; número segue `Nº 01` sem chave técnica.
+- **Validação em produção:** TL-like → `06/05/2026 - Antonio Mota - 4,000 m³ - R$ 150,00 - Nº 13`; Tora-like → `01/06/2026 - Madeiras - 0,754 m³ - Nº 15` (mesmo comportamento de data do Vendas).
+- **Gates:** suíte 1492 pass / 0 fail / 1 skip; html/sentry/nf OK. Commit `3c11260`; hosting publicado.
+
