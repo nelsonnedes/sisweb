@@ -353,11 +353,31 @@
         }
         return out;
     }
+    function romDateMs(r) {
+        var candidates = [r && r.dataEmissao, r && r.data, r && r.dataRomaneio, r && r.dataHora,
+            r && r.createdAt, r && r.created, r && r.timestamp];
+        for (var i = 0; i < candidates.length; i++) {
+            var c = candidates[i];
+            if (c === undefined || c === null || c === '') continue;
+            if (typeof c === 'number' && isFinite(c)) return c;
+            var parsed = Date.parse(c);
+            if (!isNaN(parsed)) return parsed;
+        }
+        return 0;
+    }
     async function loadRomaneios(tipo) {
         var path = ROM_PATHS[tipo]; if (!path) return [];
         var res = await svc().loadFromFirebase(path);
         var data = res && res.data !== undefined ? res.data : res;
-        return normalizeAnyList(data);
+        var list = normalizeAnyList(data);
+        return list.sort(function (a, b) {
+            var da = romDateMs(a), db = romDateMs(b);
+            var na = parseInt(romNumero(a), 10) || 0, nb = parseInt(romNumero(b), 10) || 0;
+            if (!da && !db) return na - nb;
+            if (!da) return 1;
+            if (!db) return -1;
+            return (da - db) || (na - nb);
+        });
     }
     async function onRomTipoChange() {
         var tipo = getVal('emsRomTipo'); var sel = document.getElementById('emsRomSelect');

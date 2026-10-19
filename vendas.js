@@ -5060,6 +5060,29 @@ function rotuloRomaneioProduto(r) {
     return rotuloFinal;
 }
 
+function romaneioDateValue(r) {
+    try {
+        const candidates = [r?.dataEmissao, r?.data, r?.dataRomaneio, r?.dataHora, r?.createdAt, r?.created, r?.timestamp];
+        for (const c of candidates) {
+            if (c === undefined || c === null || c === '') continue;
+            if (typeof c === 'number' && Number.isFinite(c)) return c;
+            const parsed = Date.parse(c);
+            if (!Number.isNaN(parsed)) return parsed;
+        }
+    } catch (_) {}
+    return 0;
+}
+function sortRomaneiosProdutoByDate(list) {
+    const arr = Array.isArray(list) ? list.slice() : [];
+    const numero = (r) => parseInt(r?.numeroExibicao ?? r?.numero ?? 0, 10) || 0;
+    return arr.sort((a, b) => {
+        const da = romaneioDateValue(a), db = romaneioDateValue(b);
+        if (!da && !db) return numero(a) - numero(b);
+        if (!da) return 1;
+        if (!db) return -1;
+        return (da - db) || (numero(a) - numero(b));
+    });
+}
 async function carregarRomaneiosEm(tipoSelId, romSelId) {
     const tipo = document.getElementById(tipoSelId)?.value || '';
     const sel = document.getElementById(romSelId);
@@ -5071,6 +5094,9 @@ async function carregarRomaneiosEm(tipoSelId, romSelId) {
             lista = await getRomaneiosMerged(tipo) || [];
         }
     } catch (_) { lista = []; }
+    // Ordem cronológica por DATA (não por última atualização), igual à página
+    // de Estoque de Madeira Serrada; empate pelo número de exibição.
+    lista = sortRomaneiosProdutoByDate(lista);
     // Cache (paridade com o pedido): evita re-fetch e payload em option
     try { romaneiosProdutoCache[tipo] = lista; } catch (_) {}
     sel.innerHTML = '<option value="">Selecione...</option>';

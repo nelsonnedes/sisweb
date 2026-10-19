@@ -40,4 +40,6 @@ test('módulo: lê/salva o mesmo nó produtos e padroniza paginação', () => {
   assert.match(js, /ems-modal-open/);
   assert.match(js, /function romLabel/);
   assert.match(vendas, /function temDimsSerrado/);
+  assert.match(vendas, /sortRomaneiosProdutoByDate/);
+  assert.match(js, /romDateMs/);
 });
