@@ -194,7 +194,7 @@
     }
     function currentType() { var r = document.querySelector('input[name="emsTipo"]:checked'); return r ? r.value : 'manual'; }
     function resetStage() { state.stage = []; renderManualPreview(); }
-    function resetGroups() { state.groups = []; state.romaneio = null; renderRomPreview(); }
+    function resetGroups() { state.groups = []; renderRomPreview(); }
     function openModal(item) {
         var modal = document.getElementById('emsModal'); if (!modal) return;
         state.editingKey = item ? recordKey(item) : '';
@@ -338,6 +338,7 @@
     }
     async function onRomTipoChange() {
         var tipo = getVal('emsRomTipo'); var sel = document.getElementById('emsRomSelect');
+        state.romaneio = null;
         if (!sel) return; sel.innerHTML = '<option value="">Selecione um romaneio...</option>';
         if (!tipo) return;
         loading(true, 'Carregando romaneios...');
@@ -346,8 +347,11 @@
             state.romaneios.forEach(function (r, i) {
                 var key = recordKey(r) || String(i);
                 var data = String(r.dataEmissao || r.data || r.createdAt || '').slice(0, 10).split('-').reverse().join('/');
-                var nome = r.clienteNome || r.cliente || r.fornecedor || r.numero || ('Romaneio ' + (i + 1));
-                var num = r.numero || r.numeroRomaneio || (i + 1);
+                var nome = r.clienteNome
+                    || (r.cliente && (r.cliente.nome || r.cliente.name))
+                    || (r.fornecedor && (r.fornecedor.nome || r.fornecedor.name))
+                    || r.fornecedor || r.numero || ('Romaneio ' + (i + 1));
+                var num = romNumero(r) || (i + 1);
                 var opt = document.createElement('option'); opt.value = key; opt.textContent = (data ? data + ' - ' : '') + String(nome) + ' - Nº ' + num; sel.appendChild(opt);
             });
             if (!state.romaneios.length) toast('Nenhum romaneio encontrado para este tipo.', 'warning');
@@ -358,6 +362,11 @@
         var key = getVal('emsRomSelect');
         state.romaneio = state.romaneios.find(function (r) { return recordKey(r) === key; }) || null;
         resetGroups();
+    }
+    function romNumero(r) {
+        var n = String((r && (r.numeroExibicao || r.numeroRomaneio || r.numero)) || '').trim();
+        if (/^(TL_|PCT_|PES_|TORA_)/i.test(n)) n = String((r && (r.sequencial || r.numeroSequencial || r.seq)) || '').trim();
+        return n;
     }
     function groupRomaneio(rom, tipo) {
         var rawItems = rom && (rom.itens || rom.items);
@@ -371,7 +380,7 @@
             var vol = romaneioVolume(it);
             var qtd = num(it.quantidade || it.pecas || it.qtd || 1);
             var preco = num(it.precoUnitario || it.precoMedio || it.preco || it.valorUnitario);
-            var g = map.get(gid) || { gid: gid, especie: especie, espessura: e, largura: l, comprimento: c, volume: 0, pecas: 0, preco: preco, romaneioId: recordKey(rom), romaneioNumero: rom.numero || rom.numeroRomaneio || '', romaneioTipo: tipo };
+            var g = map.get(gid) || { gid: gid, especie: especie, espessura: e, largura: l, comprimento: c, volume: 0, pecas: 0, preco: preco, romaneioId: recordKey(rom), romaneioNumero: romNumero(rom), romaneioTipo: tipo };
             g.volume = Math.round((g.volume + vol) * 1000) / 1000;
             g.pecas += qtd;
             if (!g.preco && preco) g.preco = preco;
