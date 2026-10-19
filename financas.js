@@ -30,6 +30,8 @@ window.financeTableOverlayOnce = false;
 // Charts
 let fluxoCaixaChart = null;
 let fluxoDetalhadoChart = null;
+let fluxoCatEntradasChart = null;
+let fluxoCatSaidasChart = null;
 
 // ✅ MELHORIA: Sistema de notificações
 function mostrarNotificacao(mensagem, tipo = 'info') {
@@ -7527,42 +7529,185 @@ async function gerarFluxoCaixa() {
     // Gerar gráfico detalhado
     gerarGraficoFluxoDetalhado(dataInicio, dataFim);
 
+    // KPIs e composição por categoria (dados reais do período)
+    renderizarKpisFluxo(dataInicio, dataFim);
+    gerarGraficosCategoriasFluxo(dataInicio, dataFim);
+
     // Gerar tabela
     gerarTabelaFluxo(dataInicio, dataFim);
 }
 
-function gerarGraficoFluxoDetalhado(dataInicio, dataFim) {
-    const ctx = document.getElementById('fluxoDetalhadoChart').getContext('2d');
-    
-    if (fluxoDetalhadoChart) {
-        fluxoDetalhadoChart.destroy();
-    }
-    
+function fluxoBRL(v) {
+    try {
+        if (typeof formatCurrency === 'function') return formatCurrency(v || 0);
+    } catch (_) {}
+    return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
+}
+
+function renderizarKpisFluxo(dataInicio, dataFim) {
+    const box = document.getElementById('fluxoKpis');
+    if (!box) return;
     const dados = calcularFluxoPeriodo(dataInicio, dataFim);
-    
-    fluxoDetalhadoChart = new Chart(ctx, {
-        type: 'bar',
+    const totalEntradas = dados.entradas.reduce((t, v) => t + (v || 0), 0);
+    const totalSaidas = dados.saidas.reduce((t, v) => t + (v || 0), 0);
+    const saldoPeriodo = totalEntradas - totalSaidas;
+    const diasComMovimento = dados.labels.reduce((t, _, i) =>
+        t + (((dados.entradas[i] || 0) + (dados.saidas[i] || 0)) > 0 ? 1 : 0), 0);
+    const cards = [
+        { cls: 'receber', icon: 'fa-arrow-down', titulo: 'Entradas no Período', valor: fluxoBRL(totalEntradas), sub: `${diasComMovimento} de ${dados.labels.length} dia(s)` },
+        { cls: 'pagar', icon: 'fa-arrow-up', titulo: 'Saídas no Período', valor: fluxoBRL(totalSaidas), sub: `${diasComMovimento} de ${dados.labels.length} dia(s)` },
+        { cls: saldoPeriodo >= 0 ? 'saldo' : 'pagar', icon: 'fa-scale-balanced', titulo: 'Saldo do Período', valor: fluxoBRL(saldoPeriodo), sub: saldoPeriodo >= 0 ? 'Positivo' : 'Negativo' },
+        { cls: 'saldo', icon: 'fa-calendar-check', titulo: 'Dias com Movimento', valor: String(diasComMovimento), sub: `${dados.labels.length} dia(s) no período` }
+    ];
+    box.innerHTML = cards.map((c) => `
+        <div class="dashboard-card ${c.cls}">
+            <h3><i class="fas ${c.icon}"></i> ${c.titulo}</h3>
+            <div class="value">${c.valor}</div>
+            <small>${c.sub}</small>
+        </div>`).join('');
+}
+
+function agregarCategoriasFluxo(dataInicio, dataFim, origem) {
+    const ini = normalizeDateISOInput(dataInicio);
+    const fim = normalizeDateISOInput(dataFim);
+    const acc = new Map();
+    if (!ini || !fim || fim < ini) return [];
+    const lista = origem === 'receber'
+        ? (Array.isArray(contasReceber) ? contasReceber : [])
+        : (Array.isArray(contasPagar) ? contasPagar : []);
+    lista.forEach((c) => eachMovimentoFluxo(c, origem, (iso, v) => {
+        if (!iso || iso < ini || iso > fim || !(v > 0)) return;
+        const key = String((c && c.categoria) || 'Sem categoria').trim() || 'Sem categoria';
+        acc.set(key, (acc.get(key) || 0) + v);
+    }));
+    return Array.from(acc.entries())
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value);
+}
+
+function criarGraficoCategoriaFluxo(canvasId, origem, palette) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === 'undefined') return null;
+    const items = agregarCategoriasFluxo(
+        document.getElementById('fluxoDataInicio')?.value,
+        document.getElementById('fluxoDataFim')?.value,
+        origem
+    );
+    const labels = items.slice(0, 6).map((i) => i.label);
+    const values = items.slice(0, 6).map((i) => Math.round(i.value * 100) / 100);
+    const restante = items.slice(6).reduce((t, i) => t + i.value, 0);
+    if (restante > 0) { labels.push('Outros'); values.push(Math.round(restante * 100) / 100); }
+    const semDados = values.length === 0;
+    if (semDados) { labels.push('Sem movimentações'); values.push(1); }
+    return new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
         data: {
-            labels: dados.labels,
+            labels,
             datasets: [{
-                label: 'Entradas',
-                data: dados.entradas,
-                backgroundColor: 'rgba(40, 167, 69, 0.8)',
-                borderColor: '#28a745',
-                borderWidth: 1
-            }, {
-                label: 'Saídas',
-                data: dados.saidas,
-                backgroundColor: 'rgba(220, 53, 69, 0.8)',
-                borderColor: '#dc3545',
-                borderWidth: 1
+                data: values,
+                backgroundColor: semDados ? ['#cbd5e1'] : palette,
+                borderColor: 'transparent',
+                borderWidth: 2,
+                hoverOffset: 6
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            cutout: '58%',
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 9, padding: 12 } },
+                tooltip: {
+                    enabled: !semDados,
+                    callbacks: {
+                        label: (c) => `${c.label}: ${fluxoBRL(c.parsed)}`
+                    }
+                }
+            }
+        }
+    });
+}
+
+function gerarGraficosCategoriasFluxo(dataInicio, dataFim) {
+    try {
+        const ini = document.getElementById('fluxoDataInicio');
+        const fim = document.getElementById('fluxoDataFim');
+        if (ini && !ini.value) ini.value = dataInicio;
+        if (fim && !fim.value) fim.value = dataFim;
+        if (fluxoCatEntradasChart) { try { fluxoCatEntradasChart.destroy(); } catch (_) {} }
+        if (fluxoCatSaidasChart) { try { fluxoCatSaidasChart.destroy(); } catch (_) {} }
+        fluxoCatEntradasChart = criarGraficoCategoriaFluxo(
+            'fluxoCatEntradasChart', 'receber',
+            ['#16a34a', '#22c55e', '#4ade80', '#34d399', '#10b981', '#6ee7b7', '#94a3b8']
+        );
+        fluxoCatSaidasChart = criarGraficoCategoriaFluxo(
+            'fluxoCatSaidasChart', 'pagar',
+            ['#dc2626', '#ef4444', '#f97316', '#fb923c', '#f59e0b', '#f87171', '#94a3b8']
+        );
+    } catch (_) {}
+}
+
+function gerarGraficoFluxoDetalhado(dataInicio, dataFim) {
+    const canvas = document.getElementById('fluxoDetalhadoChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    if (fluxoDetalhadoChart) {
+        try { fluxoDetalhadoChart.destroy(); } catch (_) {}
+    }
+
+    const dados = calcularFluxoPeriodo(dataInicio, dataFim);
+    let acumulado = 0;
+    const saldoAcumulado = dados.labels.map((_, i) => {
+        acumulado += (dados.entradas[i] || 0) - (dados.saidas[i] || 0);
+        return Math.round(acumulado * 100) / 100;
+    });
+
+    fluxoDetalhadoChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: dados.labels,
+            datasets: [
+                {
+                    type: 'bar', label: 'Entradas', data: dados.entradas,
+                    backgroundColor: 'rgba(34,197,94,.85)', borderColor: '#16a34a',
+                    borderWidth: 1, borderRadius: 4, maxBarThickness: 26, yAxisID: 'y'
+                },
+                {
+                    type: 'bar', label: 'Saídas', data: dados.saidas,
+                    backgroundColor: 'rgba(239,68,68,.85)', borderColor: '#dc2626',
+                    borderWidth: 1, borderRadius: 4, maxBarThickness: 26, yAxisID: 'y'
+                },
+                {
+                    type: 'line', label: 'Saldo acumulado', data: saldoAcumulado,
+                    borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.12)',
+                    borderWidth: 2, pointRadius: 2, pointHoverRadius: 4,
+                    tension: .3, fill: true, yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10 } },
+                tooltip: {
+                    callbacks: {
+                        label: (c) => `${c.dataset.label}: ${fluxoBRL(c.parsed.y)}`
+                    }
+                }
+            },
             scales: {
+                x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    grid: { color: 'rgba(148,163,184,.18)' },
+                    ticks: { callback: (v) => fluxoBRL(v) }
+                },
+                y1: {
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: false },
+                    ticks: { callback: (v) => fluxoBRL(v) }
                 }
             }
         }

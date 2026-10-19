@@ -20,7 +20,7 @@
         + 'align-items:center;flex-direction:column;z-index:99999;backdrop-filter:blur(2px);}'
         + '#' + OVERLAY_ID + '.active{display:flex;}'
         + 'html[data-theme="dark"] #' + OVERLAY_ID + '{background:rgba(0,0,0,0.7);}'
-        + '#' + OVERLAY_ID + ' .loading-spinner{width:40px;height:40px;border:4px solid var(--sw-border,#ccc);'
+        + '#' + OVERLAY_ID + ' .loading-spinner{display:block;box-sizing:border-box;width:40px;height:40px;border:4px solid var(--sw-border,#ccc);'
         + 'border-top:4px solid var(--sw-brand,#3498db);border-radius:50%;'
         + 'animation:sisweb-loading-spin 1s linear infinite;margin:0 auto 12px auto;}'
         + '#' + OVERLAY_ID + ' .loading-text{color:var(--sw-text-1,#111);font-size:15px;font-weight:500;margin-top:0;}'

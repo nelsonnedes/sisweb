@@ -1904,9 +1904,28 @@
                 </div>
             </div>
 
+            <div class="dashboard-cards" id="fluxoKpis"></div>
+
             <div class="chart-container">
-                <h3>Fluxo de Caixa Detalhado</h3>
-                <canvas id="fluxoDetalhadoChart" width="400" height="300"></canvas>
+                <h3>Entradas × Saídas — Saldo Acumulado</h3>
+                <div style="position:relative;height:340px;">
+                    <canvas id="fluxoDetalhadoChart"></canvas>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+                <div class="chart-container">
+                    <h3>Entradas por categoria</h3>
+                    <div style="position:relative;height:300px;">
+                        <canvas id="fluxoCatEntradasChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>Saídas por categoria</h3>
+                    <div style="position:relative;height:300px;">
+                        <canvas id="fluxoCatSaidasChart"></canvas>
+                    </div>
+                </div>
             </div>
 
             <div class="table-container">
@@ -2685,8 +2704,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/pix-brcode.js?v=1714fb7d79ee"></script>
     <script src="js/commerce-boleto-pix.js?v=a09fe8bc130a"></script>
-    <script src="js/sisweb-loading.js?v=982110809b2c"></script>
-    <script src="financas.js?v=6546c909826e"></script>
+    <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
+    <script src="financas.js?v=868a3d4f0b30"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <!-- Loading Overlay Global (padrão Sisweb) -->
     <div id="loadingOverlay" class="loading-overlay" style="display: none;">
