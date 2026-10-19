@@ -2006,3 +2006,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Correção:** `__key` preservada (array = índice; objeto = chave; respeita `firebaseKey`/`key`), `recordKey()` usada em editar/excluir e no fallback; após salvar/excluir há atualização otimista local + `invalidateReadCacheForPath` (tenant e curto) + recarga.
 - **Gates:** suíte 1492 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `d5c2a70`; hosting publicado (cachebuster `js/produtos-fiscais.js?v=1fe56159305f`).
 
+## Sessao 2026-10-19 (cont. 19) — CONAMA → catálogo NF-e: dedupe auditado + NCM 44079990
+
+- **Dedupe já implementado (auditado, sem mudança):** `registrarProdutosNFeDaNota` roda pós-autorização (fire-and-forget), aceita só `cProd` `MANUAL_|ROMANEIO_`, compara por `normalizarNomeProduto` (sem acento/caixa/espaço) e faz merge no existente (NCM/CFOP/unidade/preço/última nota); nunca cria 2º registro com nome normalizado igual.
+- **Validação real (QA `1774030248295`):** 2 romaneios + 1 manual (`TESTE dedupe conama `, caixa/acentos diferentes) → `criados 1 / atualizados 2`, catálogo com **1** registro, preço e `ultimaNota` da última emissão; itens com `cProd` fora dos prefixos são ignorados (já cadastrados). Registros de teste removidos (`catálogo: 0`).
+- **Riscos conhecidos do merge (não alterados por decisão de escopo):** última nota autorizada vence NCM/CFOP/preço (sem alerta); `CST/origem/CEST/importado` são sobrescritos pelos defaults do item novo; gravação é read-modify-write da lista inteira (2 autorizações simultâneas podem perder item).
+- **NCM CONAMA (novo):** `autoPreencherRomaneio` usa `44079990` quando não há produto/NCM no catálogo; NCM específico já cadastrado/editado prevalece; campo `itemNCMRom` segue editável. `adicionarItemNFRomaneio` também cai em `44079990` se o campo estiver vazio (evita o `00000000` bloqueado pelo validador).
+- **Validação em produção:** sem catálogo → campo `44079990`; alteração manual para `44071100` aceita; com produto de teste NCM `44071100` no catálogo → autofill mantém `44071100` (não sobrescreve).
+- **Gates:** suíte 1494 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `293661c`; hosting publicado. NCM genérico é exceção explícita à regra antiga "não inventar NCM" (decisão do usuário; 4407.99.90 já era o NCM madeireiro documentado).
+
