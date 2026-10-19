@@ -805,17 +805,35 @@
                 display: flex;
                 overflow-x: auto;
                 grid-template-columns: none;
+                gap: 8px;
                 padding-bottom: 12px;
+                scroll-snap-type: x proximity;
+                -webkit-overflow-scrolling: touch;
             }
 
+            /* 6 etapas: ~3 visíveis por vez no celular (antes só 2), com snap. */
             .nf-step {
-                min-width: 150px;
+                min-width: 112px;
+                flex: 0 0 auto;
                 text-align: center;
+                font-size: 12px;
+                padding: 8px 6px;
+                scroll-snap-align: start;
             }
 
             .nf-summary-bar {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
                 position: static;
+                gap: 8px;
+                padding: 8px 10px;
+            }
+
+            /* No celular os valores podem ocupar 2 linhas (sem "..." cortando). */
+            .nf-summary-item strong {
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                overflow-wrap: anywhere;
             }
 
             .nf-form-actions {
@@ -2072,8 +2090,8 @@
                     <div class="form-section" style="margin:0;"><h4 style="margin:0 0 8px;font-size:13px;">Notas por status</h4><div style="height:240px;"><canvas id="nfChartStatus"></canvas></div></div>
                     <div class="form-section" style="margin:0;"><h4 style="margin:0 0 8px;font-size:13px;">Top destinatários (R$)</h4><div style="height:240px;"><canvas id="nfChartTopDest"></canvas></div></div>
                 </div>
-                <div class="table-container">
-                    <table class="data-table">
+                <div class="table-container nf-mobile-table-container">
+                    <table class="data-table nf-card-table">
                         <thead><tr><th>Número</th><th>Data</th><th>Destinatário</th><th>Status</th><th style="text-align:right;">Valor Total</th></tr></thead>
                         <tbody id="relatorioCorpo"><tr><td colspan="5" style="text-align:center;opacity:.7;">Abra a aba para carregar</td></tr></tbody>
                     </table>
@@ -2750,9 +2768,9 @@
             getCompanyProfileForReport
         };
     </script>
-    <script src="auth.js?v=b5aee5a1f3c6"></script>
+    <script src="auth.js?v=03fd76e8236a"></script>
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=7d191ff22582"></script>
+<script src="menu-component.js?v=49ee37fa1891"></script>
     <script src="cities-loader.js?v=b537d6225e16"></script>
     <script src="client-service.js?v=b95ca0dfb346"></script>
     <script src="openNewClientModal.js?v=e302cd671b8c"></script>
@@ -2772,7 +2790,7 @@
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
     <script src="nf-service.js?v=5c0ae99d2815"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="nf-dashboard.js?v=2620f3fd176e"></script>
+    <script src="nf-dashboard.js?v=0258f23e49e4"></script>
     <!-- Novos módulos Fase 0 -->
     <script src="nf-naturezas.js?v=c6e8d0c27b26"></script>
     <script src="nf-preferencias.js?v=b5a49347dcd0"></script>

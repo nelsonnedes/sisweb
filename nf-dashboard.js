@@ -276,12 +276,12 @@
     if (_pagina >= pags) _pagina = pags - 1;
     const fatia = _ultimoRel.slice(_pagina * size, _pagina * size + size);
     tb.innerHTML = fatia.length ? fatia.map((n) => `<tr>
-      <td style="font-family:monospace;">${String(n.numero || '').padStart(9, '0')}</td>
-      <td>${dataNota(n).split('-').reverse().join('/')}</td>
-      <td>${String((n.dest && n.dest.nome) || '—').slice(0, 60)}</td>
-      <td>${STATUS_LABEL[n.status] || n.status || '—'}</td>
-      <td style="text-align:right;">${fmtBRL(valorNota(n))}</td>
-    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;opacity:.7;">Nenhuma nota no filtro</td></tr>';
+      <td data-label="Número" style="font-family:monospace;">${String(n.numero || '').padStart(9, '0')}</td>
+      <td data-label="Data">${dataNota(n).split('-').reverse().join('/')}</td>
+      <td data-label="Destinatário">${String((n.dest && n.dest.nome) || '—').slice(0, 60)}</td>
+      <td data-label="Status">${STATUS_LABEL[n.status] || n.status || '—'}</td>
+      <td data-label="Valor Total" style="text-align:right;">${fmtBRL(valorNota(n))}</td>
+    </tr>`).join('') : '<tr><td colspan="5" class="nf-card-empty" style="text-align:center;opacity:.7;">Nenhuma nota no filtro</td></tr>';
     renderPagination(total, _pagina + 1, size);
   }
 
