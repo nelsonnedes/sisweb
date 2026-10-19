@@ -14,13 +14,15 @@ test('landing: domínio novo no canonical/OG e nenhum link para o domínio antig
   assert.equal(landingJs.includes(oldHost), false);
 });
 
-test('compartilhamento: texto profissional, emojis estáveis e links do domínio novo', () => {
-  assert.match(landingJs, /🌲 \*Sisweb — Gestão completa para serrarias\*/);
+test('compartilhamento: texto profissional, sem emojis e links do domínio novo', () => {
+  assert.match(landingJs, /\*Sisweb - Gestão completa para madeireiras e serrarias\*/);
+  assert.match(landingJs, /- Romaneios de toras e serrados/);
   assert.match(landingJs, /\*30 dias grátis\*/);
   assert.match(landingJs, /https:\/\/siswebsoftware\.com\.br\/landing-vendas\.html#simulador/);
   assert.match(landingJs, /https:\/\/siswebsoftware\.com\.br\/login\.html\?mode=register/);
   assert.match(landingJs, /encodeURIComponent\(SHARE_COMMERCIAL_TEXT\)/);
-  assert.doesNotMatch(landingJs, /🪵/);
+  assert.doesNotMatch(landingJs, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+  assert.match(landingHtml, /og:image" content="https:\/\/siswebsoftware\.com\.br\/assets\/brand\/og-sisweb\.png"/);
 });
 
 test('assinatura: links absolutos funcionam a partir de folha_pagamento', () => {

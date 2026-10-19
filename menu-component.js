@@ -2013,11 +2013,20 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                 || /supportTicket=|ticket=/i.test(String((a && a.href) || ''));
         }
 
+        // Alertas antigos podem ter href relativo salvo a partir da raiz
+        // (ex.: subscription-status.html). No folha_pagamento isso abria
+        // folha_pagamento/subscription-status.html (404).
+        normalizeAlertHref(href) {
+            const h = String(href || '').trim();
+            if (!h || /^(https?:|\/\/|\/|#)/i.test(h) || /^\.\.\//.test(h)) return h;
+            return this.resolveUrl(h);
+        }
+
         alertItemHtml(a) {
             const esc = (v) => String(v == null ? '' : v).replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const title = esc(a && a.title || 'Alerta');
             const message = esc(a && a.message || '').replace(/\n/g, '<br>');
-            const href = a && a.href ? String(a.href) : '';
+            const href = this.normalizeAlertHref(a && a.href ? a.href : '');
             const sevRaw = String((a && (a.severity || a.type)) || '').toLowerCase();
             const sev = (sevRaw === 'error' || sevRaw === 'danger')
                 ? 'sev-error'

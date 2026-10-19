@@ -21,27 +21,25 @@ const TOOLTIPS = {
 };
 
 // Texto comercial para compartilhamento no WhatsApp
-const SHARE_COMMERCIAL_TEXT = `🌲 *Sisweb — Gestão completa para serrarias*
+const SHARE_COMMERCIAL_TEXT = `*Sisweb - Gestão completa para madeireiras e serrarias*
 Do pátio à nota fiscal, em um só sistema.
 
-Chega de romaneio no papel, cubagem na calculadora e planilha paralela.
+- Romaneios de toras e serrados com impressão em 1 clique
+- Cubagem CONAMA 411 (Francon e geométrica)
+- Estoque com plaqueta e rastreabilidade da tora à prancha
+- NF-e, MDF-e e financeiro integrados
+- Operação no celular, tablet ou computador
 
-✅ *Romaneios de toras e serrados* — lançamento contínuo e impressão em 1 clique
-✅ *Cubagem CONAMA 411* — Francon e geométrica com resumo técnico
-✅ *Estoque com plaqueta* — rastreabilidade da tora à prancha
-✅ *NF-e, MDF-e e financeiro* — emissão integrada, sem retrabalho
-✅ *No celular, tablet ou computador* — sua operação na palma da mão
+*30 dias grátis* para testar na sua serraria.
+Sem fidelidade. Feito no Pará.
 
-🎁 *30 dias grátis* para testar na sua serraria
-🔒 Sem fidelidade · 💚 Feito no Pará
-
-📊 *Simule sua economia:*
+*Simule sua economia:*
 https://siswebsoftware.com.br/landing-vendas.html#simulador
 
-🚀 *Crie sua conta grátis:*
+*Crie sua conta grátis:*
 https://siswebsoftware.com.br/login.html?mode=register
 
-💬 *Fale com um consultor:* (91) 99131-1049`;
+*Fale com um consultor:* (91) 99131-1049`;
 
 (function(){
   const diagram = document.getElementById('lv-diagram');

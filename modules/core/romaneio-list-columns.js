@@ -135,8 +135,13 @@
     function completeWidths(clean, pageKey) {
         var p = pageKey || PAGE || 'tl';
         var out = {};
+        // PES mudou de 7 para 6 colunas; cache/remoto com contrato antigo
+        // (Itens/Volume sem "m³" ou sem Ações) é descartado em favor do padrão.
+        var legacyPes = p === 'pes' && clean && (
+            clean['Itens'] != null || clean['Volume'] != null || clean['Ações'] == null
+        );
         contract(p).forEach(function (label) {
-            var value = clean && clean[label] != null ? Number(clean[label]) : NaN;
+            var value = !legacyPes && clean && clean[label] != null ? Number(clean[label]) : NaN;
             if (!isFinite(value) || value <= 0) {
                 value = DEFAULTS[label] || (label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH);
             }
@@ -261,7 +266,9 @@
             minTotal += label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
         });
         if (!total) return clean;
-        var target = Math.max(minTotal, available - 2);
+        // Não estica colunas para preencher o modal: usa a largura natural
+        // (defaults/salva) e só reduz quando a soma passa do container.
+        var target = Math.max(minTotal, Math.min(total, available - 2));
         var factor = target / total;
         var minOf = function (label) { return label === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH; };
         var out = {};

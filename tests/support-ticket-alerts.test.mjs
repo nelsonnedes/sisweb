@@ -25,3 +25,9 @@ test('deep link: abre o ticket e ignora duplicidade do alerta de login', () => {
   assert.match(menu, /params\.get\('supportTicket'\)/);
   assert.match(auth, /String\(n\.source \|\| ''\) !== 'support'/);
 });
+
+test('href de alerta relativo é normalizado a partir de folha_pagamento', () => {
+  assert.match(menu, /normalizeAlertHref\(href\)/);
+  assert.match(menu, /const href = this\.normalizeAlertHref\(/);
+  assert.match(menu, /return this\.resolveUrl\(h\)/);
+});

@@ -181,7 +181,7 @@ test('landing possui metatags OpenGraph, Twitter, Geo e Schema.org JSON-LD estru
   const landing = readFileSync('landing-vendas.html', 'utf8');
   assert.match(landing, /<link rel="canonical" href="https:\/\/siswebsoftware\.com\.br\/landing-vendas\.html">/);
   assert.match(landing, /<meta property="og:title"/);
-  assert.match(landing, /<meta property="og:image" content="https:\/\/siswebsoftware\.com\.br\/assets\/icons\/icon-512x512\.png"/);
+  assert.match(landing, /<meta property="og:image" content="https:\/\/siswebsoftware\.com\.br\/assets\/brand\/og-sisweb\.png"/);
   assert.match(landing, /<meta name="twitter:card"/);
   assert.match(landing, /<meta name="geo\.region" content="BR-PA"/);
   assert.match(landing, /"SoftwareApplication"/);
