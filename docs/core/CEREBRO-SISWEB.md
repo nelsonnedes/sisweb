@@ -2088,3 +2088,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Preview existente preservado:** avisos “EM USO · Ped. …” e botão Excluir da aba de Vendas não foram removidos; o pedido era só a ordenação por data.
 - **Validação em produção:** TL no Vendas exibiu `19/03/2026 - ALEXANDRE - 1,775 m³ - Nº 1` e depois `30/03/2026 - ROSVALDO ... - 0,006 m³ - Nº 2`; PCT com 1 registro. Nova página usa a mesma sequência.
 - **Gates:** suite 1520 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `977dfe3`; hosting publicado.
+
+## Sessao 2026-10-19 (cont. 29) — Volume de serrado derivado das dimensoes (Vendas + pagina nova)
+
+- **Sintoma:** produto `Mista 1x100x100` com 1 pç aparecia `0,000 m³` no select “Produto Cadastrado”, na Lista de Madeira Serrada e na pagina nova, apesar de `1,00 ml` e `1,00 m²`.
+- **Causa:** `volumeM3` gravado como `0`; exibições e `dimensoesEstoqueSerrado` usavam `volumeM3 || estoque` sem derivar de E×L×C×peças. Estoque legado (`1`) ainda mascarava a fórmula em alguns caminhos.
+- **Fix:** `volumeSerradoProduto(p)`/`volumeProduto(p)` com precedência **volumeM3 > 0 → E×L×C/1e6 × peças × ppp → estoque legado**; aplicado em `dimensoesEstoqueSerrado`, exibição do catálogo/select/lista/impressão, baixa/reversão e resumo de disponibilidade. `aplicarBaixaSerrado` usa a base derivada; `converterItemSerradoParaM3` mantém fallback por fórmula. Nova pagina usa `volumeProduto` na coluna Estoque.
+- **Validado em producao (mock 9500/9501, removidos):** `vol=0.01`, `ml=1`, `area=1`; Vendas lista/select exibem `1 pç · 0,010 m³ · 1,00 ml · 1,00 m²`; pagina nova exibe `0,010`. Zero estoque continua oculto pelo `estoqueZeradoNaLista`/`hasStock`.
+- **Gates:** suite 1520 pass / 0 fail / 1 skip; lint/typecheck OK. Commits `2f6a5ac`, `574150a`; hosting publicado.
