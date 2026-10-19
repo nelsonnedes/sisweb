@@ -123,7 +123,7 @@
         var est = num(p.estoque != null ? p.estoque : p.quantidade);
         var pecas = num(p.pecas);
         var serrado = p.tipoProduto === 'romaneio'
-            || p.espessura != null || p.largura != null || p.comprimento != null;
+            || num(p.espessura) > 0 || num(p.largura) > 0 || num(p.comprimento) > 0;
         return serrado ? (pecas > 0 || est > 0) : est > 0;
     }
     function applyFilter() {

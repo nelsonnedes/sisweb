@@ -5487,12 +5487,17 @@ function gruposRomaneioSelecionados() {
     } catch (_) { return []; }
 }
 
-// Tem dados de serrado (romaneio ou dims preenchidas): exibe Peças/Volume
+// Tem dados de serrado (romaneio ou dimensões reais): exibe Peças/Volume.
+// Produto manual nasce com peças padrão 1 e dims 0 — não pode ser tratado
+// como serrado só por isso (era a causa de produto zerado na lista).
 function temDimsSerrado(p) {
     try {
         if (!p || typeof p !== 'object') return false;
         if (p.tipoProduto === 'romaneio') return true;
-        return (parseFloat(p.pecas) || 0) > 0 || (parseFloat(p.volumeM3) || 0) > 0 || (parseFloat(p.espessura) || 0) > 0;
+        const e = parseFloat(p.espessura) || 0, l = parseFloat(p.largura) || 0, c = parseFloat(p.comprimento) || 0;
+        if (e > 0 || l > 0 || c > 0) return true;
+        const vol = parseFloat(p.volumeM3) || 0, pecas = parseFloat(p.pecas) || 0;
+        return vol > 0 && pecas > 0;
     } catch (_) { return false; }
 }
 
