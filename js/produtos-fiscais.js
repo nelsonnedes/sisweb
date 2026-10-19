@@ -79,6 +79,16 @@
         });
     }
 
+    function parseMoneyInput(raw) {
+        var s = String(raw == null ? '' : raw).trim().replace(/[^\d.,-]/g, '');
+        if (!s) return 0;
+        // Com vírgula: vírgula é decimal e pontos são milhar. Sem vírgula:
+        // o ponto já é o separador decimal (valor numérico do formulário).
+        if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+        var n = Number(s);
+        return Number.isFinite(n) ? n : 0;
+    }
+
     function money(v) {
         var n = Number(v || 0);
         return n ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—';
@@ -170,8 +180,8 @@
         var cfop = String((document.getElementById('pfCfop') || {}).value || '').replace(/\D/g, '').slice(0, 4);
         var id = String((document.getElementById('pfId') || {}).value || '').trim();
         if (!id) id = 'NFE_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-        var preco = Number(String((document.getElementById('pfPreco') || {}).value || '').replace(/\./g, '').replace(',', '.')) || 0;
-        var valorPauta = Number(String((document.getElementById('pfValorPauta') || {}).value || '').replace(/\./g, '').replace(',', '.')) || 0;
+        var preco = parseMoneyInput((document.getElementById('pfPreco') || {}).value);
+        var valorPauta = parseMoneyInput((document.getElementById('pfValorPauta') || {}).value);
         var unidade = String((document.getElementById('pfUnidade') || {}).value || 'M3').toUpperCase();
         var payload = {
             id: id,
