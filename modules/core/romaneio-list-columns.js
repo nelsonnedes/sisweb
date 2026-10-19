@@ -205,16 +205,17 @@
         th.style.setProperty('max-width', px, 'important');
     }
 
-    function ensureFixedLayout(table) {
+    function ensureFixedLayout(table, width) {
         if (!table) return;
         table.style.setProperty('table-layout', 'fixed', 'important');
         table.classList.add('rlc-fixed');
-        // Evita o "esticamento" das colunas para preencher 100%: com larguras em px,
-        // a tabela deve ocupar exatamente a soma das colunas (não redistribuir espaço extra),
-        // senão o browser reajusta todas as colunas ao aparecer/desaparecer a barra de rolagem
-        // (causando "movimento" das colunas ao passar o mouse ou redimensionar).
-        table.style.setProperty('width', 'auto', 'important');
-        table.style.setProperty('min-width', '0', 'important');
+        // Largura explícita = largura útil do container (calculada no fit).
+        // Com width:auto o browser somava padding/bordas e a tabela ficava ~8–11px
+        // mais larga que o modal quando dados/scrollbar chegavam. Sem width
+        // explícito (mobile/antes do fit), mantém auto.
+        var target = Number(width) > 0 ? Math.round(Number(width)) : 0;
+        table.style.setProperty('width', target ? target + 'px' : 'auto', 'important');
+        table.style.setProperty('min-width', target ? target + 'px' : '0', 'important');
         table.style.setProperty('max-width', '100%', 'important');
     }
 
@@ -225,7 +226,10 @@
     function fitWidthsToContainer(table, clean) {
         var keys = Object.keys(clean || {});
         if (!keys.length) return clean;
-        if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return clean;
+        if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) {
+            table.__rlcTargetWidth = 0;
+            return clean;
+        }
         var host = table.closest('.table-container, .table-responsive') || table.parentElement;
         var rectW = host ? host.getBoundingClientRect().width : 0;
         var available = host ? host.clientWidth : 0;
@@ -257,6 +261,7 @@
             var lastMin = last === 'Ações' ? MIN_ACTIONS_WIDTH : MIN_WIDTH;
             out[last] = Math.max(lastMin, out[last] + diff);
         }
+        table.__rlcTargetWidth = target;
         return out;
     }
 
@@ -281,7 +286,7 @@
             if (index >= headers.length || !clean[label]) return;
             setColumnWidth(headers[index], clean[label]);
         });
-        if (Object.keys(clean).length > 0) ensureFixedLayout(table);
+        if (Object.keys(clean).length > 0) ensureFixedLayout(table, table.__rlcTargetWidth);
         ensureHostObserver(table, p);
     }
 
@@ -340,7 +345,7 @@
                 function onMove(ev) {
                     var width = clamp(startWidth + (ev.clientX - startX), min, MAX_WIDTH);
                     setColumnWidth(th, width);
-                    ensureFixedLayout(table);
+                    ensureFixedLayout(table, table.__rlcTargetWidth);
                     th.title = width + 'px';
                 }
 
