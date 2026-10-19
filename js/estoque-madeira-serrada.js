@@ -26,6 +26,8 @@
     function num(v) { return C.num(v); }
     function money(v) { return C.formatCurrency(v); }
     function fmt(v, d) { return C.formatNumber(v, d); }
+    function unidadeTexto(u) { try { return window.SiswebUnidades ? SiswebUnidades.texto(u) : String(u || ''); } catch (_) { return String(u || ''); } }
+    function unidadeCadastro(u) { try { return window.SiswebUnidades ? SiswebUnidades.normalizar(u) : String(u || 'UN'); } catch (_) { return String(u || 'UN'); } }
     function parseMoney(raw) {
         var s = String(raw == null ? '' : raw).trim().replace(/[^\d.,-]/g, '');
         if (!s) return 0;
@@ -179,8 +181,8 @@
             tbody.innerHTML = slice.map(function (p) {
                 var key = escJs(recordKey(p));
                 var serrado = C.temDimsSerrado(p);
-                var estoque = serrado ? fmt(num(p.pecas), 0) : (fmt(num(p.estoque != null ? p.estoque : p.quantidade), 3) + ' ' + (p.unidade || 'UN'));
-                var ml = serrado ? fmt(C.metrosLineares(p), 2) + ' ml' : '-';
+                var estoque = serrado ? fmt(num(p.pecas), 0) : (fmt(num(p.estoque != null ? p.estoque : p.quantidade), 3) + ' ' + unidadeTexto(p.unidade || 'UN'));
+                var ml = serrado ? fmt(C.metrosLineares(p), 2) + ' LN' : '-';
                 var vol = serrado ? fmt(C.volumeProduto(p), 3) + ' m³' : '-';
                 return '<tr>' +
                     '<td data-label="Código">' + esc(p.codigo || '—') + '</td>' +
@@ -249,7 +251,7 @@
         setVal('emsNome', item ? nomeProduto(item) : '');
         setVal('emsPreco', item && (item.preco || item.precoVenda || item.price) ? String(item.preco != null ? item.preco : (item.precoVenda != null ? item.precoVenda : item.price)).replace('.', ',') : '');
         setVal('emsEstoque', item && item.estoque != null ? String(item.estoque) : (item && item.quantidade != null ? String(item.quantidade) : ''));
-        setVal('emsUnidade', item ? (item.unidade || 'UN') : 'UN');
+        setVal('emsUnidade', item ? unidadeCadastro(item.unidade || 'UN') : 'UN');
         setVal('emsDescricao', item ? (item.descricao || '') : '');
         setVal('emsEspecie', item ? (item.especie || '') : '');
         setVal('emsEspessura', item && item.espessura != null ? item.espessura : '');
@@ -298,8 +300,8 @@
         if (!state.stage.length) { box.innerHTML = '<span class="ems-help">Preencha os campos e clique em Adicionar item.</span>'; return; }
         box.innerHTML = state.stage.map(function (it, i) {
             return '<div class="ems-preview-row"><div class="ems-preview-main"><strong>' + esc(it.codigo || '-') + ' — ' + esc(it.nome || '-') + '</strong>' +
-                '<small>Preço: ' + esc(money(it.preco)) + ' · Estoque: ' + esc(fmt(it.estoque, 3) + ' ' + (it.unidade || 'UN')) +
-                (it.volumeM3 > 0 ? ' · ' + esc(fmt(it.volumeM3, 3) + ' m³ · ' + fmt(it.metrosLineares, 2) + ' ml') : '') +
+                '<small>Preço: ' + esc(money(it.preco)) + ' · Estoque: ' + esc(fmt(it.estoque, 3) + ' ' + unidadeTexto(it.unidade || 'UN')) +
+                (it.volumeM3 > 0 ? ' · ' + esc(fmt(it.volumeM3, 3) + ' m³ · ' + fmt(it.metrosLineares, 2) + ' LN') : '') +
                 (it.especie ? ' · ' + esc(it.especie) : '') + '</small></div>' +
                 '<button type="button" class="btn btn-danger btn-small" data-ems-remove="' + i + '">Excluir</button></div>';
         }).join('') + '<div style="text-align:right;font-weight:700;">' + state.stage.length + ' item(ns)</div>';
@@ -440,7 +442,7 @@
             nome: nome,
             preco: Number(src.preco) || 0,
             estoque: estoque,
-            unidade: tipo === 'romaneio' ? 'm³' : (src.unidade || clean.unidade || 'UN'),
+            unidade: tipo === 'romaneio' ? 'm³' : unidadeCadastro(src.unidade || clean.unidade || 'UN'),
             descricao: src.descricao != null ? src.descricao : (clean.descricao || ''),
             especie: src.especie != null ? src.especie : (clean.especie || ''),
             espessura: esp,
@@ -611,7 +613,7 @@
             var d = disponibilidade(g);
             var detalhe = d.travado
                 ? 'já em estoque — desativado'
-                : (d.parcial ? 'Disponível: ' + esc(fmt(d.dispPecas, 0)) + ' pç · ' + esc(fmt(d.dispVol, 3)) + ' m³ · ' + esc(fmt(d.dispMl, 2)) + ' ml' : money(g.preco));
+                : (d.parcial ? 'Disponível: ' + esc(fmt(d.dispPecas, 0)) + ' pç · ' + esc(fmt(d.dispVol, 3)) + ' m³ · ' + esc(fmt(d.dispMl, 2)) + ' LN' : money(g.preco));
             return '<label class="ems-preview-row"><input type="checkbox" class="ems-group-check" data-ems-group="' + i + '"' + (d.travado ? ' disabled' : ' checked') + '>' +
                 '<span class="ems-preview-main"><strong>' + esc(g.especie) + ' ' + esc([g.espessura, g.largura, g.comprimento].join(' × ')) + '</strong>' +
                 '<small>' + fmt(g.volume, 3) + ' m³ · ' + esc(g.pecas) + ' peça(s) · ' + detalhe + '</small></span></label>';

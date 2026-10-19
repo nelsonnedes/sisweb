@@ -2135,3 +2135,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção (Puppeteer):** lista desktop/mobile 390 sem overflow (cards), criação manual 2 pç/2 ml/0,004 m³, edição preservou volume, edição de romaneio preservou 0,324 m³/90 ml, carregamento de romaneio com grupos já em estoque desativados e grupo novo disponível. Produto de teste removido.
 - **Pendente/risco:** Vendas ainda grava a coleção inteira em alguns fluxos (`saveData('produtos', ...)`), podendo sobrescrever registros criados nesta página se a memória estiver velha; a página nova grava por registro.
 - **Gates:** suite 1528 pass / 0 fail / 1 skip; lint/typecheck OK.
+
+## Sessao 2026-10-19 (cont. 34) — Metro Linear padronizado como LN
+
+- **Módulo único:** `js/unidades.js` (`SiswebUnidades`) normaliza `ML/LN/M/MT/METRO...` para `LN`, mantém UN/DZ/PC/m³/m²/kg e oferece `nome()` para selects e `fiscal()` para NF-e.
+- **Formulários:** todos os selects operacionais (Vendas, Compras, Estoque Serrado, NF e configuração) mostram `LN - Metro Linear`; labels das demais unidades padronizados por extenso.
+- **Bug de capitalização corrigido:** produtos de Vendas não convertem mais `LN`→`Ln`/`UN`→`Un`; load/save usam normalização canônica e selects reabrem no valor certo. Compras e Estoque seguem o mesmo normalizador.
+- **Listas/impressões:** sufixos `ml` → `LN` em Vendas, Compras, Estoque Serrado/Almoxarifado, Pré-Romaneio, Romaneio PES/TL/PCT, resumos impressos, opções do select de produto e previews. Colunas `M. Linear` continuam descritivas, com valores `LN`.
+- **NF-e:** selects e tabelas/DANFE/cupom exibem `LN`; `uCom/uTrib` permanecem `ML` (código fiscal) via `SiswebUnidades.fiscal`, inclusive no XML. Preferências salvas com ML continuam válidas.
+- **Validação viva (Puppeteer, produção):** Vendas/Estoque exibem `LN - Metro Linear`; NF carregou selects sem erro e mostrou `LN - Metro Linear`; XML não foi alterado para LN.
+- **Gates:** suite 1533 pass / 0 fail / 1 skip; lint/typecheck OK.

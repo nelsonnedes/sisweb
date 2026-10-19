@@ -950,7 +950,7 @@ const NFDanfe = (() => {
         item.ncm || item.NCM || '',
         cst,
         item.cfop || item.CFOP || '',
-        item.uCom || item.unidade || '',
+        (window.SiswebUnidades ? SiswebUnidades.texto(item.uCom || item.unidade || '') : (item.uCom || item.unidade || '')),
         fmtFiscalMaybe(item.qCom ?? item.quantidade, 3),
         fmtFiscalMaybe(item.vUnCom ?? item.valorUnitario, 4),
         fmtFiscalMaybe(item.vProd ?? item.total),
@@ -1129,7 +1129,7 @@ const NFDanfe = (() => {
       doc.text(nome, ML, y, { maxWidth: CW - 15 });
       doc.text(fmtMoeda(vTot), ML + CW, y, { align: 'right' }); y += 4;
       doc.setTextColor(100, 100, 100);
-      doc.text(`${fmtNum(qtd, 3)} ${it.uCom || 'UN'} x ${fmtMoeda(vUnit)}`, ML + 2, y); y += 4;
+      doc.text(`${fmtNum(qtd, 3)} ${window.SiswebUnidades ? SiswebUnidades.texto(it.uCom || 'UN') : (it.uCom || 'UN')} x ${fmtMoeda(vUnit)}`, ML + 2, y); y += 4;
       doc.setTextColor(0, 0, 0);
     });
     linha();

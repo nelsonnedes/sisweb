@@ -317,7 +317,7 @@
                     '<td data-label="Código">' + esc(p.codigo || '—') + '</td>' +
                     '<td data-label="NCM">' + esc(p.ncm || (p.fiscal && p.fiscal.ncm) || '—') + '</td>' +
                     '<td data-label="CFOP">' + esc(p.cfopPadrao || p.cfop || (p.fiscal && p.fiscal.cfop) || '—') + '</td>' +
-                    '<td data-label="Unidade">' + esc(p.unidade || (p.fiscal && p.fiscal.unidade) || '—') + '</td>' +
+                    '<td data-label="Unidade">' + esc((window.SiswebUnidades ? SiswebUnidades.texto(p.unidade || (p.fiscal && p.fiscal.unidade)) : (p.unidade || (p.fiscal && p.fiscal.unidade))) || '—') + '</td>' +
                     '<td data-label="Preço">' + money(p.precoVenda || p.preco || (p.fiscal && p.fiscal.valorPauta)) + '</td>' +
                     '<td data-label="Ações" class="pf-actions">' +
                         '<button type="button" class="btn btn-primary btn-small" title="Editar" onclick="ProdutosFiscais.edit(\'' + id + '\')"><i class="fas fa-edit"></i></button> ' +
@@ -343,7 +343,7 @@
         setVal('pfCodigo', item ? (item.codigo || '') : nextCodigo());
         setVal('pfNcm', item && (item.ncm || (item.fiscal && item.fiscal.ncm)) || '');
         setVal('pfCfop', item && (item.cfopPadrao || item.cfop || (item.fiscal && item.fiscal.cfop)) || '');
-        setVal('pfUnidade', item && (item.unidade || (item.fiscal && item.fiscal.unidade)) || 'M3');
+        setVal('pfUnidade', window.SiswebUnidades ? SiswebUnidades.texto(item && (item.unidade || (item.fiscal && item.fiscal.unidade)) || 'M3') : (item && (item.unidade || (item.fiscal && item.fiscal.unidade)) || 'M3'));
         setVal('pfPreco', item && (item.precoVenda || item.preco) || '');
         setVal('pfCst', item && item.fiscal && item.fiscal.cst || '');
         setVal('pfOrigem', item && item.fiscal && item.fiscal.origem || '0');
@@ -371,7 +371,7 @@
         if (!id) id = 'NFE_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
         var preco = parseMoneyInput((document.getElementById('pfPreco') || {}).value);
         var valorPauta = parseMoneyInput((document.getElementById('pfValorPauta') || {}).value);
-        var unidade = String((document.getElementById('pfUnidade') || {}).value || 'M3').toUpperCase();
+        var unidade = window.SiswebUnidades ? SiswebUnidades.fiscal((document.getElementById('pfUnidade') || {}).value || 'M3') : String((document.getElementById('pfUnidade') || {}).value || 'M3').toUpperCase();
         var codigo = String((document.getElementById('pfCodigo') || {}).value || '').trim();
         if (!codigo) codigo = nextCodigo();
         var payload = {

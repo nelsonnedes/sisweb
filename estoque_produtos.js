@@ -9,6 +9,9 @@ let produtosFiltrados = [];
 let produtosUltimaListaRenderizada = null;
 let movimentacoesProdutosCache = [];
 
+function unidadeTexto(u) { try { return window.SiswebUnidades ? SiswebUnidades.texto(u) : String(u || ''); } catch (_) { return String(u || ''); } }
+function unidadeCadastro(u) { try { return window.SiswebUnidades ? SiswebUnidades.normalizar(u) : String(u || 'un'); } catch (_) { return String(u || 'un'); } }
+
 // Trava anti-duplo-clique + feedback do Almoxarifado (A-01..A-07). ASCII-only.
 // Padrao: lock por operacao + botao desabilitado com spinner + overlay + toast,
 // com fallback para alert quando o toast global nao esta carregado nesta pagina.
@@ -514,7 +517,7 @@ function preencherFormularioEdicaoProdutoAlmoxarifado(prod = {}) {
     }
     if (categoriaEl) categoriaEl.value = prod.categoria || 'Geral';
     if (localizacaoEl) localizacaoEl.value = prod.localizacao || 'Galpão';
-    if (unidadeEl) unidadeEl.value = String(prod.unidade || 'un').trim();
+    if (unidadeEl) unidadeEl.value = unidadeCadastro(prod.unidade || 'un');
     if (qtdEl) qtdEl.value = Number(prod.quantidade || 0);
     if (estMinEl) estMinEl.value = Number(prod.estoqueMinimo || 0);
     if (precoEl) precoEl.value = formatCurrency(prod.precoMedio || 0);
@@ -610,12 +613,12 @@ function onEntradaProdutoSelectChange() {
         if (nomeEl) { nomeEl.value = prod.nome || ''; nomeEl.disabled = true; }
         if (categoriaEl) categoriaEl.value = prod.categoria || 'Geral';
         if (localizacaoEl) localizacaoEl.value = prod.localizacao || 'Galpão';
-        if (unidadeEl) unidadeEl.value = prod.unidade || 'un';
+        if (unidadeEl) unidadeEl.value = unidadeCadastro(prod.unidade || 'un');
         if (estMinEl) estMinEl.value = Number(prod.estoqueMinimo || 0);
         if (precoEl) precoEl.value = formatCurrency(prod.precoMedio || 0);
         if (saldoEl) {
             const qtd = formatNumber(prod.quantidade || 0, 2);
-            const unidade = prod.unidade || 'un';
+            const unidade = unidadeTexto(prod.unidade || 'un');
             const precoMedio = formatCurrency(prod.precoMedio || 0);
             saldoEl.textContent = `Saldo atual: ${qtd} ${unidade} | Preço médio: ${precoMedio}`;
         }
@@ -674,7 +677,7 @@ async function salvarProdutoAlmoxarifadoPeloFormulario(e) {
     const nome = String((nomeEl ? nomeEl.value : '') || '').trim();
     const categoria = String((categoriaEl ? categoriaEl.value : '') || 'Geral').trim();
     const localizacao = String((localizacaoEl ? localizacaoEl.value : '') || 'Galpão').trim();
-    const unidade = String((unidadeEl ? unidadeEl.value : '') || '').trim() || 'un';
+    const unidade = unidadeCadastro((unidadeEl ? unidadeEl.value : '') || 'un');
     const qtd = parseFloat(qtdEl ? qtdEl.value : 0);
     const estoqueMinimo = parseFloat(estMinEl ? estMinEl.value : 0) || 0;
     const precoMedio = parseCurrencyValue(precoEl ? precoEl.value : 0) || 0;
@@ -805,7 +808,7 @@ async function registrarEntradaProduto(e) {
     const nome = (nomeEl ? nomeEl.value : '').trim();
     const categoria = (categoriaEl ? categoriaEl.value : '') || 'Geral';
     const localizacao = (localizacaoEl ? localizacaoEl.value : '') || 'Galpão';
-    const unidade = (unidadeEl ? unidadeEl.value : '').trim() || 'un';
+    const unidade = unidadeCadastro((unidadeEl ? unidadeEl.value : '') || 'un');
     const qtd = parseFloat(qtdEl ? qtdEl.value : 0) || 0;
     const estoqueMinimo = parseFloat(estMinEl ? estMinEl.value : 0) || 0;
     const precoUnit = parseCurrencyValue(precoEl ? precoEl.value : 0) || 0;
@@ -1240,7 +1243,7 @@ function obterValorCelulaProduto(prod = {}, key = '') {
         responsavel: escapeProdutoHtml(obterResponsavelProduto(prod) || '-'),
         motivoDestino: escapeProdutoHtml(obterMotivoDestinoProduto(prod) || '-'),
         tipoMovimentacao: escapeProdutoHtml(obterTipoMovimentacaoProduto(prod) || '-'),
-        unidade: escapeProdutoHtml(prod.unidade || 'un'),
+        unidade: escapeProdutoHtml(unidadeTexto(prod.unidade || 'un')),
         quantidade: formatNumber(prod.quantidade, 2),
         estoqueMinimo: formatNumber(prod.estoqueMinimo || 0, 2),
         precoMedio: formatCurrency(prod.precoMedio),
@@ -1401,7 +1404,7 @@ function abrirEditarProdutoAlmoxarifado(prodId) {
     setVal('editModalProdutoNome', String(prod.nome || '').trim());
     setVal('editModalProdutoCategoria', String(prod.categoria || 'Geral').trim());
     setVal('editModalProdutoLocalizacao', String(prod.localizacao || 'Galpão').trim());
-    setVal('editModalProdutoUnidade', String(prod.unidade || 'un').trim());
+    setVal('editModalProdutoUnidade', unidadeCadastro(prod.unidade || 'un'));
     setVal('editModalProdutoQtd', Number(prod.quantidade || 0));
     setVal('editModalProdutoEstoqueMinimo', Number(prod.estoqueMinimo || 0));
     setVal('editModalProdutoPreco', formatCurrency(prod.precoMedio || 0));
@@ -1430,7 +1433,7 @@ async function salvarEdicaoModalProdutoAlmoxarifado(e) {
     const nome = String(document.getElementById('editModalProdutoNome')?.value || '').trim();
     const categoria = String(document.getElementById('editModalProdutoCategoria')?.value || 'Geral').trim();
     const localizacao = String(document.getElementById('editModalProdutoLocalizacao')?.value || 'Galpão').trim();
-    const unidade = String(document.getElementById('editModalProdutoUnidade')?.value || 'un').trim();
+    const unidade = unidadeCadastro(document.getElementById('editModalProdutoUnidade')?.value || 'un');
     const qtd = parseFloat(document.getElementById('editModalProdutoQtd')?.value || 0);
     const estoqueMinimo = parseFloat(document.getElementById('editModalProdutoEstoqueMinimo')?.value || 0) || 0;
     const precoMedio = parseCurrencyValue(document.getElementById('editModalProdutoPreco')?.value || 0) || 0;
@@ -1698,7 +1701,7 @@ function atualizarInfoProdutoBaixaInline() {
 
     const prod = estoqueProdutos.find(p => String(p.id) === String(prodId));
     if (prod) {
-        info.textContent = `Saldo atual: ${formatNumber(prod.quantidade || 0, 2)} ${prod.unidade || 'un'}`;
+        info.textContent = `Saldo atual: ${formatNumber(prod.quantidade || 0, 2)} ${unidadeTexto(prod.unidade || 'un')}`;
     }
 }
 
@@ -1776,7 +1779,7 @@ function atualizarInfoProdutoBaixa() {
     
     const prod = estoqueProdutos.find(p => String(p.id) === String(prodId));
     if (prod) {
-        info.textContent = `Saldo Atual: ${formatNumber(prod.quantidade, 2)} ${prod.unidade}`;
+        info.textContent = `Saldo Atual: ${formatNumber(prod.quantidade, 2)} ${unidadeTexto(prod.unidade)}`;
     }
 }
 
@@ -1842,12 +1845,12 @@ async function registrarSaidaProduto({ prodId, qtd, motivo, data, responsavel, t
 
     const saldoAtual = Number(prod.quantidade || 0);
     if (qtd > saldoAtual) {
-        notifyUser(`Quantidade indisponível! Saldo atual: ${formatNumber(saldoAtual, 2)} ${prod.unidade || 'un'}`);
+        notifyUser(`Quantidade indisponível! Saldo atual: ${formatNumber(saldoAtual, 2)} ${unidadeTexto(prod.unidade || 'un')}`);
         return false;
     }
 
     const tipoLabel = obterLabelTipoMovimentacaoProduto(tipoSaida, direcaoEstoque);
-    if (!await confirmDialog({ title: 'Confirmar baixa', message: `Confirma ${tipoLabel.toLowerCase()} de ${formatNumber(qtd, 2)} ${prod.unidade || 'un'} de ${prod.nome}?`, confirmLabel: 'Confirmar' })) return false;
+    if (!await confirmDialog({ title: 'Confirmar baixa', message: `Confirma ${tipoLabel.toLowerCase()} de ${formatNumber(qtd, 2)} ${unidadeTexto(prod.unidade || 'un')} de ${prod.nome}?`, confirmLabel: 'Confirmar' })) return false;
     const __opSaidaProd = __almBegin('saida-prod', null, 'Registrando baixa...');
     if (!__opSaidaProd) return false;
 

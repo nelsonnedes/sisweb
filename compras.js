@@ -1019,7 +1019,7 @@ function preencherFormularioProduto(produto = null) {
     document.getElementById('produtoNome').value = getProdutoNomeCadastro(produto);
     document.getElementById('produtoPreco').value = formatCurrency(getProdutoPrecoCadastro(produto));
     document.getElementById('produtoEstoque').value = String(getProdutoEstoqueCadastro(produto));
-    document.getElementById('produtoUnidade').value = String(produto.unidade || 'UN');
+    document.getElementById('produtoUnidade').value = unidadeCadastro(produto.unidade || 'UN');
     document.getElementById('produtoDescricao').value = String(produto.descricao || '');
     document.getElementById('produtoModalTitle').textContent = 'Editar Produto';
 }
@@ -1204,7 +1204,7 @@ async function imprimirRelatorioProdutosCompra(lista) {
         let dadosEmpresa = {};
         try { dadosEmpresa = await obterDadosEmpresa(); } catch (_) {}
         const linhas = itens.map(p => {
-            const estoque = `${formatNumber(getProdutoEstoqueCadastro(p), 3)} ${p?.unidade || 'UN'}`;
+            const estoque = `${formatNumber(getProdutoEstoqueCadastro(p), 3)} ${unidadeTexto(p?.unidade || 'UN')}`;
             return `<tr><td>${htmlEscape(String(p?.codigo || '-'))}</td><td>${htmlEscape(getProdutoNomeCadastro(p) || '-')}</td><td class="text-right">${htmlEscape(formatCurrency(getProdutoPrecoCadastro(p)))}</td><td class="text-center">${htmlEscape(estoque)}</td></tr>`;
         }).join('');
         const bodyHtml = `<h2 style="margin:0 0 12px;">Lista de Produtos</h2>
@@ -1317,7 +1317,7 @@ async function salvarProdutoCadastro(event) {
     const nome = String(document.getElementById('produtoNome').value || '').trim();
     const preco = parseCurrency(document.getElementById('produtoPreco').value || 0);
     const estoque = Number(document.getElementById('produtoEstoque').value || 0);
-    const unidade = String(document.getElementById('produtoUnidade').value || 'UN').trim() || 'UN';
+    const unidade = unidadeCadastro(document.getElementById('produtoUnidade').value || 'UN');
     const descricao = String(document.getElementById('produtoDescricao').value || '').trim();
     if (!nome) {
         ToastManager.warning('Informe o nome do produto.');
@@ -1411,7 +1411,7 @@ function alterarTipoProduto(tipo) {
 function adicionarItemManual() {
     const nome = document.getElementById('produtoManual').value;
     const qtd = parseFloat(document.getElementById('quantidadeManual').value);
-    const unidade = document.getElementById('unidadeManual').value;
+    const unidade = unidadeCadastro(document.getElementById('unidadeManual').value);
     const preco = parseCurrency(document.getElementById('precoManual').value);
     
     if (!nome || !qtd || !preco) {
@@ -1510,7 +1510,7 @@ function renderizarItensPedido() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td data-label="Produto"><span class="commerce-card-value commerce-card-title">${escapeHtml(item.produtoNome || '-')}</span></td>
-            <td data-label="Quantidade"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatNumber(item.quantidade))} ${escapeHtml(item.unidade || '')}</span></td>
+            <td data-label="Quantidade"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatNumber(item.quantidade))} ${escapeHtml(unidadeTexto(item.unidade))}</span></td>
             <td data-label="Preço Unit."><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(item.precoUnitario))}</span></td>
             <td data-label="Total"><span class="commerce-card-value commerce-card-money commerce-card-strong">${escapeHtml(formatCurrency(item.total))}</span></td>
             <td data-label="Ações" class="commerce-actions-cell">
@@ -1558,7 +1558,7 @@ function editarItemCompra(index) {
             alterarTipoProduto('manual');
             document.getElementById('produtoManual').value = (primeiroDesagrupado.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
             document.getElementById('quantidadeManual').value = primeiroDesagrupado.quantidade;
-            document.getElementById('unidadeManual').value = primeiroDesagrupado.unidade || 'm³';
+            document.getElementById('unidadeManual').value = unidadeCadastro(primeiroDesagrupado.unidade || 'm³');
             document.getElementById('precoManual').value = formatCurrency(primeiroDesagrupado.precoUnitario);
             itemEmEdicaoIndex = index;
             ToastManager.success(`Grupo desagrupado em ${desagrupados.length} itens — primeiro carregado para edição. Ajuste e clique em "Adicionar".`, 'Item desagrupado', 4000);
@@ -1567,7 +1567,7 @@ function editarItemCompra(index) {
         alterarTipoProduto('manual');
         document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
         document.getElementById('quantidadeManual').value = item.quantidade;
-        document.getElementById('unidadeManual').value = item.unidade || 'm³';
+        document.getElementById('unidadeManual').value = unidadeCadastro(item.unidade || 'm³');
         document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
         ToastManager.info('Item agrupado convertido para edição manual (dados originais não preservados).', 'Edição de Item', 4000);
         itemEmEdicaoIndex = index;
@@ -1586,14 +1586,14 @@ function editarItemCompra(index) {
         alterarTipoProduto('manual');
         document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
         document.getElementById('quantidadeManual').value = item.quantidade;
-        document.getElementById('unidadeManual').value = item.unidade || 'm³';
+        document.getElementById('unidadeManual').value = unidadeCadastro(item.unidade || 'm³');
         document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
         ToastManager.info('Item de romaneio convertido para edição manual.', 'Edição de Item', 3000);
     } else {
         alterarTipoProduto('manual');
         document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
         document.getElementById('quantidadeManual').value = item.quantidade;
-        document.getElementById('unidadeManual').value = item.unidade || '';
+        document.getElementById('unidadeManual').value = unidadeCadastro(item.unidade || '');
         document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
     }
 
@@ -3425,7 +3425,7 @@ async function visualizarPedido(id) {
         tbodyItens.innerHTML = itensVisualizacao.map(item => `
             <tr>
                 <td data-label="Produto"><span class="commerce-card-value commerce-card-title">${escapeHtml(item.produtoNome || item.produto || item.nome || '-')}</span></td>
-                <td data-label="Quantidade"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatNumber(item.quantidade))} ${escapeHtml(item.unidade || '')}</span></td>
+                <td data-label="Quantidade"><span class="commerce-card-value commerce-card-number">${escapeHtml(formatNumber(item.quantidade))} ${escapeHtml(unidadeTexto(item.unidade))}</span></td>
                 <td data-label="Preço Unit."><span class="commerce-card-value commerce-card-money">${escapeHtml(formatCurrency(item.precoUnitario))}</span></td>
                 <td data-label="Total"><span class="commerce-card-value commerce-card-money commerce-card-strong">${escapeHtml(formatCurrency(item.total))}</span></td>
             </tr>
@@ -4233,7 +4233,7 @@ async function gerarHTMLImpressaoPedidoCompra(pedido) {
         const produto = item.produtoCodigo
             ? `${item.produtoCodigo} - ${item.produtoNome || item.produto || item.nome || item.descricao || ''}`
             : (item.produtoNome || item.produto || item.nome || item.descricao || 'Produto não informado');
-        const quantidade = `${formatNumber(item.quantidade || 0)}${item.unidade ? ` ${item.unidade}` : ''}`;
+        const quantidade = `${formatNumber(item.quantidade || 0)}${item.unidade ? ` ${unidadeTexto(item.unidade)}` : ''}`;
         return `
             <tr>
                 <td class="text-center" style="width: 38px;">${idx + 1}</td>
@@ -4277,7 +4277,7 @@ async function gerarHTMLImpressaoPedidoCompra(pedido) {
         // Unidades mistas: manter 3 casas para maior precisão
         decimalsQtdCompra = 3;
     }
-    const unidadeLabelCompra = unidadesCompra.length === 1 ? ` ${unidadesCompra[0]}` : '';
+    const unidadeLabelCompra = unidadesCompra.length === 1 ? ` ${unidadeTexto(unidadesCompra[0])}` : '';
     const totalQuantidadeCompraFormatada = `${formatNumber(totalQuantidadeCompra, decimalsQtdCompra)}${unidadeLabelCompra}`;
     const bodyHtml = `
         <section class="sisweb-print-info-grid">
@@ -4393,7 +4393,7 @@ async function imprimirPedido(pedidoId) {
             const produto = item.produtoCodigo
                 ? `${item.produtoCodigo} - ${item.produtoNome || item.produto || item.nome || item.descricao || ''}`
                 : (item.produtoNome || item.produto || item.nome || item.descricao || 'Produto não informado');
-            const quantidade = `${formatNumber(item.quantidade || 0)}${item.unidade ? ` ${item.unidade}` : ''}`;
+            const quantidade = `${formatNumber(item.quantidade || 0)}${item.unidade ? ` ${unidadeTexto(item.unidade)}` : ''}`;
             return `
                 <tr>
                     <td class="text-center" style="width: 38px;">${idx + 1}</td>
@@ -4435,7 +4435,7 @@ async function imprimirPedido(pedidoId) {
         } else {
             decimalsQtdCompra = 3;
         }
-        const unidadeLabelCompra = unidadesCompra.length === 1 ? ` ${unidadesCompra[0]}` : '';
+        const unidadeLabelCompra = unidadesCompra.length === 1 ? ` ${unidadeTexto(unidadesCompra[0])}` : '';
         const totalQuantidadeCompraFormatada = `${formatNumber(totalQuantidadeCompra, decimalsQtdCompra)}${unidadeLabelCompra}`;
         const bodyHtml = `
             <section class="sisweb-print-info-grid">
@@ -6146,7 +6146,7 @@ function renderizarPreviewRomaneioCompra() {
         cartao += `<input type="checkbox" data-rc-idx="${idx}" ${checkedAttr} ${disabledAttr} onchange="window.romaneioPreviewToggleCompra(this)" title="Incluir este item no carregamento" style="margin-top:4px;">`;
         cartao += `<div style="flex:1;min-width:0;">`;
         cartao += `<div style="font-weight:600;color:var(--sw-text-1);font-size:13px;">${escapeHtml(rot.nome)}</div>`;
-        cartao += `<div style="color:var(--sw-text-3);font-size:12px;">Qtd/Vol: ${escapeHtml(formatNumber(rot.qtd))} ${escapeHtml(rot.unidade)} • ${escapeHtml(formatCurrency(rot.preco))} unit.${rot.pecasInfo ? ` • ${escapeHtml(rot.pecasInfo)}` : ''}</div>`;
+        cartao += `<div style="color:var(--sw-text-3);font-size:12px;">Qtd/Vol: ${escapeHtml(formatNumber(rot.qtd))} ${escapeHtml(unidadeTexto(rot.unidade))} • ${escapeHtml(formatCurrency(rot.preco))} unit.${rot.pecasInfo ? ` • ${escapeHtml(rot.pecasInfo)}` : ''}</div>`;
         if (desativado) {
             const moduloLabel = uso.modulo === 'venda' ? 'Venda' : 'Compra';
             cartao += `<span style="display:inline-block;margin-top:4px;background:var(--sw-surface-2);color:var(--sw-text-2);font-size:11px;padding:2px 8px;border-radius:10px;"><i class="fas fa-lock"></i> Usado no pedido Nº ${escapeHtml(uso.pedidoNumero)} (${escapeHtml(moduloLabel)})</span>`;

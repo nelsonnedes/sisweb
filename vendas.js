@@ -261,6 +261,9 @@ const VendasConfig = {
 };
 
 window.VendasConfig = VendasConfig;
+
+function unidadeTexto(u) { try { return window.SiswebUnidades ? SiswebUnidades.texto(u) : String(u || ''); } catch (_) { return String(u || ''); } }
+function unidadeCadastro(u) { try { return window.SiswebUnidades ? SiswebUnidades.normalizar(u) : String(u || 'UN'); } catch (_) { return String(u || 'UN'); } }
 const LOCAL_CACHE_DISABLED_KEYS = new Set();
 const LOCAL_CACHE_WARNED_KEYS = new Set();
 const LOCAL_CACHE_MAX_BYTES_FOR_LARGE_KEYS = 900000;
@@ -1944,14 +1947,14 @@ function validarEstoque(produtoId, quantidadeDesejada, itemEmEdicao, unidadeItem
 
     // Disponível na dimensão da unidade pedida (UN→peças, M³→volume, ML→ml, M²→área)
     let estoqueAtual = produto.estoque || 0;
-    let unidadeRotulo = produto.unidade || 'UN';
+    let unidadeRotulo = unidadeTexto(produto.unidade || 'UN');
     try {
         if (typeof temDimsSerrado === 'function' && temDimsSerrado(produto) && typeof razaoBaixaSerrado === 'function') {
             const uni = unidadeItem || produto.unidade || 'UN';
             const r = razaoBaixaSerrado(produto, 0, uni);
             // razaoBaixaSerrado com 0 devolve disponivel da base correta
             estoqueAtual = r.disponivel;
-            unidadeRotulo = uni;
+            unidadeRotulo = unidadeTexto(uni);
         }
     } catch (_) {}
     
@@ -2085,7 +2088,7 @@ function adicionarItem() {
     
     // Mesma origem (unidade) acumula na linha; origem diferente cria linha nova
     // para o detalhe ("2 Peças" vs "10 ml") não misturar.
-    const mesmaOrigem = (it) => String(it.unidadeOrigem || it.unidade || '') === String(unidadeOrigem || unidadeItem);
+    const mesmaOrigem = (it) => normalizarUnidadeMedida(it.unidadeOrigem || it.unidade || '') === normalizarUnidadeMedida(unidadeOrigem || unidadeItem);
     const itemExistente = itensCarrinho.find(item => item.produtoId === produtoId && mesmaOrigem(item));
 
     if (itemExistente) {
@@ -2096,7 +2099,7 @@ function adicionarItem() {
         else if (pecasOrigem != null) itemExistente.pecasOrigem = pecasOrigem;
         itemExistente.total = itemExistente.quantidade * itemExistente.precoUnitario;
         if (isCarregoProduto(produto)) itemExistente.isCarrego = true;
-        ToastManager.success(`Quantidade atualizada: ${formatNumber(itemExistente.quantidade)} ${itemExistente.unidade}`, 'Item atualizado', 2000);
+        ToastManager.success(`Quantidade atualizada: ${formatNumber(itemExistente.quantidade)} ${unidadeTexto(itemExistente.unidade)}`, 'Item atualizado', 2000);
     } else {
         const novoItem = {
             id: Date.now(),
@@ -2171,7 +2174,7 @@ function editarItem(itemId) {
         case 'manual':
             document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
             document.getElementById('quantidadeManual').value = item.quantidade;
-            document.getElementById('unidadeManual').value = item.unidade || 'UN';
+            document.getElementById('unidadeManual').value = unidadeCadastro(item.unidade || 'UN');
             document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
             break;
         case 'romaneio':
@@ -2183,7 +2186,7 @@ function editarItem(itemId) {
             alterarTipoProduto('manual');
             
             // ✅ CORREÇÃO: Preservar a unidade correta do item de romaneio
-            const unidadeRomaneio = item.unidade || 'm³'; // Garantir que use 'm³' como padrão para romaneios
+            const unidadeRomaneio = unidadeCadastro(item.unidade || 'm³'); // Garantir que use 'm³' como padrão para romaneios
             
             // Preencher campos com dados do item de romaneio
             document.getElementById('produtoManual').value = item.produtoNome;
@@ -2240,7 +2243,7 @@ function editarItem(itemId) {
             document.getElementById('precoUnitario').value = formatCurrency(item.precoUnitario);
             try {
                 const unEl = document.getElementById('unidadeItem');
-                if (unEl) unEl.value = item.unidade || 'UN';
+                if (unEl) unEl.value = unidadeCadastro(item.unidade || 'UN');
             } catch (_) {}
             break;
         }
@@ -2253,7 +2256,7 @@ function editarItem(itemId) {
                 alterarTipoProduto('manual');
                 document.getElementById('produtoManual').value = (item.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
                 document.getElementById('quantidadeManual').value = item.quantidade;
-                document.getElementById('unidadeManual').value = item.unidade || 'm³';
+                document.getElementById('unidadeManual').value = unidadeCadastro(item.unidade || 'm³');
                 document.getElementById('precoManual').value = formatCurrency(item.precoUnitario);
                 ToastManager.info(
                     'Item agrupado convertido para edição manual (dados originais não preservados).',
@@ -2284,7 +2287,7 @@ function editarItem(itemId) {
             alterarTipoProduto('manual');
             document.getElementById('produtoManual').value = (primeiroDesagrupado.produtoNome || '').replace(/^\s*[-–—]\s*/, '').trim();
             document.getElementById('quantidadeManual').value = primeiroDesagrupado.quantidade;
-            document.getElementById('unidadeManual').value = primeiroDesagrupado.unidade || 'm³';
+            document.getElementById('unidadeManual').value = unidadeCadastro(primeiroDesagrupado.unidade || 'm³');
             document.getElementById('precoManual').value = formatCurrency(primeiroDesagrupado.precoUnitario);
             itemEmEdicaoId = String(primeiroDesagrupado.id);
             ToastManager.success(
@@ -2340,7 +2343,7 @@ function atualizarTabelaItens() {
         produtoDescricao += getCarregoBadgeHtml(item);
 
         const quantidadeFormatada = item.unidade
-            ? `${formatNumber(item.quantidade)} ${item.unidade}`
+            ? `${formatNumber(item.quantidade)} ${unidadeTexto(item.unidade)}`
             : formatNumber(item.quantidade);
         
         return `
@@ -4522,7 +4525,7 @@ function normalizeProduto(raw, usedCodes) {
     const nomeRaw = nomeSignificativo(raw.nome, raw.name, raw.nomeComum, raw.descricao, raw.produtoNome);
     const nome = (isAllCaps(nomeRaw) ? toTitleCasePt(nomeRaw) : String(nomeRaw || '').trim()).replace(/^\s*[-–—]\s*/, '').trim();
     const unidadeRaw = raw.unidade || raw.unit || 'UN';
-    const unidade = isAllCaps(unidadeRaw) ? toTitleCasePt(unidadeRaw) : String(unidadeRaw || 'UN').trim();
+    const unidade = window.SiswebUnidades ? SiswebUnidades.normalizar(unidadeRaw) : String(unidadeRaw || 'UN').trim();
     const id = raw.id || raw.firebaseKey || raw.codigo || raw.code || raw.sku || (typeof generateUniqueId === 'function' ? generateUniqueId('PROD') : `PROD_${Date.now()}`);
     const codigoRaw = raw.codigo || raw.code || raw.sku || '';
     const codigo = ensureUniqueCode(codigoRaw, usedCodes);
@@ -4968,7 +4971,7 @@ function detalheSerradoItem(item) {
         const fam = normalizarUnidadeMedida(item.unidadeOrigem);
         if ((fam === 'UN' || fam === 'DZ') && item.pecasOrigem != null) return `${fmtN(item.pecasOrigem)} Peças`;
         if (item.qtdOrigem != null) {
-            let base = `${fmtN(item.qtdOrigem)} ${item.unidadeOrigem}`;
+            let base = `${fmtN(item.qtdOrigem)} ${typeof unidadeTexto === 'function' ? unidadeTexto(item.unidadeOrigem) : item.unidadeOrigem}`;
             // ML/M²: anexa equivalência em peças quando inteira ("105 LN · 21 Peças").
             if (fam === 'ML' || fam === 'M2') {
                 try {
@@ -5461,7 +5464,7 @@ function renderPreviewProdutoRomaneio() {
                 : `<div class="uso-romaneio-badge" style="margin-top:4px;"></div>`);
         corpo += `<div class="grupo-rom-card" data-grupo-card="${String(g.gid || '').replace(/"/g, '&quot;')}" style="background:var(--sw-surface);${travado ? 'opacity:0.65;' : ''}">`
             + `<input type="checkbox" class="grm-check" name="grupoRomSel" value="${idx}"${travado ? '' : ' checked'}${travado ? ' disabled' : ''} aria-label="Selecionar grupo">`
-            + `<div class="grm-body"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${exVol.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${exPecas} Peças · ${exMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span>${badgeTravado}</div>`
+            + `<div class="grm-body"><strong>${rotulo}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Vol: ${exVol.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³ · ${exPecas} Peças · ${exMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} LN${g.romaneioNumero ? ' · ' + g.romaneioNumero : ''}</span>${badgeTravado}</div>`
             + `<button type="button" class="btn btn-danger btn-small grm-del" data-excluir-gid="${String(g.gid || '').replace(/"/g, '&quot;')}" aria-label="Excluir grupo">Excluir</button></div>`;
     });
     if (algumTravado) {
@@ -5789,7 +5792,7 @@ function renderPreviewProdutoManuel() {
             total = Math.round((total + (parseFloat(it.preco) || 0) * (parseFloat(it.estoque) || 0)) * 100) / 100;
             const dims = (it.especie || it.espessura > 0) ? ` · ${it.especie || ''} ${it.espessura || 0}x${it.largura || 0}x${it.comprimento || 0}` : '';
             html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--sw-border);border-radius:8px;padding:8px;margin-bottom:6px;background:var(--sw-surface);">`
-                + `<div style="flex:1;"><strong>${it.codigo || '-'} — ${it.nome || '-'}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Preço: ${it.precoFmt || it.preco} · Estoque: ${it.estoque} ${it.unidade || 'UN'}${dims}</span></div>`
+                + `<div style="flex:1;"><strong>${it.codigo || '-'} — ${it.nome || '-'}</strong><br><span style="font-size:0.78rem;color:var(--sw-text-2);">Preço: ${it.precoFmt || it.preco} · Estoque: ${it.estoque} ${unidadeTexto(it.unidade || 'UN')}${dims}</span></div>`
                 + `<button type="button" class="btn btn-danger btn-small" data-item-idx="${idx}" aria-label="Excluir item">Excluir</button></div>`;
         });
         html += `<div style="text-align:right;font-weight:700;">${itens.length} item(ns)</div>`;
@@ -5953,7 +5956,7 @@ async function salvarProduto(event) {
         const nomeRaw = document.getElementById('produtoNome').value;
         let nome = isAllCaps(nomeRaw) ? toTitleCasePt(nomeRaw) : nomeRaw;
         const unidadeRaw = document.getElementById('produtoUnidade').value;
-        const unidade = isAllCaps(unidadeRaw) ? toTitleCasePt(unidadeRaw) : unidadeRaw;
+        const unidade = window.SiswebUnidades ? SiswebUnidades.normalizar(unidadeRaw) : unidadeRaw;
         const descricaoRaw = document.getElementById('produtoDescricao')?.value || '';
         const descricao = isAllCaps(descricaoRaw) ? toTitleCasePt(descricaoRaw) : descricaoRaw;
         const codigoInput = document.getElementById('produtoCodigo');
@@ -6205,8 +6208,8 @@ async function imprimirRelatorioProdutos(lista) {
     const nomeDe = (p) => { try { return nomeExibicaoProduto(p); } catch (_) { return 'Produto sem nome'; } };
     const num = (v) => parseFloat(v) || 0;
     const linhas = itens.map(p => {
-        const estoque = temDimsSerrado(p) ? String(Math.round(num(p.pecas))) : `${num(p.estoque).toLocaleString('pt-BR')} ${p.unidade || 'UN'}`;
-        const ml = temDimsSerrado(p) ? metrosLinearesDe(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' ml' : '-';
+        const estoque = temDimsSerrado(p) ? String(Math.round(num(p.pecas))) : `${num(p.estoque).toLocaleString('pt-BR')} ${unidadeTexto(p.unidade || 'UN')}`;
+        const ml = temDimsSerrado(p) ? metrosLinearesDe(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' LN' : '-';
         const vol = temDimsSerrado(p) ? volumeSerradoProduto(p).toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' m³' : '-';
         const preco = num(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         return `<tr><td>${esc(p.codigo || '-')}</td><td>${esc(nomeDe(p))}</td><td>${preco}</td><td>${esc(estoque)}</td><td>${ml}</td><td>${vol}</td></tr>`;
@@ -6227,8 +6230,8 @@ async function imprimirRelatorioProdutos(lista) {
     const totPecas = arrG.reduce((s, g) => s + g.pecas, 0);
     const totMl = Math.round(arrG.reduce((s, g) => s + g.ml, 0) * 100) / 100;
     const totVol = Math.round(arrG.reduce((s, g) => s + g.volume, 0) * 1000) / 1000;
-    const linhasResumo = arrG.map(g => `<tr><td>${esc(g.especie || '-')}</td><td>${String(g.espessura).replace('.', ',')} cm</td><td>${String(g.largura).replace('.', ',')} cm</td><td>${Math.round(g.pecas)}</td><td>${g.ml.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml</td><td>${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</td></tr>`).join('')
-        + `<tr><td colspan="3"><strong>Total</strong></td><td><strong>${Math.round(totPecas)}</strong></td><td><strong>${totMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ml</strong></td><td><strong>${totVol.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</strong></td></tr>`;
+    const linhasResumo = arrG.map(g => `<tr><td>${esc(g.especie || '-')}</td><td>${String(g.espessura).replace('.', ',')} cm</td><td>${String(g.largura).replace('.', ',')} cm</td><td>${Math.round(g.pecas)}</td><td>${g.ml.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} LN</td><td>${g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</td></tr>`).join('')
+        + `<tr><td colspan="3"><strong>Total</strong></td><td><strong>${Math.round(totPecas)}</strong></td><td><strong>${totMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} LN</strong></td><td><strong>${totVol.toLocaleString('pt-BR', { minimumFractionDigits: 3 })} m³</strong></td></tr>`;
     const dataHoje = new Date().toLocaleDateString('pt-BR');
     try {
         let w = null;
@@ -6322,8 +6325,8 @@ function carregarTabelaProdutos(filtro = '') {
             <td data-label="Código">${produto.codigo || '-'}</td>
             <td data-label="Nome">${nomeExibicaoProduto(produto)}</td>
             <td data-label="Preço" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(produto.preco || 0)}</span></td>
-            <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(produto.pecas || 0, 0) : `${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}`}</span></td>
-            <td data-label="M. Linear" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(metrosLinearesDe(produto), 2) + ' ml' : '-'}</span></td>
+            <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(produto.pecas || 0, 0) : `${formatNumber(produto.estoque || 0)} ${unidadeTexto(produto.unidade || 'UN')}`}</span></td>
+            <td data-label="M. Linear" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(metrosLinearesDe(produto), 2) + ' LN' : '-'}</span></td>
             <td data-label="Volume (m³)" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(volumeSerradoProduto(produto)) + ' m³' : '-'}</span></td>
             <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
                 <div class="acoes-buttons commerce-actions-wrap">
@@ -6438,7 +6441,7 @@ function editarProduto(produtoId) {
     document.getElementById('produtoNome').value = produto.nome || '';
     document.getElementById('produtoPreco').value = formatCurrency(produto.preco || 0);
     document.getElementById('produtoEstoque').value = produto.estoque || 0;
-    document.getElementById('produtoUnidade').value = produto.unidade || 'UN';
+    document.getElementById('produtoUnidade').value = unidadeCadastro(produto.unidade || 'UN');
     const descEl = document.getElementById('produtoDescricao');
     if (descEl) descEl.value = produto.descricao || '';
 
@@ -7341,9 +7344,9 @@ function atualizarSelectProdutos() {
                             nArea = dimensoesEstoqueSerrado(p).area.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                         }
                     } catch (_) {}
-                    texto += ` — ${nPecas} pç · ${nVol} m³ · ${nMl} ml · ${nArea} m²`;
+                    texto += ` — ${nPecas} pç · ${nVol} m³ · ${nMl} LN · ${nArea} m²`;
                 } else {
-                    texto += ` — Est: ${Number(p.estoque || 0).toLocaleString('pt-BR')} ${p.unidade || 'UN'}`;
+                    texto += ` — Est: ${Number(p.estoque || 0).toLocaleString('pt-BR')} ${unidadeTexto(p.unidade || 'UN')}`;
                 }
             } catch (_) {}
             const preco = p.preco || p.price || 0;
@@ -8019,7 +8022,7 @@ function alterarTipoProduto(tipo) {
 function adicionarItemManual() {
     const nome = document.getElementById('produtoManual').value.trim();
     const quantidade = parseFloat(document.getElementById('quantidadeManual').value);
-    const unidade = document.getElementById('unidadeManual').value;
+    const unidade = unidadeCadastro(document.getElementById('unidadeManual').value);
     const precoUnitario = parseCurrencyValue(document.getElementById('precoManual').value);
     
     if (!nome) {
@@ -10631,7 +10634,7 @@ async function visualizarPedido(pedidoId) {
 
             // Formatar quantidade com unidade
             const quantidadeFormatada = item.unidade
-                ? `${formatNumber(item.quantidade)} ${item.unidade}`
+                ? `${formatNumber(item.quantidade)} ${unidadeTexto(item.unidade)}`
                 : formatNumber(item.quantidade);
 
             return `
@@ -10848,7 +10851,7 @@ async function gerarHTMLImpressaoPedido(pedido) {
         }
 
         const quantidadeFormatada = item.unidade
-            ? `${formatNumber(item.quantidade || 0)} ${item.unidade}`
+            ? `${formatNumber(item.quantidade || 0)} ${unidadeTexto(item.unidade)}`
             : formatNumber(item.quantidade || 0);
 
         return `
@@ -10905,7 +10908,7 @@ async function gerarHTMLImpressaoPedido(pedido) {
     }, 0);
 
     const unidades = Array.from(new Set((pedido.itens || [])
-        .map(it => (it.unidade || '').trim())
+        .map(it => unidadeTexto(it.unidade).trim())
         .filter(u => u)));
 
     let decimalsQtd = 3;
@@ -10921,7 +10924,7 @@ async function gerarHTMLImpressaoPedido(pedido) {
         decimalsQtd = 3;
     }
 
-    const unidadeLabel = unidades.length === 1 ? ` ${unidades[0]}` : '';
+    const unidadeLabel = unidades.length === 1 ? ` ${unidadeTexto(unidades[0])}` : '';
     const totalQuantidadeFormatada = `${formatNumber(totalQuantidade, decimalsQtd)}${unidadeLabel}`;
 
     const itemCount = (pedido.itens || []).length;

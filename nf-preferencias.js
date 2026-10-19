@@ -17,6 +17,8 @@
 const NFPreferencias = (() => {
   'use strict';
 
+  function rotuloUnidade(u) { try { return window.SiswebUnidades ? SiswebUnidades.nome(u) : u; } catch (_) { return u; } }
+
   // ─── Defaults ─────────────────────────────────────────────────────────────
   const DEFAULT_PREFS = {
     // Lista de unidades disponíveis (base: NFeTables.UNIDADES se disponível)
@@ -88,10 +90,14 @@ const NFPreferencias = (() => {
     const valorAnterior = sel.value || atual;
     sel.innerHTML = '';
     const unidades = prefs.unidades && prefs.unidades.length > 0 ? prefs.unidades : DEFAULT_PREFS.unidades;
+    const vistos = new Set();
     unidades.forEach(u => {
+      const rotulo = rotuloUnidade(u);
+      if (vistos.has(rotulo) && u !== valorAnterior) return;
+      vistos.add(rotulo);
       const opt = document.createElement('option');
       opt.value = u;
-      opt.textContent = u;
+      opt.textContent = rotulo;
       if (u === valorAnterior) opt.selected = true;
       sel.appendChild(opt);
     });
@@ -206,7 +212,7 @@ const NFPreferencias = (() => {
           Unidade Padrão da Empresa:
         </label>
         <select id="prefUnidadePadrao" style="padding:8px;border:1px solid var(--sw-border);border-radius:4px;background:var(--sw-surface-2);color:var(--sw-text-1);font-size:14px;">
-          ${(prefs.unidades || DEFAULT_PREFS.unidades).map(u => `<option value="${u}" ${u===prefs.unidadePadrao?'selected':''}>${u}</option>`).join('')}
+          ${(prefs.unidades || DEFAULT_PREFS.unidades).map(u => `<option value="${u}" ${u===prefs.unidadePadrao?'selected':''}>${rotuloUnidade(u)}</option>`).join('')}
         </select>
       </div>
       <div style="margin-bottom:14px;">

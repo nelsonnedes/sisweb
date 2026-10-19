@@ -21,7 +21,7 @@
                 { id: 'pes', label: 'Pés', selectors: ['.tl-main-table .col-pes'] },
                 { id: 'm3', label: 'M³', selectors: ['.tl-main-table .col-vm3'] },
                 { id: 'm2', label: 'M²', selectors: ['.tl-main-table .col-vm2'] },
-                { id: 'ml', label: 'ml', selectors: ['.tl-main-table .col-ml'] },
+                { id: 'ml', label: 'LN', selectors: ['.tl-main-table .col-ml'] },
                 { id: 'precoUnitario', label: 'Preço/M³', selectors: ['.tl-main-table .col-unit'] },
                 { id: 'valor', label: 'Valor', selectors: ['.tl-main-table .col-total'] }
             ]
@@ -34,7 +34,7 @@
                 { id: 'pes', label: 'Pés', selectors: ['#pct-main-table .col-pes', '#pct-cont-table .col-pes'] },
                 { id: 'm3', label: 'M³', selectors: ['#pct-main-table .col-vm3', '#pct-cont-table .col-vm3'] },
                 { id: 'm2', label: 'M²', selectors: ['#pct-main-table .col-vm2', '#pct-cont-table .col-vm2'] },
-                { id: 'ml', label: 'ml', selectors: ['#pct-main-table .col-ml', '#pct-cont-table .col-ml'] },
+                { id: 'ml', label: 'LN', selectors: ['#pct-main-table .col-ml', '#pct-cont-table .col-ml'] },
                 { id: 'precoUnitario', label: 'Preço/M³', selectors: ['#pct-main-table .col-unit', '#pct-cont-table .col-unit'] },
                 { id: 'valor', label: 'Valor', selectors: ['#pct-main-table .col-total', '#pct-cont-table .col-total'] }
             ]
@@ -47,7 +47,7 @@
                 { id: 'pes', label: 'Pés', selectors: ['.items-table .col-pes'] },
                 { id: 'm3', label: 'M³', selectors: ['.items-table .col-m3'] },
                 { id: 'm2', label: 'M²', selectors: ['.items-table .col-m2'] },
-                { id: 'ml', label: 'ml', selectors: ['.items-table .col-ml'] },
+                { id: 'ml', label: 'LN', selectors: ['.items-table .col-ml'] },
                 { id: 'precoUnitario', label: 'Preço/M³', selectors: ['.items-table .col-unit-price'] },
                 { id: 'valor', label: 'Valor', selectors: ['.items-table .col-total-price'] }
             ]

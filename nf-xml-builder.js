@@ -623,12 +623,12 @@ const NFXmlBuilder = (() => {
         <NCM>${String(item.ncm || item.NCM || '00000000').replace(/\D/g,'').padStart(8,'0')}</NCM>
         ${item.cest ? `<CEST>${item.cest}</CEST>` : ''}
         <CFOP>${item.cfop}</CFOP>
-        <uCom>${esc(item.uCom || item.unidade || 'UN')}</uCom>
+        <uCom>${esc(window.SiswebUnidades ? SiswebUnidades.fiscal(item.uCom || item.unidade || 'UN') : (item.uCom || item.unidade || 'UN'))}</uCom>
         <qCom>${num(item.qCom || item.quantidade, 4)}</qCom>
         <vUnCom>${num(item.vUnCom || item.valorUnitario, 10)}</vUnCom>
         <vProd>${num(item.vProd || item.total)}</vProd>
         <cEANTrib>${item.cEAN || 'SEM GTIN'}</cEANTrib>
-        <uTrib>${esc(item.uTrib || item.uCom || item.unidade || 'UN')}</uTrib>
+        <uTrib>${esc(window.SiswebUnidades ? SiswebUnidades.fiscal(item.uTrib || item.uCom || item.unidade || 'UN') : (item.uTrib || item.uCom || item.unidade || 'UN'))}</uTrib>
         <qTrib>${num(item.qTrib || item.qCom || item.quantidade, 4)}</qTrib>
         <vUnTrib>${num(item.vUnTrib || item.vUnCom || item.valorUnitario, 10)}</vUnTrib>
         <indTot>1</indTot>

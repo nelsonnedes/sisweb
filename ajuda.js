@@ -223,7 +223,7 @@ function buildTopics() {
                 'Emita a ordem de carregamento e o espelho do pedido para entrega.'
             ],
             features: [
-                'Carrinho com suporte a unidades mistas (m³, peças, metro linear, m²).',
+                'Carrinho com suporte a unidades mistas (m³, peças, LN/Metro Linear, m²).',
                 'Dedução de estoque em ponto único na aprovação com estorno seguro.',
                 'Integração imediata com o módulo de Contas a Receber.',
                 'Impressão limpa de pedidos para expedição e motorista.',

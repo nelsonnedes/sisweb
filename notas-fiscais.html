@@ -1694,7 +1694,7 @@
                   </div>
                   <div class="form-group" style="max-width:90px">
                     <label for="itemUNCad">Unidade:</label>
-                    <select id="itemUNCad"><option value="UN">UN</option></select>
+                    <select id="itemUNCad"><option value="UN">UN - Unidade</option><option value="ML">LN - Metro Linear</option></select>
                   </div>
                   <div class="form-group" style="max-width:110px">
                     <label for="itemCSOSNCad">CSOSN/CST:</label>
@@ -1758,7 +1758,7 @@
                   </div>
                   <div class="form-group" style="max-width:90px">
                     <label for="itemUN">Unidade:</label>
-                    <select id="itemUN"><option value="UN">UN</option></select>
+                    <select id="itemUN"><option value="UN">UN - Unidade</option><option value="ML">LN - Metro Linear</option></select>
                   </div>
                   <div class="form-group" style="max-width:110px">
                     <label for="itemCSOSN">CSOSN/CST:</label>
@@ -2808,6 +2808,7 @@
     <script src="openNewClientModal.js?v=e302cd671b8c"></script>
     <script src="storageService.js?v=26c2875bf32d"></script>
     <!-- Módulos Fiscais -->
+    <script src="js/unidades.js?v=f304e0544290"></script>
     <script src="nf-tables.js?v=e817068adb54"></script>
     <script src="nf-config.js?v=f2b77bc0af1a"></script>
     <!-- node-forge: necessário para extrair metadados do certificado .pfx no browser -->
@@ -2815,8 +2816,8 @@
     <script src="nf-cert.js?v=b522cff21ec4"></script>
     <script src="nf-validator.js?v=a02e65d4fe09"></script>
     <script src="nf-tax-tables.js?v=3d160df3c943"></script>
-    <script src="nf-itens.js?v=7069633ec726"></script>
-    <script src="nf-xml-builder.js?v=553663a16c21"></script>
+    <script src="nf-itens.js?v=d8f1c5b2e23f"></script>
+    <script src="nf-xml-builder.js?v=431884110df1"></script>
     <script src="nf-fiscal-events.js?v=4a67d0a21c7c"></script>
     <script src="nf-storage.js?v=46f3910730cf"></script>
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
@@ -2825,12 +2826,12 @@
     <script src="nf-dashboard.js?v=0258f23e49e4"></script>
     <!-- Novos módulos Fase 0 -->
     <script src="nf-naturezas.js?v=c6e8d0c27b26"></script>
-    <script src="nf-preferencias.js?v=b5a49347dcd0"></script>
-    <script src="nf-produtos-nf.js?v=728bc08a472f"></script>
+    <script src="nf-preferencias.js?v=a39d3bfe5bc0"></script>
+    <script src="nf-produtos-nf.js?v=25ab8ce3a466"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="assets/vendor/qrcode-generator.js?v=18ae399f8118"></script>
-    <script src="commerce-pdf-share.js?v=c25876264ea7"></script>
-    <script src="nf-danfe.js?v=0accdb14437e"></script>
+    <script src="commerce-pdf-share.js?v=ca04e7248a45"></script>
+    <script src="nf-danfe.js?v=4f7a2132ab4f"></script>
     <script>
     // ─── Inicialização NFService ──────────────────────────────────────────────
     function isFirebaseOfflineModeNF() {
@@ -3707,7 +3708,7 @@
           <td data-label="Produto">${escapeHtmlNF(it.xProd)}</td>
           <td data-label="NCM" style="font-family:monospace">${escapeHtmlNF(it.ncm)}</td>
           <td data-label="CFOP">${escapeHtmlNF(it.cfop)}</td>
-          <td data-label="UN">${escapeHtmlNF(it.uCom)}</td>
+          <td data-label="UN">${escapeHtmlNF(window.SiswebUnidades ? SiswebUnidades.texto(it.uCom) : it.uCom)}</td>
           <td data-label="Qtd" style="text-align:right">${it.qCom.toLocaleString('pt-BR',{minimumFractionDigits:3})}</td>
           <td data-label="Vl.Unit." style="text-align:right">${fmtMoedaForm(it.vUnCom)}</td>
           <td data-label="Total" style="text-align:right;font-weight:600">${fmtMoedaForm(it.vProd)}</td>
@@ -3769,7 +3770,7 @@
       document.getElementById('nfEditItemNome').value = item.xProd || '';
       document.getElementById('nfEditItemNCM').value = item.ncm || item.NCM || '';
       document.getElementById('nfEditItemCFOP').value = item.cfop || item.CFOP || '';
-      document.getElementById('nfEditItemUN').value = item.uCom || item.unidade || 'UN';
+      document.getElementById('nfEditItemUN').value = (window.SiswebUnidades ? SiswebUnidades.texto(item.uCom || item.unidade || 'UN') : (item.uCom || item.unidade || 'UN'));
       document.getElementById('nfEditItemQtd').value = parseFloat(item.qCom || item.quantidade || 0) || '';
       document.getElementById('nfEditItemValor').value = fmtMoedaForm(item.vUnCom || item.valorUnitario || 0);
       document.getElementById('nfEditItemCSOSN').value = item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst || '';
@@ -3789,7 +3790,7 @@
       const nome = (document.getElementById('nfEditItemNome')?.value || '').trim();
       const ncm = (document.getElementById('nfEditItemNCM')?.value || '').replace(/\D/g, '').padStart(8, '0');
       const cfop = (document.getElementById('nfEditItemCFOP')?.value || '').trim();
-      const un = (document.getElementById('nfEditItemUN')?.value || 'UN').trim().toUpperCase();
+      const un = (window.SiswebUnidades ? SiswebUnidades.fiscal(document.getElementById('nfEditItemUN')?.value || 'UN') : (document.getElementById('nfEditItemUN')?.value || 'UN').trim().toUpperCase());
       const qtd = parseFloat(document.getElementById('nfEditItemQtd')?.value) || 0;
       const vUnit = parseMoeda(document.getElementById('nfEditItemValor')?.value);
       const cfgEdit = window.NFService?.getConfig?.() || {};
@@ -6144,8 +6145,8 @@ renderizarVolumesNF();
             xProd:  it.xProd || it.descricao || 'Produto',
             ncm:    it.ncm || it.NCM || '00000000',
             cfop:   it.cfop || '5102',
-            uCom:   it.uCom || it.unidade || 'UN',
-            uTrib:  it.uCom || 'UN',
+            uCom:   (window.SiswebUnidades ? SiswebUnidades.fiscal(it.uCom || it.unidade || 'UN') : (it.uCom || it.unidade || 'UN')),
+            uTrib:  (window.SiswebUnidades ? SiswebUnidades.fiscal(it.uCom || 'UN') : (it.uCom || 'UN')),
             qCom:   parseFloat(it.qCom || it.quantidade) || 0,
             vUnCom: parseFloat(it.vUnCom || it.valorUnitario) || 0,
             vProd:  parseFloat(it.vProd || it.total) || 0,

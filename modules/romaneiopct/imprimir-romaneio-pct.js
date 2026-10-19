@@ -687,7 +687,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         <th class="col-pes">Pés</th>
                         <th class="always-show-volume col-vm3">m³</th>
                         <th class="always-show-volume col-vm2">m²</th>
-                        <th class="col-ml">ml</th>
+                        <th class="col-ml">LN</th>
                         <th class="no-print-unit-price text-right col-unit">Preço/m³</th>
                         <th class="no-print-price text-right col-total">Valor</th>
                     </tr>
@@ -2187,7 +2187,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                     <th>Largura</th>
                     <th>Comprimento</th>
                     <th>Peças</th>
-                    <th>Metros Lineares</th>
+                    <th>LN</th>
                     <th>Volume</th>
                     <th>Observação/Pacote</th>
                 </tr>
@@ -2202,7 +2202,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 <td class="number">${row.largura.toLocaleString('pt-BR')} cm</td>
                 <td class="number">${row.comprimento.toLocaleString('pt-BR')} cm</td>
                 <td class="number">${row.pecas}</td>
-                <td class="number">${row.metrosLineares.toFixed(2).replace('.', ',')} m</td>
+                <td class="number">${row.metrosLineares.toFixed(2).replace('.', ',')} LN</td>
                 <td class="number">${row.volume.toFixed(3).replace('.', ',')} m³</td>
                 <td>${row.observacao}</td>
             </tr>

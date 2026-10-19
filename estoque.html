@@ -3252,7 +3252,7 @@
                 <div class="form-row entrada-produto-grid-secondary">
                     <div class="form-group form-group-small">
                         <label for="entradaProdutoUnidade">Unidade:</label>
-                        <input type="text" id="entradaProdutoUnidade" placeholder="un, kg, cx" value="un">
+                        <input type="text" id="entradaProdutoUnidade" placeholder="un, kg, cx, LN (Metro Linear)" value="un">
                     </div>
                     <div class="form-group form-group-small">
                         <label for="entradaProdutoQtd">Quantidade:</label>
@@ -3340,7 +3340,7 @@
                         </div>
                         <div class="form-group form-group-small">
                             <label for="editModalProdutoUnidade">Unidade:</label>
-                            <input type="text" id="editModalProdutoUnidade" placeholder="un, kg, cx" required>
+                            <input type="text" id="editModalProdutoUnidade" placeholder="un, kg, cx, LN (Metro Linear)" required>
                         </div>
                         <div class="form-group form-group-small">
                             <label for="editModalProdutoQtd">Quantidade (Saldo):</label>
@@ -3834,9 +3834,10 @@
         console.log("✅ firebaseService carregado no estoque.html completo");
     </script>
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
-    <script src="commerce-pdf-share.js?v=c25876264ea7"></script>
+    <script src="commerce-pdf-share.js?v=ca04e7248a45"></script>
         <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-        <script src="estoque_produtos.js?v=021ecfca52a1"></script>
+    <script src="js/unidades.js?v=f304e0544290"></script>
+        <script src="estoque_produtos.js?v=1b25c8c5cbe3"></script>
         <script src="estoque.js?v=b8df95373381"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

@@ -1181,7 +1181,7 @@
                                 <th>Pés</th>
                                 <th>m³</th>
                                 <th>m²</th>
-                                <th>ml</th>
+                                <th>LN</th>
                                 <th>Valor</th>
                                 <th>Ações</th>
                             </tr>
@@ -1205,8 +1205,8 @@
                         <span id="totalAreaM2" class="totais-valor">0,000 m²</span>
                     </div>
                     <div class="totais-item">
-                        <div class="totais-label">Total ml:</div>
-                        <span id="totalMetrosLineares" class="totais-valor">0,000 ml</span>
+                        <div class="totais-label">Total LN:</div>
+                        <span id="totalMetrosLineares" class="totais-valor">0,000 LN</span>
                     </div>
                     <div class="totais-item">
                         <div class="totais-label">Valor Total:</div>
@@ -1491,8 +1491,8 @@
     <script src="pre-romaneio-selector.js?v=25012edb1794"></script>
     <script src="romaneio-table-enhancements.js?v=290d67a3557c"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
-    <script src="romaneio-print-config.js?v=179c8544dedf"></script>
-    <script src="commerce-pdf-share.js?v=c25876264ea7"></script>
+    <script src="romaneio-print-config.js?v=2f548339d316"></script>
+    <script src="commerce-pdf-share.js?v=ca04e7248a45"></script>
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pes" data-target="clientListBody"></script>
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
     <script src="modules/core/romaneio-list-columns.js?v=396ded91f759" data-page="pes" data-target="romaneioListBody"></script>
@@ -1583,7 +1583,7 @@
                     <td data-label="Pés">${formatarPes(toNumberValue(item.totalPes || 0))}</td>
                     <td data-label="m³">${formatarVolume(toNumberValue(item.volume || 0))}</td>
                     <td data-label="m²">${formatarArea(toNumberValue(item.areaM2 || 0))}</td>
-                    <td data-label="ml">${formatarMetrosLineares(toNumberValue(item.metrosLineares || 0))}</td>
+                    <td data-label="LN">${formatarMetrosLineares(toNumberValue(item.metrosLineares || 0))}</td>
                     <td data-label="Valor Total">${formatarMoeda(item.valor)}</td>
                     <td data-label="Ações" style="text-align: center;">
                         <button onclick="editarItem(${indexReal})" class="btn-editar" title="Editar item">
@@ -2259,7 +2259,7 @@
         }
 
         function formatarMetrosLineares(ml) {
-            return formatarNumero(ml, 3) + ' ml';
+            return formatarNumero(ml, 3) + ' LN';
         }
 
         // Função para verificar se um item já existe
@@ -4908,7 +4908,7 @@
                             <th>Largura</th>
                             <th>Comprimento</th>
                             <th>Peças</th>
-                            <th>Metros Lineares</th>
+                            <th>LN</th>
                             <th>Volume</th>
                             <th>Observação/Pacote</th>
                         </tr>
@@ -4923,7 +4923,7 @@
                         <td class="num">${formatarMilimetros(row.largura)}</td>
                         <td class="num">${formatarMilimetros(row.comprimento)}</td>
                         <td class="num">${formatarNumero(row.qtd, 0)}</td>
-                        <td class="num">${formatarNumero(row.ml, 3)} m</td>
+                        <td class="num">${formatarNumero(row.ml, 3)} LN</td>
                         <td class="num">${formatarNumero(row.m3, 3)} m³ / ${formatarPes(row.pes)}</td>
                         <td></td>
                     </tr>
@@ -4933,7 +4933,7 @@
                         <tr class="total-row">
                             <td colspan="4"><strong>Total Geral</strong></td>
                             <td class="num"><strong>${formatarNumero(resumoDimTotals.qtd, 0)}</strong></td>
-                            <td class="num"><strong>${formatarNumero(resumoDimTotals.ml, 3)} m</strong></td>
+                            <td class="num"><strong>${formatarNumero(resumoDimTotals.ml, 3)} LN</strong></td>
                             <td class="num"><strong>${formatarNumero(resumoDimTotals.m3, 3)} m³ / ${formatarPes(resumoDimTotals.pes)}</strong></td>
                             <td></td>
                         </tr>
@@ -5274,7 +5274,7 @@
                                 <th class="col-pes">Pés</th>
                                 <th class="col-m3">m³</th>
                                 <th class="col-m2">m²</th>
-                                <th class="col-ml">ml</th>
+                                <th class="col-ml">LN</th>
                                 ${hideUnitPrice ? '' : '<th class="col-unit-price">Preço/m³</th>'}
                                 ${hidePrice ? '' : '<th class="col-total-price">Valor</th>'}
                             </tr>

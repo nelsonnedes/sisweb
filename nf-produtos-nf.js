@@ -103,7 +103,7 @@ const NFProdutosNF = (() => {
       opt.textContent = cod ? `${cod} — ${nome}` : nome;
       opt.dataset.ncm    = p.ncm   || p.NCM  || '';
       opt.dataset.cfop   = p.cfopPadrao || p.cfop || '';
-      opt.dataset.un     = p.unidade || p.un  || 'UN';
+      opt.dataset.un     = window.SiswebUnidades ? SiswebUnidades.fiscal(p.unidade || p.un || 'UN') : (p.unidade || p.un || 'UN');
       opt.dataset.preco  = p.preco  || p.precoVenda || p.valorUnitario || '0';
       opt.dataset.nome   = nome;
       if (selecionarId && id === selecionarId) opt.selected = true;
@@ -308,7 +308,7 @@ const NFProdutosNF = (() => {
         cst: String(item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst || ''),
         origem: String(item.imposto?.icms?.orig ?? item.orig ?? '0'),
         cest: String(item.cest || ''),
-        unidade: String(item.uCom || item.unidade || 'UN').toUpperCase(),
+        unidade: (window.SiswebUnidades ? SiswebUnidades.fiscal(item.uCom || item.unidade || 'UN') : String(item.uCom || item.unidade || 'UN').toUpperCase()),
         importado: !!item.importado,
         valorPauta: valorPauta > 0 ? valorPauta : null,
         ultimaNota: {
@@ -411,7 +411,7 @@ const NFProdutosNF = (() => {
         cst: String(item.csosn || item.imposto?.icms?.csosn || item.imposto?.icms?.cst || ''),
         origem: String(item.imposto?.icms?.orig ?? item.orig ?? '0'),
         cest: String(item.cest || ''),
-        unidade: String(item.uCom || item.unidade || 'M³').toUpperCase(),
+        unidade: (window.SiswebUnidades ? SiswebUnidades.fiscal(item.uCom || item.unidade || 'M³') : String(item.uCom || item.unidade || 'M³').toUpperCase()),
         importado: !!item.importado,
         valorPauta: valorPauta > 0 ? valorPauta : null,
         atualizadoEm: agora,

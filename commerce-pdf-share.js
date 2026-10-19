@@ -1154,7 +1154,7 @@
                 doc.text(String(index + 1), state.margin + 3, y);
                 doc.text(productLines, state.margin + 13, y);
                 const quantity = item.unidade
-                    ? `${formatNumber(item.quantidade || 0)} ${item.unidade}`
+                    ? `${formatNumber(item.quantidade || 0)} ${window.SiswebUnidades ? SiswebUnidades.texto(item.unidade) : item.unidade}`
                     : formatNumber(item.quantidade || 0);
                 doc.text(text(quantity), state.margin + 120, y, { align: 'right' });
                 doc.text(formatCurrency(item.precoUnitario || item.preco || 0), state.margin + 151, y, { align: 'right' });

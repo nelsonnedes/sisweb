@@ -244,7 +244,7 @@ function atualizarTabelaItens() {
     container.innerHTML = itensNota.map(item => `
         <div class="item-row">
             <div>${item.codigo} - ${item.produto}</div>
-            <div>${formatNumber(item.quantidade)} ${item.unidade}</div>
+            <div>${formatNumber(item.quantidade)} ${window.SiswebUnidades ? SiswebUnidades.texto(item.unidade) : item.unidade}</div>
             <div>${formatCurrency(item.valorUnitario)}</div>
             <div>${formatCurrency(item.total)}</div>
             <div>${item.cfop}</div>

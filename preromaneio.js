@@ -1009,7 +1009,7 @@ function atualizarTotais() {
     const totalMlEl = document.getElementById('totalMetrosLineares');
     if (totalPesEl) totalPesEl.textContent = formatDecimalBR(pes, 2, ' pés');
     if (totalAreaEl) totalAreaEl.textContent = formatDecimalBR(area, 3, ' m²');
-    if (totalMlEl) totalMlEl.textContent = formatDecimalBR(ml, 3, ' ml');
+    if (totalMlEl) totalMlEl.textContent = formatDecimalBR(ml, 3, ' LN');
     document.querySelectorAll('.pes-summary-item').forEach((el) => {
         el.style.display = currentTab === 'PES' ? 'flex' : 'none';
     });

@@ -2598,7 +2598,7 @@ function populateRomaneioTable() {
                 <td>${item.codigo || 'N/A'}</td>
                 <td>${item.descricao || 'N/A'}</td>
                 <td>${parseFloat(item.quantidade || 0).toFixed(3)}</td>
-                <td>${item.unidade || 'UN'}</td>
+                <td>${window.SiswebUnidades ? SiswebUnidades.texto(item.unidade || 'UN') : (item.unidade || 'UN')}</td>
                 <td>R$ ${parseFloat(item.preco || 0).toFixed(2)}</td>
                 <td>R$ ${(parseFloat(item.quantidade || 0) * parseFloat(item.preco || 0)).toFixed(2)}</td>
             `;

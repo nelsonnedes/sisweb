@@ -1096,12 +1096,12 @@
                         <div class="form-group form-group-small">
                             <label for="unidadeManual">Unidade:</label>
                             <select id="unidadeManual">
-                                <option value="UN">UN</option>
-                                <option value="DZ">DZ</option>
-                                <option value="PC">PC</option>
-                                <option value="m³" selected>m³</option>
-                                <option value="m²">m²</option>
-                                <option value="LN">LN</option>
+                                <option value="UN">UN - Unidade</option>
+                                <option value="DZ">DZ - Dúzia</option>
+                                <option value="PC">PC - Peça</option>
+                                <option value="m³" selected>m³ - Metro Cúbico</option>
+                                <option value="m²">m² - Metro Quadrado</option>
+                                <option value="LN">LN - Metro Linear</option>
                             </select>
                         </div>
                         <div class="form-group form-group-small">
@@ -2200,11 +2200,12 @@
     <script src="cities.js?v=741c80084e54"></script>
     <script src="ui-config.js?v=2f06b9dee53f"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
-    <script src="commerce-pdf-share.js?v=c25876264ea7"></script>
+    <script src="commerce-pdf-share.js?v=ca04e7248a45"></script>
     <script src="romaneio-table-enhancements.js?v=290d67a3557c"></script>
     <!-- Carregar módulo de Compras -->
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
-    <script src="compras.js?v=6cb13a3025f7"></script>
+    <script src="js/unidades.js?v=f304e0544290"></script>
+    <script src="compras.js?v=1f2c39301ec4"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
