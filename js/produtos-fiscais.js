@@ -29,8 +29,18 @@
         return arr.filter(function (p) { return p && typeof p === 'object' && (p.nome || p.descricao || p.name); });
     }
 
+    async function waitSvc(timeoutMs) {
+        var limit = timeoutMs || 8000;
+        var t0 = Date.now();
+        while (!svc()) {
+            if (Date.now() - t0 > limit) throw new Error('Serviço Firebase indisponível.');
+            await new Promise(function (r) { setTimeout(r, 100); });
+        }
+        return svc();
+    }
+
     async function resolveTenant() {
-        var s = svc();
+        var s = await waitSvc();
         if (!s) throw new Error('Serviço Firebase indisponível.');
         var ctx = null;
         try {
@@ -254,6 +264,8 @@
     }
 
     function bind() {
+        if (state.bound) return;
+        state.bound = true;
         var search = document.getElementById('pfSearch');
         if (search) search.addEventListener('input', function () { state.page = 1; render(); });
         var novo = document.getElementById('pfNewBtn');
@@ -276,5 +288,13 @@
         reload: carregar
     };
 
-    document.addEventListener('DOMContentLoaded', function () { window.ProdutosFiscais.init(); });
+    function boot() {
+        try { bind(); } catch (_) {}
+        carregar();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot, { once: true });
+    } else {
+        boot();
+    }
 })();

@@ -583,6 +583,75 @@ const NFProdutosNF = (() => {
     return 'Nº ' + String((index || 0) + 1).padStart(2, '0');
   }
 
+  function formatarDataRomaneioNF(r) {
+    const candidates = r ? [r.dataEmissao, r.data, r.dataHora, r.createdAt, r.created, r.dataRomaneio, r.timestamp, r.updatedAt, r.updated, r.lastModified] : [];
+    for (const c of candidates) {
+      if (!c) continue;
+      const d = new Date(c);
+      if (!Number.isNaN(d.getTime())) return d.toLocaleDateString('pt-BR');
+    }
+    return '';
+  }
+
+  function nomeRomaneioNF(r) {
+    if (!r) return '';
+    if (r.cliente) return String(r.cliente.nome || r.cliente.name || r.cliente || '').trim();
+    if (r.clienteNome) return String(r.clienteNome).trim();
+    if (r.fornecedor) return String(r.fornecedor.nome || r.fornecedor.name || r.fornecedor || '').trim();
+    if (r.transportador) return String(r.transportador.nome || r.transportador.name || r.transportador || '').trim();
+    return '';
+  }
+
+  function volumeRomaneioNF(r) {
+    const n = (v) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+    let vol = n(r && r.volumeTotal) || n(r && r.totalVolume)
+      || n(r && r.totais && r.totais.volume)
+      || n(r && r.totais && r.totais.volumeSerraria)
+      || n(r && r.totais && r.totais.volumeEstimado);
+    if (vol > 0) return vol;
+    const itens = r && (Array.isArray(r.items) ? r.items : (Array.isArray(r.itens) ? r.itens : []));
+    if (!itens.length) return 0;
+    const tipo = String((r.tipoRomaneio || r.tipo || '')).toLowerCase();
+    const isTora = tipo.includes('tora') || itens.some((i) => i && (typeof i.rodo !== 'undefined' || typeof i.diametro !== 'undefined'));
+    return itens.reduce((acc, i) => {
+      if (!i || typeof i !== 'object') return acc;
+      const qtd = parseInt(i.quantidade, 10) || 1;
+      let v = n(i.volume) || n(i.volumeLiquido) || n(i.volumeSerraria);
+      if (!(v > 0) && isTora) {
+        const d = n(i.diametro || i.rodo);
+        const c = n(i.comprimento);
+        const o1 = n(i.oco1);
+        const o2 = n(i.oco2);
+        if (d > 0 && c > 0) {
+          const rm = (d / 100) / 2;
+          const cm = c / 100;
+          const bruto = Math.PI * rm * rm * cm;
+          const oco = Math.PI * Math.pow(((o1 + o2) / 100) / 2, 2) * cm;
+          v = Math.max(0, bruto - oco);
+        }
+      }
+      if (!(v > 0)) return acc;
+      return acc + (isTora ? v * qtd : v);
+    }, 0);
+  }
+
+  function valorRomaneioNF(r) {
+    if (!r) return null;
+    if (typeof r.totalValue === 'number') return r.totalValue;
+    if (r.totais && typeof r.totais.valor === 'number') return r.totais.valor;
+    if (r.totais && typeof r.totais.valorTotal === 'number') return r.totais.valorTotal;
+    const itens = Array.isArray(r.items) ? r.items : (Array.isArray(r.itens) ? r.itens : []);
+    let soma = 0;
+    itens.forEach((i) => {
+      if (!i || typeof i !== 'object') return;
+      const qtd = parseInt(i.quantidade, 10) || 1;
+      const precoUnit = Number(i.precoUnitario || i.preco || 0) || 0;
+      const v = Number(i.valorTotal != null ? i.valorTotal : (i.valor != null ? i.valor : precoUnit * qtd));
+      if (Number.isFinite(v)) soma += v;
+    });
+    return soma > 0 ? soma : null;
+  }
+
   function popularSelectRomaneioNF(romaneios) {
     const sel = document.getElementById('nfRomaneioSelect');
     if (!sel) return;
@@ -591,16 +660,15 @@ const NFProdutosNF = (() => {
       const opt = document.createElement('option');
       opt.value = String(i);
       const numero = numeroRomaneioExibicaoNF(r, i);
-      const dataFmt = formatarDataBR(r.data || r.dataRomaneio || r.createdAt);
-      const nomeForn = String(r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || '').trim();
-      const itens = Array.isArray(r.itens) ? r.itens : [];
-      const volTotal = r.totais?.volumeSerraria || r.totais?.volumeTotal || itens.reduce((acc, i) => acc + (parseFloat(i.volumeLiquido) || parseFloat(i.volume) || 0), 0);
-      const valTotal = r.totais?.valorTotal || itens.reduce((acc, i) => acc + (parseFloat(i.valorTotal) || parseFloat(i.valor) || parseFloat(i.precoUnitario) * (parseFloat(i.quantidade) || 1)), 0);
+      const dataFmt = formatarDataRomaneioNF(r);
+      const nome = nomeRomaneioNF(r);
+      const volTotal = volumeRomaneioNF(r);
+      const valTotal = valorRomaneioNF(r);
       const partes = [];
       if (dataFmt) partes.push(dataFmt);
-      if (nomeForn) partes.push(nomeForn);
+      if (nome) partes.push(nome);
       if (volTotal > 0) partes.push(volTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' m³');
-      if (valTotal > 0) partes.push('R$ ' + valTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      if (valTotal != null) partes.push('R$ ' + valTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       if (numero) partes.push(numero);
       opt.textContent = partes.join(' - ');
       sel.appendChild(opt);
