@@ -23,10 +23,46 @@
         try { if (window.SiswebLoading) show ? window.SiswebLoading.show(txt || 'Carregando...') : window.SiswebLoading.hide(); } catch (_) {}
     }
 
+    function recordKey(p) {
+        return String((p && (p.__key || p.firebaseKey || p.key || p.id || p.codigo)) || '');
+    }
+
     function normalizeList(data) {
         var raw = data && typeof data === 'object' ? data : {};
-        var arr = Array.isArray(raw) ? raw : Object.values(raw);
-        return arr.filter(function (p) { return p && typeof p === 'object' && (p.nome || p.descricao || p.name); });
+        var out = [];
+        var keep = function (p) { return p && typeof p === 'object' && (p.nome || p.descricao || p.name); };
+        if (Array.isArray(raw)) {
+            raw.forEach(function (p, i) {
+                if (keep(p)) out.push(Object.assign({}, p, { __key: String(p.firebaseKey || p.key || i) }));
+            });
+        } else {
+            Object.keys(raw).forEach(function (k) {
+                if (k === '_metadata' || k === 'metadata') return;
+                var p = raw[k];
+                if (keep(p)) out.push(Object.assign({}, p, { __key: String(p.firebaseKey || p.key || k) }));
+            });
+        }
+        return out;
+    }
+
+    function invalidateBase() {
+        try {
+            var s = svc();
+            if (!s || typeof s.invalidateReadCacheForPath !== 'function') return;
+            var tid = state.tenant;
+            if (tid) s.invalidateReadCacheForPath('companies/' + tid + '/' + NODE);
+            s.invalidateReadCacheForPath(NODE);
+        } catch (_) {}
+    }
+
+    function upsertLocal(payload, key) {
+        var idx = state.items.findIndex(function (p) {
+            return recordKey(p) === String(key) || String(p.id || '') === String(payload.id || '');
+        });
+        if (idx >= 0) state.items[idx] = Object.assign({}, state.items[idx], payload, { __key: String(key) });
+        else state.items.push(Object.assign({}, payload, { __key: String(key) }));
+        state.page = 1;
+        render();
     }
 
     async function waitSvc(timeoutMs) {
@@ -118,7 +154,7 @@
             tbody.innerHTML = '<tr><td colspan="7" class="pf-empty">Nenhum produto fiscal cadastrado.</td></tr>';
         } else {
             tbody.innerHTML = fatia.map(function (p) {
-                var id = esc(p.id || p.codigo || '');
+                var id = esc(recordKey(p));
                 return '<tr>' +
                     '<td data-label="Nome">' + esc(p.nome || p.descricao || '—') + '</td>' +
                     '<td data-label="Código">' + esc(p.codigo || '—') + '</td>' +
@@ -159,7 +195,7 @@
         var modal = document.getElementById('pfModal');
         if (!modal) return;
         document.getElementById('pfModalTitle').textContent = item ? 'Editar Produto Fiscal' : 'Novo Produto Fiscal';
-        setVal('pfId', item && item.id || '');
+        setVal('pfId', item ? recordKey(item) : '');
         setVal('pfNome', item && (item.nome || item.descricao) || '');
         setVal('pfCodigo', item && item.codigo || '');
         setVal('pfNcm', item && (item.ncm || (item.fiscal && item.fiscal.ncm)) || '');
@@ -221,6 +257,8 @@
             if (res && res.success === false) throw new Error(res.error || 'Falha ao salvar.');
             closeModal();
             toast('Produto fiscal salvo.', 'success');
+            upsertLocal(payload, id);
+            invalidateBase();
             await carregar();
         } catch (e) {
             toast('Erro ao salvar: ' + (e && e.message ? e.message : e), 'error');
@@ -248,9 +286,12 @@
                 var res = await s.removeFromFirebase('companies/' + tid + '/' + NODE + '/' + id);
                 if (res && res.success === false) throw new Error(res.error || 'Falha ao excluir.');
             } else {
-                await s.saveToFirebase('companies/' + tid + '/' + NODE, null, state.items.filter(function (p) { return String(p.id) !== String(id); }));
+                await s.saveToFirebase('companies/' + tid + '/' + NODE, null, state.items.filter(function (p) { return recordKey(p) !== String(id); }));
             }
             toast('Produto fiscal excluído.', 'success');
+            state.items = state.items.filter(function (p) { return recordKey(p) !== String(id); });
+            render();
+            invalidateBase();
             await carregar();
         } catch (e) {
             toast('Erro ao excluir: ' + (e && e.message ? e.message : e), 'error');
@@ -260,7 +301,7 @@
     }
 
     function findById(id) {
-        return state.items.find(function (p) { return String(p.id || p.codigo) === String(id); }) || null;
+        return state.items.find(function (p) { return recordKey(p) === String(id) || String(p.id || p.codigo || '') === String(id); }) || null;
     }
 
     function bind() {
