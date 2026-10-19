@@ -55,6 +55,21 @@
         var est = num(p && p.estoque);
         return est > 0 ? est : 0;
     }
+    function fmtNum(v, d) {
+        return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+    }
+    function estoqueDetalhado(p) {
+        var serrado = p.tipoProduto === 'romaneio'
+            || num(p.espessura) > 0 || num(p.largura) > 0 || num(p.comprimento) > 0;
+        if (!serrado) return fmtNum(num(p.estoque != null ? p.estoque : p.quantidade), 3) + ' ' + (p.unidade || 'UN');
+        var pecas = num(p.pecas);
+        var qtd = pecas * (num(p.pecasPorPacote) || 1);
+        var volume = volumeProduto(p);
+        var ml = num(p.metrosLineares) || (num(p.comprimento) / 100 * qtd);
+        var area = (num(p.largura) / 100) * (num(p.comprimento) / 100) * qtd;
+        return pecas.toLocaleString('pt-BR', { maximumFractionDigits: 3 }) + ' p\u00e7 \u00b7 '
+            + fmtNum(volume, 3) + ' m\u00b3 \u00b7 ' + fmtNum(ml, 2) + ' ml \u00b7 ' + fmtNum(area, 2) + ' m\u00b2';
+    }
     function productBlob(p) {
         return norm([p.codigo, p.nome, p.descricao, p.especie, p.unidade, p.tipoProduto,
             p.romaneioNumero, p.romaneioTipo, dimsText(p), p.preco, money(p.preco), p.estoque].join(' '));
@@ -175,13 +190,12 @@
         else tbody.innerHTML = slice.map(function (p) {
             var key = esc(recordKey(p));
             var serrado = p.tipoProduto === 'romaneio' || num(p.espessura) > 0 || num(p.largura) > 0 || num(p.comprimento) > 0;
-            var estoque = serrado ? volumeProduto(p) : num(p.estoque || p.quantidade);
             return '<tr>' +
                 '<td data-label="Código">' + esc(p.codigo || '—') + '</td>' +
-                '<td data-label="Nome">' + esc(p.nome || p.name || '—') + '</td>' +
+                '<td data-label="Nome">' + esc(p.nome || p.name || '—') + (serrado ? ' · Serrado' : '') + '</td>' +
                 '<td data-label="Espécie">' + esc(p.especie || '—') + '</td>' +
                 '<td data-label="Dimensões (cm)" class="ems-dims">' + esc(dimsText(p)) + '</td>' +
-                '<td data-label="Estoque" class="ems-stock">' + estoque.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + '</td>' +
+                '<td data-label="Estoque" class="ems-stock">' + esc(estoqueDetalhado(p)) + '</td>' +
                 '<td data-label="Un.">' + esc(p.unidade || 'UN') + '</td>' +
                 '<td data-label="Preço" class="ems-stock">' + money(p.preco || p.precoVenda || p.price) + '</td>' +
                 '<td data-label="Ações" class="ems-actions">' +

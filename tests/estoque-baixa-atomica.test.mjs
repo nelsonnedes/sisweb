@@ -158,6 +158,21 @@ test('applyEstoqueBaixa espelha a matemática do cliente (UN: 10pc/0.112m³ - 2p
   assert.equal(decision.product.updated, FIXED_NOW);
 });
 
+test('applyEstoqueBaixa M3 fracionário preserva peças decimais', () => {
+  const mov = {
+    produtoId: 'P-SER-1',
+    modo: 'serrado',
+    base: 'vol',
+    quantidade: 0.0056,
+    f: 0.95,
+    consumir: { vol: 0.0056, pecas: 0.5, est: 0 },
+  };
+  const decision = applyEstoqueBaixa(produtoSerrado(), mov, FIXED_NOW);
+  assert.equal(decision.status, 'ok');
+  assert.equal(decision.product.pecas, 9.5);
+  assert.ok(Math.abs(decision.product.volumeM3 - 0.106) < 0.001);
+});
+
 test('applyEstoqueBaixa manual deduz estoque; sem saldo aborta insufficient', () => {
   const mov = {
     produtoId: 'P-MAN-1', modo: 'manual', base: 'est', quantidade: 12, f: 1,
@@ -329,7 +344,7 @@ test('permitirNegativo explícito deduz sem trava (política do tenant)', async 
   }, context);
   assert.equal(res.success, true);
   // Sem a trava, o fator aplica sobre o saldo curto (1 peça x f=0.8).
-  assert.equal(persisted['companies/tenant-0001/produtos/P-SER-1'].pecas, 1);
+  assert.equal(persisted['companies/tenant-0001/produtos/P-SER-1'].pecas, 0.8);
   assert.ok(persisted['companies/tenant-0001/produtos/P-SER-1'].volumeM3 < 0.011);
   assert.equal(
     persisted['companies/tenant-0001/estoque/movimentos/baixa-PV2003-1'].permitirNegativo,

@@ -3267,32 +3267,32 @@ function aplicarMovimentoEstoquePedido(pedido, dir, opts) {
     const r3 = (v) => Math.round(num(v) * 1000) / 1000;
     const movimentos = [];
     const semSaldo = [];
-    const pedidoEmBase = (qtd, unidadeItem, base) => {
-        const q = num(qtd);
-        if (base === 'pecas') {
-            return normalizarUnidadeMedida(unidadeItem) === 'DZ' ? q * 12 : q;
-        }
-        return q;
-    };
     const empurrarSerrado = (alvo, qtd, unidadeItem) => {
-        const volAntes = dimensoesEstoqueSerrado(alvo).vol;
-        const pecasAntes = num(alvo.pecas);
+        const d = dimensoesEstoqueSerrado(alvo);
+        const volAntes = d.vol;
+        const pecasAntes = d.pecas;
         const r = razaoBaixaSerrado(alvo, qtd, unidadeItem);
-        const base = r.base === 'pecas' ? 'pecas' : 'vol';
-        const pedidoBase = pedidoEmBase(qtd, unidadeItem, base);
-        const disponivel = base === 'pecas' ? pecasAntes : volAntes;
-        if (pedidoBase > disponivel + 1e-9) {
+        // UN/DZ validam por peças; M3/ML/M2 validam na própria dimensão e são
+        // convertidos para volume no movimento (servidor só escala vol/peças).
+        if (r.pedido > (r.disponivel + 1e-9)) {
             semSaldo.push(nomeExibicaoProduto(alvo));
             return false;
         }
-        const razao = disponivel > 0 ? Math.min(1, pedidoBase / disponivel) : 0;
+        const razao = r.razao;
+        if (!(razao > 0)) {
+            semSaldo.push(nomeExibicaoProduto(alvo));
+            return false;
+        }
+        const base = r.base === 'pecas' ? 'pecas' : 'vol';
+        const consumirVol = r3(volAntes * razao);
+        const consumirPecas = r3(pecasAntes * razao);
         movimentos.push({
             produtoId: String(alvo.id),
             modo: 'serrado',
             base,
-            quantidade: r3(pedidoBase),
+            quantidade: r3(base === 'pecas' ? consumirPecas : consumirVol),
             f: 1 - razao,
-            consumir: { vol: r3(volAntes * razao), pecas: r3(pecasAntes * razao), est: 0 },
+            consumir: { vol: consumirVol, pecas: consumirPecas, est: 0 },
         });
         return true;
     };
@@ -4713,7 +4713,7 @@ function dimensoesEstoqueSerrado(p) {
     if (!(vol > 0)) vol = num(p && p.estoque);
     let ml = 0;
     try { ml = (typeof metrosLinearesDe === 'function') ? metrosLinearesDe(p) : 0; } catch (_) { ml = 0; }
-    const area = (num(p && p.largura) / 100) * (num(p && p.comprimento) / 100) * pecas;
+    const area = (num(p && p.largura) / 100) * (num(p && p.comprimento) / 100) * pecas * (num(p && p.pecasPorPacote) || 1);
     return { pecas, vol, ml, area };
 }
 
@@ -4722,15 +4722,17 @@ function razaoBaixaSerrado(p, quantidade, unidade) {
     const d = dimensoesEstoqueSerrado(p);
     const q = parseFloat(quantidade) || 0;
     const u = normalizarUnidadeMedida(unidade);
+    const cruPC = String(unidade || '').trim().toUpperCase().replace(/\./g, '') === 'PC';
+    const pack = cruPC ? Math.max(1, parseFloat(p && p.pecasPorPacote) || 1) : 1;
     let base = 'vol', total = d.vol, pedido = q;
-    if (u === 'UN') { base = 'pecas'; total = d.pecas; pedido = q; }
+    if (u === 'UN') { base = 'pecas'; total = d.pecas; pedido = q * pack; }
     else if (u === 'DZ') { base = 'pecas'; total = d.pecas; pedido = q * 12; }
     else if (u === 'M3') { base = 'vol'; total = d.vol; pedido = q; }
     else if (u === 'ML') { base = 'ml'; total = d.ml; pedido = q; }
     else if (u === 'M2') { base = 'area'; total = d.area; pedido = q; }
-    if (!(total > 0) || !(pedido > 0)) return { razao: 0, base, consumido: 0, disponivel: Math.max(0, total) };
+    if (!(total > 0) || !(pedido > 0)) return { razao: 0, base, consumido: 0, pedido, disponivel: Math.max(0, total) };
     const cons = Math.min(pedido, total);
-    return { razao: cons / total, base, consumido: cons, disponivel: total };
+    return { razao: cons / total, base, consumido: cons, pedido, disponivel: total };
 }
 
 // Aplica baixa (dir=-1) ou reversão (dir=+1) proporcional em todas as dims.
@@ -4743,8 +4745,10 @@ function aplicarBaixaSerrado(p, quantidade, unidade, dir) {
         const d = dimensoesEstoqueSerrado(p);
         const q = parseFloat(quantidade) || 0;
         const u = normalizarUnidadeMedida(unidade);
+        const cruPC = String(unidade || '').trim().toUpperCase().replace(/\./g, '') === 'PC';
+        const pack = cruPC ? Math.max(1, parseFloat(p.pecasPorPacote) || 1) : 1;
         let baseTot = d.vol, pedido = q;
-        if (u === 'UN') { baseTot = d.pecas; pedido = q; }
+        if (u === 'UN') { baseTot = d.pecas; pedido = q * pack; }
         else if (u === 'DZ') { baseTot = d.pecas; pedido = q * 12; }
         else if (u === 'ML') { baseTot = d.ml; pedido = q; }
         else if (u === 'M2') { baseTot = d.area; pedido = q; }
@@ -4771,7 +4775,7 @@ function aplicarBaixaSerrado(p, quantidade, unidade, dir) {
     const r = razaoBaixaSerrado(p, quantidade, unidade);
     if (!(r.razao > 0)) return r;
     const f = 1 - r.razao;
-    p.pecas = Math.max(0, Math.round(num(p.pecas) * f));
+    p.pecas = Math.max(0, Math.round(num(p.pecas) * f * 1000) / 1000);
     const vol0 = dimensoesEstoqueSerrado(p).vol;
     const volNovo = Math.round(vol0 * f * 1000) / 1000;
     if (p.volumeM3 !== undefined && p.volumeM3 !== null && p.volumeM3 !== '') p.volumeM3 = volNovo;
@@ -4845,7 +4849,7 @@ function converterItemSerradoParaM3(produto, quantidade, unidadeItem) {
         const pPecas = num(produto.pecas), pVol = num(produto.volumeM3);
         let mlTotal = 0;
         try { mlTotal = (typeof metrosLinearesDe === 'function') ? metrosLinearesDe(produto) : 0; } catch (_) { mlTotal = 0; }
-        const areaTotal = (L / 100) * (C / 100) * pPecas;
+        const areaTotal = (L / 100) * (C / 100) * pPecas * (num(produto.pecasPorPacote) || 1);
         // PC cru = pacote: multiplica pelas peças/pacote do produto
         // (ex.: 2 pac c/6 = 12). UN = peça avulsa (sem regressão).
         // (normalizarUnidadeMedida mapeia PC→UN; por isso o teste é no cru.)

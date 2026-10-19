@@ -2447,7 +2447,7 @@ function applyEstoqueBaixa(current, mov, nowIso, skipValidation = false) {
         return { status: 'abort', reason: 'insufficient', disponivel: r3Estoque(baseAtual), pedido: r3Estoque(pedidoBase) };
     }
     const next = { ...current };
-    next.pecas = Math.max(0, Math.round(pecas0 * mov.f));
+    next.pecas = Math.max(0, r3Estoque(pecas0 * mov.f));
     const volNovo = r3Estoque(vol0 * mov.f);
     if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volNovo;
     next.estoque = volNovo;
@@ -2475,7 +2475,7 @@ function applyEstoqueEstorno(current, mov, nowIso) {
             };
         }
         const next = { ...current };
-        next.pecas = Math.max(0, Math.round(numEstoque(current.pecas) + mov.consumir.pecas));
+        next.pecas = Math.max(0, r3Estoque(numEstoque(current.pecas) + mov.consumir.pecas));
         const volAbs = r3Estoque((numEstoque(current.volumeM3) || numEstoque(current.estoque)) + mov.consumir.vol);
         if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volAbs;
         next.estoque = volAbs;
@@ -2490,7 +2490,7 @@ function applyEstoqueEstorno(current, mov, nowIso) {
         };
     }
     const next = { ...current };
-    next.pecas = Math.max(0, Math.round(numEstoque(current.pecas) * fInv));
+    next.pecas = Math.max(0, r3Estoque(numEstoque(current.pecas) * fInv));
     const vol0 = numEstoque(current.volumeM3) || numEstoque(current.estoque);
     const volNovo = r3Estoque(vol0 * fInv);
     if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volNovo;

@@ -262,6 +262,10 @@ test('baixa por unidade: UN→peças, M³→volume, ML→ml, DZ→×12', () => {
   const rML = sbU.razaoBaixaSerrado(mk(), 15, 'ml');
   assert.equal(rML.base, 'ml');
   assert.equal(rML.consumido, 15);
+  const rM2 = sbU.razaoBaixaSerrado(mk(), 2.25, 'm2');
+  assert.equal(rM2.base, 'area');
+  assert.equal(rM2.consumido, 2.25);
+  assert.ok(Math.abs(rM2.razao - 0.5) < 1e-9);
   // clamp: pedido maior que o saldo
   const rC = sbU.razaoBaixaSerrado(mk(), 99, 'UN');
   assert.equal(rC.razao, 1);
@@ -274,12 +278,68 @@ test('baixa por unidade: UN→peças, M³→volume, ML→ml, DZ→×12', () => {
   // reversão devolve
   sbU.aplicarBaixaSerrado(p1, 2, 'UN', 1);
   assert.equal(p1.pecas, 10);
+  // M2 baixa proporcional (2,25 de 4,50 m2 = 50%)
+  const pM2 = mk();
+  sbU.aplicarBaixaSerrado(pM2, 2.25, 'm2', -1);
+  assert.equal(pM2.pecas, 5);
+  assert.ok(Math.abs(pM2.volumeM3 - 0.056) < 0.001);
+  // UN fracionada mantém peças decimais (não arredonda para inteiro)
+  const pFrac = mk();
+  sbU.aplicarBaixaSerrado(pFrac, 0.5, 'UN', -1);
+  assert.equal(pFrac.pecas, 9.5);
+  assert.ok(Math.abs(pFrac.volumeM3 - 0.106) < 0.001);
+  sbU.aplicarBaixaSerrado(pFrac, 0.5, 'UN', 1);
+  assert.equal(pFrac.pecas, 10);
   // manual: DZ converte ×12
   const pm = { estoque: 24, unidade: 'UN' };
   sbU.aplicarBaixaManual(pm, 1, 'DZ', -1);
   assert.equal(pm.estoque, 12);
   sbU.aplicarBaixaManual(pm, 1, 'DZ', 1);
   assert.equal(pm.estoque, 24);
+});
+
+test('baixa de aprovação converte ML/M2/PC para volume e peças no movimento', () => {
+  const start = src.indexOf('const empurrarSerrado =');
+  const open = src.indexOf('{', start);
+  let depth = 0, end = -1;
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    if (src[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+  }
+  assert.ok(start > 0 && end > start, 'empurrarSerrado localizado');
+  const sb = {};
+  vm.createContext(sb);
+  for (const fn of ['normalizarUnidadeMedida', 'dimensoesEstoqueSerrado', 'razaoBaixaSerrado']) {
+    vm.runInContext(extract(fn), sb);
+  }
+  sb.metrosLinearesDe = (p) => Math.round((parseFloat(p.comprimento) || 0) / 100 * (parseFloat(p.pecas) || 0) * 100) / 100;
+  const fn = src.slice(start, end) + ';';
+  const produto = { id: 'P1', pecas: 10, volumeM3: 0.112, metrosLineares: 30, largura: 15, comprimento: 300, pecasPorPacote: 1 };
+  const produtoPc = { ...produto, pecasPorPacote: 6 };
+  vm.runInContext('var movimentos = []; var semSaldo = []; var r3 = (v) => Math.round(v * 1000) / 1000; var nomeExibicaoProduto = () => "P1";', sb);
+  vm.runInContext(fn, sb);
+  const empurrar = vm.runInContext('empurrarSerrado', sb);
+  const rodar = (qtd, unidade, p = produto) => {
+    vm.runInContext('movimentos.length = 0; semSaldo.length = 0;', sb);
+    const ok = empurrar(p, qtd, unidade);
+    return { ok, mov: vm.runInContext('movimentos[0]', sb), semSaldo: vm.runInContext('semSaldo.slice()', sb) };
+  };
+  const ml = rodar(15, 'ml');
+  assert.equal(ml.ok, true);
+  assert.equal(ml.mov.base, 'vol');
+  assert.equal(ml.mov.quantidade, 0.056);
+  assert.equal(ml.mov.consumir.pecas, 5);
+  assert.equal(ml.mov.f, 0.5);
+  const m2 = rodar(2.25, 'm2');
+  assert.equal(m2.mov.base, 'vol');
+  assert.equal(m2.mov.quantidade, 0.056);
+  const pc = rodar(1, 'PC', produtoPc);
+  assert.equal(pc.mov.base, 'pecas');
+  assert.equal(pc.mov.quantidade, 6);
+  assert.equal(pc.mov.consumir.vol, 0.067);
+  const over = rodar(99, 'm2');
+  assert.equal(over.ok, false);
+  assert.equal(over.semSaldo[0], 'P1');
 });
 
 test('fluxos usam baixa por unidade + pedido exibe Nº', () => {
