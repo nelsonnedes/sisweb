@@ -8,7 +8,7 @@
     var ROM_PATHS = { romaneiosTL: 'romaneios/tl', romaneiosPct: 'romaneios/pct', romaneiosPes: 'romaneios/pes' };
     var state = {
         tenant: '', items: [], filtered: [], page: 1, pageSize: PAGE_DEFAULT,
-        editingKey: '', stage: [], groups: [], romaneios: [], romaneio: null
+        editingKey: '', stage: [], groups: [], romaneios: [], romaneio: null, modalOpen: false, bodyOverflow: ''
     };
 
     function svc() { return window.firebaseService || window.FirebaseService || null; }
@@ -119,11 +119,19 @@
     function invalidate() {
         try { var s = svc(); if (s && typeof s.invalidateReadCacheForPath === 'function') { var tid = state.tenant; if (tid) s.invalidateReadCacheForPath('companies/' + tid + '/' + NODE); s.invalidateReadCacheForPath(NODE); } } catch (_) {}
     }
+    function hasStock(p) {
+        var est = num(p.estoque != null ? p.estoque : p.quantidade);
+        var pecas = num(p.pecas);
+        var serrado = p.tipoProduto === 'romaneio'
+            || p.espessura != null || p.largura != null || p.comprimento != null;
+        return serrado ? (pecas > 0 || est > 0) : est > 0;
+    }
     function applyFilter() {
         var q = String((document.getElementById('emsSearch') || {}).value || '').trim();
-        if (!q) { state.filtered = state.items.slice(); return; }
+        var base = state.items.filter(hasStock);
+        if (!q) { state.filtered = base; return; }
         var qn = norm(q);
-        state.filtered = state.items.filter(function (p) { return productBlob(p).indexOf(qn) >= 0; });
+        state.filtered = base.filter(function (p) { return productBlob(p).indexOf(qn) >= 0; });
         state.filtered.sort(function (a, b) {
             var ea = norm(a.codigo) === qn ? 0 : 1, eb = norm(b.codigo) === qn ? 0 : 1;
             return ea - eb || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
@@ -222,9 +230,23 @@
         var romSel = document.getElementById('emsRomSelect'); if (romSel) romSel.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
         resetStage(); resetGroups(); setType('manual'); updateVolume(); renderManualPreview();
         modal.classList.add('active');
+        if (!state.modalOpen) {
+            state.modalOpen = true;
+            state.bodyOverflow = document.body.style.overflow || '';
+            document.body.classList.add('ems-modal-open');
+            document.body.style.overflow = 'hidden';
+        }
         setTimeout(function () { var el = document.getElementById('emsNome'); if (el) el.focus(); }, 50);
     }
-    function closeModal() { var m = document.getElementById('emsModal'); if (m) m.classList.remove('active'); }
+    function closeModal() {
+        var m = document.getElementById('emsModal');
+        if (m) m.classList.remove('active');
+        if (state.modalOpen) {
+            state.modalOpen = false;
+            document.body.classList.remove('ems-modal-open');
+            document.body.style.overflow = state.bodyOverflow || '';
+        }
+    }
 
     function renderManualPreview() {
         var box = document.getElementById('emsManualPreview'); if (!box) return;
@@ -347,13 +369,10 @@
             state.romaneios = await loadRomaneios(tipo);
             state.romaneios.forEach(function (r, i) {
                 var key = recordKey(r) || String(i);
-                var data = String(r.dataEmissao || r.data || r.createdAt || '').slice(0, 10).split('-').reverse().join('/');
-                var nome = r.clienteNome
-                    || (r.cliente && (r.cliente.nome || r.cliente.name))
-                    || (r.fornecedor && (r.fornecedor.nome || r.fornecedor.name))
-                    || r.fornecedor || r.numero || ('Romaneio ' + (i + 1));
-                var num = romNumero(r) || (i + 1);
-                var opt = document.createElement('option'); opt.value = key; opt.textContent = (data ? data + ' - ' : '') + String(nome) + ' - Nº ' + num; sel.appendChild(opt);
+                var opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = romLabel(r);
+                sel.appendChild(opt);
             });
             if (!state.romaneios.length) toast('Nenhum romaneio encontrado para este tipo.', 'warning');
         } catch (e) { toast('Erro ao carregar romaneios: ' + (e && e.message ? e.message : e), 'error'); }
@@ -368,6 +387,37 @@
         var n = String((r && (r.numeroExibicao || r.numeroRomaneio || r.numero)) || '').trim();
         if (/^(TL_|PCT_|PES_|TORA_)/i.test(n)) n = String((r && (r.sequencial || r.numeroSequencial || r.seq)) || '').trim();
         return n;
+    }
+    function romDate(r) {
+        var candidates = [r && r.dataEmissao, r && r.data, r && r.dataHora, r && r.createdAt, r && r.created,
+            r && r.dataRomaneio, r && r.timestamp, r && r.updatedAt, r && r.updated, r && r.lastModified];
+        for (var i = 0; i < candidates.length; i++) {
+            if (!candidates[i]) continue;
+            var d = new Date(candidates[i]);
+            if (!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR');
+        }
+        return 'S/Data';
+    }
+    function romVolumeTotal(r) {
+        var candidates = [r && r.totalVolume, r && r.volumeTotal, r && r.totais && r.totais.volume];
+        for (var i = 0; i < candidates.length; i++) { var n = num(candidates[i]); if (n > 0) return n; }
+        var raw = r && (r.items || r.itens);
+        var itens = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? Object.values(raw) : []);
+        var total = 0;
+        itens.forEach(function (it) {
+            if (!it || typeof it !== 'object') return;
+            total += romaneioVolume(it);
+        });
+        return Math.round(total * 1000) / 1000;
+    }
+    function romLabel(r) {
+        var nome = r.clienteNome
+            || (r.cliente && (r.cliente.nome || r.cliente.name))
+            || (r.fornecedor && (r.fornecedor.nome || r.fornecedor.name))
+            || r.fornecedor || r.numero || 'Cliente não informado';
+        var vol = romVolumeTotal(r).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        var num = romNumero(r);
+        return romDate(r) + ' - ' + String(nome) + ' - ' + vol + ' m³' + (num ? ' - Nº ' + num : '');
     }
     function groupRomaneio(rom, tipo) {
         var rawItems = rom && (rom.itens || rom.items);

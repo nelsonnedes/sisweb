@@ -5511,14 +5511,18 @@ function isProdutoReal(p) {
     } catch (_) { return false; }
 }
 
-// Lista "em Estoque" oculta serrado zerado; campos ausentes (legado) e
-// manuais continuam visíveis.
+// Lista "em Estoque" oculta qualquer produto sem saldo: serrado usa peças
+// (ou volume legado) e manual usa estoque. Antes, manual zerado aparecia.
 function estoqueZeradoNaLista(p) {
     try {
         if (!p || typeof p !== 'object') return false;
-        if (!(temDimsSerrado(p) || p.tipoProduto === 'romaneio')) return false;
-        if (p.pecas === undefined || p.pecas === null || p.pecas === '') return false;
-        return Number(p.pecas) <= 0;
+        const est = Number(p.estoque ?? p.quantidade ?? 0) || 0;
+        const serrado = temDimsSerrado(p) || p.tipoProduto === 'romaneio';
+        if (serrado) {
+            const pecas = Number(p.pecas ?? 0) || 0;
+            return pecas <= 0 && est <= 0;
+        }
+        return est <= 0;
     } catch (_) { return false; }
 }
 
