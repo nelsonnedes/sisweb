@@ -7655,24 +7655,27 @@ function gerarGraficoFluxoDetalhado(dataInicio, dataFim) {
     }
 
     const dados = calcularFluxoPeriodo(dataInicio, dataFim);
+    const serie = agruparFluxoParaGrafico(dados);
+    const h3 = canvas.closest('.chart-container')?.querySelector('h3');
+    if (h3) h3.textContent = `Entradas × Saídas — Saldo Acumulado${serie.agrupado === 'mes' ? ' (por mês)' : ''}`;
     let acumulado = 0;
-    const saldoAcumulado = dados.labels.map((_, i) => {
-        acumulado += (dados.entradas[i] || 0) - (dados.saidas[i] || 0);
+    const saldoAcumulado = serie.labels.map((_, i) => {
+        acumulado += (serie.entradas[i] || 0) - (serie.saidas[i] || 0);
         return Math.round(acumulado * 100) / 100;
     });
 
     fluxoDetalhadoChart = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: {
-            labels: dados.labels,
+            labels: serie.labels,
             datasets: [
                 {
-                    type: 'bar', label: 'Entradas', data: dados.entradas,
+                    type: 'bar', label: 'Entradas', data: serie.entradas,
                     backgroundColor: 'rgba(34,197,94,.85)', borderColor: '#16a34a',
                     borderWidth: 1, borderRadius: 4, maxBarThickness: 26, yAxisID: 'y'
                 },
                 {
-                    type: 'bar', label: 'Saídas', data: dados.saidas,
+                    type: 'bar', label: 'Saídas', data: serie.saidas,
                     backgroundColor: 'rgba(239,68,68,.85)', borderColor: '#dc2626',
                     borderWidth: 1, borderRadius: 4, maxBarThickness: 26, yAxisID: 'y'
                 },
@@ -7760,7 +7763,8 @@ function calcularFluxoPeriodo(dataInicio, dataFim) {
     const labels = [];
     const entradas = [];
     const saidas = [];
-    if (!inicio || !fim || fim < inicio) return { labels, entradas, saidas };
+    const datas = [];
+    if (!inicio || !fim || fim < inicio) return { labels, entradas, saidas, datas };
 
     const porDia = new Map();
     const add = (iso, valor, isEntrada) => {
@@ -7776,13 +7780,44 @@ function calcularFluxoPeriodo(dataInicio, dataFim) {
 
     for (let data = new Date(inicio); data <= fim; data.setDate(data.getDate() + 1)) {
         const dataStr = formatISODateLocal(data);
+        datas.push(dataStr);
         labels.push(data.toLocaleDateString('pt-BR'));
         const slot = porDia.get(dataStr) || { e: 0, s: 0 };
         entradas.push(slot.e);
         saidas.push(slot.s);
     }
 
-    return { labels, entradas, saidas };
+    return { labels, entradas, saidas, datas };
+}
+
+// Períodos longos (ex.: 5-6 meses) geram barras finas demais. Acima de 62 dias
+// agregamos por mês (soma real), mantendo a leitura do gráfico.
+function agruparFluxoParaGrafico(dados) {
+    const n = dados && Array.isArray(dados.labels) ? dados.labels.length : 0;
+    if (n <= 62) {
+        return { labels: dados.labels, entradas: dados.entradas, saidas: dados.saidas, agrupado: 'dia' };
+    }
+    const acc = new Map();
+    const datas = Array.isArray(dados.datas) ? dados.datas : [];
+    for (let i = 0; i < n; i++) {
+        const key = String(datas[i] || '').slice(0, 7);
+        if (!key) continue;
+        if (!acc.has(key)) acc.set(key, { e: 0, s: 0 });
+        const slot = acc.get(key);
+        slot.e += dados.entradas[i] || 0;
+        slot.s += dados.saidas[i] || 0;
+    }
+    const labels = [];
+    const entradas = [];
+    const saidas = [];
+    Array.from(acc.keys()).sort().forEach((key) => {
+        const [ano, mes] = key.split('-');
+        labels.push(`${mes}/${ano}`);
+        const slot = acc.get(key);
+        entradas.push(Math.round(slot.e * 100) / 100);
+        saidas.push(Math.round(slot.s * 100) / 100);
+    });
+    return { labels, entradas, saidas, agrupado: 'mes' };
 }
 
 // Relatórios: uma única fonte para tela, impressão e PDF.
