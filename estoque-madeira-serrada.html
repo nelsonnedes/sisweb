@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="icon" href="/assets/brand/icone.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque de Madeira Serrada - Sistema Sisweb</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="menu.css?v=c29e40bbd251">
+    <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
+    <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
+    <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
+    <link rel="stylesheet" href="layout-comum.css?v=c8c40e4b104d">
+    <link rel="stylesheet" href="commerce-responsive.css?v=25cdcbb70daf">
+    <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
+    <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
+    <script src="menu-component.js?v=769c7dd6b998"></script>
+    <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
+    <script src="sentry-init.js?v=a0ebe6edc1c6"></script>
+    <script>
+        (function () {
+            try {
+                var stored = localStorage.getItem('sisweb:theme');
+                var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+                var effective = mode === 'system'
+                    && window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+                    : mode === 'system' ? 'dark' : mode;
+                document.documentElement.setAttribute('data-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', mode);
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <style>
+        .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:12px; flex-wrap:wrap; }
+        .page-title { display:flex; align-items:center; gap:10px; margin:0; color:var(--sw-text-1); }
+        .actions-bar { display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
+        .search-box { flex:1; position:relative; min-width:250px; }
+        .search-box input { width:100%; padding:10px 15px 10px 40px; border:1px solid var(--sw-border); border-radius:4px; font-size:14px; height:42px; box-sizing:border-box; }
+        .search-box i { position:absolute; left:15px; top:50%; transform:translateY(-50%); color:var(--sw-text-2); }
+        .actions-bar .btn { height:42px !important; white-space:nowrap; }
+        .ems-empty { text-align:center; padding:18px; color:var(--sw-text-2); font-style:italic; }
+        .ems-actions { white-space:nowrap; text-align:center; }
+        .ems-actions .btn { width:32px; height:32px; padding:0; justify-content:center; }
+        .ems-dims { font-family:monospace; font-size:12px; }
+        .ems-stock { text-align:right; font-weight:700; white-space:nowrap; }
+
+        .nf-pagination-bar { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-top:10px; }
+        .nf-pagination-bar:empty { display:none; }
+        .nf-pagination-bar .pagination-size-control { display:inline-flex; align-items:center; gap:6px; color:var(--sw-text-2); font-size:13px; margin-right:auto; }
+        .nf-pagination-bar .pagination-size-control select { width:auto; min-width:76px; height:34px; padding:4px 8px; font-size:13px; color:var(--sw-text-1); background:var(--sw-surface); border:1px solid var(--sw-border); border-radius:6px; }
+        .nf-pagination-bar .pagination-page-buttons { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
+        .nf-pagination-bar .pagination-page-buttons button { min-width:34px; height:34px; padding:4px 10px; font-size:13px; font-weight:600; color:var(--sw-text-1); background:var(--sw-surface); border:1px solid var(--sw-border); border-radius:6px; cursor:pointer; }
+        .nf-pagination-bar .pagination-page-buttons button:hover:not(:disabled) { border-color:var(--sw-brand); color:var(--sw-brand); }
+        .nf-pagination-bar .pagination-page-buttons button.active { background:var(--sw-brand); border-color:var(--sw-brand); color:#fff; }
+        .nf-pagination-bar .pagination-page-buttons button:disabled { opacity:.45; cursor:default; }
+        .nf-pagination-bar .pagination-total-info { font-size:12px; color:var(--sw-text-2); }
+
+        #emsModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; align-items:center; justify-content:center; padding:16px; }
+        #emsModal.active { display:flex; }
+        #emsModal .modal-content { max-width:920px; width:100%; max-height:calc(100dvh - 40px); display:flex; flex-direction:column; }
+        #emsModal .modal-body { overflow-y:auto; padding:16px 18px; }
+        #emsModal .modal-footer { display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; padding:12px 18px; border-top:1px solid var(--sw-border); background:var(--sw-surface-2); }
+        .ems-section { border:1px solid var(--sw-border); border-radius:8px; padding:12px; margin-bottom:12px; background:var(--sw-surface-2); }
+        .ems-type { display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
+        .ems-type label { display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; }
+        .form-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+        .form-group { flex:1; min-width:150px; }
+        .form-group label { display:block; margin-bottom:5px; font-weight:500; color:var(--sw-text-1); font-size:14px; }
+        .form-group input, .form-group select, .form-group textarea { width:100%; padding:8px 12px; border:1px solid var(--sw-border); border-radius:4px; font-size:14px; box-sizing:border-box; background:var(--sw-surface); color:var(--sw-text-1); }
+        .ems-preview { border:1px solid var(--sw-border); border-radius:8px; padding:10px; background:var(--sw-surface); min-height:48px; }
+        .ems-preview-title { font-weight:700; margin:10px 0 6px; color:var(--sw-text-1); }
+        .ems-preview-row { display:flex; align-items:center; gap:8px; border:1px solid var(--sw-border); border-radius:8px; padding:8px; margin-bottom:6px; background:var(--sw-surface); }
+        .ems-preview-row .ems-preview-main { flex:1; min-width:0; }
+        .ems-preview-row strong { display:block; color:var(--sw-text-1); font-size:13px; }
+        .ems-preview-row small { display:block; color:var(--sw-text-2); font-size:12px; margin-top:2px; }
+        .ems-group-check { width:auto !important; }
+        .ems-help { color:var(--sw-text-2); font-size:12px; line-height:1.4; }
+        @media (max-width:768px) {
+            .actions-bar { flex-direction:column; }
+            .search-box, .actions-bar .btn { width:100%; }
+            .form-row { flex-direction:column; }
+            #emsModal { padding:8px; }
+            #emsModal .modal-content { max-height:calc(100dvh - 16px); }
+            .ems-type { gap:10px; }
+            .ems-preview-row { align-items:flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main-menu></main-menu>
+
+        <div class="page-header">
+            <h1 class="page-title sw-page-title"><i class="fas fa-boxes"></i> Estoque de Madeira Serrada</h1>
+        </div>
+
+        <div class="actions-bar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="emsSearch" placeholder="Buscar por código, nome, espécie, dimensões ou unidade...">
+            </div>
+            <button type="button" id="emsNewBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Produto</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>Espécie</th>
+                        <th>Dimensões (cm)</th>
+                        <th class="text-right">Estoque</th>
+                        <th>Un.</th>
+                        <th class="text-right">Preço</th>
+                        <th class="actions-col text-center" width="100">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="emsTableBody">
+                    <tr><td colspan="8" class="ems-empty">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="emsPagination" class="nf-pagination-bar"></div>
+    </div>
+
+    <div id="emsModal" role="dialog" aria-modal="true" aria-labelledby="emsModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="emsModalTitle" class="modal-title">Novo Produto</h2>
+                <button type="button" class="close-modal" id="emsCloseModal">&times;</button>
+            </div>
+            <form id="emsForm">
+                <div class="modal-body">
+                    <input type="hidden" id="emsId">
+                    <div class="ems-section">
+                        <label style="font-weight:700;display:block;margin-bottom:8px;">Tipo de Produto:</label>
+                        <div class="ems-type">
+                            <label><input type="radio" name="emsTipo" value="manual" checked> Produto Manual</label>
+                            <label><input type="radio" name="emsTipo" value="romaneio"> Produto Romaneio</label>
+                        </div>
+                    </div>
+
+                    <div id="emsManualSection">
+                        <div class="form-row">
+                            <div class="form-group"><label for="emsCodigo">Código:</label><input type="text" id="emsCodigo" placeholder="Automático se vazio"></div>
+                            <div class="form-group" style="flex:2"><label for="emsNome">Nome:</label><input type="text" id="emsNome" placeholder="Ex: Pinus 2,5 x 15 x 300"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="emsPreco">Preço:</label><input type="text" id="emsPreco" inputmode="decimal" placeholder="R$ 0,00"></div>
+                            <div class="form-group"><label for="emsEstoque">Estoque:</label><input type="number" id="emsEstoque" min="0" step="0.001" placeholder="0,000"></div>
+                            <div class="form-group"><label for="emsUnidade">Unidade:</label>
+                                <select id="emsUnidade">
+                                    <option value="UN">UN - Unidade</option>
+                                    <option value="DZ">DZ - Dúzia</option>
+                                    <option value="PC">PC - Peça</option>
+                                    <option value="m³" selected>m³ - Metro Cúbico</option>
+                                    <option value="m²">m² - Metro Quadrado</option>
+                                    <option value="LN">LN - Metro Linear</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:12px;"><label for="emsDescricao">Descrição:</label><textarea id="emsDescricao" rows="2"></textarea></div>
+                        <div class="form-row" style="align-items:flex-end;">
+                            <div class="form-group">
+                                <button type="button" id="emsAddItemBtn" class="btn btn-success"><i class="fas fa-plus"></i> Adicionar item</button>
+                                <button type="button" id="emsClearItemsBtn" class="btn btn-danger" style="margin-left:8px;"><i class="fas fa-trash"></i> Limpar</button>
+                            </div>
+                        </div>
+                        <div class="ems-preview-title">Preview - Resumo:</div>
+                        <div id="emsManualPreview" class="ems-preview">
+                            <span class="ems-help">Preencha os campos e clique em Adicionar item.</span>
+                        </div>
+                    </div>
+
+                    <div id="emsRomaneioSection" style="display:none;">
+                        <div class="ems-section">
+                            <div class="form-row">
+                                <div class="form-group"><label for="emsRomTipo">Tipo de Romaneio:</label>
+                                    <select id="emsRomTipo">
+                                        <option value="">Selecione...</option>
+                                        <option value="romaneiosTL">Romaneio TL</option>
+                                        <option value="romaneiosPct">Romaneio PCT</option>
+                                        <option value="romaneiosPes">Romaneio PES</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:2"><label for="emsRomSelect">Romaneio:</label><select id="emsRomSelect"><option value="">Selecione o tipo primeiro...</option></select></div>
+                            </div>
+                            <div class="form-row" style="align-items:flex-end;">
+                                <div class="form-group">
+                                    <button type="button" id="emsLoadRomBtn" class="btn btn-success"><i class="fas fa-download"></i> Carregar Itens</button>
+                                    <button type="button" id="emsClearRomBtn" class="btn btn-danger" style="margin-left:8px;"><i class="fas fa-trash"></i> Limpar</button>
+                                </div>
+                            </div>
+                            <div class="ems-preview-title">Preview - Resumo:</div>
+                            <div id="emsRomPreview" class="ems-preview"><span class="ems-help">Selecione o tipo e o romaneio, depois clique em Carregar Itens.</span></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="emsEspecie">Espécie:</label><input type="text" id="emsEspecie" placeholder="Ex: Pinus"></div>
+                            <div class="form-group"><label for="emsEspessura">Espessura (cm):</label><input type="number" id="emsEspessura" min="0" step="0.1"></div>
+                            <div class="form-group"><label for="emsLargura">Largura (cm):</label><input type="number" id="emsLargura" min="0" step="0.1"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="emsComprimento">Comprimento (cm):</label><input type="number" id="emsComprimento" min="0" step="0.1"></div>
+                            <div class="form-group"><label for="emsPecas">Peças:</label><input type="number" id="emsPecas" min="0" step="1" value="1"></div>
+                            <div class="form-group"><label for="emsPpp">Peças/Pacote:</label><input type="number" id="emsPpp" min="1" step="1" value="1"></div>
+                            <div class="form-group"><label>Volume (m³):</label><input type="text" id="emsVolume" readonly placeholder="0,000"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="emsSaveBtn" class="btn btn-success" style="display:none;"><i class="fas fa-save"></i> Salvar</button>
+                    <button type="button" id="emsAddStockBtn" class="btn btn-success"><i class="fas fa-plus"></i> Adicionar Estoque</button>
+                    <button type="button" id="emsCancelBtn" class="btn btn-danger"><i class="fas fa-times"></i> Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import * as svc from './firebaseService.js?v=fdef24272f49';
+        if (!window.firebaseService) window.firebaseService = svc;
+    </script>
+    <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
+    <script src="js/estoque-madeira-serrada.js?v=513b1e2c7656"></script>
+    <script src="commerce-responsive.js?v=ecda54bb2077"></script>
+</body>
+</html>

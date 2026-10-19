@@ -1322,6 +1322,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                         <div class="dropdown-content estoque-dropdown">
                         <a href="${this.resolveUrl('compras.html')}"><i class="fas fa-shopping-bag"></i> Sistema de Compras</a>
                         <a href="${this.resolveUrl('estoque.html')}"><i class="fas fa-warehouse"></i> Controle de Estoque</a>
+                        <a href="${this.resolveUrl('estoque-madeira-serrada.html')}"><i class="fas fa-tree"></i> Estoque de Madeira Serrada</a>
                         </div>
                     </div>
                     
