@@ -32,6 +32,12 @@ let fluxoCaixaChart = null;
 let fluxoDetalhadoChart = null;
 let fluxoCatEntradasChart = null;
 let fluxoCatSaidasChart = null;
+let dashboardCatReceberChart = null;
+let dashboardCatPagarChart = null;
+const FLUXO_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const FLUXO_PAGE_SIZE_DEFAULT = 10;
+let __fluxoPagina = 1;
+let __fluxoDadosCache = { labels: [], entradas: [], saidas: [], saldos: [] };
 
 // ✅ MELHORIA: Sistema de notificações
 function mostrarNotificacao(mensagem, tipo = 'info') {
@@ -3639,58 +3645,69 @@ function atualizarResumoFinanceiro() {
 }
 
 function gerarGraficoFluxoCaixa() {
-    const ctx = document.getElementById('fluxoCaixaChart').getContext('2d');
-    
+    const canvas = document.getElementById('fluxoCaixaChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
     if (fluxoCaixaChart) {
-        fluxoCaixaChart.destroy();
+        try { fluxoCaixaChart.destroy(); } catch (_) {}
     }
-    
-    // Gerar dados para os próximos 30 dias
+
+    // Próximos 30 dias (diário): realizado + previsto, mesma base do Fluxo.
     const dados = gerarDadosFluxoCaixa(30);
-    
-    fluxoCaixaChart = new Chart(ctx, {
-        type: 'line',
+
+    fluxoCaixaChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
         data: {
             labels: dados.labels,
-            datasets: [{
-                label: 'Entradas',
-                data: dados.entradas,
-                borderColor: '#28a745',
-                backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                tension: 0.4
-            }, {
-                label: 'Saídas',
-                data: dados.saidas,
-                borderColor: '#dc3545',
-                backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                tension: 0.4
-            }, {
-                label: 'Saldo Acumulado',
-                data: dados.saldoAcumulado,
-                borderColor: '#007bff',
-                backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                tension: 0.4,
-                yAxisID: 'y1'
-            }]
+            datasets: [
+                {
+                    type: 'bar', label: 'Entradas', data: dados.entradas,
+                    backgroundColor: 'rgba(34,197,94,.85)', borderColor: '#16a34a',
+                    borderWidth: 1, borderRadius: 4, maxBarThickness: 20, yAxisID: 'y'
+                },
+                {
+                    type: 'bar', label: 'Saídas', data: dados.saidas,
+                    backgroundColor: 'rgba(239,68,68,.85)', borderColor: '#dc2626',
+                    borderWidth: 1, borderRadius: 4, maxBarThickness: 20, yAxisID: 'y'
+                },
+                {
+                    type: 'line', label: 'Saldo acumulado', data: dados.saldoAcumulado,
+                    borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.12)',
+                    borderWidth: 2, pointRadius: 2, pointHoverRadius: 4,
+                    tension: .3, fill: true, yAxisID: 'y1'
+                }
+            ]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10 } },
+                tooltip: {
+                    callbacks: {
+                        label: (c) => `${c.dataset.label}: ${fluxoBRL(c.parsed.y)}`
+                    }
+                }
+            },
             scales: {
+                x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
                 y: {
                     beginAtZero: true,
-                    position: 'left'
+                    grid: { color: 'rgba(148,163,184,.18)' },
+                    ticks: { callback: (v) => fluxoBRL(v) }
                 },
                 y1: {
-                    type: 'linear',
-                    display: true,
                     position: 'right',
-                    grid: {
-                        drawOnChartArea: false
-                    }
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: false },
+                    ticks: { callback: (v) => fluxoBRL(v) }
                 }
             }
         }
     });
+
+    gerarGraficosCategoriasDashboard();
 }
 
 function gerarDadosFluxoCaixa(dias) {
@@ -7585,17 +7602,12 @@ function agregarCategoriasFluxo(dataInicio, dataFim, origem) {
         .sort((a, b) => b.value - a.value);
 }
 
-function criarGraficoCategoriaFluxo(canvasId, origem, palette) {
+function criarGraficoCategoriaDados(canvasId, items, palette) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || typeof Chart === 'undefined') return null;
-    const items = agregarCategoriasFluxo(
-        document.getElementById('fluxoDataInicio')?.value,
-        document.getElementById('fluxoDataFim')?.value,
-        origem
-    );
-    const labels = items.slice(0, 6).map((i) => i.label);
-    const values = items.slice(0, 6).map((i) => Math.round(i.value * 100) / 100);
-    const restante = items.slice(6).reduce((t, i) => t + i.value, 0);
+    const labels = (items || []).slice(0, 6).map((i) => i.label);
+    const values = (items || []).slice(0, 6).map((i) => Math.round(i.value * 100) / 100);
+    const restante = (items || []).slice(6).reduce((t, i) => t + i.value, 0);
     if (restante > 0) { labels.push('Outros'); values.push(Math.round(restante * 100) / 100); }
     const semDados = values.length === 0;
     if (semDados) { labels.push('Sem movimentações'); values.push(1); }
@@ -7628,6 +7640,15 @@ function criarGraficoCategoriaFluxo(canvasId, origem, palette) {
     });
 }
 
+function criarGraficoCategoriaFluxo(canvasId, origem, palette) {
+    const items = agregarCategoriasFluxo(
+        document.getElementById('fluxoDataInicio')?.value,
+        document.getElementById('fluxoDataFim')?.value,
+        origem
+    );
+    return criarGraficoCategoriaDados(canvasId, items, palette);
+}
+
 function gerarGraficosCategoriasFluxo(dataInicio, dataFim) {
     try {
         const ini = document.getElementById('fluxoDataInicio');
@@ -7642,6 +7663,40 @@ function gerarGraficosCategoriasFluxo(dataInicio, dataFim) {
         );
         fluxoCatSaidasChart = criarGraficoCategoriaFluxo(
             'fluxoCatSaidasChart', 'pagar',
+            ['#dc2626', '#ef4444', '#f97316', '#fb923c', '#f59e0b', '#f87171', '#94a3b8']
+        );
+    } catch (_) {}
+}
+
+function agregarCategoriasAbertas(origem) {
+    const acc = new Map();
+    const lista = origem === 'receber'
+        ? (Array.isArray(contasReceber) ? contasReceber : [])
+        : (Array.isArray(contasPagar) ? contasPagar : []);
+    lista.forEach((c) => {
+        if (!c || !isContaAbertaFluxo(c)) return;
+        const v = valorRestanteFluxo(c);
+        if (!(v > 0)) return;
+        const key = String(c.categoria || 'Sem categoria').trim() || 'Sem categoria';
+        acc.set(key, (acc.get(key) || 0) + v);
+    });
+    return Array.from(acc.entries())
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value);
+}
+
+function gerarGraficosCategoriasDashboard() {
+    try {
+        if (dashboardCatReceberChart) { try { dashboardCatReceberChart.destroy(); } catch (_) {} }
+        if (dashboardCatPagarChart) { try { dashboardCatPagarChart.destroy(); } catch (_) {} }
+        dashboardCatReceberChart = criarGraficoCategoriaDados(
+            'dashboardCatReceberChart',
+            agregarCategoriasAbertas('receber'),
+            ['#16a34a', '#22c55e', '#4ade80', '#34d399', '#10b981', '#6ee7b7', '#94a3b8']
+        );
+        dashboardCatPagarChart = criarGraficoCategoriaDados(
+            'dashboardCatPagarChart',
+            agregarCategoriasAbertas('pagar'),
             ['#dc2626', '#ef4444', '#f97316', '#fb923c', '#f59e0b', '#f87171', '#94a3b8']
         );
     } catch (_) {}
@@ -7717,25 +7772,92 @@ function gerarGraficoFluxoDetalhado(dataInicio, dataFim) {
     });
 }
 
+function fluxoPageKey() {
+    try {
+        let tid = '';
+        try { if (window.appTenantId) tid = String(window.appTenantId); } catch (_) {}
+        if (!tid) {
+            try {
+                const ci = JSON.parse(localStorage.getItem('company_info') || 'null') || {};
+                tid = String(ci.id || ci.companyId || ci.tenantId || '');
+            } catch (_) {}
+        }
+        const u = (() => { try { return String(window.firebaseService?.currentUser?.uid || 'anon'); } catch (_) { return 'anon'; } })();
+        return `fin_fluxo_${tid || 'default'}_${u}_items_per_page`;
+    } catch (_) { return 'fin_fluxo_default_anon_items_per_page'; }
+}
+
+function fluxoPageSize() {
+    try {
+        const v = parseInt(localStorage.getItem(fluxoPageKey()) || '', 10);
+        if (FLUXO_PAGE_SIZE_OPTIONS.includes(v)) return v;
+    } catch (_) {}
+    return FLUXO_PAGE_SIZE_DEFAULT;
+}
+
+function fluxoSetPageSize(value) {
+    const size = parseInt(value, 10);
+    if (!FLUXO_PAGE_SIZE_OPTIONS.includes(size)) return;
+    try { localStorage.setItem(fluxoPageKey(), String(size)); } catch (_) {}
+    __fluxoPagina = 1;
+    renderizarTabelaFluxoPaginada();
+}
+window.fluxoSetPageSize = fluxoSetPageSize;
+
+function fluxoMudarPagina(page) {
+    const size = fluxoPageSize();
+    const total = Math.max(1, Math.ceil(__fluxoDadosCache.labels.length / size));
+    __fluxoPagina = Math.min(Math.max(1, parseInt(page, 10) || 1), total);
+    renderizarTabelaFluxoPaginada();
+}
+window.fluxoMudarPagina = fluxoMudarPagina;
+
 function gerarTabelaFluxo(dataInicio, dataFim) {
     const tbody = document.getElementById('fluxoTable');
+    if (!tbody) return;
     const dados = calcularFluxoPeriodo(dataInicio, dataFim);
 
     const totalMovimento = dados.entradas.reduce((t, v) => t + v, 0)
         + dados.saidas.reduce((t, v) => t + v, 0);
     if (dados.labels.length === 0 || totalMovimento <= 0) {
+        __fluxoDadosCache = { labels: [], entradas: [], saidas: [], saldos: [] };
         tbody.innerHTML = '<tr><td colspan="5" data-label="Mensagem" style="text-align: center;">Sem movimentações no período (realizadas ou previstas).</td></tr>';
+        const pag = document.getElementById('paginacaoConsultaFluxo');
+        if (pag) pag.innerHTML = '';
         return;
     }
 
     let saldoAcumulado = 0;
-    
-    tbody.innerHTML = dados.labels.map((label, index) => {
-        const entradas = dados.entradas[index];
-        const saidas = dados.saidas[index];
+    const saldos = dados.labels.map((_, index) => {
+        saldoAcumulado += (dados.entradas[index] || 0) - (dados.saidas[index] || 0);
+        return saldoAcumulado;
+    });
+    __fluxoDadosCache = {
+        labels: dados.labels,
+        entradas: dados.entradas,
+        saidas: dados.saidas,
+        saldos
+    };
+    __fluxoPagina = 1;
+    renderizarTabelaFluxoPaginada();
+}
+
+function renderizarTabelaFluxoPaginada() {
+    const tbody = document.getElementById('fluxoTable');
+    if (!tbody) return;
+    const size = fluxoPageSize();
+    const total = __fluxoDadosCache.labels.length;
+    const totalPaginas = Math.max(1, Math.ceil(total / size));
+    if (__fluxoPagina > totalPaginas) __fluxoPagina = totalPaginas;
+    const inicio = (__fluxoPagina - 1) * size;
+    const fim = inicio + size;
+
+    tbody.innerHTML = __fluxoDadosCache.labels.slice(inicio, fim).map((label, offset) => {
+        const index = inicio + offset;
+        const entradas = __fluxoDadosCache.entradas[index] || 0;
+        const saidas = __fluxoDadosCache.saidas[index] || 0;
         const saldoDia = entradas - saidas;
-        saldoAcumulado += saldoDia;
-        
+        const saldoAcumulado = __fluxoDadosCache.saldos[index] || 0;
         return `
             <tr>
                 <td data-label="Data">${label}</td>
@@ -7750,6 +7872,64 @@ function gerarTabelaFluxo(dataInicio, dataFim) {
             </tr>
         `;
     }).join('');
+
+    renderizarPaginacaoConsultaFluxo(total, __fluxoPagina, size);
+}
+
+function renderizarPaginacaoConsultaFluxo(totalItems, paginaAtual, pageSize) {
+    const container = document.getElementById('paginacaoConsultaFluxo');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!totalItems) return;
+    const totalPaginas = Math.ceil(totalItems / pageSize);
+
+    const label = document.createElement('label');
+    label.className = 'pagination-size-control';
+    label.innerHTML = `<span>Itens por página:</span>
+        <select onchange="fluxoSetPageSize(this.value)">
+            ${FLUXO_PAGE_SIZE_OPTIONS.map((opt) => `<option value="${opt}" ${opt === pageSize ? 'selected' : ''}>${opt}</option>`).join('')}
+        </select>`;
+    container.appendChild(label);
+
+    if (!totalPaginas || totalPaginas <= 1) {
+        const info = document.createElement('span');
+        info.className = 'pagination-total-info';
+        info.textContent = `${totalItems} dia(s)`;
+        container.appendChild(info);
+        return;
+    }
+
+    const host = document.createElement('span');
+    host.className = 'pagination-page-buttons';
+    container.appendChild(host);
+    const addBtn = (text, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.textContent = text;
+        btn.type = 'button';
+        if (active) btn.classList.add('active');
+        btn.disabled = disabled;
+        btn.onclick = () => fluxoMudarPagina(page);
+        host.appendChild(btn);
+    };
+    addBtn('<<<', 1, paginaAtual === 1);
+    addBtn('<', paginaAtual - 1, paginaAtual === 1);
+    const startPage = Math.max(1, paginaAtual - 2);
+    const endPage = Math.min(totalPaginas, paginaAtual + 2);
+    if (startPage > 1) {
+        addBtn('1', 1, false, paginaAtual === 1);
+        if (startPage > 2) { const s = document.createElement('span'); s.textContent = '...'; host.appendChild(s); }
+    }
+    for (let i = startPage; i <= endPage; i++) addBtn(String(i), i, false, i === paginaAtual);
+    if (endPage < totalPaginas) {
+        if (endPage < totalPaginas - 1) { const s = document.createElement('span'); s.textContent = '...'; host.appendChild(s); }
+        addBtn(String(totalPaginas), totalPaginas, false, paginaAtual === totalPaginas);
+    }
+    addBtn('>', paginaAtual + 1, paginaAtual === totalPaginas);
+    addBtn('>>>', totalPaginas, paginaAtual === totalPaginas);
+    const info = document.createElement('span');
+    info.className = 'pagination-total-info';
+    info.textContent = `Pág. ${paginaAtual}/${totalPaginas} · ${totalItems} dia(s)`;
+    container.appendChild(info);
 }
 
 /* Fase 19: Detalhado = realizado (data de pagamento/histórico) + previsto

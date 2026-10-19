@@ -97,7 +97,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=a0ebe6edc1c6"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=c06b2ab8d1c5"></script>
+<script src="menu-component.js?v=95dea90000b2"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
@@ -1393,27 +1393,47 @@
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
             <div class="chart-container">
-                <h3>Fluxo de Caixa - Próximos 30 Dias</h3>
-                <canvas id="fluxoCaixaChart" width="400" height="200"></canvas>
+                <h3>Entradas × Saídas — Saldo Acumulado (próximos 30 dias)</h3>
+                <div style="position:relative;height:320px;">
+                    <canvas id="fluxoCaixaChart"></canvas>
+                </div>
             </div>
 
-            <div class="summary-box">
-                <h3>Resumo Financeiro</h3>
-                <div class="summary-row">
-                    <span>Contas Vencidas (Receber):</span>
-                    <span id="receberVencidas" style="color: #dc3545;">R$ 0,00</span>
+            <div class="dashboard-cards" id="dashboardResumoCards">
+                <div class="dashboard-card pagar">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Vencidas (Receber)</h3>
+                    <div class="value" id="receberVencidas">R$ 0,00</div>
+                    <small>Atrasadas</small>
                 </div>
-                <div class="summary-row">
-                    <span>Contas Vencidas (Pagar):</span>
-                    <span id="pagarVencidas" style="color: #dc3545;">R$ 0,00</span>
+                <div class="dashboard-card pagar">
+                    <h3><i class="fas fa-exclamation-circle"></i> Vencidas (Pagar)</h3>
+                    <div class="value" id="pagarVencidas">R$ 0,00</div>
+                    <small>Atrasadas</small>
                 </div>
-                <div class="summary-row">
-                    <span>Vencendo Hoje:</span>
-                    <span id="vencendoHoje" style="color: #ffc107;">R$ 0,00</span>
+                <div class="dashboard-card saldo">
+                    <h3><i class="fas fa-calendar-day"></i> Vencendo Hoje</h3>
+                    <div class="value" id="vencendoHoje">R$ 0,00</div>
+                    <small>Receber + Pagar</small>
                 </div>
-                <div class="summary-row">
-                    <span>Próximos 7 dias:</span>
-                    <span id="proximos7Dias" style="color: #17a2b8;">R$ 0,00</span>
+                <div class="dashboard-card receber">
+                    <h3><i class="fas fa-calendar-week"></i> Próximos 7 dias</h3>
+                    <div class="value" id="proximos7Dias">R$ 0,00</div>
+                    <small>Receber + Pagar</small>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+                <div class="chart-container">
+                    <h3>A Receber em aberto por categoria</h3>
+                    <div style="position:relative;height:280px;">
+                        <canvas id="dashboardCatReceberChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>A Pagar em aberto por categoria</h3>
+                    <div style="position:relative;height:280px;">
+                        <canvas id="dashboardCatPagarChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1885,6 +1905,71 @@
         </div>
 
         <!-- Fluxo de Caixa Tab -->
+        <style>
+            .nf-pagination-bar {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 10px;
+            }
+            .nf-pagination-bar:empty { display: none; }
+            .nf-pagination-bar .pagination-size-control {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                color: var(--sw-text-2);
+                font-size: 13px;
+                margin-right: auto;
+            }
+            .nf-pagination-bar .pagination-size-control select {
+                width: auto;
+                min-width: 76px;
+                height: 34px;
+                padding: 4px 8px;
+                font-size: 13px;
+                color: var(--sw-text-1);
+                background: var(--sw-surface);
+                border: 1px solid var(--sw-border);
+                border-radius: 6px;
+            }
+            .nf-pagination-bar .pagination-page-buttons {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .nf-pagination-bar .pagination-page-buttons button {
+                min-width: 34px;
+                height: 34px;
+                padding: 4px 10px;
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--sw-text-1);
+                background: var(--sw-surface);
+                border: 1px solid var(--sw-border);
+                border-radius: 6px;
+                cursor: pointer;
+            }
+            .nf-pagination-bar .pagination-page-buttons button:hover:not(:disabled) {
+                border-color: var(--sw-brand);
+                color: var(--sw-brand);
+            }
+            .nf-pagination-bar .pagination-page-buttons button.active {
+                background: var(--sw-brand);
+                border-color: var(--sw-brand);
+                color: #fff;
+            }
+            .nf-pagination-bar .pagination-page-buttons button:disabled {
+                opacity: .45;
+                cursor: default;
+            }
+            .nf-pagination-bar .pagination-total-info {
+                font-size: 12px;
+                color: var(--sw-text-2);
+            }
+        </style>
         <div id="fluxo" class="tab-content">
             <div class="filters-section">
                 <div class="filters-row">
@@ -1946,6 +2031,7 @@
                     </tbody>
                 </table>
             </div>
+            <div id="paginacaoConsultaFluxo" class="nf-pagination-bar"></div>
         </div>
 
         <!-- Relatórios Tab -->
@@ -2705,7 +2791,7 @@
     <script src="js/pix-brcode.js?v=1714fb7d79ee"></script>
     <script src="js/commerce-boleto-pix.js?v=a09fe8bc130a"></script>
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
-    <script src="financas.js?v=868a3d4f0b30"></script>
+    <script src="financas.js?v=684e22b51042"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <!-- Loading Overlay Global (padrão Sisweb) -->
     <div id="loadingOverlay" class="loading-overlay" style="display: none;">
