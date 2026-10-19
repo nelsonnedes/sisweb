@@ -22,6 +22,7 @@ test('produtos fiscais: busca cobre código e campos aninhados/fiscal e preço',
   assert.match(src, /p\.cfopPadrao, p\.cfop, f\.cfop/);
   assert.match(src, /p\.unidade, f\.unidade/);
   assert.match(src, /preco, money\(preco\)/);
+  assert.match(src, /codeMatches\(a, qn\)/, 'código exato priorizado');
 });
 
 test('produtos fiscais: código automático ao salvar (sequencial e sem colisão)', () => {

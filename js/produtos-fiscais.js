@@ -142,12 +142,26 @@
         ].join(' '));
     }
 
+    function codeMatches(p, qn) {
+        return [p.codigo, p.cod, p.code, p.codigoProduto].some(function (c) {
+            return c != null && norm(c) === qn;
+        });
+    }
+
     function applyFilter() {
         var q = String((document.getElementById('pfSearch') || {}).value || '').trim();
         if (!q) { state.filtered = state.items.slice(); return; }
         var qn = norm(q);
         state.filtered = state.items.filter(function (p) {
             return productBlob(p).indexOf(qn) >= 0;
+        });
+        // Código exato primeiro: digitar "4" não pode esconder o produto de
+        // código 4 atrás de NCM/preço/ids que também contêm "4".
+        state.filtered.sort(function (a, b) {
+            var ea = codeMatches(a, qn) ? 0 : 1;
+            var eb = codeMatches(b, qn) ? 0 : 1;
+            if (ea !== eb) return ea - eb;
+            return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
         });
     }
 
