@@ -1323,6 +1323,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                             <a href="${this.resolveUrl('client.html')}"><i class="fas fa-user"></i> Cliente</a>
                             <a href="${this.resolveUrl('fornecedor.html')}"><i class="fas fa-truck"></i> Fornecedor</a>
                             <a href="${this.resolveUrl('species.html')}"><i class="fas fa-leaf"></i> Espécie</a>
+                            <a href="${this.resolveUrl('produtos-fiscais.html')}"><i class="fas fa-file-invoice"></i> Produto Fiscal (NF-e)</a>
                             <a href="${this.resolveUrl('importar_especies.html')}"><i class="fas fa-upload"></i> Importar Especies</a>
                         </div>
                     </div>

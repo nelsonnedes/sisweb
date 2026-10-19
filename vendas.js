@@ -5047,7 +5047,7 @@ function rotuloRomaneioProduto(r) {
         const RU2 = window.RomaneioDataUtils;
         if (RU2 && typeof RU2.formatarNumeroExibicao === 'function') numeroFmt = RU2.formatarNumeroExibicao(r, numero);
     } catch (_) {}
-    let rotuloFinal = `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ (#${numeroFmt})`;
+    let rotuloFinal = `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ - ${numeroFmt}`;
     // Espelha o aviso de pedidos ("USADO Ped."): romaneio já em estoque.
     // Match por qualquer chave (id/key/número) dos dois lados.
     try {
@@ -6346,7 +6346,7 @@ function editarProduto(produtoId) {
                 sel.innerHTML = '';
                 const opt = document.createElement('option');
                 opt.value = String(produto.romaneioId);
-                opt.textContent = produto.romaneioNumero || String(produto.romaneioId);
+                opt.textContent = produto.romaneioNumero || 'Romaneio';
                 sel.appendChild(opt);
             }
             try {
@@ -8090,7 +8090,7 @@ async function carregarRomaneiosPorTipo() {
             const RU3 = window.RomaneioDataUtils;
             if (RU3 && typeof RU3.formatarNumeroExibicao === 'function') {
                 const fmt = RU3.formatarNumeroExibicao(romaneio, '');
-                if (fmt) sufixoNumero = ` (#${fmt})`;
+                if (fmt) sufixoNumero = ` - ${fmt}`;
             }
         } catch (_) {}
         option.textContent = totalMoeda ?
@@ -8119,7 +8119,7 @@ async function carregarRomaneiosPorTipo() {
                             opt.dataset.usadoPedido = String(uso.pedidoNumero || '');
                             opt.title = `Já utilizado no pedido de ${uso.modulo === 'compra' ? 'Compra' : 'Venda'} Nº ${uso.pedidoNumero}`;
                             if (!/USADO/i.test(opt.textContent || '')) {
-                                opt.textContent = `${opt.textContent} • USADO Ped. Nº ${uso.pedidoNumero}`;
+                                opt.textContent = `${opt.textContent} - USADO Ped. Nº ${uso.pedidoNumero}`;
                             }
                         }
                     });

@@ -1095,7 +1095,7 @@
         doc.setFontSize(14);
         doc.setFont(undefined, 'bold');
         setPdfText(doc, PRINT_COLORS.brandDark);
-        doc.text(`${options.orderTitle || 'Pedido'} #${orderNumber}`, state.margin, y);
+        doc.text(`${options.orderTitle || 'Pedido'} - ${orderNumber}`, state.margin, y);
         doc.setFont(undefined, 'normal');
         doc.setFontSize(8);
         setPdfText(doc, PRINT_COLORS.muted);

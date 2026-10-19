@@ -567,6 +567,22 @@ const NFProdutosNF = (() => {
   }
 
   // ─── Popular select de romaneios + limpar preview/campos ───────────────────
+  // Número de exibição do romaneio: "Nº 01" (sequencial), nunca a chave técnica
+  // (ex.: PCT_1789385882179_eml5puwka). Mantém paridade com Vendas.
+  function numeroRomaneioExibicaoNF(r, index) {
+    try {
+      const RU = window.RomaneioDataUtils;
+      if (RU && typeof RU.formatarNumeroExibicao === 'function') {
+        const fmt = RU.formatarNumeroExibicao(r, '');
+        const m = fmt && String(fmt).match(/N[º°]\s*(\d+)/i);
+        if (m) return 'Nº ' + String(m[1]).padStart(2, '0');
+      }
+    } catch (_) {}
+    const n = Number(r && (r.numeroExibicao ?? r.numeroSequencial ?? r.numero));
+    if (Number.isFinite(n) && n > 0) return 'Nº ' + String(n).padStart(2, '0');
+    return 'Nº ' + String((index || 0) + 1).padStart(2, '0');
+  }
+
   function popularSelectRomaneioNF(romaneios) {
     const sel = document.getElementById('nfRomaneioSelect');
     if (!sel) return;
@@ -574,7 +590,7 @@ const NFProdutosNF = (() => {
     (romaneios || []).forEach((r, i) => {
       const opt = document.createElement('option');
       opt.value = String(i);
-      const numero = r.numero || r.numeroRomaneio || r.id || r.firebaseKey || `#${i + 1}`;
+      const numero = numeroRomaneioExibicaoNF(r, i);
       const dataFmt = formatarDataBR(r.data || r.dataRomaneio || r.createdAt);
       const nomeForn = String(r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || '').trim();
       const itens = Array.isArray(r.itens) ? r.itens : [];
@@ -585,7 +601,7 @@ const NFProdutosNF = (() => {
       if (nomeForn) partes.push(nomeForn);
       if (volTotal > 0) partes.push(volTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' m³');
       if (valTotal > 0) partes.push('R$ ' + valTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      if (numero) partes.push(`Nº ${numero}`);
+      if (numero) partes.push(numero);
       opt.textContent = partes.join(' - ');
       sel.appendChild(opt);
     });

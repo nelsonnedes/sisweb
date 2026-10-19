@@ -5975,7 +5975,7 @@ window.carregarRomaneiosPorTipo = async function() {
                 const RUC = window.RomaneioDataUtils;
                 if (RUC && typeof RUC.formatarNumeroExibicao === 'function') {
                     const fmtC = RUC.formatarNumeroExibicao(r, '');
-                    if (fmtC) sufixoNumeroC = ` (#${fmtC})`;
+                    if (fmtC) sufixoNumeroC = ` - ${fmtC}`;
                 }
             } catch (_) {}
             opt.textContent = `${tipoLabel}${data} - ${nome} (${itensCount} itens${volumeLabel})${sufixoNumeroC}`;
@@ -5998,7 +5998,7 @@ window.carregarRomaneiosPorTipo = async function() {
                             opt.dataset.usadoPedido = String(uso.pedidoNumero || '');
                             opt.title = `Já utilizado no pedido de ${uso.modulo === 'venda' ? 'Venda' : 'Compra'} Nº ${uso.pedidoNumero}`;
                             if (!/USADO/i.test(opt.textContent || '')) {
-                                opt.textContent = `${opt.textContent} • USADO Ped. Nº ${uso.pedidoNumero}`;
+                                opt.textContent = `${opt.textContent} - USADO Ped. Nº ${uso.pedidoNumero}`;
                             }
                         }
                     });
