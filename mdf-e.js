@@ -1978,8 +1978,17 @@ function mdfeDashISO(d) {
 }
 
 function mdfeDashDataISO(m) {
-    const raw = String((m && m.dataEmissao) || '').slice(0, 10);
-    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '';
+    const raw = String((m && m.dataEmissao) || '').trim();
+    if (!raw) return '';
+    // Data pura já está no dia civil correto.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) {
+        const s = raw.slice(0, 10);
+        return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+    }
+    // ISO com hora/Z: usar o dia civil LOCAL (evita 23h local virar o dia seguinte).
+    return mdfeDashISO(d);
 }
 
 function mdfeDashPageKey() {
@@ -2262,7 +2271,7 @@ async function gerarRelatorioMdfe() {
     }
     
     const mdfesRelatorio = mdfes.filter(mdfe => {
-        const dataEmissao = mdfe.dataEmissao.split('T')[0];
+        const dataEmissao = mdfeDashDataISO(mdfe);
         return dataEmissao >= dataInicio && dataEmissao <= dataFim;
     });
     
