@@ -2372,8 +2372,9 @@ function normalizeEstoqueMovement(raw, index) {
         vol: r3Estoque(consumirSrc.vol),
         pecas: r3Estoque(consumirSrc.pecas),
         est: r3Estoque(consumirSrc.est),
+        ml: r2Estoque(consumirSrc.ml),
     };
-    if (consumir.vol < 0 || consumir.pecas < 0 || consumir.est < 0) {
+    if (consumir.vol < 0 || consumir.pecas < 0 || consumir.est < 0 || consumir.ml < 0) {
         throw new FinanceValidationError(`${label}.consumir não aceita valores negativos.`);
     }
     if (modo === 'serrado' && base === 'vol' && !(consumir.vol > 0)) {
@@ -2458,45 +2459,45 @@ function applyEstoqueBaixa(current, mov, nowIso, skipValidation = false) {
     return { status: 'ok', product: next };
 }
 
-// Inverso exato da baixa (fator 1/f sobre os valores atuais). Sem validação:
-// estorno só devolve. Também corrige o over-restore do revert M3 do cliente
-// antigo (somava o pedido e ainda reescalava por f — quadrático).
+// Estorno devolve o consumo registrado no movimento (vol/peças/ml), exato
+// mesmo com arredondamento de venda parcial. Movimentos antigos sem esses
+// campos caem no inverso por fator 1/f (compatibilidade).
 function applyEstoqueEstorno(current, mov, nowIso) {
     if (!isPlainObject(current)) {
         return { status: 'abort', reason: 'not-found' };
     }
-    // Consumo total (f=0, estoque zerado): sem base para inverter — devolve
-    // absoluto. Exato na dimensão base; ml de migração legada pode divergir.
-    if (!(mov.f > 0)) {
-        if (mov.modo === 'manual') {
-            return {
-                status: 'ok',
-                product: { ...current, estoque: r3Estoque(numEstoque(current.estoque) + mov.consumir.est), updated: nowIso },
-            };
-        }
-        const next = { ...current };
-        next.pecas = Math.max(0, r3Estoque(numEstoque(current.pecas) + mov.consumir.pecas));
-        const volAbs = r3Estoque((numEstoque(current.volumeM3) || numEstoque(current.estoque)) + mov.consumir.vol);
-        if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volAbs;
-        next.estoque = volAbs;
-        next.updated = nowIso;
-        return { status: 'ok', product: next };
-    }
-    const fInv = 1 / mov.f;
+    const c = mov.consumir || {};
     if (mov.modo === 'manual') {
         return {
             status: 'ok',
-            product: { ...current, estoque: r3Estoque(numEstoque(current.estoque) + mov.consumir.est), updated: nowIso },
+            product: { ...current, estoque: r3Estoque(numEstoque(current.estoque) + c.est), updated: nowIso },
         };
     }
+    const temConsumo = numEstoque(c.vol) > 0 || numEstoque(c.pecas) > 0 || numEstoque(c.ml) > 0;
     const next = { ...current };
-    next.pecas = Math.max(0, r3Estoque(numEstoque(current.pecas) * fInv));
-    const vol0 = numEstoque(current.volumeM3) || numEstoque(current.estoque);
-    const volNovo = r3Estoque(vol0 * fInv);
-    if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volNovo;
-    next.estoque = volNovo;
-    if (hasEstoqueField(current.metrosLineares)) {
-        next.metrosLineares = Math.max(0, r2Estoque(numEstoque(current.metrosLineares) * fInv));
+    if (temConsumo || !(mov.f > 0)) {
+        next.pecas = Math.max(0, r3Estoque(numEstoque(current.pecas) + numEstoque(c.pecas)));
+        const vol0 = numEstoque(current.volumeM3) || numEstoque(current.estoque);
+        const volNovo = r3Estoque(vol0 + numEstoque(c.vol));
+        if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volNovo;
+        next.estoque = volNovo;
+        if (hasEstoqueField(current.metrosLineares)) {
+            if (numEstoque(c.ml) > 0) {
+                next.metrosLineares = Math.max(0, r2Estoque(numEstoque(current.metrosLineares) + numEstoque(c.ml)));
+            } else if (mov.f > 0) {
+                next.metrosLineares = Math.max(0, r2Estoque(numEstoque(current.metrosLineares) / mov.f));
+            }
+        }
+    } else {
+        const fInv = 1 / mov.f;
+        next.pecas = Math.max(0, r3Estoque(numEstoque(current.pecas) * fInv));
+        const vol0 = numEstoque(current.volumeM3) || numEstoque(current.estoque);
+        const volNovo = r3Estoque(vol0 * fInv);
+        if (hasEstoqueField(current.volumeM3)) next.volumeM3 = volNovo;
+        next.estoque = volNovo;
+        if (hasEstoqueField(current.metrosLineares)) {
+            next.metrosLineares = Math.max(0, r2Estoque(numEstoque(current.metrosLineares) * fInv));
+        }
     }
     next.updated = nowIso;
     return { status: 'ok', product: next };
@@ -2519,6 +2520,28 @@ function createHandlers(options = {}) {
     const isSuperAdmin = options.isSuperAdmin
         || ((context) => configuredSuperAdminResolver(context));
     const now = options.now || (() => new Date().toISOString());
+    // O SDK Admin desta versão retorna current=null no primeiro callback de
+    // transaction em produção, abortando antes de ler o servidor. No runtime
+    // real usamos CAS via REST (ETag/if-match); nos testes (database injetado)
+    // mantemos a transaction do harness.
+    const useRestCas = !options.database && typeof fetch === 'function';
+    const restBase = (() => {
+        const explicit = String(process.env.FIREBASE_DATABASE_URL || process.env.DATABASE_URL || process.env.RTDB_URL || '').trim();
+        if (explicit) return explicit.replace(/\/+$/, '');
+        try {
+            const cfg = JSON.parse(process.env.FIREBASE_CONFIG || '{}');
+            if (cfg.databaseURL) return String(cfg.databaseURL).replace(/\/+$/, '');
+        } catch (_) {}
+        return 'https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app';
+    })();
+    let restToken = { value: '', expiresAt: 0 };
+    async function getRestToken() {
+        if (restToken.value && Date.now() < restToken.expiresAt) return restToken.value;
+        const token = await admin.credential.applicationDefault().getAccessToken();
+        const ttl = Math.max(60, Number(token.expires_in) || 300) * 1000;
+        restToken = { value: token.access_token, expiresAt: Date.now() + ttl - 60000 };
+        return restToken.value;
+    }
 
     function throwInputAsHttps(error) {
         if (!(error instanceof FinanceValidationError)) throw error;
@@ -2764,6 +2787,32 @@ function createHandlers(options = {}) {
         });
     }
 
+    // Produtos legados podem estar salvos como lista (array) em vez de objeto
+    // chaveado por id. Nesse caso `produtos/<id>` não existe: localiza a chave
+    // real pelo campo id para atualizar o registro certo.
+    async function resolverProdutoEstoque(db, root, produtoId, cache) {
+        const id = String(produtoId);
+        if (cache && cache.has(id)) return cache.get(id);
+        const direto = db.ref(`${root}/produtos/${id}`);
+        const snap = await direto.get();
+        if (snap && snap.exists()) {
+            const target = { ref: direto, key: id, root };
+            if (cache) cache.set(id, target);
+            return target;
+        }
+        const listRef = db.ref(`${root}/produtos`);
+        const allSnap = await listRef.get();
+        const all = allSnap && allSnap.exists() ? allSnap.val() : null;
+        for (const [key, value] of Object.entries(all || {})) {
+            if (isPlainObject(value) && String(value.id) === id) {
+                const target = { ref: db.ref(`${root}/produtos/${key}`), key, root };
+                if (cache) cache.set(id, target);
+                return target;
+            }
+        }
+        return { ref: direto, key: id, root };
+    }
+
     async function estoqueAplicarMovimento(data, context) {
         return runAuthorized(context, async (db, access) => {
             let request;
@@ -2843,11 +2892,12 @@ function createHandlers(options = {}) {
             // compensa o já aplicado em ordem reversa e libera o claim p/ retry.
             const applied = [];
             const valores = [];
+            const cacheProdutos = new Map();
             try {
                 for (const mov of movimentos) {
-                    const ref = db.ref(`${root}/produtos/${mov.produtoId}`);
+                    const target = await resolverProdutoEstoque(db, root, mov.produtoId, cacheProdutos);
                     valores.push(await transactEstoqueProduto(
-                        ref,
+                        target,
                         mov,
                         { direcao, permitirNegativo: permitirNegativoEfetivo },
                         nowIso,
@@ -2871,51 +2921,87 @@ function createHandlers(options = {}) {
         });
     }
 
-    async function transactEstoqueProduto(ref, mov, opts, nowIso) {
+    async function transactEstoqueProduto(target, mov, opts, nowIso) {
         const direcao = opts && opts.direcao === 'devolver' ? 'devolver' : 'deduzir';
         const skipValidation = direcao === 'deduzir' && opts && opts.permitirNegativo === true;
-        const attempt = (current) => {
-            // Tenant com permitirNegativo explícito: ainda usa transaction
-            // (atomicidade + idempotência + registro), mas sem a trava de
+        const decidir = (current) => {
+            // Tenant com permitirNegativo explícito: segue sem a trava de
             // insuficiência — política explícita do tenant, registrada no claim.
-            const decision = direcao === 'deduzir'
+            return direcao === 'deduzir'
                 ? applyEstoqueBaixa(current, mov, nowIso, skipValidation)
                 : applyEstoqueEstorno(current, mov, nowIso);
-            return decision.status === 'ok' ? decision.product : undefined;
         };
-        const tx = await ref.transaction(attempt);
+        const falhar = (decision) => {
+            if (decision.status === 'abort' && decision.reason === 'insufficient') {
+                throw new HttpsError(
+                    'failed-precondition',
+                    `SALDO_INSUFICIENTE:${mov.produtoId}:disponivel=${decision.disponivel}:pedido=${decision.pedido}`,
+                );
+            }
+            if (decision.status === 'abort') {
+                throw new HttpsError('not-found', `Produto ${mov.produtoId} não encontrado no estoque.`);
+            }
+            throw new HttpsError('aborted', `Conflito de concorrência no produto ${mov.produtoId}. Tente novamente.`);
+        };
+        if (useRestCas) {
+            const key = target.key || mov.produtoId;
+            const path = `${target.root}/produtos/${key}`.split('/').map(encodeURIComponent).join('/');
+            const url = `${restBase}/${path}.json`;
+            for (let attempt = 0; attempt < 4; attempt++) {
+                const token = await getRestToken();
+                const headers = { Authorization: `Bearer ${token}`, 'X-Firebase-ETag': 'true' };
+                const res = await fetch(url, { headers });
+                if (res.status === 401) {
+                    restToken.value = '';
+                    continue;
+                }
+                if (res.status !== 200 && res.status !== 404) {
+                    throw new HttpsError('unavailable', `Falha ao ler estoque (${res.status}).`);
+                }
+                const current = res.status === 200 ? await res.json() : null;
+                const etag = res.headers.get('etag');
+                const decision = decidir(current);
+                if (decision.status !== 'ok') falhar(decision);
+                const put = await fetch(url, {
+                    method: 'PUT',
+                    headers: { ...headers, 'Content-Type': 'application/json', 'if-match': etag || '' },
+                    body: JSON.stringify(decision.product),
+                });
+                if (put.status === 200) {
+                    const saved = await put.json().catch(() => decision.product);
+                    return publicEstoqueValues(mov.produtoId, saved);
+                }
+                if (put.status === 412) continue;
+                if (put.status === 401) {
+                    restToken.value = '';
+                    continue;
+                }
+                throw new HttpsError('unavailable', `Falha ao gravar estoque (${put.status}).`);
+            }
+            throw new HttpsError('aborted', `Conflito de concorrência no produto ${mov.produtoId}. Tente novamente.`);
+        }
+        const ref = target.ref;
+        const tx = await ref.transaction((current) => {
+            const decision = decidir(current);
+            return decision.status === 'ok' ? decision.product : undefined;
+        });
         if (tx && tx.committed) {
             const saved = tx.snapshot && typeof tx.snapshot.val === 'function' ? tx.snapshot.val() : null;
             return publicEstoqueValues(mov.produtoId, saved);
         }
         const fresh = await ref.get();
         const current = fresh && fresh.exists() ? fresh.val() : null;
-        const decision = direcao === 'deduzir'
-            ? applyEstoqueBaixa(current, mov, nowIso, skipValidation)
-            : applyEstoqueEstorno(current, mov, nowIso);
-        if (decision.status === 'abort' && decision.reason === 'insufficient') {
-            throw new HttpsError(
-                'failed-precondition',
-                `SALDO_INSUFICIENTE:${mov.produtoId}:disponivel=${decision.disponivel}:pedido=${decision.pedido}`,
-            );
-        }
-        if (decision.status === 'abort') {
-            throw new HttpsError('not-found', `Produto ${mov.produtoId} não encontrado no estoque.`);
-        }
-        throw new HttpsError('aborted', `Conflito de concorrência no produto ${mov.produtoId}. Tente novamente.`);
+        falhar(decidir(current));
     }
 
     async function compensarEstoqueAplicado(db, root, applied, direcao, nowIso) {
         for (let i = applied.length - 1; i >= 0; i--) {
             const mov = applied[i];
             try {
-                const ref = db.ref(`${root}/produtos/${mov.produtoId}`);
-                await ref.transaction((current) => {
-                    const inverse = direcao === 'deduzir'
-                        ? applyEstoqueEstorno(current, mov, nowIso)
-                        : applyEstoqueBaixa(current, mov, nowIso);
-                    return inverse.status === 'ok' ? inverse.product : undefined;
-                });
+                const target = await resolverProdutoEstoque(db, root, mov.produtoId);
+                await transactEstoqueProduto(target, mov, {
+                    direcao: direcao === 'deduzir' ? 'devolver' : 'deduzir',
+                }, nowIso);
             } catch (error) {
                 console.error('Falha ao compensar movimento de estoque (reconciliação manual necessária)', {
                     produtoId: mov.produtoId,

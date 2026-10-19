@@ -342,6 +342,36 @@ test('baixa de aprovação converte ML/M2/PC para volume e peças no movimento',
   assert.equal(over.semSaldo[0], 'P1');
 });
 
+test('baixa usa unidade de origem do item convertido (peças/ML/M2 exatos)', () => {
+  const sb = {
+    window: { produtos: [
+      { id: 'P1', tipoProduto: 'romaneio', pecas: 20, volumeM3: 0.324, metrosLineares: 90, espessura: 3, largura: 12, comprimento: 450 },
+    ] },
+    isCarregoItem: () => false,
+    nomeExibicaoProduto: () => 'P1',
+    converterQtdManual: () => 0,
+    temDimsSerrado: () => true,
+  };
+  vm.createContext(sb);
+  for (const fn of ['normalizarUnidadeMedida', 'metrosLinearesDe', 'dimensoesEstoqueSerrado', 'razaoBaixaSerrado', 'aplicarMovimentoEstoquePedido']) {
+    vm.runInContext(extract(fn), sb);
+  }
+  const un = sb.aplicarMovimentoEstoquePedido({ itens: [{
+    produtoId: 'P1', quantidade: 0.016, unidade: 'm³', unidadeOrigem: 'UN', qtdOrigem: 1, pecasOrigem: 1,
+  }] }, -1).movimentos[0];
+  assert.equal(un.base, 'pecas');
+  assert.equal(un.quantidade, 1);
+  assert.equal(un.consumir.pecas, 1);
+  assert.equal(un.consumir.vol, 0.016);
+  const m2 = sb.aplicarMovimentoEstoquePedido({ itens: [{
+    produtoId: 'P1', quantidade: 0.003, unidade: 'm³', unidadeOrigem: 'm²', qtdOrigem: 0.1, pecasOrigem: null,
+  }] }, -1).movimentos[0];
+  assert.equal(m2.base, 'vol');
+  assert.equal(m2.quantidade, 0.003);
+  assert.equal(m2.consumir.pecas, 0.185);
+  assert.ok(Math.abs(m2.f - 0.9907407) < 1e-6);
+});
+
 test('fluxos usam baixa por unidade + pedido exibe Nº', () => {
   assert.ok(/validarEstoque\(produtoId, quantidade, itemEdicao/.test(src), 'validação recebe unidade');
   assert.ok(/sufixoNumero/.test(src), 'pedido exibe Nº do romaneio');

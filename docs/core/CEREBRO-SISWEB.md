@@ -2114,3 +2114,13 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção (Puppeteer, mock QA removido):** pedido com produto A estoque 5 e produto B estoque 0; ambos carregaram valor e nome no select. B exibiu `CODIGO - Nome` na opção histórica. Busca vazia e quantidade preservada.
 - **Trava:** `tests/order-clone.test.mjs` cobre a recriação da opção histórica com `window.produtos` vazio.
 - **Gates:** suite 1525 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `fdffea6`; Hosting publicado.
+
+## Sessao 2026-10-19 (cont. 32) — Baixa de estoque com produtos legados em lista
+
+- **Erro do tenant neribrito12:** pedido aprovado com 4 itens de Produto Cadastrado retornava `Produto PROD... não encontrado no estoque`. Causa: `produtos` estava salvo como lista (chaves numéricas) e o servidor procurava `produtos/<id>`; o id não era a chave real.
+- **Fix backend:** `resolverProdutoEstoque` procura por chave direta e, se faltar, varre o nó pelo campo `id`. A baixa/estorno usa a chave real. Os 4 produtos legados desse tenant foram migrados para chaves iguais ao `id` (valores de estoque preservados).
+- **Transaction Admin:** no runtime desta versão o callback de `transaction` recebia `current=null` e abortava antes de ler o servidor. Em produção o estoque passou a usar **CAS via REST** (`X-Firebase-ETag` + `if-match`), com 4 tentativas em conflito; os testes com database injetado continuam na transaction do harness.
+- **Estorno exato:** o movimento grava `consumir.ml` e o estorno devolve `vol/peças/ml` consumidos (não `1/f`), eliminando drift de arredondamento (ex.: 0,324→0,325).
+- **Unidade de origem:** a baixa usa `unidadeOrigem/qtdOrigem/pecasOrigem` do item convertido; UN/DZ/PC baixam peças exatas e ML/M2/M3 usam a quantidade original, sem perder fração de peça pelo m³ arredondado.
+- **Validação viva (Puppeteer, pedido 000002 aprovado):** itens UN, M³, ML e M² retornaram HTTP 200; peças/volume/ml baixaram (1 UN = 19 peças exatas) e o estorno restaurou os valores. Pedido/movimentos de teste removidos e estoque original restaurado.
+- **Gates:** suite 1528 pass / 0 fail / 1 skip; lint/typecheck/functions lint OK.

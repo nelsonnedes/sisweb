@@ -173,6 +173,22 @@ test('applyEstoqueBaixa M3 fracionário preserva peças decimais', () => {
   assert.ok(Math.abs(decision.product.volumeM3 - 0.106) < 0.001);
 });
 
+test('applyEstoqueEstorno devolve consumo registrado sem drift de arredondamento', () => {
+  const atual = {
+    ...produtoSerrado(), pecas: 8, volumeM3: 0.13, estoque: 0.13, metrosLineares: 36,
+  };
+  const mov = {
+    produtoId: 'P-SER-1', modo: 'serrado', base: 'pecas', quantidade: 12, f: 0.4,
+    consumir: { vol: 0.194, pecas: 12, est: 0, ml: 54 },
+  };
+  const decision = applyEstoqueEstorno(atual, mov, FIXED_NOW);
+  assert.equal(decision.status, 'ok');
+  assert.equal(decision.product.pecas, 20);
+  assert.equal(decision.product.volumeM3, 0.324);
+  assert.equal(decision.product.estoque, 0.324);
+  assert.equal(decision.product.metrosLineares, 90);
+});
+
 test('applyEstoqueBaixa manual deduz estoque; sem saldo aborta insufficient', () => {
   const mov = {
     produtoId: 'P-MAN-1', modo: 'manual', base: 'est', quantidade: 12, f: 1,
@@ -211,6 +227,29 @@ test('callable aplica baixa, grava registro e é idempotente no replay', async (
   assert.equal(replay.success, true);
   assert.equal(replay.idempotent, true);
   assert.equal(persisted['companies/tenant-0001/produtos/P-SER-1'].pecas, 8);
+});
+
+test('callable localiza produto em lista legada (sem chave por id)', async () => {
+  const { handlers, persisted, context } = createEstoqueHarness({
+    'companies/tenant-0001/produtos': [produtoSerrado()],
+    'companies/tenant-0001/produtos/0': produtoSerrado(),
+  });
+  const payload = {
+    operationId: 'baixa-PV2101-1',
+    kind: 'baixa',
+    pedidoId: 'PV-2101',
+    movimentos: [movimentoBaixaSerradoUN()],
+  };
+  const first = await handlers.estoqueAplicarMovimento(payload, context);
+  assert.equal(first.success, true);
+  assert.equal(persisted['companies/tenant-0001/produtos/0'].pecas, 8);
+  assert.equal(persisted['companies/tenant-0001/estoque/movimentos/baixa-PV2101-1'].status, 'aplicado');
+
+  const estorno = await handlers.estoqueAplicarMovimento({
+    operationId: 'estorno-PV2101-1', kind: 'estorno', pedidoId: 'PV-2101', baseOpId: 'baixa-PV2101-1',
+  }, context);
+  assert.equal(estorno.success, true);
+  assert.equal(persisted['companies/tenant-0001/produtos/0'].pecas, 10);
 });
 
 test('segundo comprador concorrente falha fail-closed (failed-precondition)', async () => {

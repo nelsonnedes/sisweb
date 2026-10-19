@@ -3320,13 +3320,14 @@ function aplicarMovimentoEstoquePedido(pedido, dir, opts) {
         const base = r.base === 'pecas' ? 'pecas' : 'vol';
         const consumirVol = r3(volAntes * razao);
         const consumirPecas = r3(pecasAntes * razao);
+        const consumirMl = Math.round(d.ml * razao * 100) / 100;
         movimentos.push({
             produtoId: String(alvo.id),
             modo: 'serrado',
             base,
             quantidade: r3(base === 'pecas' ? consumirPecas : consumirVol),
             f: 1 - razao,
-            consumir: { vol: consumirVol, pecas: consumirPecas, est: 0 },
+            consumir: { vol: consumirVol, pecas: consumirPecas, est: 0, ml: consumirMl },
         });
         return true;
     };
@@ -3335,13 +3336,28 @@ function aplicarMovimentoEstoquePedido(pedido, dir, opts) {
         const qtd = num(it.quantidade) || 0;
         if (!(qtd > 0)) continue;
         const unidadeItem = it.unidade || 'm³';
+        // Item serrado convertido no carrinho guarda a unidade/qtd de origem.
+        // A baixa usa essa origem para peças/ML/M2 exatos (o volume em m³
+        // convertido é arredondado e pode consumir fração errada de peça).
+        let qtdMov = qtd;
+        let unidadeMov = unidadeItem;
+        try {
+            const origem = normalizarUnidadeMedida(it.unidadeOrigem);
+            if (origem === 'UN' || origem === 'DZ') {
+                const pecasOrigem = num(it.pecasOrigem);
+                if (pecasOrigem > 0) { qtdMov = pecasOrigem; unidadeMov = 'UN'; }
+            } else if (origem === 'M3' || origem === 'ML' || origem === 'M2') {
+                const qtdOrigem = num(it.qtdOrigem);
+                if (qtdOrigem > 0) { qtdMov = qtdOrigem; unidadeMov = origem; }
+            }
+        } catch (_) {}
         // 1) produto exato
         let alvo = null;
         try {
             if (it.produtoId) alvo = (window.produtos || []).find(p => p && String(p.id) === String(it.produtoId)) || null;
         } catch (_) { alvo = null; }
         if (alvo && typeof temDimsSerrado === 'function' && temDimsSerrado(alvo) && typeof razaoBaixaSerrado === 'function') {
-            empurrarSerrado(alvo, qtd, unidadeItem);
+            empurrarSerrado(alvo, qtdMov, unidadeMov);
             continue;
         }
         if (alvo && typeof converterQtdManual === 'function') {
