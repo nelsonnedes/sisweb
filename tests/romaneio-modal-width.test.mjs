@@ -10,6 +10,8 @@ test('romaneios: larguras normalizadas para a largura real do container', () => 
   assert.match(columns, /var target = Math\.max\(minTotal, available - 2\)/);
   assert.match(columns, /__rlcFitRetry/);
   assert.match(columns, /table\.__rlcFitTries/);
+  assert.match(columns, /rectW - 20/);
+  assert.match(columns, /ensureHostObserver/);
 });
 
 test('romaneios: contrato PES alinhado às 6 colunas reais (sem deslocar Ações)', () => {

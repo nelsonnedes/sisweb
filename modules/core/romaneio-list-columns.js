@@ -227,7 +227,12 @@
         if (!keys.length) return clean;
         if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return clean;
         var host = table.closest('.table-container, .table-responsive') || table.parentElement;
+        var rectW = host ? host.getBoundingClientRect().width : 0;
         var available = host ? host.clientWidth : 0;
+        // Reserva o gutter/scrollbar vertical (17–18px): no primeiro paint ele
+        // ainda não entrou no clientWidth e a tabela era ajustada ~8px larga,
+        // estourando o modal quando os dados/cache chegavam.
+        if (rectW) available = Math.min(available || rectW, Math.max(0, rectW - 20));
         if (!available || available < 240) return null;
         var total = 0;
         var minTotal = 0;
@@ -277,6 +282,32 @@
             setColumnWidth(headers[index], clean[label]);
         });
         if (Object.keys(clean).length > 0) ensureFixedLayout(table);
+        ensureHostObserver(table, p);
+    }
+
+    // Reajusta se a largura útil do container mudar (scrollbar, resize,
+    // densidade) — evita a tabela ficar maior que o modal depois da 1ª pintura.
+    function ensureHostObserver(table, pageKey) {
+        if (!table || table.__rlcHostObserver || !window.ResizeObserver) return;
+        if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return;
+        var host = table.closest('.table-container, .table-responsive') || table.parentElement;
+        if (!host) return;
+        var last = host.clientWidth;
+        table.__rlcHostObserver = new ResizeObserver(function () {
+            var width = host.clientWidth;
+            if (width < 240 || Math.abs(width - last) < 2) { last = width; return; }
+            last = width;
+            var current = {};
+            var headers = table.querySelectorAll('thead th');
+            contract(pageKey).forEach(function (label, index) {
+                var th = headers[index];
+                if (!th) return;
+                var px = parseFloat(th.style.width || '');
+                if (isFinite(px) && px > 0) current[label] = px;
+            });
+            if (Object.keys(current).length) applyWidths(table, current, pageKey);
+        });
+        table.__rlcHostObserver.observe(host);
     }
 
     function attachResize(table, pageKey) {
