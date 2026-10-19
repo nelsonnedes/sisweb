@@ -16,7 +16,7 @@ test('NF-e mobile: dashboard vira cards (nf-card-table + data-label)', () => {
 });
 
 test('NF-e mobile: stepper mostra ~3 etapas e resumo não corta valores', () => {
-  assert.match(nfHtml, /\.nf-step \{\s*min-width: 112px;[\s\S]*?scroll-snap-align: start;/);
+  assert.match(nfHtml, /\.nf-step \{\s*min-width: 92px;[\s\S]*?scroll-snap-align: start;/);
   assert.match(nfHtml, /\.nf-summary-item strong \{\s*white-space: normal !important;/);
 });
 
