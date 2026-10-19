@@ -23,7 +23,7 @@
     var SAVE_DEBOUNCE_MS = 400;
     // PES trocou de 7 para 6 colunas: preferências antigas ficam num namespace
     // novo para não reaproveitar larguras deslocadas.
-    var WIDTHS_VERSION = { pes: 'v3' };
+    var WIDTHS_VERSION = { pes: 'v4' };
 
     var DEFAULTS = {
         'Data': 95,
