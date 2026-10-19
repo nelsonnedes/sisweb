@@ -1966,3 +1966,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Dashboard financeiro:** gráfico principal virou composto (barras Entradas/Saídas + linha Saldo acumulado no eixo direito, tooltips BRL) para os próximos 30 dias. O antigo `summary-box` virou 4 KPIs em `.dashboard-cards` (Vencidas Receber/Pagar, Vencendo Hoje, Próximos 7 dias) mantendo os IDs do JS. Dois doughnuts "em aberto por categoria" (Receber/Pagar) com `valorRestanteFluxo` real, paleta verde/vermelha e estado vazio.
 - **Validação em produção:** Dashboard com 4 cards reais (R$ 8.211,98 / R$ 14.664,87 / R$ 0,00 / R$ 174,90), 3 datasets e 2 doughnuts; Fluxo com 10 linhas/página, 16 páginas (153 dias), troca para 25 → `Pág. 1/7`, página 2 → `Pág. 2/7`; preferência restaurada para 10. Suíte 1492 pass / 0 fail / 1 skip; financas/finance 104/104.
 
+## Sessao 2026-10-18 (cont. 14) — Paginação padronizada (Dashboard NF-e, MDF-e e Fluxo)
+
+- **Padrão único `.nf-pagination-bar`:** seletor 10/25/50/100 (default **25**), preferência por tenant+usuário em localStorage, botões `<<< < 1.. > >>>`, info `Pág. X/Y · N <unidade>` e reset para página 1 ao gerar novo conteúdo.
+- **Dashboard NF-e:** `nf-dashboard.js` abandonou `PAGE_SIZE` fixo (50) e os botões Anterior/Próxima; `#paginacaoDashboardNF` usa o padrão, com `pageSize/setPageSize/mudarPagina` expostos em `window.NFDashboard` (compat `irPaginaRelatorio` mantida).
+- **MDF-e Consulta:** default passou de 10 para 25 (opções e CSS já eram o padrão).
+- **Finanças Fluxo:** default passou de 10 para 25 (mesmo padrão).
+- **Validação em produção:** Dashboard NF-e sem `relPaginacaoInfo`/botões antigos, `pageSize=25`; MDF-e `#paginacaoConsultaMdfe` com classe padrão e `pageSize=25`; Fluxo `pageSize=25`. Suíte 1492 pass / 0 fail / 1 skip; nf/nfe/mdfe/financas 476/476.
+
