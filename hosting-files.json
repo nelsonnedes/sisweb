@@ -370,6 +370,7 @@
   "js/municipios-ibge.js",
   "js/notification-service.js",
   "js/pix-brcode.js",
+  "js/estoque-serrado-core.js",
   "js/estoque-madeira-serrada.js",
   "js/produtos-fiscais.js",
   "js/sisweb-theme.js",

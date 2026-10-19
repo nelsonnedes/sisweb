@@ -112,22 +112,21 @@
             <button type="button" id="emsNewBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Produto</button>
         </div>
 
-        <div class="table-responsive">
-            <table class="table">
+        <div class="table-responsive mobile-cards commerce-orders-table-wrap">
+            <table class="table commerce-orders-table" id="emsTable">
                 <thead>
                     <tr>
                         <th>Código</th>
                         <th>Nome</th>
-                        <th>Espécie</th>
-                        <th>Dimensões (cm)</th>
-                        <th class="text-right">Estoque</th>
-                        <th>Un.</th>
                         <th class="text-right">Preço</th>
-                        <th class="actions-col text-center" width="100">Ações</th>
+                        <th class="text-right">Estoque</th>
+                        <th>M. Linear</th>
+                        <th>Volume (m³)</th>
+                        <th class="actions-col text-center" width="164">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="emsTableBody">
-                    <tr><td colspan="8" class="ems-empty">Carregando...</td></tr>
+                    <tr><td colspan="7" class="ems-empty">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -151,7 +150,7 @@
                         </div>
                     </div>
 
-                    <div id="emsManualSection">
+                    <div id="emsBaseSection">
                         <div class="form-row">
                             <div class="form-group"><label for="emsCodigo">Código:</label><input type="text" id="emsCodigo" placeholder="Automático se vazio"></div>
                             <div class="form-group" style="flex:2"><label for="emsNome">Nome:</label><input type="text" id="emsNome" placeholder="Ex: Pinus 2,5 x 15 x 300"></div>
@@ -161,16 +160,33 @@
                             <div class="form-group"><label for="emsEstoque">Estoque:</label><input type="number" id="emsEstoque" min="0" step="0.001" placeholder="0,000"></div>
                             <div class="form-group"><label for="emsUnidade">Unidade:</label>
                                 <select id="emsUnidade">
-                                    <option value="UN">UN - Unidade</option>
+                                    <option value="UN" selected>UN - Unidade</option>
                                     <option value="DZ">DZ - Dúzia</option>
                                     <option value="PC">PC - Peça</option>
-                                    <option value="m³" selected>m³ - Metro Cúbico</option>
+                                    <option value="m³">m³ - Metro Cúbico</option>
                                     <option value="m²">m² - Metro Quadrado</option>
                                     <option value="LN">LN - Metro Linear</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-group" style="margin-bottom:12px;"><label for="emsDescricao">Descrição:</label><textarea id="emsDescricao" rows="2"></textarea></div>
+                    </div>
+
+                    <div id="emsDimsSection">
+                        <div class="form-row">
+                            <div class="form-group"><label for="emsEspecie">Espécie:</label><input type="text" id="emsEspecie" placeholder="Ex: Pinus"></div>
+                            <div class="form-group"><label for="emsEspessura">Espessura (cm):</label><input type="number" id="emsEspessura" min="0" step="0.1"></div>
+                            <div class="form-group"><label for="emsLargura">Largura (cm):</label><input type="number" id="emsLargura" min="0" step="0.1"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="emsComprimento">Comprimento (cm):</label><input type="number" id="emsComprimento" min="0" step="0.1"></div>
+                            <div class="form-group"><label for="emsPecas">Peças:</label><input type="number" id="emsPecas" min="0" step="1" value="1"></div>
+                            <div class="form-group"><label for="emsPpp">Peças/Pacote:</label><input type="number" id="emsPpp" min="1" step="1" value="1"></div>
+                            <div class="form-group"><label>Volume (m³):</label><input type="text" id="emsVolume" readonly placeholder="0,000"></div>
+                        </div>
+                    </div>
+
+                    <div id="emsManualSection">
                         <div class="form-row" style="align-items:flex-end;">
                             <div class="form-group">
                                 <button type="button" id="emsAddItemBtn" class="btn btn-success"><i class="fas fa-plus"></i> Adicionar item</button>
@@ -196,25 +212,14 @@
                                 </div>
                                 <div class="form-group" style="flex:2"><label for="emsRomSelect">Romaneio:</label><select id="emsRomSelect"><option value="">Selecione o tipo primeiro...</option></select></div>
                             </div>
-                            <div class="form-row" style="align-items:flex-end;">
+                            <div class="form-row" id="emsRomLoadRow" style="align-items:flex-end;">
                                 <div class="form-group">
                                     <button type="button" id="emsLoadRomBtn" class="btn btn-success"><i class="fas fa-download"></i> Carregar Itens</button>
                                     <button type="button" id="emsClearRomBtn" class="btn btn-danger" style="margin-left:8px;"><i class="fas fa-trash"></i> Limpar</button>
                                 </div>
                             </div>
-                            <div class="ems-preview-title">Preview - Resumo:</div>
+                            <div id="emsRomPreviewTitle" class="ems-preview-title">Preview - Resumo:</div>
                             <div id="emsRomPreview" class="ems-preview"><span class="ems-help">Selecione o tipo e o romaneio, depois clique em Carregar Itens.</span></div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group"><label for="emsEspecie">Espécie:</label><input type="text" id="emsEspecie" placeholder="Ex: Pinus"></div>
-                            <div class="form-group"><label for="emsEspessura">Espessura (cm):</label><input type="number" id="emsEspessura" min="0" step="0.1"></div>
-                            <div class="form-group"><label for="emsLargura">Largura (cm):</label><input type="number" id="emsLargura" min="0" step="0.1"></div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group"><label for="emsComprimento">Comprimento (cm):</label><input type="number" id="emsComprimento" min="0" step="0.1"></div>
-                            <div class="form-group"><label for="emsPecas">Peças:</label><input type="number" id="emsPecas" min="0" step="1" value="1"></div>
-                            <div class="form-group"><label for="emsPpp">Peças/Pacote:</label><input type="number" id="emsPpp" min="1" step="1" value="1"></div>
-                            <div class="form-group"><label>Volume (m³):</label><input type="text" id="emsVolume" readonly placeholder="0,000"></div>
                         </div>
                     </div>
                 </div>
@@ -234,7 +239,8 @@
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
-    <script src="js/estoque-madeira-serrada.js?v=3e3a9d97df1c"></script>
+    <script src="js/estoque-serrado-core.js?v=5788b2cad261"></script>
+    <script src="js/estoque-madeira-serrada.js?v=88442f2b3cee"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
 </body>
 </html>

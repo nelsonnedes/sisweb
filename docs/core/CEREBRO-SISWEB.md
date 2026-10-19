@@ -2124,3 +2124,14 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Unidade de origem:** a baixa usa `unidadeOrigem/qtdOrigem/pecasOrigem` do item convertido; UN/DZ/PC baixam peças exatas e ML/M2/M3 usam a quantidade original, sem perder fração de peça pelo m³ arredondado.
 - **Validação viva (Puppeteer, pedido 000002 aprovado):** itens UN, M³, ML e M² retornaram HTTP 200; peças/volume/ml baixaram (1 UN = 19 peças exatas) e o estorno restaurou os valores. Pedido/movimentos de teste removidos e estoque original restaurado.
 - **Gates:** suite 1528 pass / 0 fail / 1 skip; lint/typecheck/functions lint OK.
+
+## Sessao 2026-10-19 (cont. 33) — Estoque de Madeira Serrada alinhado ao Vendas
+
+- **Core compartilhado:** `js/estoque-serrado-core.js` com as mesmas fórmulas do Vendas (`calcularVolume`, `volumeProduto`, `metrosLineares`, `area`, `temDimsSerrado`, `estoqueZeradoNaLista`, `isProdutoJunk`); a página não duplica mais cálculo divergente.
+- **Lista igual ao Vendas:** colunas Código, Nome, Preço, Estoque (peças no serrado), M. Linear, Volume (m³), Ações; busca/paginação 10/25/50/100 mantidas; cards mobile via `commerce-responsive`; sem sufixo "Serrado" e preço zero como `R$ 0,00`.
+- **Novo/edição com campos padrão:** base (código/nome/preço/estoque/unidade/descrição), bloco de dimensões visível no manual e na edição, e vínculo de romaneio visível na edição. Edição de romaneio não força mais manual e preserva `tipoProduto`, `romaneioId/Tipo/Numero`, `volumeM3`, `metrosLineares`, `created` e campos desconhecidos.
+- **Cálculos:** peças 0 → volume 0; ppp no volume/área; ml como Vendas (sem ppp); estoque serrado coerente com volume; código numérico de 6 dígitos.
+- **Romaneio:** id canônico (`id || firebaseKey || numero`), preço médio ponderado, ml do grupo e disponibilidade **parcial** (adiciona o delta em vez de desabilitar o grupo inteiro).
+- **Validação em produção (Puppeteer):** lista desktop/mobile 390 sem overflow (cards), criação manual 2 pç/2 ml/0,004 m³, edição preservou volume, edição de romaneio preservou 0,324 m³/90 ml, carregamento de romaneio com grupos já em estoque desativados e grupo novo disponível. Produto de teste removido.
+- **Pendente/risco:** Vendas ainda grava a coleção inteira em alguns fluxos (`saveData('produtos', ...)`), podendo sobrescrever registros criados nesta página se a memória estiver velha; a página nova grava por registro.
+- **Gates:** suite 1528 pass / 0 fail / 1 skip; lint/typecheck OK.

@@ -5,75 +5,85 @@ import vm from 'node:vm';
 
 const html = fs.readFileSync('estoque-madeira-serrada.html', 'utf8');
 const js = fs.readFileSync('js/estoque-madeira-serrada.js', 'utf8');
+const coreSrc = fs.readFileSync('js/estoque-serrado-core.js', 'utf8');
 const menu = fs.readFileSync('menu-component.js', 'utf8');
 const hosting = fs.readFileSync('hosting-files.json', 'utf8');
 const vendas = fs.readFileSync('vendas.js', 'utf8');
 
-test('menu Estoque aponta para a página de madeira serrada', () => {
+test('menu Estoque aponta para a página e o core está publicado', () => {
   assert.match(menu, /resolveUrl\('estoque-madeira-serrada\.html'\)[\s\S]{0,80}Estoque de Madeira Serrada/);
   assert.ok(hosting.includes('"estoque-madeira-serrada.html"'));
   assert.ok(hosting.includes('"js/estoque-madeira-serrada.js"'));
+  assert.ok(hosting.includes('"js/estoque-serrado-core.js"'));
 });
 
-test('página: busca, Novo Produto, tabela e modal com as duas opções', () => {
+test('página: busca, Novo Produto, tabela padrão Vendas e modal completo', () => {
   assert.match(html, /id="emsSearch"/);
   assert.match(html, /id="emsNewBtn"[\s\S]*Novo Produto/);
   assert.match(html, /id="emsTableBody"/);
   assert.match(html, /id="emsModal"/);
   assert.match(html, /name="emsTipo" value="manual"/);
   assert.match(html, /name="emsTipo" value="romaneio"/);
+  assert.match(html, /id="emsBaseSection"/);
+  assert.match(html, /id="emsDimsSection"/);
   assert.match(html, /id="emsManualPreview"/);
   assert.match(html, /id="emsRomPreview"/);
   assert.match(html, /Adicionar Estoque/);
   assert.match(html, /Carregar Itens/);
+  for (const label of ['Código', 'Nome', 'Preço', 'Estoque', 'M. Linear', 'Volume (m³)', 'Ações']) {
+    assert.ok(new RegExp('<th[^>]*>' + label.replace('(', '\\(').replace(')', '\\)') + '</th>').test(html), label);
+  }
+  assert.doesNotMatch(html, /<th>Espécie<\/th>/);
+  assert.doesNotMatch(html, /<th>Dimensões \(cm\)<\/th>/);
 });
 
-test('módulo: lê/salva o mesmo nó produtos e padroniza paginação', () => {
+test('módulo usa o core canônico e mantém paginação da página', () => {
   assert.match(js, /var NODE = 'produtos'/);
   assert.match(js, /loadFromFirebase\(NODE\)/);
   assert.match(js, /saveToFirebase\(NODE/);
   assert.match(js, /PAGE_OPTIONS = \[10, 25, 50, 100\]/);
   assert.match(js, /PAGE_DEFAULT = 25/);
-  assert.match(html, /class="nf-pagination-bar"/);
-  assert.match(js, /romaneios\/tl/);
-  assert.match(js, /volumeFromDims/);
-  assert.match(js, /function hasStock/);
-  assert.match(js, /ems-modal-open/);
-  assert.match(js, /function romLabel/);
-  assert.match(vendas, /function temDimsSerrado/);
-  assert.match(vendas, /sortRomaneiosProdutoByDate/);
+  assert.match(js, /window\.EstoqueSerradoCore/);
+  assert.match(js, /C\.temDimsSerrado/);
+  assert.match(js, /C\.estoqueZeradoNaLista/);
+  assert.match(js, /C\.calcularVolume/);
+  assert.match(js, /C\.volumeProduto/);
+  assert.match(js, /C\.metrosLineares/);
   assert.match(js, /romDateMs/);
-  assert.match(js, /function volumeProduto/);
+  assert.match(js, /ems-modal-open/);
+  assert.match(js, /function disponibilidade/);
+  assert.match(js, /function buildPayload/);
+  assert.doesNotMatch(js, /estoqueDetalhado/);
+  assert.match(vendas, /function temDimsSerrado/);
   assert.match(vendas, /function volumeSerradoProduto/);
 });
 
-test('tabela exibe estoque serrado completo (pç · m³ · ml · m²) e sufixo', () => {
-  assert.match(js, /function estoqueDetalhado/);
-  assert.match(js, /p\\u00e7 \\u00b7/);
-  assert.match(js, /m\\u00b3 \\u00b7/);
-  assert.match(js, /ml \\u00b7/);
-  assert.match(js, /m\\u00b2/);
-  assert.match(js, / Serrado/);
+test('core canônico replica fórmulas do Vendas e trata zero/ppp', () => {
+  const sb = {};
+  vm.createContext(sb);
+  vm.runInContext(coreSrc, sb);
+  const C = sb.EstoqueSerradoCore;
+  assert.equal(C.calcularVolume(2.5, 15, 300, 10, 1), 0.112);
+  assert.equal(C.calcularVolume(2.5, 15, 300, 10, 2), 0.225);
+  assert.equal(C.calcularVolume(2.5, 15, 300, 0, 1), 0);
+  assert.equal(C.volumeProduto({ espessura: 2.5, largura: 15, comprimento: 300, pecas: 10 }), 0.112);
+  assert.equal(C.volumeProduto({ volumeM3: 0.5, estoque: 9 }), 0.5);
+  assert.equal(C.metrosLineares({ comprimento: 300, pecas: 10, pecasPorPacote: 2 }), 30);
+  assert.equal(C.area({ largura: 15, comprimento: 300, pecas: 10, pecasPorPacote: 2 }), 9);
+  assert.equal(C.temDimsSerrado({ tipoProduto: 'romaneio' }), true);
+  assert.equal(C.temDimsSerrado({ volumeM3: 0.1, pecas: 2 }), true);
+  assert.equal(C.estoqueZeradoNaLista({ tipoProduto: 'romaneio', pecas: 1, estoque: 0 }), false);
+  assert.equal(C.estoqueZeradoNaLista({ tipoProduto: 'romaneio', pecas: 0, estoque: 0 }), true);
+  assert.equal(C.estoqueZeradoNaLista({ tipoProduto: 'manual', estoque: 0 }), true);
+  assert.equal(C.isProdutoJunk({ nome: 'Produto sem nome', preco: 0, estoque: 0 }), true);
 });
 
-function extrairFuncao(nome) {
-  const i = js.indexOf('function ' + nome + '(');
-  if (i < 0) throw new Error('função não encontrada: ' + nome);
-  const j = js.indexOf('{', i);
-  let d = 0;
-  for (let k = j; k < js.length; k++) {
-    if (js[k] === '{') d++;
-    if (js[k] === '}') { d--; if (d === 0) return js.slice(i, k + 1); }
-  }
-  throw new Error('função desbalanceada: ' + nome);
-}
-
-test('estoqueDetalhado formata pç/m³/ml/m² do serrado', () => {
-  const sb = { num: (v) => parseFloat(String(v == null ? '' : v).replace(',', '.')) || 0 };
-  vm.createContext(sb);
-  vm.runInContext(extrairFuncao('fmtNum'), sb);
-  sb.volumeProduto = () => 0.01;
-  vm.runInContext(extrairFuncao('estoqueDetalhado'), sb);
-  const p = { nome: 'Mista 1x100x100', tipoProduto: 'romaneio', pecas: 1, volumeM3: 0.01, largura: 100, comprimento: 100 };
-  assert.equal(sb.estoqueDetalhado(p), '1 pç · 0,010 m³ · 1,00 ml · 1,00 m²');
+test('edição preserva tipo romaneio e não zera volume/km', () => {
+  assert.match(js, /var tipo = item && item\.tipoProduto === 'romaneio' \? 'romaneio' : 'manual'/);
+  assert.match(js, /romRadio\.disabled = false/);
+  assert.match(js, /tipo === 'romaneio' \? 'm³'/);
+  assert.match(js, /volume = calculado > 0/);
+  assert.match(js, /metrosLineares: ml/);
+  assert.match(js, /created: clean\.created \|\| now/);
+  assert.match(js, /estoque = volume/);
 });

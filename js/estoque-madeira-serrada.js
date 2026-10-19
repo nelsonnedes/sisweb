@@ -1,4 +1,4 @@
-/* Estoque de Madeira Serrada — companies/{tenant}/produtos (mesma base da aba de vendas) */
+/* Estoque de Madeira Serrada - companies/{tenant}/produtos (mesma base de Vendas) */
 (function () {
     'use strict';
 
@@ -6,13 +6,16 @@
     var PAGE_OPTIONS = [10, 25, 50, 100];
     var PAGE_DEFAULT = 25;
     var ROM_PATHS = { romaneiosTL: 'romaneios/tl', romaneiosPct: 'romaneios/pct', romaneiosPes: 'romaneios/pes' };
+    var C = window.EstoqueSerradoCore;
     var state = {
         tenant: '', items: [], filtered: [], page: 1, pageSize: PAGE_DEFAULT,
-        editingKey: '', stage: [], groups: [], romaneios: [], romaneio: null, modalOpen: false, bodyOverflow: ''
+        editingKey: '', editingBase: null, stage: [], groups: [], romaneios: [], romaneio: null,
+        modalOpen: false, bodyOverflow: ''
     };
 
     function svc() { return window.firebaseService || window.FirebaseService || null; }
     function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function escJs(v) { return String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
     function toast(msg, tipo) {
         try { if (typeof window.notifyUser === 'function') return window.notifyUser(msg, tipo || 'info'); } catch (_) {}
         try { if (window.ToastManager) { var fn = tipo === 'error' ? ToastManager.error : tipo === 'success' ? ToastManager.success : tipo === 'warning' ? ToastManager.warning : ToastManager.info; if (fn) return fn(msg); } } catch (_) {}
@@ -20,85 +23,62 @@
     }
     function loading(show, txt) { try { if (window.SiswebLoading) show ? SiswebLoading.show(txt || 'Carregando...') : SiswebLoading.hide(); } catch (_) {} }
     function norm(v) { return String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
-    function money(v) { var n = Number(v || 0); return n ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'; }
+    function num(v) { return C.num(v); }
+    function money(v) { return C.formatCurrency(v); }
+    function fmt(v, d) { return C.formatNumber(v, d); }
     function parseMoney(raw) {
         var s = String(raw == null ? '' : raw).trim().replace(/[^\d.,-]/g, '');
         if (!s) return 0;
         if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
         var n = Number(s); return Number.isFinite(n) ? n : 0;
     }
-    function num(v) { return parseFloat(String(v == null ? '' : v).replace(',', '.')) || 0; }
     function recordKey(p) { return String((p && (p.__key || p.firebaseKey || p.key || p.id || p.codigo)) || ''); }
+    function nomeProduto(p) { return C.nomeExibicao(p); }
+
     function normalizeList(data) {
         var out = [];
-        var keep = function (p) { return p && typeof p === 'object' && (p.nome || p.name || p.descricao); };
+        function add(p, key) {
+            if (!p || typeof p !== 'object') return;
+            if (!(p.nome || p.name || p.nomeComum || p.nomeCientifico || p.descricao)) return;
+            var item = Object.assign({}, p);
+            item.__key = String(key);
+            out.push(item);
+        }
         if (Array.isArray(data)) {
-            data.forEach(function (p, i) { if (keep(p)) out.push(Object.assign({}, p, { __key: String(p.firebaseKey || p.key || p.id || i) })); });
+            data.forEach(function (p, i) { add(p, i); });
         } else if (data && typeof data === 'object') {
-            Object.keys(data).forEach(function (k) {
-                var p = data[k];
-                if (keep(p)) out.push(Object.assign({}, p, { __key: String(p.firebaseKey || p.key || p.id || k) }));
-            });
+            Object.keys(data).forEach(function (k) { add(data[k], k); });
         }
         return out;
     }
-    function dimsText(p) {
-        var e = num(p.espessura), l = num(p.largura), c = num(p.comprimento);
-        if (!e && !l && !c) return '—';
-        return [e, l, c].map(function (n) { return n ? String(n).replace('.', ',') : '0'; }).join(' × ');
-    }
-    function volumeProduto(p) {
-        var stored = num(p && p.volumeM3);
-        if (stored > 0) return stored;
-        var calc = volumeFromDims(p && p.espessura, p && p.largura, p && p.comprimento, p && p.pecas, (p && p.pecasPorPacote) || 1);
-        if (calc > 0) return calc;
-        var est = num(p && p.estoque);
-        return est > 0 ? est : 0;
-    }
-    function fmtNum(v, d) {
-        return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
-    }
-    function estoqueDetalhado(p) {
-        var serrado = p.tipoProduto === 'romaneio'
-            || num(p.espessura) > 0 || num(p.largura) > 0 || num(p.comprimento) > 0;
-        if (!serrado) return fmtNum(num(p.estoque != null ? p.estoque : p.quantidade), 3) + ' ' + (p.unidade || 'UN');
-        var pecas = num(p.pecas);
-        var qtd = pecas * (num(p.pecasPorPacote) || 1);
-        var volume = volumeProduto(p);
-        var ml = num(p.metrosLineares) || (num(p.comprimento) / 100 * qtd);
-        var area = (num(p.largura) / 100) * (num(p.comprimento) / 100) * qtd;
-        return pecas.toLocaleString('pt-BR', { maximumFractionDigits: 3 }) + ' p\u00e7 \u00b7 '
-            + fmtNum(volume, 3) + ' m\u00b3 \u00b7 ' + fmtNum(ml, 2) + ' ml \u00b7 ' + fmtNum(area, 2) + ' m\u00b2';
-    }
+
     function productBlob(p) {
-        return norm([p.codigo, p.nome, p.descricao, p.especie, p.unidade, p.tipoProduto,
-            p.romaneioNumero, p.romaneioTipo, dimsText(p), p.preco, money(p.preco), p.estoque].join(' '));
+        return norm([p.codigo, nomeProduto(p), p.descricao, p.especie, p.unidade, p.tipoProduto,
+            p.romaneioNumero, p.romaneioTipo, p.espessura, p.largura, p.comprimento,
+            money(p.preco != null ? p.preco : (p.precoVenda != null ? p.precoVenda : p.price)),
+            p.estoque].join(' '));
     }
     function nextCode(extraUsed) {
-        var max = 0, width = 1, used = {};
+        var max = 0, used = {};
         state.items.forEach(function (p) {
             var c = String(p.codigo == null ? '' : p.codigo).trim();
             if (!c) return;
             used[c] = true;
-            if (/^\d+$/.test(c)) { max = Math.max(max, parseInt(c, 10) || 0); width = Math.max(width, c.length); }
+            if (/^\d+$/.test(c)) max = Math.max(max, parseInt(c, 10) || 0);
         });
         if (extraUsed && typeof extraUsed.forEach === 'function') {
             extraUsed.forEach(function (c) { if (c != null && String(c).trim()) used[String(c).trim()] = true; });
         }
-        var f = function (n) { var s = String(n); while (s.length < width) s = '0' + s; return s; };
         var n = max + 1;
-        while (used[f(n)] || used[String(n)]) n++;
-        return f(n);
+        function code(v) { var s = String(v); while (s.length < 6) s = '0' + s; return s; }
+        while (used[code(n)] || used[String(n)]) n++;
+        return code(n);
     }
     function nextId() { return 'PROD_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7); }
-    function volumeFromDims(e, l, c, pecas, ppp) {
-        var v = num(e) * num(l) * num(c) / 1000000 * (num(pecas) || 1) * (num(ppp) || 1);
-        return Math.round(v * 1000) / 1000;
-    }
-    function romaneioVolume(it) {
-        var candidates = [it.volume, it.volumeM3, it.volumeTotal, it.totalVolume, it.totais && it.totais.volume];
-        for (var i = 0; i < candidates.length; i++) { var n = num(candidates[i]); if (n > 0) return n; }
-        return volumeFromDims(it.espessura, it.largura, it.comprimento || it.comp, it.quantidade || it.pecas || it.qtd, it.pecasPorPacote || it.ppp || 1);
+    function dimsText(p) {
+        var e = num(p.espessura), l = num(p.largura), c = num(p.comprimento);
+        if (!e && !l && !c) return '—';
+        return [e, l, c].map(function (n) { return n ? String(n).replace('.', ',') : '0'; }).join(' × ');
     }
 
     async function waitSvc(timeoutMs) {
@@ -120,7 +100,6 @@
     function pageSizeKey() {
         var uid = '';
         try { var s = svc(); uid = (s && s.currentUser && s.currentUser.uid) || (window.firebaseAuthUser && window.firebaseAuthUser.uid) || ''; } catch (_) {}
-        try { if (!uid && svc() && svc().authService) uid = svc().authService.getAuth().currentUser.uid; } catch (_) {}
         return 'ems_' + (state.tenant || 'default') + '_' + (uid || 'anon') + '_items_per_page';
     }
     function restorePageSize() { try { var v = parseInt(localStorage.getItem(pageSizeKey()) || '', 10); if (PAGE_OPTIONS.indexOf(v) >= 0) state.pageSize = v; } catch (_) {} }
@@ -130,34 +109,41 @@
     async function load() {
         loading(true, 'Carregando estoque de madeira serrada...');
         try {
-            var tid = await resolveTenant();
+            await resolveTenant();
             restorePageSize();
             var res = await svc().loadFromFirebase(NODE);
             var data = res && res.data !== undefined ? res.data : res;
-            state.items = normalizeList(data).sort(function (a, b) { return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'); });
+            state.items = normalizeList(data).sort(function (a, b) {
+                return nomeProduto(a).localeCompare(nomeProduto(b), 'pt-BR');
+            });
             render();
         } catch (e) { toast('Erro ao carregar estoque: ' + (e && e.message ? e.message : e), 'error'); }
         finally { loading(false); }
     }
     function invalidate() {
-        try { var s = svc(); if (s && typeof s.invalidateReadCacheForPath === 'function') { var tid = state.tenant; if (tid) s.invalidateReadCacheForPath('companies/' + tid + '/' + NODE); s.invalidateReadCacheForPath(NODE); } } catch (_) {}
+        try {
+            var s = svc();
+            if (s && typeof s.invalidateReadCacheForPath === 'function') {
+                if (state.tenant) s.invalidateReadCacheForPath('companies/' + state.tenant + '/' + NODE);
+                s.invalidateReadCacheForPath(NODE);
+            }
+        } catch (_) {}
     }
-    function hasStock(p) {
-        var est = num(p.estoque != null ? p.estoque : p.quantidade);
-        var pecas = num(p.pecas);
-        var serrado = p.tipoProduto === 'romaneio'
-            || num(p.espessura) > 0 || num(p.largura) > 0 || num(p.comprimento) > 0;
-        return serrado ? (pecas > 0 || est > 0) : est > 0;
+
+    function visibleItems() {
+        return state.items.filter(function (p) {
+            return !C.isProdutoJunk(p) && !C.estoqueZeradoNaLista(p);
+        });
     }
     function applyFilter() {
         var q = String((document.getElementById('emsSearch') || {}).value || '').trim();
-        var base = state.items.filter(hasStock);
+        var base = visibleItems();
         if (!q) { state.filtered = base; return; }
         var qn = norm(q);
         state.filtered = base.filter(function (p) { return productBlob(p).indexOf(qn) >= 0; });
         state.filtered.sort(function (a, b) {
             var ea = norm(a.codigo) === qn ? 0 : 1, eb = norm(b.codigo) === qn ? 0 : 1;
-            return ea - eb || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
+            return ea - eb || nomeProduto(a).localeCompare(nomeProduto(b), 'pt-BR');
         });
     }
     function renderPagination(total, pages) {
@@ -178,7 +164,7 @@
         for (var i = start; i <= end; i++) add(String(i), i, false, i === state.page);
         if (end < pages) { if (end < pages - 1) { var d2 = document.createElement('span'); d2.textContent = '...'; host.appendChild(d2); } add(String(pages), pages, false, state.page === pages); }
         add('>', state.page + 1, state.page === pages); add('>>>', pages, state.page === pages);
-        var inf = document.createElement('span'); inf.className = 'pagination-total-info'; inf.textContent = 'Pág. ' + state.page + '/' + pages + ' · ' + total + ' produto(s)'; pag.appendChild(inf);
+        var inf = document.createElement('span'); inf.className = 'pagination-total-info'; inf.textContent = 'Pág. ' + state.page + '/' + pages + ' — ' + total + ' produto(s)'; pag.appendChild(inf);
     }
     function render() {
         applyFilter();
@@ -186,72 +172,108 @@
         var total = state.filtered.length, pages = Math.max(1, Math.ceil(total / state.pageSize));
         if (state.page > pages) state.page = pages;
         var ini = (state.page - 1) * state.pageSize, slice = state.filtered.slice(ini, ini + state.pageSize);
-        if (!slice.length) tbody.innerHTML = '<tr><td colspan="8" class="ems-empty">' + (state.items.length ? 'Nenhum produto encontrado.' : 'Nenhum produto no estoque.') + '</td></tr>';
-        else tbody.innerHTML = slice.map(function (p) {
-            var key = esc(recordKey(p));
-            var serrado = p.tipoProduto === 'romaneio' || num(p.espessura) > 0 || num(p.largura) > 0 || num(p.comprimento) > 0;
-            return '<tr>' +
-                '<td data-label="Código">' + esc(p.codigo || '—') + '</td>' +
-                '<td data-label="Nome">' + esc(p.nome || p.name || '—') + (serrado ? ' · Serrado' : '') + '</td>' +
-                '<td data-label="Espécie">' + esc(p.especie || '—') + '</td>' +
-                '<td data-label="Dimensões (cm)" class="ems-dims">' + esc(dimsText(p)) + '</td>' +
-                '<td data-label="Estoque" class="ems-stock">' + esc(estoqueDetalhado(p)) + '</td>' +
-                '<td data-label="Un.">' + esc(p.unidade || 'UN') + '</td>' +
-                '<td data-label="Preço" class="ems-stock">' + money(p.preco || p.precoVenda || p.price) + '</td>' +
-                '<td data-label="Ações" class="ems-actions">' +
-                    '<button type="button" class="btn btn-primary btn-small" title="Editar" onclick="EstoqueMadeiraSerrada.edit(\'' + key + '\')"><i class="fas fa-edit"></i></button> ' +
-                    '<button type="button" class="btn btn-danger btn-small" title="Excluir" onclick="EstoqueMadeiraSerrada.remove(\'' + key + '\')"><i class="fas fa-trash"></i></button>' +
-                '</td></tr>';
-        }).join('');
+        if (!slice.length) {
+            var msg = !state.items.length ? 'Nenhum produto no estoque.' : (visibleItems().length ? 'Nenhum produto encontrado.' : 'Nenhum produto no estoque.');
+            tbody.innerHTML = '<tr><td colspan="7" class="ems-empty">' + msg + '</td></tr>';
+        } else {
+            tbody.innerHTML = slice.map(function (p) {
+                var key = escJs(recordKey(p));
+                var serrado = C.temDimsSerrado(p);
+                var estoque = serrado ? fmt(num(p.pecas), 0) : (fmt(num(p.estoque != null ? p.estoque : p.quantidade), 3) + ' ' + (p.unidade || 'UN'));
+                var ml = serrado ? fmt(C.metrosLineares(p), 2) + ' ml' : '-';
+                var vol = serrado ? fmt(C.volumeProduto(p), 3) + ' m³' : '-';
+                return '<tr>' +
+                    '<td data-label="Código">' + esc(p.codigo || '—') + '</td>' +
+                    '<td data-label="Nome">' + esc(nomeProduto(p)) + '</td>' +
+                    '<td data-label="Preço" class="ems-stock">' + esc(money(p.preco != null ? p.preco : (p.precoVenda != null ? p.precoVenda : p.price))) + '</td>' +
+                    '<td data-label="Estoque" class="ems-stock">' + esc(estoque) + '</td>' +
+                    '<td data-label="M. Linear">' + esc(ml) + '</td>' +
+                    '<td data-label="Volume (m³)">' + esc(vol) + '</td>' +
+                    '<td data-label="Ações" class="ems-actions">' +
+                        '<button type="button" class="btn btn-primary btn-small" title="Editar" onclick="EstoqueMadeiraSerrada.edit(\'' + key + '\')"><i class="fas fa-edit"></i></button> ' +
+                        '<button type="button" class="btn btn-danger btn-small" title="Excluir" onclick="EstoqueMadeiraSerrada.remove(\'' + key + '\')"><i class="fas fa-trash"></i></button>' +
+                    '</td></tr>';
+            }).join('');
+        }
         renderPagination(total, pages);
     }
 
     function setVal(id, v) { var el = document.getElementById(id); if (el) el.value = v == null ? '' : v; }
     function getVal(id) { return (document.getElementById(id) || {}).value || ''; }
+    function currentType() { var r = document.querySelector('input[name="emsTipo"]:checked'); return r ? r.value : 'manual'; }
+    function setDisplay(id, show) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = show ? 'block' : 'none';
+    }
+    function setBtn(id, show) {
+        var el = document.getElementById(id);
+        if (el) el.style.setProperty('display', show ? 'inline-flex' : 'none', 'important');
+    }
     function setType(t) {
         var isRom = t === 'romaneio';
-        var manual = document.getElementById('emsManualSection');
-        var rom = document.getElementById('emsRomaneioSection');
-        if (manual) manual.style.display = isRom ? 'none' : 'block';
-        if (rom) rom.style.display = isRom ? 'block' : 'none';
-        var showBtn = function (id, visible) {
-            var el = document.getElementById(id);
-            if (el) el.style.setProperty('display', visible ? 'inline-flex' : 'none', 'important');
-        };
-        showBtn('emsAddItemBtn', !state.editingKey);
-        showBtn('emsClearItemsBtn', !state.editingKey);
-        showBtn('emsSaveBtn', !!state.editingKey);
-        showBtn('emsAddStockBtn', !state.editingKey);
+        var editing = !!state.editingKey;
+        setDisplay('emsBaseSection', !isRom || editing);
+        setDisplay('emsDimsSection', !isRom || editing);
+        setDisplay('emsManualSection', !isRom && !editing);
+        setDisplay('emsRomaneioSection', isRom);
+        setDisplay('emsRomLoadRow', isRom && !editing);
+        setDisplay('emsRomPreviewTitle', isRom && !editing);
+        setDisplay('emsRomPreview', isRom && !editing);
+        setBtn('emsAddItemBtn', !editing && !isRom);
+        setBtn('emsClearItemsBtn', !editing && !isRom);
+        setBtn('emsSaveBtn', editing);
+        setBtn('emsAddStockBtn', !editing);
+        var radio = document.querySelector('input[name="emsTipo"][value="' + (isRom ? 'romaneio' : 'manual') + '"]');
+        if (radio) radio.checked = true;
     }
-    function currentType() { var r = document.querySelector('input[name="emsTipo"]:checked'); return r ? r.value : 'manual'; }
+    function resetDims() {
+        setVal('emsEspecie', '');
+        setVal('emsEspessura', '');
+        setVal('emsLargura', '');
+        setVal('emsComprimento', '');
+        setVal('emsPecas', '1');
+        setVal('emsPpp', '1');
+        setVal('emsVolume', '');
+    }
     function resetStage() { state.stage = []; renderManualPreview(); }
     function resetGroups() { state.groups = []; renderRomPreview(); }
+
     function openModal(item) {
         var modal = document.getElementById('emsModal'); if (!modal) return;
         state.editingKey = item ? recordKey(item) : '';
+        state.editingBase = item || null;
         state.stage = []; state.groups = []; state.romaneio = null;
         document.getElementById('emsModalTitle').textContent = item ? 'Editar Produto' : 'Novo Produto';
         setVal('emsId', state.editingKey);
         setVal('emsCodigo', item ? (item.codigo || '') : nextCode());
-        setVal('emsNome', item ? (item.nome || item.name || '') : '');
-        setVal('emsPreco', item && (item.preco || item.precoVenda || item.price) ? String(item.preco || item.precoVenda || item.price).replace('.', ',') : '');
-        setVal('emsEstoque', item && (item.estoque || item.quantidade) ? String(item.estoque || item.quantidade) : '');
-        setVal('emsUnidade', item && item.unidade || 'm³');
-        setVal('emsDescricao', item && item.descricao || '');
-        setVal('emsEspecie', item && item.especie || '');
-        setVal('emsEspessura', item && item.espessura || '');
-        setVal('emsLargura', item && item.largura || '');
-        setVal('emsComprimento', item && item.comprimento || '');
-        setVal('emsPecas', item && item.pecas || '1');
-        setVal('emsPpp', item && item.pecasPorPacote || '1');
-        setVal('emsVolume', '');
-        var manual = document.querySelector('input[name="emsTipo"][value="manual"]');
-        if (manual) manual.checked = true;
+        setVal('emsNome', item ? nomeProduto(item) : '');
+        setVal('emsPreco', item && (item.preco || item.precoVenda || item.price) ? String(item.preco != null ? item.preco : (item.precoVenda != null ? item.precoVenda : item.price)).replace('.', ',') : '');
+        setVal('emsEstoque', item && item.estoque != null ? String(item.estoque) : (item && item.quantidade != null ? String(item.quantidade) : ''));
+        setVal('emsUnidade', item ? (item.unidade || 'UN') : 'UN');
+        setVal('emsDescricao', item ? (item.descricao || '') : '');
+        setVal('emsEspecie', item ? (item.especie || '') : '');
+        setVal('emsEspessura', item && item.espessura != null ? item.espessura : '');
+        setVal('emsLargura', item && item.largura != null ? item.largura : '');
+        setVal('emsComprimento', item && item.comprimento != null ? item.comprimento : '');
+        setVal('emsPecas', item && item.pecas != null ? item.pecas : 1);
+        setVal('emsPpp', item && item.pecasPorPacote != null ? item.pecasPorPacote : 1);
+        setVal('emsRomTipo', item && item.romaneioTipo ? item.romaneioTipo : '');
+        var romSel = document.getElementById('emsRomSelect');
+        if (romSel) {
+            romSel.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
+            if (item && item.romaneioId) {
+                var opt = document.createElement('option');
+                opt.value = String(item.romaneioId);
+                opt.textContent = item.romaneioNumero || 'Romaneio';
+                romSel.appendChild(opt);
+                romSel.value = String(item.romaneioId);
+            }
+        }
         var romRadio = document.querySelector('input[name="emsTipo"][value="romaneio"]');
-        if (romRadio) romRadio.disabled = !!item;
-        setVal('emsRomTipo', ''); setVal('emsRomSelect', '');
-        var romSel = document.getElementById('emsRomSelect'); if (romSel) romSel.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
-        resetStage(); resetGroups(); setType('manual'); updateVolume(); renderManualPreview();
+        if (romRadio) romRadio.disabled = false;
+        var tipo = item && item.tipoProduto === 'romaneio' ? 'romaneio' : 'manual';
+        setType(tipo);
+        resetStage(); resetGroups(); updateVolume(); renderManualPreview();
         modal.classList.add('active');
         if (!state.modalOpen) {
             state.modalOpen = true;
@@ -276,35 +298,51 @@
         if (!state.stage.length) { box.innerHTML = '<span class="ems-help">Preencha os campos e clique em Adicionar item.</span>'; return; }
         box.innerHTML = state.stage.map(function (it, i) {
             return '<div class="ems-preview-row"><div class="ems-preview-main"><strong>' + esc(it.codigo || '-') + ' — ' + esc(it.nome || '-') + '</strong>' +
-                '<small>Preço: ' + esc(it.precoFmt || money(it.preco)) + ' · Estoque: ' + esc(it.estoque) + ' ' + esc(it.unidade || 'UN') + (it.especie ? ' · ' + esc(it.especie) : '') + '</small></div>' +
+                '<small>Preço: ' + esc(money(it.preco)) + ' · Estoque: ' + esc(fmt(it.estoque, 3) + ' ' + (it.unidade || 'UN')) +
+                (it.volumeM3 > 0 ? ' · ' + esc(fmt(it.volumeM3, 3) + ' m³ · ' + fmt(it.metrosLineares, 2) + ' ml') : '') +
+                (it.especie ? ' · ' + esc(it.especie) : '') + '</small></div>' +
                 '<button type="button" class="btn btn-danger btn-small" data-ems-remove="' + i + '">Excluir</button></div>';
         }).join('') + '<div style="text-align:right;font-weight:700;">' + state.stage.length + ' item(ns)</div>';
-        box.querySelectorAll('[data-ems-remove]').forEach(function (b) { b.onclick = function () { state.stage.splice(parseInt(b.dataset.emsRemove, 10), 1); renderManualPreview(); }; });
+        box.querySelectorAll('[data-ems-remove]').forEach(function (b) {
+            b.onclick = function () { state.stage.splice(parseInt(b.dataset.emsRemove, 10), 1); renderManualPreview(); };
+        });
+    }
+    function updateVolume() {
+        var v = C.calcularVolume(getVal('emsEspessura'), getVal('emsLargura'), getVal('emsComprimento'), getVal('emsPecas'), getVal('emsPpp'));
+        setVal('emsVolume', v > 0 ? fmt(v, 3) : '');
+        return v;
+    }
+    function clearManualFields() {
+        var usedCodes = new Set(state.items.map(function (p) { return String(p.codigo || '').trim(); }).filter(Boolean));
+        state.stage.forEach(function (it) { if (it.codigo) usedCodes.add(String(it.codigo)); });
+        setVal('emsCodigo', nextCode(usedCodes));
+        setVal('emsNome', ''); setVal('emsPreco', ''); setVal('emsEstoque', '');
+        setVal('emsDescricao', ''); setVal('emsUnidade', 'UN');
+        resetDims();
     }
     function addManualItem() {
         var nome = String(getVal('emsNome')).trim();
         if (!nome) { toast('Informe o nome do produto.', 'warning'); return; }
-        var codigo = String(getVal('emsCodigo')).trim() || nextCode();
-        if (state.stage.some(function (it) { return String(it.codigo) === String(codigo); })) { toast('Já existe item com este código no preview.', 'warning'); return; }
-        var preco = parseMoney(getVal('emsPreco'));
-        var estoque = num(getVal('emsEstoque'));
+        var codigo = String(getVal('emsCodigo')).trim();
+        if (!/^\d+$/.test(codigo)) codigo = nextCode();
+        var duplicado = state.items.some(function (p) { return String(p.codigo || '').trim() === codigo && recordKey(p) !== state.editingKey; })
+            || state.stage.some(function (it) { return String(it.codigo) === codigo; });
+        if (duplicado) { toast('Já existe produto com este código.', 'warning'); return; }
+        var pecas = num(getVal('emsPecas'));
+        var ppp = num(getVal('emsPpp')) || 1;
+        var volume = updateVolume();
+        var comprimento = num(getVal('emsComprimento'));
         state.stage.push({
-            codigo: codigo, nome: nome, preco: preco, precoFmt: getVal('emsPreco') || money(preco),
-            estoque: estoque, unidade: getVal('emsUnidade') || 'UN', descricao: String(getVal('emsDescricao')).trim(),
-            especie: String(getVal('emsEspecie')).trim(), espessura: num(getVal('emsEspessura')),
-            largura: num(getVal('emsLargura')), comprimento: num(getVal('emsComprimento')),
-            pecas: num(getVal('emsPecas')), pecasPorPacote: num(getVal('emsPpp')) || 1,
-            volumeM3: updateVolume()
+            codigo: codigo, nome: nome, preco: parseMoney(getVal('emsPreco')),
+            estoque: num(getVal('emsEstoque')), unidade: getVal('emsUnidade') || 'UN',
+            descricao: String(getVal('emsDescricao')).trim(), especie: String(getVal('emsEspecie')).trim(),
+            espessura: num(getVal('emsEspessura')), largura: num(getVal('emsLargura')), comprimento: comprimento,
+            pecas: pecas, pecasPorPacote: ppp, volumeM3: volume,
+            metrosLineares: volume > 0 ? C.metrosLineares({ comprimento: comprimento, pecas: pecas }) : 0,
+            tipoProduto: 'manual'
         });
-        setVal('emsNome', ''); setVal('emsPreco', ''); setVal('emsEstoque', ''); setVal('emsDescricao', '');
-        var usedCodes = new Set(state.items.map(function (p) { return String(p.codigo || '').trim(); }).filter(Boolean));
-        state.stage.forEach(function (it) { if (it.codigo) usedCodes.add(String(it.codigo)); });
-        setVal('emsCodigo', nextCode(usedCodes)); renderManualPreview();
-    }
-    function updateVolume() {
-        var v = volumeFromDims(getVal('emsEspessura'), getVal('emsLargura'), getVal('emsComprimento'), getVal('emsPecas'), getVal('emsPpp'));
-        setVal('emsVolume', v > 0 ? v.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : '');
-        return v;
+        clearManualFields();
+        renderManualPreview();
     }
 
     async function saveOne(payload, key) {
@@ -312,33 +350,64 @@
         if (res && res.success === false) throw new Error(res.error || 'Falha ao salvar.');
         return res;
     }
+    function assertNomeCodigo(payload, baseKey) {
+        if (C.isNomeFantasma(payload.nome)) throw new Error('Informe o nome do produto.');
+        var dup = state.items.some(function (p) {
+            return String(p.codigo || '').trim() === String(payload.codigo || '').trim() && recordKey(p) !== String(baseKey || '');
+        });
+        if (dup) throw new Error('Já existe produto com este código.');
+    }
     async function saveManual() {
         loading(true, 'Salvando produto...');
         try {
-            var tid = await resolveTenant();
+            await resolveTenant();
+            var tipo = currentType();
             if (state.editingKey) {
-                var item = state.items.find(function (p) { return recordKey(p) === state.editingKey; }) || {};
-                var payload = buildPayload(item, {
+                var item = state.items.find(function (p) { return recordKey(p) === state.editingKey; }) || state.editingBase || {};
+                var src = {
                     codigo: String(getVal('emsCodigo')).trim() || item.codigo || nextCode(),
-                    nome: String(getVal('emsNome')).trim(), preco: parseMoney(getVal('emsPreco')),
-                    estoque: num(getVal('emsEstoque')), unidade: getVal('emsUnidade') || 'UN',
-                    descricao: String(getVal('emsDescricao')).trim(), especie: String(getVal('emsEspecie')).trim(),
-                    espessura: num(getVal('emsEspessura')), largura: num(getVal('emsLargura')),
-                    comprimento: num(getVal('emsComprimento')), pecas: num(getVal('emsPecas')),
-                    pecasPorPacote: num(getVal('emsPpp')) || 1
-                });
+                    nome: String(getVal('emsNome')).trim(),
+                    preco: parseMoney(getVal('emsPreco')),
+                    estoque: num(getVal('emsEstoque')),
+                    unidade: getVal('emsUnidade') || 'UN',
+                    descricao: String(getVal('emsDescricao')).trim(),
+                    especie: String(getVal('emsEspecie')).trim(),
+                    espessura: num(getVal('emsEspessura')),
+                    largura: num(getVal('emsLargura')),
+                    comprimento: num(getVal('emsComprimento')),
+                    pecas: num(getVal('emsPecas')),
+                    pecasPorPacote: num(getVal('emsPpp')) || 1,
+                    tipoProduto: tipo,
+                };
+                if (tipo === 'romaneio') {
+                    src.romaneioTipo = item.romaneioTipo || '';
+                    src.romaneioId = getVal('emsRomSelect') || item.romaneioId || '';
+                    src.romaneioNumero = item.romaneioNumero || '';
+                }
+                var payload = buildPayload(item, src);
+                assertNomeCodigo(payload, state.editingKey);
                 await saveOne(payload, state.editingKey);
                 toast('Produto atualizado.', 'success');
             } else {
                 if (!state.stage.length) { toast('Adicione ao menos um item no Preview.', 'warning'); return; }
                 for (var i = 0; i < state.stage.length; i++) {
                     var it = state.stage[i];
-                    var existente = state.items.find(function (p) { return String(p.codigo || '').trim() !== '' && String(p.codigo).trim() === String(it.codigo).trim(); });
+                    var existente = state.items.find(function (p) { return String(p.codigo || '').trim() === String(it.codigo).trim(); });
                     if (existente) {
-                        existente.estoque = Math.round((num(existente.estoque) + num(it.estoque)) * 1000) / 1000;
-                        await saveOne(buildPayload(existente, existente), recordKey(existente));
+                        var pecas = num(existente.pecas) + num(it.pecas);
+                        var volume = C.r3(C.volumeProduto(existente) + num(it.volumeM3));
+                        var ml = C.r2(C.metrosLineares(existente) + num(it.metrosLineares));
+                        var merged = Object.assign({}, existente, {
+                            pecas: pecas,
+                            volumeM3: volume,
+                            estoque: volume > 0 ? volume : (num(existente.estoque) + num(it.estoque)),
+                            metrosLineares: ml,
+                            updated: new Date().toISOString(),
+                        });
+                        var mergedPayload = buildPayload(existente, merged);
+                        await saveOne(mergedPayload, recordKey(existente));
                     } else {
-                        var novo = buildPayload(it, it);
+                        var novo = buildPayload({}, it);
                         await saveOne(novo, novo.id);
                     }
                 }
@@ -350,32 +419,54 @@
     }
     function buildPayload(base, src) {
         var now = new Date().toISOString();
-        return {
-            id: base.id || ((state.editingKey && !base.id) ? state.editingKey : nextId()),
-            codigo: String(src.codigo || '').trim(), nome: String(src.nome || '').trim(),
-            preco: Number(src.preco) || 0, estoque: Number(src.estoque) || 0, unidade: src.unidade || 'UN',
-            descricao: src.descricao || '', especie: src.especie || '', espessura: Number(src.espessura) || 0,
-            largura: Number(src.largura) || 0, comprimento: Number(src.comprimento) || 0,
-            pecas: Number(src.pecas) || 0, pecasPorPacote: Number(src.pecasPorPacote) || 1,
-            volumeM3: Number(src.volumeM3) || 0, tipoProduto: src.tipoProduto || base.tipoProduto || 'manual',
-            romaneioTipo: src.romaneioTipo || base.romaneioTipo || '', romaneioId: src.romaneioId || base.romaneioId || '',
-            romaneioNumero: src.romaneioNumero || base.romaneioNumero || '', created: base.created || now, updated: now
-        };
+        var clean = Object.assign({}, base || {});
+        delete clean.__key;
+        var id = clean.id || (state.editingKey && !clean.id ? state.editingKey : nextId());
+        var tipo = src.tipoProduto === 'romaneio' || clean.tipoProduto === 'romaneio' ? 'romaneio' : 'manual';
+        var pecas = src.pecas != null ? Number(src.pecas) || 0 : Number(clean.pecas) || 0;
+        var ppp = src.pecasPorPacote != null ? (Number(src.pecasPorPacote) || 1) : (Number(clean.pecasPorPacote) || 1);
+        var esp = src.espessura != null ? Number(src.espessura) || 0 : Number(clean.espessura) || 0;
+        var lar = src.largura != null ? Number(src.largura) || 0 : Number(clean.largura) || 0;
+        var comp = src.comprimento != null ? Number(src.comprimento) || 0 : Number(clean.comprimento) || 0;
+        var calculado = C.calcularVolume(esp, lar, comp, pecas, ppp);
+        var volume = calculado > 0 ? calculado : (Number(src.volumeM3) > 0 ? C.r3(src.volumeM3) : (Number(clean.volumeM3) || 0));
+        var ml = comp > 0 && pecas >= 0 ? C.metrosLineares({ comprimento: comp, pecas: pecas }) : (Number(clean.metrosLineares) || 0);
+        var estoque = Number(src.estoque) || 0;
+        if (volume > 0 && (tipo === 'romaneio' || C.temDimsSerrado(src) || C.temDimsSerrado(clean))) estoque = volume;
+        var nome = String(src.nome || '').trim() || C.nomeSignificativo(clean.nomeComum, clean.nome, clean.name, clean.nomeCientifico);
+        return Object.assign(clean, {
+            id: id,
+            codigo: String(src.codigo || clean.codigo || '').trim(),
+            nome: nome,
+            preco: Number(src.preco) || 0,
+            estoque: estoque,
+            unidade: tipo === 'romaneio' ? 'm³' : (src.unidade || clean.unidade || 'UN'),
+            descricao: src.descricao != null ? src.descricao : (clean.descricao || ''),
+            especie: src.especie != null ? src.especie : (clean.especie || ''),
+            espessura: esp,
+            largura: lar,
+            comprimento: comp,
+            pecas: pecas,
+            pecasPorPacote: ppp,
+            volumeM3: volume,
+            metrosLineares: ml,
+            tipoProduto: tipo,
+            romaneioTipo: src.romaneioTipo != null ? src.romaneioTipo : (clean.romaneioTipo || ''),
+            romaneioId: src.romaneioId != null ? src.romaneioId : (clean.romaneioId || ''),
+            romaneioNumero: src.romaneioNumero != null ? src.romaneioNumero : (clean.romaneioNumero || ''),
+            created: clean.created || now,
+            updated: now,
+        });
     }
 
     function normalizeAnyList(data) {
         var out = [];
-        if (Array.isArray(data)) {
-            data.forEach(function (p, i) { if (p && typeof p === 'object') out.push(Object.assign({}, p, { __key: String(p.firebaseKey || p.key || p.id || i) })); });
-        } else if (data && typeof data === 'object') {
-            Object.keys(data).forEach(function (k) {
-                if (k === '_metadata' || k === 'metadata') return;
-                var p = data[k];
-                if (p && typeof p === 'object') out.push(Object.assign({}, p, { __key: String(p.firebaseKey || p.key || p.id || k) }));
-            });
-        }
+        function add(p, key) { if (p && typeof p === 'object') { var it = Object.assign({}, p); it.__key = String(key); out.push(it); } }
+        if (Array.isArray(data)) data.forEach(function (p, i) { add(p, i); });
+        else if (data && typeof data === 'object') Object.keys(data).forEach(function (k) { if (k !== '_metadata' && k !== 'metadata') add(data[k], k); });
         return out;
     }
+    function romaneioKey(r) { return String((r && (r.id || r.firebaseKey || r.numero || r.__key)) || ''); }
     function romDateMs(r) {
         var candidates = [r && r.dataEmissao, r && r.data, r && r.dataRomaneio, r && r.dataHora,
             r && r.createdAt, r && r.created, r && r.timestamp];
@@ -392,8 +483,7 @@
         var path = ROM_PATHS[tipo]; if (!path) return [];
         var res = await svc().loadFromFirebase(path);
         var data = res && res.data !== undefined ? res.data : res;
-        var list = normalizeAnyList(data);
-        return list.sort(function (a, b) {
+        return normalizeAnyList(data).sort(function (a, b) {
             var da = romDateMs(a), db = romDateMs(b);
             var na = parseInt(romNumero(a), 10) || 0, nb = parseInt(romNumero(b), 10) || 0;
             if (!da && !db) return na - nb;
@@ -410,10 +500,9 @@
         loading(true, 'Carregando romaneios...');
         try {
             state.romaneios = await loadRomaneios(tipo);
-            state.romaneios.forEach(function (r, i) {
-                var key = recordKey(r) || String(i);
+            state.romaneios.forEach(function (r) {
                 var opt = document.createElement('option');
-                opt.value = key;
+                opt.value = romaneioKey(r);
                 opt.textContent = romLabel(r);
                 sel.appendChild(opt);
             });
@@ -423,7 +512,7 @@
     }
     function onRomSelectChange() {
         var key = getVal('emsRomSelect');
-        state.romaneio = state.romaneios.find(function (r) { return recordKey(r) === key; }) || null;
+        state.romaneio = state.romaneios.find(function (r) { return romaneioKey(r) === key; }) || null;
         resetGroups();
     }
     function romNumero(r) {
@@ -441,24 +530,26 @@
         }
         return 'S/Data';
     }
+    function romaneioVolume(it) {
+        var candidates = [it && it.volume, it && it.volumeM3, it && it.volumeTotal, it && it.totalVolume, it && it.totais && it.totais.volume];
+        for (var i = 0; i < candidates.length; i++) { var n = num(candidates[i]); if (n > 0) return n; }
+        return C.calcularVolume(it && it.espessura, it && it.largura, it && (it.comprimento || it.comp),
+            (it && (it.quantidade || it.pecas || it.qtd)) || 1, (it && (it.pecasPorPacote || it.ppp)) || 1);
+    }
     function romVolumeTotal(r) {
         var candidates = [r && r.totalVolume, r && r.volumeTotal, r && r.totais && r.totais.volume];
         for (var i = 0; i < candidates.length; i++) { var n = num(candidates[i]); if (n > 0) return n; }
         var raw = r && (r.items || r.itens);
         var itens = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? Object.values(raw) : []);
         var total = 0;
-        itens.forEach(function (it) {
-            if (!it || typeof it !== 'object') return;
-            total += romaneioVolume(it);
-        });
-        return Math.round(total * 1000) / 1000;
+        itens.forEach(function (it) { if (it && typeof it === 'object') total += romaneioVolume(it); });
+        return C.r3(total);
     }
     function romLabel(r) {
-        var nome = r.clienteNome
-            || (r.cliente && (r.cliente.nome || r.cliente.name))
+        var nome = r.clienteNome || (r.cliente && (r.cliente.nome || r.cliente.name))
             || (r.fornecedor && (r.fornecedor.nome || r.fornecedor.name))
             || r.fornecedor || r.numero || 'Cliente não informado';
-        var vol = romVolumeTotal(r).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        var vol = fmt(romVolumeTotal(r), 3);
         var num = romNumero(r);
         return romDate(r) + ' - ' + String(nome) + ' - ' + vol + ' m³' + (num ? ' - Nº ' + num : '');
     }
@@ -471,30 +562,59 @@
             var especie = String(it.especie || it.nome || it.descricao || 'Sem espécie').trim();
             var e = num(it.espessura), l = num(it.largura), c = num(it.comprimento || it.comp);
             var gid = [especie, e, l, c].join('|');
-            var vol = romaneioVolume(it);
             var qtd = num(it.quantidade || it.pecas || it.qtd || 1);
             var preco = num(it.precoUnitario || it.precoMedio || it.preco || it.valorUnitario);
-            var g = map.get(gid) || { gid: gid, especie: especie, espessura: e, largura: l, comprimento: c, volume: 0, pecas: 0, preco: preco, romaneioId: recordKey(rom), romaneioNumero: romNumero(rom), romaneioTipo: tipo };
-            g.volume = Math.round((g.volume + vol) * 1000) / 1000;
+            var g = map.get(gid) || {
+                gid: gid, especie: especie, espessura: e, largura: l, comprimento: c,
+                volume: 0, pecas: 0, valorTotal: 0, preco: 0,
+                romaneioId: romaneioKey(rom), romaneioNumero: romNumero(rom), romaneioTipo: tipo,
+            };
+            g.volume = C.r3(g.volume + romaneioVolume(it));
             g.pecas += qtd;
-            if (!g.preco && preco) g.preco = preco;
+            g.valorTotal += preco * qtd;
             map.set(gid, g);
         });
-        return Array.from(map.values());
+        return Array.from(map.values()).map(function (g) {
+            g.preco = g.pecas > 0 ? C.r2(g.valorTotal / g.pecas) : 0;
+            g.ml = C.r2((g.comprimento / 100) * g.pecas);
+            return g;
+        });
     }
     function sameProduct(p, g) {
-        return String(p.romaneioId || '') === String(g.romaneioId || '')
+        return p.tipoProduto === 'romaneio'
+            && String(p.romaneioId || '') === String(g.romaneioId || '')
             && norm(p.especie || '') === norm(g.especie || '')
             && num(p.espessura) === num(g.espessura) && num(p.largura) === num(g.largura) && num(p.comprimento) === num(g.comprimento);
+    }
+    function disponibilidade(g) {
+        var estPecas = 0, estVol = 0, estMl = 0;
+        state.items.forEach(function (p) {
+            if (!sameProduct(p, g)) return;
+            estPecas += num(p.pecas);
+            estVol += C.volumeProduto(p);
+            estMl += num(p.metrosLineares);
+        });
+        var dispPecas = Math.max(0, num(g.pecas) - estPecas);
+        var dispVol = Math.max(0, C.r3(num(g.volume) - estVol));
+        var dispMl = Math.max(0, C.r2((num(g.ml) || C.r2((num(g.comprimento) / 100) * num(g.pecas))) - estMl));
+        return {
+            travado: !(dispPecas > 0 || dispVol > 0),
+            parcial: (dispPecas > 0 || dispVol > 0) && (dispPecas < num(g.pecas) || dispVol < num(g.volume)),
+            dispPecas: dispPecas, dispVol: dispVol, dispMl: dispMl,
+            estPecas: estPecas, estVol: C.r3(estVol), estMl: C.r2(estMl),
+        };
     }
     function renderRomPreview() {
         var box = document.getElementById('emsRomPreview'); if (!box) return;
         if (!state.groups.length) { box.innerHTML = '<span class="ems-help">Selecione o tipo e o romaneio, depois clique em Carregar Itens.</span>'; return; }
         box.innerHTML = state.groups.map(function (g, i) {
-            var exists = state.items.some(function (p) { return sameProduct(p, g); });
-            return '<label class="ems-preview-row"><input type="checkbox" class="ems-group-check" data-ems-group="' + i + '"' + (exists ? ' disabled' : ' checked') + '>' +
+            var d = disponibilidade(g);
+            var detalhe = d.travado
+                ? 'já em estoque — desativado'
+                : (d.parcial ? 'Disponível: ' + esc(fmt(d.dispPecas, 0)) + ' pç · ' + esc(fmt(d.dispVol, 3)) + ' m³ · ' + esc(fmt(d.dispMl, 2)) + ' ml' : money(g.preco));
+            return '<label class="ems-preview-row"><input type="checkbox" class="ems-group-check" data-ems-group="' + i + '"' + (d.travado ? ' disabled' : ' checked') + '>' +
                 '<span class="ems-preview-main"><strong>' + esc(g.especie) + ' ' + esc([g.espessura, g.largura, g.comprimento].join(' × ')) + '</strong>' +
-                '<small>' + g.volume.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' m³ · ' + esc(g.pecas) + ' peça(s) · ' + (exists ? 'já em estoque' : money(g.preco)) + '</small></span></label>';
+                '<small>' + fmt(g.volume, 3) + ' m³ · ' + esc(g.pecas) + ' peça(s) · ' + detalhe + '</small></span></label>';
         }).join('');
     }
     async function addGroups() {
@@ -502,22 +622,27 @@
         if (!checks.length) { toast('Marque ao menos um grupo no Preview.', 'warning'); return; }
         loading(true, 'Adicionando ao estoque...');
         var usedCodes = new Set(state.items.map(function (p) { return String(p.codigo || '').trim(); }).filter(Boolean));
+        var saved = 0;
         try {
             for (var i = 0; i < checks.length; i++) {
-                var g = state.groups[parseInt(checks[i].dataset.emsGroup, 10)]; if (!g || !(g.volume > 0)) continue;
-                if (state.items.some(function (p) { return sameProduct(p, g); })) continue;
+                var g = state.groups[parseInt(checks[i].dataset.emsGroup, 10)]; if (!g) continue;
+                var d = disponibilidade(g);
+                if (d.travado || (d.dispVol <= 0 && d.dispPecas <= 0)) continue;
                 var codigo = nextCode(usedCodes);
                 usedCodes.add(codigo);
                 var novo = buildPayload({}, {
                     codigo: codigo, nome: (g.especie + ' ' + [g.espessura, g.largura, g.comprimento].join('x')).trim(),
-                    preco: g.preco, estoque: g.volume, unidade: 'm³', descricao: 'Madeira serrada' + (g.romaneioNumero ? ' (Nº ' + g.romaneioNumero + ')' : ''),
+                    preco: g.preco, estoque: d.dispVol, unidade: 'm³',
+                    descricao: 'Madeira serrada' + (g.romaneioNumero ? ' (Nº ' + g.romaneioNumero + ')' : ''),
                     especie: g.especie, espessura: g.espessura, largura: g.largura, comprimento: g.comprimento,
-                    pecas: g.pecas, pecasPorPacote: 1, volumeM3: g.volume, tipoProduto: 'romaneio',
-                    romaneioTipo: g.romaneioTipo, romaneioId: g.romaneioId, romaneioNumero: g.romaneioNumero
+                    pecas: d.dispPecas, pecasPorPacote: 1, volumeM3: d.dispVol,
+                    metrosLineares: d.dispMl, tipoProduto: 'romaneio',
+                    romaneioTipo: g.romaneioTipo, romaneioId: g.romaneioId, romaneioNumero: g.romaneioNumero,
                 });
                 await saveOne(novo, novo.id);
+                saved++;
             }
-            toast(checks.length + ' grupo(s) adicionado(s) ao estoque.', 'success');
+            toast(saved + ' grupo(s) adicionado(s) ao estoque.', saved ? 'success' : 'warning');
             closeModal(); invalidate(); await load();
         } catch (e) { toast('Erro ao adicionar: ' + (e && e.message ? e.message : e), 'error'); }
         finally { loading(false); }
@@ -531,7 +656,7 @@
         loading(true, 'Excluindo...');
         try {
             var s = svc();
-            var res = await (typeof s.removeFromFirebase === 'function' ? s.removeFromFirebase(NODE + '/' + key) : s.saveToFirebase(NODE, null, state.items.filter(function (p) { return recordKey(p) !== key; })));
+            var res = await s.removeFromFirebase(NODE + '/' + key);
             if (res && res.success === false) throw new Error(res.error || 'Falha ao excluir.');
             toast('Produto excluído.', 'success'); invalidate(); await load();
         } catch (e) { toast('Erro ao excluir: ' + (e && e.message ? e.message : e), 'error'); }
@@ -547,9 +672,14 @@
         var cancel = document.getElementById('emsCancelBtn'); if (cancel) cancel.addEventListener('click', closeModal);
         var form = document.getElementById('emsForm'); if (form) form.addEventListener('submit', function (e) { e.preventDefault(); saveManual(); });
         var add = document.getElementById('emsAddItemBtn'); if (add) add.addEventListener('click', addManualItem);
-        var clearItems = document.getElementById('emsClearItemsBtn'); if (clearItems) clearItems.addEventListener('click', resetStage);
+        var clearItems = document.getElementById('emsClearItemsBtn'); if (clearItems) clearItems.addEventListener('click', function () { resetStage(); clearManualFields(); });
         var addStock = document.getElementById('emsAddStockBtn'); if (addStock) addStock.addEventListener('click', function () { if (currentType() === 'romaneio') addGroups(); else saveManual(); });
-        document.querySelectorAll('input[name="emsTipo"]').forEach(function (r) { r.addEventListener('change', function () { setType(currentType()); }); });
+        document.querySelectorAll('input[name="emsTipo"]').forEach(function (r) {
+            r.addEventListener('change', function () {
+                if (!state.editingKey) { resetStage(); resetGroups(); clearManualFields(); }
+                setType(currentType());
+            });
+        });
         var romTipo = document.getElementById('emsRomTipo'); if (romTipo) romTipo.addEventListener('change', onRomTipoChange);
         var romSel = document.getElementById('emsRomSelect'); if (romSel) romSel.addEventListener('change', onRomSelectChange);
         var loadRom = document.getElementById('emsLoadRomBtn'); if (loadRom) loadRom.addEventListener('click', function () {
