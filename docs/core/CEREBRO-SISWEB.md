@@ -1974,3 +1974,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Finanças Fluxo:** default passou de 10 para 25 (mesmo padrão).
 - **Validação em produção:** Dashboard NF-e sem `relPaginacaoInfo`/botões antigos, `pageSize=25`; MDF-e `#paginacaoConsultaMdfe` com classe padrão e `pageSize=25`; Fluxo `pageSize=25`. Suíte 1492 pass / 0 fail / 1 skip; nf/nfe/mdfe/financas 476/476.
 
+## Sessao 2026-10-18 (cont. 15) — Dashboard MDF-e, Encerramento e alertas Admin
+
+- **Dashboard MDF-e (padrão NF-e):** 6 KPIs (período, autorizados, encerrados, cancelados, rejeitados, rascunhos), 3 gráficos Chart.js (MDF-es por dia/mês, status doughnut, top UFs destino), filtros de período+status, tabela `#mdfeDashboardTable` com `data-label` mobile e paginação padrão 10/25/50/100 (default 25, persistida em `mdfe_dashboard_*`). Chart.js UMD via jsDelivr antes do `mdf-e.js`.
+- **Data civil:** `mdfeDashDataISO` usa o dia LOCAL para `dataEmissao` ISO/Z (antes `slice(0,10)` em UTC fazia emissão após 21h cair no dia seguinte e sumir do filtro). `gerarRelatorioMdfe` passou a usar o mesmo helper.
+- **Encerramento:** valida `nProt` de 15 dígitos antes de pedir senha (form e rápido), usa o ambiente do próprio documento (`mdfe.ambiente`), e após sucesso recarrega o select, a Consulta e o Dashboard. Select/UF/município validados com dados simulados (autorizado → UF BA, município Salvador pré-selecionado).
+- **Alertas (Admin persistente):** `recomputeSystemAlerts` não sobrescreve o store quando o tenant está transitoriamente `default`; alertas de origem Admin não recomputados são preservados por até 30 dias. Validado: alerta Admin permaneceu após recompute; alertas reais do tenant também.
+- **Validação em produção:** Dashboard MDF-e com 5 registros simulados → KPIs 5/1/1/1/1/1, gráficos status (5 fatias) e UFs (BA/PA), 5 linhas e `5 MDF-e(s)`; Encerramento com select autorizado/UF/cidade corretos; alerta Admin preservado.
+- **Gates:** suíte 1492 pass / 0 fail / 1 skip; mdfe/menu/partner 158/158. Commits `b40ad77` + `d3dd7a1`; hosting publicado.
+
