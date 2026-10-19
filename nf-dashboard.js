@@ -4,7 +4,8 @@
 (function () {
   'use strict';
 
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+  const PAGE_SIZE_DEFAULT = 25;
   const STATUS_LABEL = {
     rascunho: 'Rascunho', aguardando: 'Aguardando SEFAZ', autorizada: 'Autorizada',
     rejeitada: 'Rejeitada', cancelada: 'Cancelada', inutilizada: 'Inutilizada',
@@ -172,13 +173,108 @@
       options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
   }
 
+  function pageKey() {
+    try {
+      let tid = '';
+      try { if (window.appTenantId) tid = String(window.appTenantId); } catch (_) {}
+      if (!tid) {
+        try {
+          const ci = JSON.parse(localStorage.getItem('company_info') || 'null') || {};
+          tid = String(ci.id || ci.companyId || ci.tenantId || '');
+        } catch (_) {}
+      }
+      const u = (() => { try { return String(window.firebaseService?.currentUser?.uid || 'anon'); } catch (_) { return 'anon'; } })();
+      return `nf_dashboard_${tid || 'default'}_${u}_items_per_page`;
+    } catch (_) { return 'nf_dashboard_default_anon_items_per_page'; }
+  }
+
+  function pageSize() {
+    try {
+      const v = parseInt(localStorage.getItem(pageKey()) || '', 10);
+      if (PAGE_SIZE_OPTIONS.includes(v)) return v;
+    } catch (_) {}
+    return PAGE_SIZE_DEFAULT;
+  }
+
+  function setPageSize(value) {
+    const size = parseInt(value, 10);
+    if (!PAGE_SIZE_OPTIONS.includes(size)) return;
+    try { localStorage.setItem(pageKey(), String(size)); } catch (_) {}
+    _pagina = 0;
+    renderTabela();
+  }
+
+  function mudarPagina(pagina) {
+    const size = pageSize();
+    const pags = Math.max(1, Math.ceil(_ultimoRel.length / size));
+    _pagina = Math.min(Math.max(1, parseInt(pagina, 10) || 1), pags) - 1;
+    renderTabela();
+  }
+
+  function renderPagination(total, paginaAtual, size) {
+    const container = document.getElementById('paginacaoDashboardNF');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!total) return;
+    const totalPaginas = Math.ceil(total / size);
+
+    const label = document.createElement('label');
+    label.className = 'pagination-size-control';
+    label.innerHTML = `<span>Itens por página:</span>
+      <select onchange="window.NFDashboard && window.NFDashboard.setPageSize(this.value)">
+        ${PAGE_SIZE_OPTIONS.map((opt) => `<option value="${opt}" ${opt === size ? 'selected' : ''}>${opt}</option>`).join('')}
+      </select>`;
+    container.appendChild(label);
+
+    if (!totalPaginas || totalPaginas <= 1) {
+      const info = document.createElement('span');
+      info.className = 'pagination-total-info';
+      info.textContent = `${total} nota(s)`;
+      container.appendChild(info);
+      return;
+    }
+
+    const host = document.createElement('span');
+    host.className = 'pagination-page-buttons';
+    container.appendChild(host);
+    const addBtn = (text, page, disabled = false, active = false) => {
+      const btn = document.createElement('button');
+      btn.textContent = text;
+      btn.type = 'button';
+      if (active) btn.classList.add('active');
+      btn.disabled = disabled;
+      btn.onclick = () => mudarPagina(page);
+      host.appendChild(btn);
+    };
+    addBtn('<<<', 1, paginaAtual === 1);
+    addBtn('<', paginaAtual - 1, paginaAtual === 1);
+    const startPage = Math.max(1, paginaAtual - 2);
+    const endPage = Math.min(totalPaginas, paginaAtual + 2);
+    if (startPage > 1) {
+      addBtn('1', 1, false, paginaAtual === 1);
+      if (startPage > 2) { const s = document.createElement('span'); s.textContent = '...'; host.appendChild(s); }
+    }
+    for (let i = startPage; i <= endPage; i++) addBtn(String(i), i, false, i === paginaAtual);
+    if (endPage < totalPaginas) {
+      if (endPage < totalPaginas - 1) { const s = document.createElement('span'); s.textContent = '...'; host.appendChild(s); }
+      addBtn(String(totalPaginas), totalPaginas, false, paginaAtual === totalPaginas);
+    }
+    addBtn('>', paginaAtual + 1, paginaAtual === totalPaginas);
+    addBtn('>>>', totalPaginas, paginaAtual === totalPaginas);
+    const info = document.createElement('span');
+    info.className = 'pagination-total-info';
+    info.textContent = `Pág. ${paginaAtual}/${totalPaginas} · ${total} nota(s)`;
+    container.appendChild(info);
+  }
+
   function renderTabela() {
     const tb = document.getElementById('relatorioCorpo');
     if (!tb) return;
     const total = _ultimoRel.length;
-    const pags = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const size = pageSize();
+    const pags = Math.max(1, Math.ceil(total / size));
     if (_pagina >= pags) _pagina = pags - 1;
-    const fatia = _ultimoRel.slice(_pagina * PAGE_SIZE, _pagina * PAGE_SIZE + PAGE_SIZE);
+    const fatia = _ultimoRel.slice(_pagina * size, _pagina * size + size);
     tb.innerHTML = fatia.length ? fatia.map((n) => `<tr>
       <td style="font-family:monospace;">${String(n.numero || '').padStart(9, '0')}</td>
       <td>${dataNota(n).split('-').reverse().join('/')}</td>
@@ -186,8 +282,7 @@
       <td>${STATUS_LABEL[n.status] || n.status || '—'}</td>
       <td style="text-align:right;">${fmtBRL(valorNota(n))}</td>
     </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;opacity:.7;">Nenhuma nota no filtro</td></tr>';
-    const info = document.getElementById('relPaginacaoInfo');
-    if (info) info.textContent = `Página ${_pagina + 1} de ${pags} (${total} nota(s))`;
+    renderPagination(total, _pagina + 1, size);
   }
 
   async function gerarRelatorio() {
@@ -215,7 +310,8 @@
   }
 
   function irPaginaRelatorio(delta) {
-    const pags = Math.max(1, Math.ceil(_ultimoRel.length / PAGE_SIZE));
+    const size = pageSize();
+    const pags = Math.max(1, Math.ceil(_ultimoRel.length / size));
     _pagina = Math.min(pags - 1, Math.max(0, _pagina + (Number(delta) || 0)));
     renderTabela();
   }
@@ -236,6 +332,6 @@
 
   window.NFDashboard = {
     filtrarNotas, agregarNotas, gerarCSV, impostosDet, fmtBRL, valorNota,
-    gerarRelatorio, exportarCSV, irPaginaRelatorio, refresh,
+    gerarRelatorio, exportarCSV, irPaginaRelatorio, refresh, setPageSize, mudarPagina, pageSize,
   };
 })();

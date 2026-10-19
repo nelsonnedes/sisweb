@@ -35,7 +35,7 @@ let fluxoCatSaidasChart = null;
 let dashboardCatReceberChart = null;
 let dashboardCatPagarChart = null;
 const FLUXO_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-const FLUXO_PAGE_SIZE_DEFAULT = 10;
+const FLUXO_PAGE_SIZE_DEFAULT = 25;
 let __fluxoPagina = 1;
 let __fluxoDadosCache = { labels: [], entradas: [], saidas: [], saldos: [] };
 

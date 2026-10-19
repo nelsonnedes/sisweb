@@ -1190,7 +1190,7 @@ function mdfeConsultaPageSize() {
         const v = parseInt(localStorage.getItem(__mdfeConsultaPageKey()) || '', 10);
         if (MDFE_CONSULTA_PAGE_SIZE_OPTIONS.includes(v)) return v;
     } catch (_) {}
-    return 10;
+    return 25;
 }
 function mdfeConsultaSetPageSize(value) {
     const size = parseInt(value, 10);
