@@ -1999,3 +1999,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção:** TL-like → `06/05/2026 - Antonio Mota - 4,000 m³ - R$ 150,00 - Nº 13`; Tora-like → `01/06/2026 - Madeiras - 0,754 m³ - Nº 15` (mesmo comportamento de data do Vendas).
 - **Gates:** suíte 1492 pass / 0 fail / 1 skip; html/sentry/nf OK. Commit `3c11260`; hosting publicado.
 
+## Sessao 2026-10-19 (cont. 18) — Excluir/editar Produtos Fiscais pela chave real
+
+- **Sintoma:** excluir (e editar) deixava o item na lista em `produtos-fiscais.html`.
+- **Causa:** `normalizeList` usava `Object.values()` e descartava a chave do Firebase; a lista caía para `p.id`/`p.codigo`. Registros gravados como array (`0`, `1`, ...) ou com chave diferente do `id` eram excluídos no caminho errado.
+- **Correção:** `__key` preservada (array = índice; objeto = chave; respeita `firebaseKey`/`key`), `recordKey()` usada em editar/excluir e no fallback; após salvar/excluir há atualização otimista local + `invalidateReadCacheForPath` (tenant e curto) + recarga.
+- **Gates:** suíte 1492 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `d5c2a70`; hosting publicado (cachebuster `js/produtos-fiscais.js?v=1fe56159305f`).
+
