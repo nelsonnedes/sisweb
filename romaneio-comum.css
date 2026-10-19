@@ -1399,6 +1399,9 @@ textarea:focus {
 #romaneioListModal .modal-content {
     width: 95% !important;
     max-width: 1200px !important;
+    /* Largura mínima fixa: o modal não encolhe enquanto a lista carrega
+       (tabela sem linhas de dados) nem ao trocar o estado vazio/carregado. */
+    min-width: min(95vw, 1200px) !important;
     display: flex !important;
     flex-direction: column !important;
     height: min(88vh, 720px) !important;
@@ -1446,6 +1449,17 @@ textarea:focus {
 #romaneioListModal .table {
     width: 100% !important;
     border-collapse: collapse !important;
+}
+
+/* Antes do RomaneioListColumns aplicar as larguras fixas (.rlc-fixed), a
+   tabela ocupa 100% do container. Sem isso, no estado "Carregando..." a
+   tabela auto-ajusta pela largura do texto e o modal parece encolher. */
+#listaModal .table-container > table:not(.rlc-fixed),
+#listaModal .table-responsive > table:not(.rlc-fixed),
+#romaneioListModal .table-container > table:not(.rlc-fixed),
+#romaneioListModal .table-responsive > table:not(.rlc-fixed) {
+    width: 100% !important;
+    min-width: 100% !important;
 }
 
 #listaModal .table th,
@@ -1502,6 +1516,7 @@ textarea:focus {
     #romaneioListModal .modal-content {
         width: 98% !important;
         max-width: none !important;
+        min-width: 0 !important;
         margin: 12px auto !important;
     }
 
