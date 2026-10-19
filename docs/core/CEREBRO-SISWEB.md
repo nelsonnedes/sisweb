@@ -2105,3 +2105,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Testes novos:** baixa M2, UN fracionada, PC→peças/volume, estouro de M2 e estorno fracionário (`produto-romaneio`, `estoque-baixa-atomica`, `estoque-madeira-serrada`).
 - **Gates:** suite 1524 pass / 0 fail / 1 skip; lint/typecheck/functions lint OK. Function `estoqueAplicarMovimento` e Hosting publicados; commit `db22095` + push.
 - **Pendente de validação viva:** QA não tem produto serrado representativo; usar mock para conferir M2/parcial na UI.
+
+## Sessao 2026-10-19 (cont. 31) — Editar item "Produto Cadastrado" abria vazio
+
+- **Sintoma:** ao editar pedido e clicar em editar item vindo de Produto Cadastrado, o select de produto abria vazio; itens Manual/Romaneio carregavam (usam input de texto).
+- **Causa raiz reproduzida com Puppeteer em produção:** `atualizarSelectProdutos` oculta produtos sem estoque; o item histórico continuava com `produtoId`, mas a opção não existia mais no select, então `select.value = item.produtoId` virava vazio. Produto com estoque >0 carregava; com estoque 0 falhava.
+- **Fix (`editarItem`):** limpa `produtoBusca`, localiza o produto por id (tolerante a `firebaseKey`) ou por código+nome, recria a opção com os dados do próprio pedido quando ela não existe e reaplica o filtro do select. Mantém o `produtoId` do item para edição.
+- **Validação em produção (Puppeteer, mock QA removido):** pedido com produto A estoque 5 e produto B estoque 0; ambos carregaram valor e nome no select. B exibiu `CODIGO - Nome` na opção histórica. Busca vazia e quantidade preservada.
+- **Trava:** `tests/order-clone.test.mjs` cobre a recriação da opção histórica com `window.produtos` vazio.
+- **Gates:** suite 1525 pass / 0 fail / 1 skip; lint/typecheck OK. Commit `fdffea6`; Hosting publicado.
