@@ -2060,7 +2060,7 @@ function adicionarItem() {
                     const E = parseFloat(produto.espessura) || 0, L = parseFloat(produto.largura) || 0, C = parseFloat(produto.comprimento) || 0;
                     const fam = typeof normalizarUnidadeMedida === 'function' ? normalizarUnidadeMedida(alvo.unidadeOrigem) : '';
                     if (E > 0 && L > 0 && C > 0 && (fam === 'UN' || fam === 'DZ')) {
-                        const pPecas = parseFloat(produto.pecas) || 0, pVol = parseFloat(produto.volumeM3) || 0;
+                        const pPecas = parseFloat(produto.pecas) || 0, pVol = volumeSerradoProduto(produto);
                         const volPeca = (pPecas > 0 && pVol > 0) ? (pVol / pPecas) : (E * L * C) / 1e6;
                         if (volPeca > 0) {
                             const pecas = quantidade / volPeca;
@@ -3275,7 +3275,7 @@ function aplicarMovimentoEstoquePedido(pedido, dir, opts) {
         return q;
     };
     const empurrarSerrado = (alvo, qtd, unidadeItem) => {
-        const volAntes = num(alvo.volumeM3) || num(alvo.estoque);
+        const volAntes = dimensoesEstoqueSerrado(alvo).vol;
         const pecasAntes = num(alvo.pecas);
         const r = razaoBaixaSerrado(alvo, qtd, unidadeItem);
         const base = r.base === 'pecas' ? 'pecas' : 'vol';
@@ -4688,11 +4688,28 @@ function normalizarUnidadeMedida(u) {
     return s;
 }
 
+function volumeSerradoProduto(p) {
+    const num = (v) => parseFloat(String(v ?? '').replace(',', '.')) || 0;
+    if (!p || typeof p !== 'object') return 0;
+    const stored = num(p.volumeM3);
+    if (stored > 0) return stored;
+    const calc = calcularVolumeSerradoM3(p.espessura, p.largura, p.comprimento, num(p.pecas), num(p.pecasPorPacote) || 1);
+    if (calc > 0) return calc;
+    const est = num(p.estoque);
+    return est > 0 ? est : 0;
+}
+
 function dimensoesEstoqueSerrado(p) {
     const num = (v) => parseFloat(v) || 0;
     const pecas = num(p && p.pecas);
-    // volumeM3 zerado com estoque positivo = legado inconsistente: usa o estoque.
-    const vol = num(p && p.volumeM3) || num(p && p.estoque);
+    // volumeM3 zerado/ausente: tenta o estoque legado e, por fim, deriva das
+    // dimensões × peças (produto com peças mas volume gravado 0).
+    let vol = num(p && p.volumeM3) || num(p && p.estoque);
+    if (!(vol > 0)) {
+        const e = num(p && p.espessura), l = num(p && p.largura), c = num(p && p.comprimento);
+        const q = num(p && p.pecas), pp = num(p && p.pecasPorPacote) || 1;
+        if (e > 0 && l > 0 && c > 0 && q > 0) vol = Math.round((e * l * c / 1e6) * q * pp * 1000) / 1000;
+    }
     let ml = 0;
     try { ml = (typeof metrosLinearesDe === 'function') ? metrosLinearesDe(p) : 0; } catch (_) { ml = 0; }
     const area = (num(p && p.largura) / 100) * (num(p && p.comprimento) / 100) * pecas;
@@ -4735,12 +4752,12 @@ function aplicarBaixaSerrado(p, quantidade, unidade, dir) {
         if (u === 'UN' || u === 'DZ') {
             p.pecas = Math.max(0, Math.round((num(p.pecas) + pedido) * 1000) / 1000);
         } else if (u === 'M3') {
-            const v0 = num(p.volumeM3) || num(p.estoque);
+            const v0 = dimensoesEstoqueSerrado(p).vol;
             if (p.volumeM3 !== undefined && p.volumeM3 !== null && p.volumeM3 !== '') p.volumeM3 = Math.round((v0 + pedido) * 1000) / 1000;
             else p.estoque = Math.round((v0 + pedido) * 1000) / 1000;
         }
         if (f > 0) {
-            const vol0 = num(p.volumeM3) || num(p.estoque);
+            const vol0 = dimensoesEstoqueSerrado(p).vol;
             const volNovo = Math.round(vol0 * f * 1000) / 1000;
             if (p.volumeM3 !== undefined && p.volumeM3 !== null && p.volumeM3 !== '') p.volumeM3 = volNovo;
             else p.estoque = volNovo;
@@ -4754,7 +4771,7 @@ function aplicarBaixaSerrado(p, quantidade, unidade, dir) {
     if (!(r.razao > 0)) return r;
     const f = 1 - r.razao;
     p.pecas = Math.max(0, Math.round(num(p.pecas) * f));
-    const vol0 = num(p.volumeM3) || num(p.estoque);
+    const vol0 = dimensoesEstoqueSerrado(p).vol;
     const volNovo = Math.round(vol0 * f * 1000) / 1000;
     if (p.volumeM3 !== undefined && p.volumeM3 !== null && p.volumeM3 !== '') p.volumeM3 = volNovo;
     p.estoque = volNovo;
@@ -5431,7 +5448,13 @@ function disponibilidadeGrupoRomaneio(g) {
             if (Number(p.comprimento) !== Number(g.comprimento)) return;
             achou = true;
             estPecas += parseFloat(p.pecas) || 0;
-            estVol += parseFloat(p.volumeM3 ?? p.estoque) || 0;
+            let pVol = parseFloat(p.volumeM3) || parseFloat(p.estoque) || 0;
+            if (!(pVol > 0)) {
+                const e = parseFloat(p.espessura) || 0, l = parseFloat(p.largura) || 0, c = parseFloat(p.comprimento) || 0;
+                const q = parseFloat(p.pecas) || 0;
+                if (e > 0 && l > 0 && c > 0 && q > 0) pVol = Math.round((e * l * c / 1e6) * q * (parseFloat(p.pecasPorPacote) || 1) * 1000) / 1000;
+            }
+            estVol += pVol;
             estMl += parseFloat(p.metrosLineares) || 0;
         });
         if (!achou) return vazio;
@@ -6128,7 +6151,7 @@ async function imprimirRelatorioProdutos(lista) {
     const linhas = itens.map(p => {
         const estoque = temDimsSerrado(p) ? String(Math.round(num(p.pecas))) : `${num(p.estoque).toLocaleString('pt-BR')} ${p.unidade || 'UN'}`;
         const ml = temDimsSerrado(p) ? metrosLinearesDe(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' ml' : '-';
-        const vol = temDimsSerrado(p) ? num(p.volumeM3 ?? p.estoque).toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' m³' : '-';
+        const vol = temDimsSerrado(p) ? volumeSerradoProduto(p).toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' m³' : '-';
         const preco = num(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         return `<tr><td>${esc(p.codigo || '-')}</td><td>${esc(nomeDe(p))}</td><td>${preco}</td><td>${esc(estoque)}</td><td>${ml}</td><td>${vol}</td></tr>`;
     }).join('');
@@ -6142,7 +6165,7 @@ async function imprimirRelatorioProdutos(lista) {
         const g = grupos.get(key);
         g.pecas += num(p.pecas);
         g.ml = Math.round((g.ml + metrosLinearesDe(p)) * 100) / 100;
-        g.volume = Math.round((g.volume + num(p.volumeM3 ?? p.estoque)) * 1000) / 1000;
+        g.volume = Math.round((g.volume + volumeSerradoProduto(p)) * 1000) / 1000;
     });
     const arrG = Array.from(grupos.values());
     const totPecas = arrG.reduce((s, g) => s + g.pecas, 0);
@@ -6245,7 +6268,7 @@ function carregarTabelaProdutos(filtro = '') {
             <td data-label="Preço" style="text-align: right;"><span class="commerce-card-value commerce-card-money">${formatCurrency(produto.preco || 0)}</span></td>
             <td data-label="Estoque" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(produto.pecas || 0, 0) : `${formatNumber(produto.estoque || 0)} ${produto.unidade || 'UN'}`}</span></td>
             <td data-label="M. Linear" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(metrosLinearesDe(produto), 2) + ' ml' : '-'}</span></td>
-            <td data-label="Volume (m³)" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(produto.volumeM3 ?? produto.estoque ?? 0) + ' m³' : '-'}</span></td>
+            <td data-label="Volume (m³)" style="text-align: center;"><span class="commerce-card-value commerce-card-number">${temDimsSerrado(produto) ? formatNumber(volumeSerradoProduto(produto)) + ' m³' : '-'}</span></td>
             <td data-label="Ações" class="commerce-actions-cell" style="text-align: center;">
                 <div class="acoes-buttons commerce-actions-wrap">
                 <button type="button" onclick="editarProduto('${produto.id}')" class="btn-primary btn-small" title="Editar" aria-label="Editar produto">
@@ -7254,7 +7277,7 @@ function atualizarSelectProdutos() {
             try {
                 if (temDimsSerrado(p)) {
                     const nPecas = Math.round(parseFloat(p.pecas) || 0);
-                    const nVol = Number(p.volumeM3 ?? p.estoque ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 3 });
+                    const nVol = volumeSerradoProduto(p).toLocaleString('pt-BR', { minimumFractionDigits: 3 });
                     const nMl = metrosLinearesDe(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                     let nArea = '0,00';
                     try {

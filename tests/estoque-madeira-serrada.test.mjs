@@ -42,4 +42,6 @@ test('módulo: lê/salva o mesmo nó produtos e padroniza paginação', () => {
   assert.match(vendas, /function temDimsSerrado/);
   assert.match(vendas, /sortRomaneiosProdutoByDate/);
   assert.match(js, /romDateMs/);
+  assert.match(js, /function volumeProduto/);
+  assert.match(vendas, /function volumeSerradoProduto/);
 });

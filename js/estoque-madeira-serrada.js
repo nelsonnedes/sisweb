@@ -47,6 +47,14 @@
         if (!e && !l && !c) return '—';
         return [e, l, c].map(function (n) { return n ? String(n).replace('.', ',') : '0'; }).join(' × ');
     }
+    function volumeProduto(p) {
+        var stored = num(p && p.volumeM3);
+        if (stored > 0) return stored;
+        var calc = volumeFromDims(p && p.espessura, p && p.largura, p && p.comprimento, p && p.pecas, (p && p.pecasPorPacote) || 1);
+        if (calc > 0) return calc;
+        var est = num(p && p.estoque);
+        return est > 0 ? est : 0;
+    }
     function productBlob(p) {
         return norm([p.codigo, p.nome, p.descricao, p.especie, p.unidade, p.tipoProduto,
             p.romaneioNumero, p.romaneioTipo, dimsText(p), p.preco, money(p.preco), p.estoque].join(' '));
@@ -166,7 +174,8 @@
         if (!slice.length) tbody.innerHTML = '<tr><td colspan="8" class="ems-empty">' + (state.items.length ? 'Nenhum produto encontrado.' : 'Nenhum produto no estoque.') + '</td></tr>';
         else tbody.innerHTML = slice.map(function (p) {
             var key = esc(recordKey(p));
-            var estoque = num(p.estoque || p.quantidade);
+            var serrado = p.tipoProduto === 'romaneio' || num(p.espessura) > 0 || num(p.largura) > 0 || num(p.comprimento) > 0;
+            var estoque = serrado ? volumeProduto(p) : num(p.estoque || p.quantidade);
             return '<tr>' +
                 '<td data-label="Código">' + esc(p.codigo || '—') + '</td>' +
                 '<td data-label="Nome">' + esc(p.nome || p.name || '—') + '</td>' +
