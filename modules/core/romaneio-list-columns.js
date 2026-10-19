@@ -21,6 +21,9 @@
     var MAX_WIDTH = 500;
     var MIN_ACTIONS_WIDTH = 140;
     var SAVE_DEBOUNCE_MS = 400;
+    // PES trocou de 7 para 6 colunas: preferências antigas ficam num namespace
+    // novo para não reaproveitar larguras deslocadas.
+    var WIDTHS_VERSION = { pes: 'v2' };
 
     var DEFAULTS = {
         'Data': 95,
@@ -82,16 +85,22 @@
         return 'default';
     }
 
+    function widthsFolder(pageKey) {
+        var p = pageKey || PAGE || 'tl';
+        return WIDTHS_VERSION[p] ? 'romaneioListColumns_' + WIDTHS_VERSION[p] : 'romaneioListColumns';
+    }
+
     function buildPath(pageKey) {
         var p = pageKey || PAGE || 'tl';
         var uid = resolveUid();
         var tenant = resolveTenant();
-        return 'users/' + uid + '/preferences/romaneioListColumns/' + tenant + '/' + p;
+        return 'users/' + uid + '/preferences/' + widthsFolder(p) + '/' + tenant + '/' + p;
     }
 
     function localStorageKey(pageKey) {
         var p = pageKey || PAGE || 'tl';
-        return 'sisweb_romaneioListColumns_' + resolveTenant() + '_' + resolveUid() + '_' + p;
+        var suffix = WIDTHS_VERSION[p] ? '_' + WIDTHS_VERSION[p] : '';
+        return 'sisweb_romaneioListColumns_' + resolveTenant() + '_' + resolveUid() + '_' + p + suffix;
     }
 
     function rowHeightStorageKey(pageKey) {
