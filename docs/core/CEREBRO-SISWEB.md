@@ -1983,3 +1983,11 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção:** Dashboard MDF-e com 5 registros simulados → KPIs 5/1/1/1/1/1, gráficos status (5 fatias) e UFs (BA/PA), 5 linhas e `5 MDF-e(s)`; Encerramento com select autorizado/UF/cidade corretos; alerta Admin preservado.
 - **Gates:** suíte 1492 pass / 0 fail / 1 skip; mdfe/menu/partner 158/158. Commits `b40ad77` + `d3dd7a1`; hosting publicado.
 
+## Sessao 2026-10-18 (cont. 16) — Produtos Fiscais (NF-e) + números de romaneio
+
+- **Nova página `produtos-fiscais.html` + `js/produtos-fiscais.js`:** CRUD completo (listar/buscar/cadastrar/editar/excluir) em `companies/{tenant}/fiscal/produtos-nfe`, aberta por **Cadastros → Produto Fiscal (NF-e)** no `menu-component.js`. Campos: nome, código, NCM, CFOP, unidade, preço, CST/CSOSN, origem, CEST, valor de pauta, importado. Usa o `firebaseService.js` canônico (não o TL), com `SiswebLoading` e Sentry local. Adicionada ao `hosting-files.json` (547 arquivos). **Validado em produção:** criar → editar (preço 123,45) → excluir, com limpeza do registro de teste.
+- **Bug corrigido no parse de preço:** ponto decimal (valor numérico do formulário) era tratado como milhar (`123.45` → `12345`). Agora `parseMoneyInput`: vírgula = decimal + pontos = milhar; sem vírgula o ponto é decimal.
+- **NF-e / Itens / Romaneio:** o select mostra `Nº 01` (via `numeroExibicao`/sequencial) e **nunca** a chave técnica (`PCT_1789385882179_eml5puwka`); fallback é a posição na lista. Validado: `17/10/2026 - Fornecedor A - Nº 01`.
+- **Vendas/Compras:** rótulos de romaneio sem `()` e `#`, usando ` - ` (`... m³ - Nº 01`, ` - USADO Ped. Nº ...`); fallback sem id cru (`Romaneio`). PDF: `Pedido - N` (sem `#`).
+- **Gates:** suíte 1492 pass / 0 fail / 1 skip; html/sentry/nf/vendas/compras 251/251. Commits `c7f5b31`, `1b446fd`, `5017c26`; hosting publicado.
+
