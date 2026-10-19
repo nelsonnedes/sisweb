@@ -2032,3 +2032,12 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção (QA):** código novo `1` → próximo `2`; 26 registros → `Pág. 1/2 · 26`, 10/página → `Pág. 1/3`, página 2 com 10 linhas; busca `4` → código 4 em 1º; NCM/CFOP/preço filtrando; catálogo de teste limpo. Romaneios PCT: `contentW` 1199 em carregado e carregando (tabela 1165→1140, sem colapso).
 - **Gates:** suíte 1504 pass / 0 fail / 1 skip; lint/typecheck OK; novo `tests/produtos-fiscais-ui.test.mjs`. Commits `7e8a2a5`, `8b1bfa6`, `46798f7`; hosting publicado.
 
+## Sessao 2026-10-19 (cont. 22) — Domínio siswebsoftware.com.br + mobile fiscal + links de assinatura
+
+- **Domínio:** 81 arquivos rastreados migrados de `sisweb-7ce82.web.app` para `siswebsoftware.com.br` (canonical/OG/Twitter/JSON-LD, links, e-mails, scripts, docs, sitemap/robots). Mantidos apenas em **detecção legada** (`financas.html`, `menu-component.js`) para quem ainda abre o domínio antigo. `SUPPORT_ADMIN_URL`/e-mails e CORS do Storage atualizados.
+- **Storage CORS (infra):** bucket `sisweb-7ce82.firebasestorage.app` agora aceita `siswebsoftware.com.br`, `www.siswebsoftware.com.br`, `sisweb-7ce82.web.app` e `.firebaseapp.com` (GET/HEAD). Login no domínio novo validado (Authorized Domain OK).
+- **Compartilhamento (`landing-vendas.js`):** texto reescrito (emoji estável, bullets ✅, links em linhas próprias, WhatsApp/CTA), canonical/OG novos e cópia do link novo. Validado no navegador: `text` decodificado sem domínio antigo.
+- **Assinatura na Folha:** alertas/redirects de `auth.js` passaram a usar caminho absoluto `/subscription-status.html` e `/subscription.html`; `folha_pagamento/folha.html` resolve para `https://siswebsoftware.com.br/subscription-status.html` (200), sem o 404 em `folha_pagamento/subscription-status.html`.
+- **Mobile:** dashboard NF-e virou cards (`nf-card-table` + `data-label`); stepper NF-e mostra 3 etapas (92px + scroll-snap) e o resumo não corta valores; MDF-e já usava `.mdfe-table`/data-label e Produtos Fiscais usa os cards de `commerce-responsive.js`. Auditado em 390px: sem overflow de página nas 4 abas de NF-e, 4 de MDF-e e Produtos Fiscais; paginação de produtos quebra linha e permanece utilizável.
+- **Gates:** suíte 1510 pass / 0 fail / 1 skip; lint/typecheck OK; Functions (`sendPublicSupportEmail`, `createSupportTicket`, `addSupportTicketMessage`, `grantAdminFreeTrial`) publicadas. Commits `3453520`, `726db63`, `9fa1701`; hosting publicado.
+
