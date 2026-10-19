@@ -6,6 +6,7 @@ const html = fs.readFileSync('estoque-madeira-serrada.html', 'utf8');
 const js = fs.readFileSync('js/estoque-madeira-serrada.js', 'utf8');
 const menu = fs.readFileSync('menu-component.js', 'utf8');
 const hosting = fs.readFileSync('hosting-files.json', 'utf8');
+const vendas = fs.readFileSync('vendas.js', 'utf8');
 
 test('menu Estoque aponta para a página de madeira serrada', () => {
   assert.match(menu, /resolveUrl\('estoque-madeira-serrada\.html'\)[\s\S]{0,80}Estoque de Madeira Serrada/);
@@ -35,4 +36,8 @@ test('módulo: lê/salva o mesmo nó produtos e padroniza paginação', () => {
   assert.match(html, /class="nf-pagination-bar"/);
   assert.match(js, /romaneios\/tl/);
   assert.match(js, /volumeFromDims/);
+  assert.match(js, /function hasStock/);
+  assert.match(js, /ems-modal-open/);
+  assert.match(js, /function romLabel/);
+  assert.match(vendas, /function temDimsSerrado/);
 });
