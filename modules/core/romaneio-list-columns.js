@@ -376,8 +376,16 @@
                 function onMove(ev) {
                     var width = clamp(startWidth + (ev.clientX - startX), min, MAX_WIDTH);
                     setColumnWidth(th, width);
-                    ensureFixedLayout(table, table.__rlcTargetWidth);
-                    th.title = width + 'px';
+                    // Reencaixa as demais colunas no container: a coluna
+                    // arrastada cresce e as outras cedem (nunca estoura o modal).
+                    var current = {};
+                    var headersNow = table.querySelectorAll('thead th');
+                    contract(p).forEach(function (labelNow, idx) {
+                        var px = parseFloat(headersNow[idx] && headersNow[idx].style.width);
+                        if (isFinite(px) && px > 0) current[labelNow] = px;
+                    });
+                    applyWidths(table, current, p);
+                    th.title = Math.round(th.getBoundingClientRect().width) + 'px';
                 }
 
                 function onUp() {
@@ -682,14 +690,15 @@
             .rlc-handle {
                 position: absolute;
                 top: 0;
-                right: -4px;
-                width: 8px;
+                right: 0;
+                width: 10px;
                 height: 100%;
                 cursor: col-resize;
                 touch-action: none;
                 user-select: none;
                 -webkit-user-select: none;
-                z-index: 25;
+                z-index: 50;
+                pointer-events: auto;
             }
             .rlc-handle:hover {
                 background: rgba(37, 99, 235, 0.45);
