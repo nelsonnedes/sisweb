@@ -2058,3 +2058,10 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Validação em produção (agent-browser):** PES 1024 → tabela 909px, colunas padrão `[72,179,269,76,120,192]`; arrastar Cliente +80 → `238` e tabela continua 909px/fits. TL (+60 em Cliente → 283), PCT (+60 → 153), Pré (+60 → 220) e Tora (+60 em Fornecedor → 156) também fitam após o arraste.
 - **Gates:** suíte 1517 pass / 0 fail / 1 skip; lint/typecheck OK. Commits `2cfb750`, `d45d363`, `a031fdf`, `298b97d`, `d17f489`, `122ee61`, `1a3e2b7`, `f6fa5ee`, `bcb59c6`, `83d4a1c`; hosting publicado.
 
+## Sessao 2026-10-19 (cont. 25) — Mobile NF-e 3x2 + padronização real das listas
+
+- **NF-e mobile:** stepper virou grid **3x2** (as 6 etapas visíveis, sem swipe escondido); `.nf-subsection-grid` do Transporte empilha (`minmax(0,1fr)`); Revisão quebra chave/protocolo (`overflow-wrap:anywhere`); Itens usa `.nf-items-table-container` com `max-height:none` (cards fluem e a barra de ações sticky permanece visível); **Consulta** mantém scroll interno `max-height:min(55vh,420px)` e paginação logo abaixo, no rodapé como MDF-e.
+- **Motor das listas (`romaneio-list-columns.js`):** alvo agora é inteiro e **preenche** a largura útil (`floor(clientWidth)-2`), eliminando o loop com `diff` fracionário que gerava colunas 60/337 em 1024; `clientWidth` já exclui o gutter. Ações tem mínimo **180** e máximo **220** (4 botões + padding); mobile retorna antes de aplicar largura inline/fixed (não briga com `.mobile-cards`). CSS final em `romaneio-comum.css` neutraliza min-width/% divergentes; PES exibe antes do `initTable`; preferências antigas resetadas (`tl/pct/tora/preromaneio` v2, PES v5).
+- **Validação em produção (agent-browser):** TL 1280 → tabela 1139/container 1141, colunas `[102,279,226,75,124,140,193]`; PES 1024 → 912/914, colunas `[85,237,190,103,117,180]`; todos `fits:true`, Ações ≤220. NF-e 390: as 6 etapas sem overflow; 3 itens → container 1203px `max-height:none` e ações sticky visíveis; Consulta `max-height:420px/overflow:auto`.
+- **Gates:** suíte 1517 pass / 0 fail / 1 skip; lint/typecheck OK. Commits `73cfca5`, `943055a`, `510babc`; hosting publicado.
+
