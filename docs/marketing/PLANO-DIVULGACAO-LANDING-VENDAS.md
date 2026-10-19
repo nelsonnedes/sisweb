@@ -1,6 +1,6 @@
 # Plano de Divulgação — Landing de Vendas SisWeb
 
-> **Origem:** Kit gerado a partir da landing oficial `https://sisweb-7ce82.web.app/landing-vendas.html` em 2026-09-13.
+> **Origem:** Kit gerado a partir da landing oficial `https://siswebsoftware.com.br/landing-vendas.html` em 2026-09-13.
 > **Objetivo:** Vender o SisWeb para serrarias com desdobramento de madeiras em toras no Pará, Mato Grosso, Rondônia, Acre, Amazonas, Maranhão, Tocantins, Roraima, Amapá.
 
 ---
@@ -52,8 +52,8 @@ Chega de romaneio no papel, cubagem na calculadora e planilha paralela. O Sisweb
 ✨ *30 dias grátis* para testar no seu pátio
 🛡️ *Sem fidelidade* • 💚 *Feito no Pará*
 
-📊 *Simule sua economia:* https://sisweb-7ce82.web.app/landing-vendas.html#simulador
-🚀 *Comece seu teste grátis:* https://sisweb-7ce82.web.app/login.html?mode=register
+📊 *Simule sua economia:* https://siswebsoftware.com.br/landing-vendas.html#simulador
+🚀 *Comece seu teste grátis:* https://siswebsoftware.com.br/login.html?mode=register
 💬 *Dúvidas? Fale no WhatsApp:* (91) 99131-1049
 ```
 
@@ -82,7 +82,7 @@ Quer ver por dentro? Manda eu te mando o link do trial ou a gente marca uma call
 | 2 | **Romaneio sem fila** | "Grade com Enter contínuo. Importa Excel do apontador. Imprime em 1 clique. CONAMA 411 pronto." | Print romaneio |
 | 3 | **Cubagem auditável** | "Francon + geométrica lado a lado. Custódia, comprimento geométrico, X1–X4, volume. Fiscalização com papel na mão." | Print estoque |
 | 4 | **Rastro tora → prancha** | "Baixa automática do estoque vinculada ao romaneio serrado. Cada lote volta à tora de origem. Prova de origem em 1 clique." | Diagrama animado |
-| 5 | **Teste grátis hoje** | "https://sisweb-7ce82.web.app/login.html?mode=register • WhatsApp (91) 99131-1049 • Suporte direto, sem robô" | Botão CTA |
+| 5 | **Teste grátis hoje** | "https://siswebsoftware.com.br/login.html?mode=register • WhatsApp (91) 99131-1049 • Suporte direto, sem robô" | Botão CTA |
 
 **Hashtags:** #Sisweb #GestaoMadeireira #Serraria #Madeireira #Para #MatoGrosso #Rondonia #ACre #Amazonas #Tocantins #Maranhao #CONAMA411 #AUTEF #DOF #NFE #MDFe #CubagemFrancon #CubagemGeometrica #Rastreabilidade #Florestal #Madeira #Tora #Serrado #TecnologiaFlorestal #AgroTech #StartupPara
 
@@ -140,11 +140,11 @@ A landing tem seção dinâmica "Cupons ativos para economizar na assinatura" co
 
 | Canal | Link |
 |-------|------|
-| **Landing page** | https://sisweb-7ce82.web.app/landing-vendas.html |
-| **Criar conta (trial)** | https://sisweb-7ce82.web.app/login.html?mode=register |
+| **Landing page** | https://siswebsoftware.com.br/landing-vendas.html |
+| **Criar conta (trial)** | https://siswebsoftware.com.br/login.html?mode=register |
 | **WhatsApp comercial** | https://wa.me/5591991311049 / (91) 99131-1049 |
-| **Cadastro parceiro** | https://sisweb-7ce82.web.app/cadastro-parceiro.html |
-| **Painel parceiro** | https://sisweb-7ce82.web.app/parceiro-painel.html |
+| **Cadastro parceiro** | https://siswebsoftware.com.br/cadastro-parceiro.html |
+| **Painel parceiro** | https://siswebsoftware.com.br/parceiro-painel.html |
 
 ---
 
@@ -171,7 +171,7 @@ A landing oferece: **"Pedir o modelo Excel de toras no WhatsApp →"**
 
 ## 11. Regra de Exibição do Link (para o agente)
 
-> **Quando o usuário compartilhar o link `https://sisweb-7ce82.web.app/landing-vendas.html`:**
+> **Quando o usuário compartilhar o link `https://siswebsoftware.com.br/landing-vendas.html`:**
 > - **NÃO** mostrar a URL crua
 > - **MOSTRAR:** **"Sisweb - Sistema de Gestão de Serraria"** como texto clicável (hyperlink)
 > - Exibir junto: partes do comercial, imagens desktop/mobile do sistema, texto do comercial

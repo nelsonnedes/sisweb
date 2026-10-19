@@ -314,16 +314,16 @@ Expected: tenants A e B nao leem dados, perfil ou relatorio um do outro.
 
 Run: `firebase deploy --only hosting --project sisweb-7ce82 --non-interactive`
 
-Expected: deploy concluido para `https://sisweb-7ce82.web.app`.
+Expected: deploy concluido para `https://siswebsoftware.com.br`.
 
 - [ ] **Step 5: Verificar artefatos publicados**
 
 Run:
 
 ```powershell
-Invoke-WebRequest 'https://sisweb-7ce82.web.app/financas.html' -UseBasicParsing
-Invoke-WebRequest 'https://sisweb-7ce82.web.app/financas.js?v=2026-07-18-finance-report-header-v1' -UseBasicParsing
-Invoke-WebRequest 'https://sisweb-7ce82.web.app/sw.js' -UseBasicParsing
+Invoke-WebRequest 'https://siswebsoftware.com.br/financas.html' -UseBasicParsing
+Invoke-WebRequest 'https://siswebsoftware.com.br/financas.js?v=2026-07-18-finance-report-header-v1' -UseBasicParsing
+Invoke-WebRequest 'https://siswebsoftware.com.br/sw.js' -UseBasicParsing
 ```
 
 Expected: HTTP 200 e versoes novas presentes no conteudo.

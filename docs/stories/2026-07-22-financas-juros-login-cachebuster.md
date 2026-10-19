@@ -137,8 +137,8 @@ Adicionado `"firebase-init.js"` ao `hosting-files.json` (linha 261). Rebuild pas
 
 ### Resultado Final
 ```
-curl https://sisweb-7ce82.web.app/firebase-init.js → HTTP 200 ✅
-curl https://sisweb-7ce82.web.app/firebaseService.js?v=676ba9f2a922 → HTTP 200 ✅
+curl https://siswebsoftware.com.br/firebase-init.js → HTTP 200 ✅
+curl https://siswebsoftware.com.br/firebaseService.js?v=676ba9f2a922 → HTTP 200 ✅
 ```
 
 ### Arquivos modificados
@@ -211,7 +211,7 @@ Varrimento completo de todos os **54 arquivos HTML** em busca de imports relativ
 
 ## ✅ Verificação em Produção
 
-Teste realizado em `https://sisweb-7ce82.web.app/` em 22/07/2026:
+Teste realizado em `https://siswebsoftware.com.br/` em 22/07/2026:
 
 | Recurso | Resultado |
 |---------|:--------:|

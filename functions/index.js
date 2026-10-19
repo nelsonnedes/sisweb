@@ -2932,7 +2932,7 @@ const SUPPORT_ATTACHMENT_ALLOWED_TYPES = new Set([
 ]);
 const PUBLIC_SUPPORT_EMAIL_LIMIT_PER_DAY = 8;
 const PUBLIC_SUPPORT_EMAIL_GLOBAL_LIMIT_PER_DAY = 80;
-const SUPPORT_ADMIN_URL = process.env.SUPPORT_ADMIN_URL || 'https://sisweb-7ce82.web.app/admin.html?tab=support';
+const SUPPORT_ADMIN_URL = process.env.SUPPORT_ADMIN_URL || 'https://siswebsoftware.com.br/admin.html?tab=support';
 
 function parseSupportEmailList(value) {
     return String(value || '')
@@ -4769,7 +4769,7 @@ function buildAdminTrialBonusEmailBody(user, trialDays, endDateIso, reviewNote) 
         '- acesso pelo computador e PWA no celular.',
         '',
         'Acesse o Sisweb por aqui:',
-        'https://sisweb-7ce82.web.app/',
+        'https://siswebsoftware.com.br/',
         '',
         'Se surgir qualquer dúvida durante o teste, fale conosco pela Central de Mensagens do sistema ou responda este e-mail.',
         note ? '' : null,

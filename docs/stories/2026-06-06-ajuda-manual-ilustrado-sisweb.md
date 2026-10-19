@@ -105,7 +105,7 @@ Transformar `ajuda.html` em um manual operacional amplo, responsivo e seguro, co
 - Deploy executado:
   - `firebase deploy --only "hosting" --project sisweb-7ce82`
 - Verificacao em producao por HTTP:
-  - `https://sisweb-7ce82.web.app/ajuda.html` retornou 200 com titulo novo e selo `Sem dados reais`.
-  - `https://sisweb-7ce82.web.app/ajuda.js` retornou 200 sem referencias a `coreva-normal.trae.ai` e sem `help-assets/`.
-  - `https://sisweb-7ce82.web.app/scripts/admin/admin-main.js` retornou 200 com integracao `listSupportTicketsAdmin`.
-  - `https://sisweb-7ce82.web.app/help-assets/inicio/dashboard.png` retornou 404, confirmando que os prints legados nao foram publicados.
+  - `https://siswebsoftware.com.br/ajuda.html` retornou 200 com titulo novo e selo `Sem dados reais`.
+  - `https://siswebsoftware.com.br/ajuda.js` retornou 200 sem referencias a `coreva-normal.trae.ai` e sem `help-assets/`.
+  - `https://siswebsoftware.com.br/scripts/admin/admin-main.js` retornou 200 com integracao `listSupportTicketsAdmin`.
+  - `https://siswebsoftware.com.br/help-assets/inicio/dashboard.png` retornou 404, confirmando que os prints legados nao foram publicados.

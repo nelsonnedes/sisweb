@@ -71,6 +71,6 @@ Reduzir flicker no primeiro carregamento, tornar o dashboard progressivo e prior
 - `npm run lint`
 - `npm run typecheck`
 - `npm test`
-- Deploy Firebase Hosting em `https://sisweb-7ce82.web.app`.
+- Deploy Firebase Hosting em `https://siswebsoftware.com.br`.
 - Smoke online da home logada: 10 scripts, 9 KPIs, 2 tabelas, 20 linhas financeiras, `aria-busy=false`, 0 skeletons, sem logs recentes de warn/error.
 - Breakpoints online 390x844, 768x1024 e 1280x720: sem overflow horizontal; menu mobile como sidebar e menu desktop com `position: static`/`transform: none`.

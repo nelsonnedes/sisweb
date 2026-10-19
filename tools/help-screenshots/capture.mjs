@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 const cliFull = process.argv.includes('--full');
 const cliTraining = process.argv.includes('--training') || cliFull;
-const defaultBaseUrl = cliTraining ? 'http://127.0.0.1:8766' : 'https://sisweb-7ce82.web.app';
+const defaultBaseUrl = cliTraining ? 'http://127.0.0.1:8766' : 'https://siswebsoftware.com.br';
 const baseUrl = (process.env.SISWEB_BASE_URL || defaultBaseUrl).replace(/\/+$/, '');
 const email = process.env.SISWEB_EMAIL || '';
 const password = process.env.SISWEB_PASSWORD || '';

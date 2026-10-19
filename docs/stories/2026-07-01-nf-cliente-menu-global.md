@@ -55,7 +55,7 @@ Padronizar o menu superior para manter a aparência do `index.html` nas demais p
 - CodeRabbit: GitHub App instalado no PR; CLI local `coderabbit` não encontrado no PATH do Windows e WSL indisponível nesta máquina.
 - `firebase deploy --only hosting --project sisweb-7ce82 --non-interactive`
 - `npm run security:postdeploy` -> 37/37
-- Smoke publicado em `https://sisweb-7ce82.web.app`: cachebuster NF-e, `sw.js`, `openEditClientModal` e menu escopado confirmados.
+- Smoke publicado em `https://siswebsoftware.com.br`: cachebuster NF-e, `sw.js`, `openEditClientModal` e menu escopado confirmados.
 - **Verificação visual/DOM em Chrome autenticado (2026-07-01):**
   - ✅ Menu principal horizontal com dropdowns funcionais (Vendas, Estoque, Financeiro, Cadastros, Romaneios)
   - ✅ Dropdown engrenagem com itens corretos: Instalar, Meu Perfil, Assinatura, Empresa, Ajuda, Suporte, Sobre, Sair

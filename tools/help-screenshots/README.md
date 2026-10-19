@@ -18,7 +18,7 @@ npm run install:browsers
 2) Definir variáveis de ambiente (Windows PowerShell):
 
 ```powershell
-$env:SISWEB_BASE_URL = "https://sisweb-7ce82.web.app"
+$env:SISWEB_BASE_URL = "https://siswebsoftware.com.br"
 $env:SISWEB_EMAIL = "seu-email@dominio.com"
 $env:SISWEB_PASSWORD = "sua-senha"
 ```

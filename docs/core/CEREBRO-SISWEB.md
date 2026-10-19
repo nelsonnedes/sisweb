@@ -13,7 +13,7 @@
 
 - **Nome:** SisWeb (Sisweb) — gestão madeireira (romaneios TL/PC/Pés/Tora), vendas, compras, estoque, finanças, folha de pagamento, NF-e/MDF-e, suporte, assinaturas, Sentry.
 - **Projeto Firebase/GCP:** `sisweb-7ce82`
-  - Hosting: `https://sisweb-7ce82.web.app`
+  - Hosting: `https://siswebsoftware.com.br`
   - RTDB: `https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app`
   - Auth domain: `sisweb-7ce82.firebaseapp.com`
   - Storage: `sisweb-7ce82.firebasestorage.app`
@@ -292,7 +292,7 @@ Navegação real (madeportes27@gmail.com, tenant `1774030248295`): index, finan�
   - **Aplicado a 4 formulários/abas:** (1) Entrada — "Dados da Tora (Adicionar Manualmente)" (pedido explícito do usuário); (2) Saída — "Adicionar Tora Manual (fora do estoque)" (grid inline de 1880px); (3) Almoxarifado — "Registrar Entrada de Produto"; (4) Produtos — "Baixa de Produto / Consumo". Consulta/Movimentações já usam offcanvas-drawer; Relatórios tem só 3 filtros (não colapsado de propósito).
   - **JS (`estoque.js`):** `inicializarMobileCollapses()` (chamado em `inicializarSistema()`) liga clique/keydown Enter-Espaço no header e reage a `matchMedia('(max-width:768px)')` no resize. `expandirFormSection(header)` auto-expande (marcando `dataset.userOpened='true'` para persistir aberto após resize). Chamado em modo edição (`setModoEdicaoEntrada` em estoque.js, `atualizarModoFormularioProduto` em estoque_produtos.js) e ao limpar (`limparCamposEntrada`, `limparFormularioEntrada`, `limparEntradaProdutoForm`). Sem `userOpened`, ao voltar do desktop o mobile recolhe de novo.
 - **Testes:** `tests/estoque-toras-mobile-cards.test.mjs` ganhou 2 testes (neutralização do label e presença dos collapses/JS). Suíte total: **467 pass / 0 fail / 1 skip** (antes 465/0/1). Lint e typecheck OK. Commit: `0397b63`.
-- **Armadilhas p/ o antigravity:** (1) em dev local com `python -m http.server`, o Service Worker PWA serve JS em cache — desregistrar SW e recarregar com `?fresh=` para validar; o modelo atual NÃO lê imagens, validar geometricamente via `getBoundingClientRect`/`getClientRects`; (2) refs `@eN` do agent-browser falham no PowerShell — usar seletores CSS ou `eval`; (3) credenciais de teste: `madeportes27@gmail.com` / `Gsanto1w@` (produção `https://sisweb-7ce82.web.app/estoque.html`); (4) carregar dados na aba Entrada via select `#romaneioEntradaSelect` + botão "Carregar Itens" (romaneio de teste `TORA-1785269468331`); (5) o build (`npm run build:hosting`) + deploy hosting ainda NÃO foram feitos nesta sessão — publicar antes de entregar.
+- **Armadilhas p/ o antigravity:** (1) em dev local com `python -m http.server`, o Service Worker PWA serve JS em cache — desregistrar SW e recarregar com `?fresh=` para validar; o modelo atual NÃO lê imagens, validar geometricamente via `getBoundingClientRect`/`getClientRects`; (2) refs `@eN` do agent-browser falham no PowerShell — usar seletores CSS ou `eval`; (3) credenciais de teste: `madeportes27@gmail.com` / `Gsanto1w@` (produção `https://siswebsoftware.com.br/estoque.html`); (4) carregar dados na aba Entrada via select `#romaneioEntradaSelect` + botão "Carregar Itens" (romaneio de teste `TORA-1785269468331`); (5) o build (`npm run build:hosting`) + deploy hosting ainda NÃO foram feitos nesta sessão — publicar antes de entregar.
 
 ## 13. Sessão 2026-08-19 — Mobile do Sistema Financeiro (financas)
 
@@ -833,7 +833,7 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Anti-regressão:** contrato `targetWindow` preservado (teste `commerce-responsive-pwa` verde); `applyToPrintDocument` preservado; `ui-components.css`/`.mobile-cards` intocados; `@media print display:revert` intacto; PWA branches (`isCommercePwa/isEstoquePwa`) inalterados.
 - **Fora de escopo (posterior):** PES inline, 2º motor folha, `company.html` helper com nome errado, MDF/NF sem helper, `@page` único, `printService.js` morto, `print-styles.css 50px` global.
 - **Gates:** `node --check` 5/5, novo `tests/romaneio-print-mobile-blank.test.mjs` 4/4, lint OK, typecheck OK, `validate:pr` 6/6 (unit 575/0/1). `npm test` direto: 1 e2e flaky (`romaneios-modals-customization` Timeout/assert Pré, sem relação com print; passou no retry do validate). `logs.md` revertido. Sem commit/push/deploy.
-- **Deploy (sessão seguinte, devops):** inject 8 HTMLs, build 478 arquivos, commit `98f3c0d` (15 arquivos), push main OK, `firebase deploy --only hosting` complete em `https://sisweb-7ce82.web.app`; `hosting-dist` verificado (`sisweb-print-back`, `ensureRomaneioPrintAux`).
+- **Deploy (sessão seguinte, devops):** inject 8 HTMLs, build 478 arquivos, commit `98f3c0d` (15 arquivos), push main OK, `firebase deploy --only hosting` complete em `https://siswebsoftware.com.br`; `hosting-dist` verificado (`sisweb-print-back`, `ensureRomaneioPrintAux`).
 
 ## 79. Sessao 2026-09-21 — Fix mobile impressão fases 2+3: PES + Company + MDF + Folha
 
@@ -913,7 +913,7 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 - **Deploy:** merge `4f879a6` no main (branch `redesign/fases-1-20` commit `a7713b2`);
   `hosting-files.json` +6 assets (js/sisweb-theme.js, styles/* — sem eles o hosting dava
   404 e o tema não carregava); `npm run build:hosting` 486 arquivos;
-  `firebase deploy --only hosting,database` complete em `https://sisweb-7ce82.web.app`
+  `firebase deploy --only hosting,database` complete em `https://siswebsoftware.com.br`
   (hosting 6 arquivos novos + rules `ui/theme` released); roundtrip nuvem validado
   (`source:firebase`, custom aplicado, tenant resetado p/ padrão após o teste).
   Push p/ origin pendente de confirmação.
@@ -1017,7 +1017,7 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 ## Sessao 2026-10-11 — Consulta SEFAZ: 403 mascarado de CORS + modal de senha A1 no rodape
 
 - **Sintoma 1 (funcional):** botão "Consultar status na SEFAZ" (aba Consulta) falhava com `Access to fetch ... blocked by CORS policy: No 'Access-Control-Allow-Origin'` ao chamar `nf_consultarNFe`. Investigacao com `curl OPTIONS` provou que o preflight retornava **HTTP 403** (sem headers CORS) — **nao era CORS, era permissao de invocacao gen2**: 5 callables v2 estavam sem `allUsers`/`roles/run.invoker` (o browser mascara o 403 do preflight como erro de CORS).
-- **Diagnostico reprodutivel:** `curl.exe -s -i -X OPTIONS "https://us-central1-sisweb-7ce82.cloudfunctions.net/<fn>" -H "Origin: https://sisweb-7ce82.web.app" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,x-firebase-gmpid"`. 403 = invoker quebrado; 204 + `access-control-allow-origin` = OK.
+- **Diagnostico reprodutivel:** `curl.exe -s -i -X OPTIONS "https://us-central1-sisweb-7ce82.cloudfunctions.net/<fn>" -H "Origin: https://siswebsoftware.com.br" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,x-firebase-gmpid"`. 403 = invoker quebrado; 204 + `access-control-allow-origin` = OK.
 - **Funcoes corrigidas (5):** `nf_enviarSEFAZ`, `nf_consultarNFe`, `nf_cancelarNFe`, `nf_removerCertificado`, `nf_configurarCertNuvem` (as demais nf_/mdfe_ ja respondiam 204).
 - **Fix (infra, nao e codigo):** `gcloud run services add-iam-policy-binding <svc> --region=us-central1 --member=allUsers --role=roles/run.invoker --project=sisweb-7ce82 --quiet`, com `<svc>` = nome da funcao em lowercase com hifens (`nf-consultarnfe`, `nf-enviarsefaz`, `nf-cancelarnfe`, `nf-removercertificado`, `nf-configurarcertnuvem`). Revalidado: 5/5 → 204 + ACAO.
 - **Armadilha registrada:** deploy de functions que falha por quota/parcial pode deixar a callable sem invoker publico; o sintoma no console e sempre "CORS policy ... No 'Access-Control-Allow-Origin'", nunca "403". Sempre testar o preflight com curl ANTES de mexer em CORS de codigo.
@@ -1416,8 +1416,8 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
 
 ## Sessao 2026-10-12 — Download XML: CORS do bucket + fallback backend
 
-- **Evidencia (logs.md:92-94):** 403 sumiu (getDownloadURL OK); falha era **CORS** — `firebasestorage...?alt=media&token=` sem `Access-Control-Allow-Origin` p/ `sisweb-7ce82.web.app` → `Failed to fetch`.
-- **Fix raiz:** `gsutil cors set` no bucket `sisweb-7ce82.firebasestorage.app` → `[{"origin":["https://sisweb-7ce82.web.app"],"method":["GET","HEAD"],"maxAgeSeconds":3600}]` (config em `C:\Users\Nelson\AppData\Local\Temp\opencode\storage-cors.json`).
+- **Evidencia (logs.md:92-94):** 403 sumiu (getDownloadURL OK); falha era **CORS** — `firebasestorage...?alt=media&token=` sem `Access-Control-Allow-Origin` p/ `siswebsoftware.com.br` → `Failed to fetch`.
+- **Fix raiz:** `gsutil cors set` no bucket `sisweb-7ce82.firebasestorage.app` → `[{"origin":["https://siswebsoftware.com.br"],"method":["GET","HEAD"],"maxAgeSeconds":3600}]` (config em `C:\Users\Nelson\AppData\Local\Temp\opencode\storage-cors.json`).
 - **Fallback:** novo callable `nf_baixarXML` (Admin SDK; auth + `assertTenantAccess`; prefere `xmlProcStoragePath`; paths restritos a `companies|tenants/`; retorna base64) + export no `index.js`; frontend tenta direto e cai p/ backend (toast "via servidor"). Deploy `functions:nf_baixarXML` OK.
 - **Arquivos:** `functions/nf-functions.js`, `functions/index.js`, `notas-fiscais.html`, `tests/nf-baixar-xml.test.mjs`. Hosting + function publicados.
 - **Gates:** `npm test` 1168/1167/0/1; lint + typecheck OK.
@@ -1870,7 +1870,7 @@ pm run build:hosting: 477 arquivos gerados em hosting-dist/.
   - `git push origin main` — commit `a6ad972` publicado no remote
   - `firebase deploy --only functions:mdfe_consultar` — função corrigida publicada (resolve erro INTERNAL na consulta SEFAZ MDF-e)
   - `npm run deploy:hosting` — 545 arquivos publicados com correções de loader/UI (overlay sem fundo retangular, cores do tema, ordem correta de carregamento de scripts)
-- **Produção verificada:** `https://sisweb-7ce82.web.app` servindo a nova versão com todas as correções ativas.
+- **Produção verificada:** `https://siswebsoftware.com.br` servindo a nova versão com todas as correções ativas.
 
 ## Sessao 2026-10-18 (cont. 2) — Correções UI/UX MDF-e Consulta
 

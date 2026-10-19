@@ -922,9 +922,9 @@ function resolveSubscriptionStatus(userDetails) {
 }
 
 function resolveSubscriptionRedirect(statusKey) {
-    if (statusKey === 'expired') return 'subscription.html?reason=expired';
-    if (statusKey === 'blocked') return 'subscription.html?reason=blocked';
-    if (statusKey === 'pending' || statusKey === 'pending_grace') return 'subscription.html?reason=pending';
+    if (statusKey === 'expired') return '/subscription.html?reason=expired';
+    if (statusKey === 'blocked') return '/subscription.html?reason=blocked';
+    if (statusKey === 'pending' || statusKey === 'pending_grace') return '/subscription.html?reason=pending';
     return null;
 }
 
@@ -1131,13 +1131,13 @@ async function resolvePostLoginRoute(userDetails, options = {}) {
             } catch (_) {}
         }
         if (statusKey === 'active') return 'company.html?reason=link_company';
-        if (statusKey === 'pending' || statusKey === 'pending_grace') return 'subscription-status.html?reason=pending';
-        if (statusKey === 'blocked') return 'subscription-status.html?reason=blocked';
-        return 'subscription.html?reason=subscription_required';
+        if (statusKey === 'pending' || statusKey === 'pending_grace') return '/subscription-status.html?reason=pending';
+        if (statusKey === 'blocked') return '/subscription-status.html?reason=blocked';
+        return '/subscription.html?reason=subscription_required';
     }
-    if (statusKey === 'expired') return 'subscription.html?reason=expired';
-    if (statusKey === 'blocked') return 'subscription.html?reason=blocked';
-    if (statusKey === 'pending' || statusKey === 'pending_grace') return 'subscription.html?reason=pending';
+    if (statusKey === 'expired') return '/subscription.html?reason=expired';
+    if (statusKey === 'blocked') return '/subscription.html?reason=blocked';
+    if (statusKey === 'pending' || statusKey === 'pending_grace') return '/subscription.html?reason=pending';
     const currentIsLoginPage = isLoginTarget(currentPathname);
     if ((statusKey === 'active' || statusKey === 'trial_active')
         && ((requested && isLoginTarget(lowerRequested))
@@ -1194,7 +1194,7 @@ async function enforceSubscriptionGuard(userDetails, currentPathname) {
         if (redirect) return { allowed: false, redirect, statusKey };
         return { allowed: true, statusKey };
     } catch (_) {
-        return { allowed: false, redirect: 'subscription.html', statusKey: 'expired' };
+        return { allowed: false, redirect: '/subscription.html', statusKey: 'expired' };
     }
 }
 
@@ -1232,7 +1232,7 @@ function renderPendingGraceBanner(statusKey, userDetails) {
             const end = parseAnyDateSafe(userDetails && userDetails.subscription ? userDetails.subscription.endDate : null);
             const remaining = end ? Math.max(0, Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
             banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#ecfeff;color:#0e7490;border-bottom:1px solid #67e8f9;padding:10px 14px;font-size:13px;text-align:center;font-weight:600;';
-            banner.innerHTML = `Teste gratuito ativo: restam <strong>${remaining}</strong> dia(s) com acesso completo. <a href="subscription-status.html" style="color:#0e7490;text-decoration:underline;">Ver assinatura</a>`;
+            banner.innerHTML = `Teste gratuito ativo: restam <strong>${remaining}</strong> dia(s) com acesso completo. <a href="/subscription-status.html" style="color:#0e7490;text-decoration:underline;">Ver assinatura</a>`;
         } else {
             const graceUntil = parseAnyDateSafe(userDetails && userDetails.pendingPayment ? userDetails.pendingPayment.graceUntil : null);
             const remaining = graceUntil ? Math.max(0, Math.ceil((graceUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : (() => {
@@ -1244,7 +1244,7 @@ function renderPendingGraceBanner(statusKey, userDetails) {
                 return Math.max(0, grace - ageDays);
             })();
             banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#fff7ed;color:#9a3412;border-bottom:1px solid #fdba74;padding:10px 14px;font-size:13px;text-align:center;font-weight:600;';
-            banner.innerHTML = `Pagamento pendente: você está no período de carência. Restam <strong>${remaining}</strong> dia(s) antes do bloqueio. <a href="subscription-status.html" style="color:#c2410c;text-decoration:underline;">Acompanhar status</a>`;
+            banner.innerHTML = `Pagamento pendente: você está no período de carência. Restam <strong>${remaining}</strong> dia(s) antes do bloqueio. <a href="/subscription-status.html" style="color:#c2410c;text-decoration:underline;">Acompanhar status</a>`;
         }
         document.body.appendChild(banner);
     } catch (_) {}
@@ -1270,11 +1270,11 @@ function renderReadOnlyBanner(statusKey, userDetails) {
         banner.id = 'subscriptionReadOnlyBanner';
         banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#eff6ff;color:#1d4ed8;border-bottom:1px solid #93c5fd;padding:10px 14px;font-size:13px;text-align:center;font-weight:600;';
         if (reasonStatus === 'pending' || reasonStatus === 'pending_grace') {
-            banner.innerHTML = `Pagamento pendente: sistema em modo leitura até aprovação do administrador. <a href="subscription-status.html" style="color:#1d4ed8;text-decoration:underline;">Acompanhar status</a>`;
+            banner.innerHTML = `Pagamento pendente: sistema em modo leitura até aprovação do administrador. <a href="/subscription-status.html" style="color:#1d4ed8;text-decoration:underline;">Acompanhar status</a>`;
         } else if (reasonStatus === 'blocked') {
-            banner.innerHTML = `Conta bloqueada: acesso em modo leitura ativo. <a href="subscription-status.html" style="color:#1d4ed8;text-decoration:underline;">Ver status</a>`;
+            banner.innerHTML = `Conta bloqueada: acesso em modo leitura ativo. <a href="/subscription-status.html" style="color:#1d4ed8;text-decoration:underline;">Ver status</a>`;
         } else {
-            banner.innerHTML = `Assinatura expirada: acesso em modo leitura ativo até <strong>${untilText}</strong>. <a href="subscription.html" style="color:#1d4ed8;text-decoration:underline;">Regularizar agora</a>`;
+            banner.innerHTML = `Assinatura expirada: acesso em modo leitura ativo até <strong>${untilText}</strong>. <a href="/subscription.html" style="color:#1d4ed8;text-decoration:underline;">Regularizar agora</a>`;
         }
         document.body.appendChild(banner);
         window.__READ_ONLY_MODE_ACTIVE = (reasonStatus === 'pending' || reasonStatus === 'pending_grace') || !!(until && until.getTime() > Date.now());

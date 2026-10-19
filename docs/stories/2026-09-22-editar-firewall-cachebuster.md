@@ -5,7 +5,7 @@
 - **Deploy:**
   - Commit `198a74b` → push `origin/main` ✓
   - Build `hosting-dist` (478 arquivos); artefato com `vendas.js?v=91632ff65bfe` + firewall ✓
-  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://siswebsoftware.com.br` ✓
 - **Escopo:** `vendas.js` (`editarItem` firewall), `vendas.html`, `compras.html`, `romaneiotora.html` (só `?v=`), `tests/romaneio-preview-uso-trava.test.mjs` (+ asserts)
 - **Sintoma (produção, via logs.md):** editar item E×L×C não abria o formulário; log mostrava `alterarTipoProduto('romaneio_dimensoes')` repetido sem o `manual` seguinte.
 

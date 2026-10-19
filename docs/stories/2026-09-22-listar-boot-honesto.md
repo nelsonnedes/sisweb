@@ -6,7 +6,7 @@
   - Commits `8b381b3` + `c16b0e3` (trava JS) + `abf4ce7` (warm-up quiet + bumps) → push `origin/main` ✓
   - `inject-cachebusters`: bump `vendas.js?v=5689a9c5cb9c`, `compras.js?v=69afe911a9e6`, `commerce-pdf-share.js?v=a358ef9d0e41` ✓
   - Build `hosting-dist` (478 arquivos) ✓
-  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://siswebsoftware.com.br` ✓
 - **Escopo:** `vendas.js`, `compras.js`, `vendas.html`, `compras.html`, `tests/operational-route-state.test.mjs` (atualizado), `tests/romaneio-preview-uso-trava.test.mjs` (+2 testes)
 - **Fora de escopo:** paralelizar cadeia auth/tenant, cache-first no listar, `allowCached` morto (mapeados, não mexidos).
 

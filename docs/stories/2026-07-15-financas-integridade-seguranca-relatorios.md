@@ -368,7 +368,7 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Durante essa tentativa foi reproduzida submissao HTML por GET antes do handler JavaScript. `loginForm`, `registerForm` e `forgotPasswordForm` passaram a declarar `method="post"`; o Hosting corrigido foi publicado e verificado por HTTP.
 - `nf_uploadCertificadoA1` republicada depois da retomada dos servicos e preflight validado com HTTP 204.
 - Correcao final de impressao: 57/57 testes focados aprovados; suite geral com 278 testes, 277 aprovados, 0 falhas e 1 skip esperado do Emulator.
-- Build final de Hosting: 448 arquivos e 19.438.942 bytes; dry-run e deploy de Hosting concluidos em `https://sisweb-7ce82.web.app`.
+- Build final de Hosting: 448 arquivos e 19.438.942 bytes; dry-run e deploy de Hosting concluidos em `https://siswebsoftware.com.br`.
 - Verificacao HTTP confirmou `financas.html`, `financas.js`, `firebaseService.js`, `commerce-pdf-share.js` e `sw.js` na versao `2026-07-19-finance-print-pix-v1`.
 - Smoke autenticado pos-deploy: selecao de cinco contas gerou um unico documento final, sem o texto de carregamento, com logo real, cabecalho empresarial, dez colunas, subtotais e total geral.
 - Metricas DOM da impressao live: um unico filho direto no `body`, `bodyScrollWidth` igual a `bodyClientWidth`, tabela com a mesma largura e limite direito da pagina e classes `nowrap` efetivas em documento, valores, data e status.
@@ -385,7 +385,7 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - PDF permaneceu habilitado e concluiu sem erro bloqueante. Houve um timeout inicial isolado de 6 segundos na logo da previa; a impressao repetiu a resolucao e carregou a imagem corretamente.
 - Ajuste final elevou a espera da logo da previa para 10 segundos e o cache para `2026-07-19-finance-report-origin-print-v2`, sem alterar o helper global ou o backend.
 - Gates finais da v2: 53/53 testes direcionados; suite geral com 281 testes, 280 aprovados, 0 falhas e 1 skip esperado do Emulator; lint, typecheck, build e `git diff --check` aprovados.
-- Build final da v2: 448 arquivos e 19.446.723 bytes. Dry-run e deploy publicaram somente Hosting em `https://sisweb-7ce82.web.app`.
+- Build final da v2: 448 arquivos e 19.446.723 bytes. Dry-run e deploy publicaram somente Hosting em `https://siswebsoftware.com.br`.
 - Verificacao HTTP confirmou `financas.html`, `financas.js` e `sw.js` na v2, alem do seletor de origem, botao Imprimir e espera de logo em 10 segundos.
 - Smoke autenticado final confirmou a previa com logo incorporada em Data URL, imagem completa de 1200 x 1200, cabecalho empresarial, origem Contas a Receber e 33 linhas. A troca para Contas a Pagar invalidou o resultado anterior e exibiu somente Pagamentos, Categorias e Ranking de Fornecedores.
 
@@ -418,14 +418,14 @@ Codex (GPT-5), com revisao direta de desenvolvimento, arquitetura, dados/Rules, 
 - Concluido: tabela de empresas escapa campos persistidos antes de `innerHTML`, e logout da tela publica so limpa cache apos confirmacao remota.
 - Concluido: o `403` de `financeNextSequence` para o proprietario operacional legado foi reproduzido e corrigido sem conceder acesso generico a membros sem permissao.
 - Backup anterior ao ajuste RBAC: `C:\Users\Nelson\AppData\Local\Temp\sisweb-membership-pre-owner-20260721.json` (SHA-256 `B203FAB465ECC457676AFB7F72AC7D1ECCB7F1F12671BF91F11B47B076A6855C`) e `C:\Users\Nelson\AppData\Local\Temp\sisweb-owneruid-pre-owner-20260721.json` (SHA-256 `D08E54F6AA60DC061AAD4C6F0BA7B19961B7762C35EA199FA23632B753241DB4`).
-- Rollout publicado: Realtime Database Rules; dez Functions (`financeNextSequence`, seis mutacoes financeiras complementares e as tres callables de perfil/onboarding); Hosting de producao em `https://sisweb-7ce82.web.app`.
+- Rollout publicado: Realtime Database Rules; dez Functions (`financeNextSequence`, seis mutacoes financeiras complementares e as tres callables de perfil/onboarding); Hosting de producao em `https://siswebsoftware.com.br`.
 - Pos-deploy externo: as dez Functions ficaram `ACTIVE` em Node 22/us-central1; preflight retornou HTTP 204 com origem restrita ao Hosting e chamadas sem token retornaram HTTP 401 sem mutacao.
 - Rules remotas foram comparadas semanticamente com `database.rules.json` e ficaram identicas. O canal `rollback-fin-access-20260721` preserva a versao anterior do Hosting em `https://sisweb-7ce82--rollback-fin-access-20260721-m5gstmqp.web.app`.
 - Diagnostico somente leitura do `404` de baixa confirmou que a conta permanecia gravada, enquanto o tenant continha oito particoes mensais e dez contas planas legadas; nenhum lancamento foi alterado durante a investigacao.
 - `financeRegisterPayment`, `financeDeletePayment` e `financeUpdatePaymentReceipt` mantem a transacao rapida no caminho solicitado e, apenas quando ele nao existe, resolvem o ID autoritativamente no mesmo tenant/tipo. IDs ausentes ou duplicados continuam bloqueados.
 - Gate do hotfix de baixa: 290 testes no total, 289 aprovados e 1 skip esperado; teste focado 27/27, Emulator 14/14, lint raiz/Functions, typecheck, build de 448 arquivos, `git diff --check` e audit sem vulnerabilidades. CodeRabbit local indisponivel porque o host nao possui distribuicao WSL; revisao remota mantida no PR.
 - Deploy seletivo concluiu somente `financeRegisterPayment`, `financeDeletePayment` e `financeUpdatePaymentReceipt`, todas `ACTIVE` em Node 22/us-central1 na revisao `2a760a736b8ce4fa3cfd2df2e8dc40722d537cad`; Hosting, Rules e Storage nao exigiram alteracao.
-- Pos-deploy das tres callables: preflight HTTP 204 restrito a `https://sisweb-7ce82.web.app` e chamadas sem autenticacao rejeitadas com HTTP 401. Nenhuma baixa real foi criada ou removida pelo smoke automatizado.
+- Pos-deploy das tres callables: preflight HTTP 204 restrito a `https://siswebsoftware.com.br` e chamadas sem autenticacao rejeitadas com HTTP 401. Nenhuma baixa real foi criada ou removida pelo smoke automatizado.
 - Divida controlada: consolidar as duas implementacoes legadas de `uploadCompanyLogo` exige refatoracao isolada; o log do Romaneio permanece sem objeto bruto de erro para nao reintroduzir dados sensiveis no console.
 - Reabertura 2026-07-23: a leitura financeira passou a aceitar papel global administrado pelo backend somente quando `companyId` coincide e a membership local esta ativa; papel divergente e autoelevacao continuam negados.
 - Reabertura 2026-07-23: `financeNextSequence` inicializa estado ausente, e baixas/comprovantes localizam a conta antes de abrir a transacao autoritativa, removendo a dependencia do callback provisoriamente nulo do Admin SDK.

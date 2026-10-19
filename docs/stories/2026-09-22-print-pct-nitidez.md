@@ -6,7 +6,7 @@
   - Commits `10a1e26` + `ca64b6b` (bump) → push `origin/main` ✓
   - `inject-cachebusters`: bump `imprimir-romaneio-pct.js?v=f79d10646412` ✓
   - Build `hosting-dist` (478 arquivos) ✓
-  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://siswebsoftware.com.br` ✓
 - **Escopo:** `modules/romaneiopct/imprimir-romaneio-pct.js` (3 regras de cor), `tests/romaneio-preview-uso-trava.test.mjs` (+ asserts)
 - **Evidência (anexo):** resumo-dims e CONAMA com texto lavado vs TL nítido. Organização e dados intocados.
 

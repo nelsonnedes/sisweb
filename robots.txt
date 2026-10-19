@@ -1,4 +1,4 @@
-# robots.txt para SisWeb (sisweb-7ce82.web.app)
+# robots.txt para SisWeb (siswebsoftware.com.br)
 User-agent: *
 
 # Bloqueio de áreas administrativas, internas e autenticadas
@@ -26,4 +26,4 @@ Allow: /favicon.ico
 Allow: /manifest.json
 
 # Localização do Sitemap
-Sitemap: https://sisweb-7ce82.web.app/sitemap.xml
+Sitemap: https://siswebsoftware.com.br/sitemap.xml

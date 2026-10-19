@@ -5,7 +5,7 @@
 - **Deploy:**
   - Commit feature `3e35ddd` → push `origin/main` ✓
   - Build `hosting-dist` (478 arquivos) com código novo confirmado no artefato ✓
-  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://siswebsoftware.com.br` ✓
 - **Escopo:** `vendas.html`, `vendas.js`, `compras.html`, `compras.js`, `tests/romaneio-preview-uso-trava.test.mjs` (+6 testes)
 - **Fora de escopo:** schema de romaneios, rules, financeiro, CSS global.
 

@@ -6,7 +6,7 @@
 
 **Principio de execucao:** primeiro preservar e reproduzir; depois corrigir por dominio; publicar Functions antes dos consumidores de frontend; validar com dados descartaveis e dois tenants; somente entao integrar no Git.
 
-**Fontes de verdade auditadas em 22/07/2026:** branch `codex/finance-boleto-pix-company-storage`, worktree `C:\Sisweb\.freebuff\worktrees\thmruq8rsbcanv`, Hosting `sisweb-7ce82.web.app`, Realtime Database Rules publicadas, lista de Functions Gen 2 e stories ativas.
+**Fontes de verdade auditadas em 22/07/2026:** branch `codex/finance-boleto-pix-company-storage`, worktree `C:\Sisweb\.freebuff\worktrees\thmruq8rsbcanv`, Hosting `siswebsoftware.com.br`, Realtime Database Rules publicadas, lista de Functions Gen 2 e stories ativas.
 
 **Smoke de producao:** os resultados do tenant de testes estao em `docs/superpowers/plans/2026-07-22-smoke-producao-tenant-teste.md`.
 

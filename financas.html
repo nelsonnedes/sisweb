@@ -97,7 +97,7 @@
     <script src="sentry/sentry.browser.min.js?v=189d0638b24b"></script>
     <script src="sentry-init.js?v=a0ebe6edc1c6"></script>
 <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
-<script src="menu-component.js?v=7d191ff22582"></script>
+<script src="menu-component.js?v=49ee37fa1891"></script>
 <script src="modules/core/legacy-deprecation.js?v=2cce1d733741"></script>
     <style>
         /* Note: Container styles are now in layout-comum.css */
@@ -2489,7 +2489,9 @@
         document.querySelectorAll('form button:not([type])').forEach(function(btn){ btn.type = 'button'; });
         try {
             var h = window.location && window.location.hostname ? window.location.hostname : '';
-            var prod = h.indexOf('sisweb-7ce82.web.app') !== -1 || h.indexOf('sisweb-7ce82.firebaseapp.com') !== -1;
+            var prod = h.indexOf('siswebsoftware.com.br') !== -1
+                || h.indexOf('sisweb-7ce82.web.app') !== -1
+                || h.indexOf('sisweb-7ce82.firebaseapp.com') !== -1;
             var allow = /\bdebug=1\b/.test(window.location.search || '');
             var section = document.getElementById('backupRestoreSection');
             if (section) section.hidden = prod || !allow;

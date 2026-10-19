@@ -424,11 +424,13 @@ if (window.customElements && !window.customElements.get('main-menu')) {
         getHomeUrl() {
             // Detectar se estamos em produção (Firebase Hosting) ou desenvolvimento
             const hostname = window.location.hostname;
-            const isProduction = hostname.includes('sisweb-7ce82.web.app') || hostname.includes('sisweb-7ce82.firebaseapp.com');
+            const isProduction = hostname.includes('siswebsoftware.com.br')
+                || hostname.includes('sisweb-7ce82.web.app')
+                || hostname.includes('sisweb-7ce82.firebaseapp.com');
             
             if (isProduction) {
                 // Em produção, sempre usar URL absoluta para a raiz
-                return 'https://sisweb-7ce82.web.app/index.html';
+                return 'https://siswebsoftware.com.br/index.html';
             } else {
                 // Em desenvolvimento, verificar se estamos em subfolder
                 const currentPath = window.location.pathname;
@@ -2498,7 +2500,7 @@ if (window.customElements && !window.customElements.get('main-menu')) {
                     id: `missing_company__${ctx.uid}`,
                     title: 'Cadastro pendente',
                     message: 'Clique para Cadastrar Empresa',
-                    href: 'https://sisweb-7ce82.web.app/company.html',
+                    href: 'https://siswebsoftware.com.br/company.html',
                     severity: 'warning',
                     createdAt: now.toISOString(),
                     read: false

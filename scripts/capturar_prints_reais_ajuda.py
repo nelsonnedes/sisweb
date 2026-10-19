@@ -6,7 +6,7 @@ import re
 from PIL import Image
 from playwright.async_api import async_playwright
 
-BASE_URL = "https://sisweb-7ce82.web.app"
+BASE_URL = "https://siswebsoftware.com.br"
 LOGIN_URL = f"{BASE_URL}/login.html"
 EMAIL = os.environ.get("SISWEB_TEST_EMAIL", "")
 PASSWORD = os.environ.get("SISWEB_TEST_PASSWORD", "")

@@ -355,6 +355,6 @@ Integrar a Central de Suporte do `menu-component.js`:
   - `npm test`
 - Deploy executado em `sisweb-7ce82`:
   - `firebase deploy --only "functions,database,hosting" --project sisweb-7ce82`
-  - Hosting: https://sisweb-7ce82.web.app
+  - Hosting: https://siswebsoftware.com.br
   - Functions novas confirmadas em producao: `createSupportTicket`, `addSupportTicketMessage`, `listMySupportTickets`, `getSupportTicket`, `updateSupportTicketStatus`, `listSupportTicketsAdmin`.
   - Assets publicados conferidos: `menu-component.js` contem `sendSiswebSupportTicket`/rascunho offline e `firebaseService.js` contem os wrappers de suporte.

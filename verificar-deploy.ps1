@@ -4,7 +4,7 @@
 Write-Host "Verificando deploy das correcoes..." -ForegroundColor Green
 Write-Host "====================================" -ForegroundColor Cyan
 
-$siteUrl = "https://sisweb-7ce82.web.app"
+$siteUrl = "https://siswebsoftware.com.br"
 
 Write-Host "Verificando arquivos no Firebase Hosting..." -ForegroundColor Yellow
 Write-Host ""

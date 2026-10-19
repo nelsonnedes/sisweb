@@ -35,7 +35,7 @@ O perfil da empresa precisa permitir impressao em formato de relatorio padrao do
 - `npm run typecheck`: OK.
 - `npm test`: OK, 172 testes.
 - `firebase deploy --only functions:default:createCompanyOnboarding,functions:default:upsertCompanyProfile,functions:default:updateMyCompanyProfile,hosting --project sisweb-7ce82 --non-interactive`: OK.
-- Verificacao do Hosting em `https://sisweb-7ce82.web.app/company.html?codex_verify=company_geo_print_20260622`: status 200, `btnPrintCompany`, `geoLatitude`, `geoLongitude`, QRCode e `updateMyCompanyProfile(profilePayload)` presentes.
+- Verificacao do Hosting em `https://siswebsoftware.com.br/company.html?codex_verify=company_geo_print_20260622`: status 200, `btnPrintCompany`, `geoLatitude`, `geoLongitude`, QRCode e `updateMyCompanyProfile(profilePayload)` presentes.
 - Header publicado: `Permissions-Policy: camera=(), microphone=(), geolocation=(self)`.
 - `firebase functions:list --project sisweb-7ce82 --json`: `createCompanyOnboarding`, `updateMyCompanyProfile` e `upsertCompanyProfile` ativos em `us-central1`, runtime `nodejs22`, hash `9424d129734194ea0471d566330fc9fd4c531f73`.
 - Revisao CodeRabbit de 2026-07-15: SRI, redirect same-origin, envelope de erro e escaping de IDs corrigidos.

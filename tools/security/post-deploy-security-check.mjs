@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const DEFAULT_BASE_URL = 'https://sisweb-7ce82.web.app/';
+const DEFAULT_BASE_URL = 'https://siswebsoftware.com.br/';
 const baseUrl = new URL(process.env.SISWEB_BASE_URL || DEFAULT_BASE_URL);
 const timeoutMs = Number.parseInt(process.env.SISWEB_CHECK_TIMEOUT_MS || '10000', 10);
 

@@ -170,8 +170,8 @@ test('landing vitrine exibe carrosseis iphone e desktop com telas reais', () => 
 
 test('landing direciona o painel do parceiro para login autenticado', () => {
   const landing = readFileSync('landing-vendas.html', 'utf8');
-  assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/portal-parceiro\.html"[^>]*>.*Meu painel do Parceiro/);
-  assert.match(landing, /href="https:\/\/sisweb-7ce82\.web\.app\/portal-parceiro\.html"[^>]*>.*Acessar meu Painel/);
+  assert.match(landing, /href="https:\/\/siswebsoftware\.com\.br\/portal-parceiro\.html"[^>]*>.*Meu painel do Parceiro/);
+  assert.match(landing, /href="https:\/\/siswebsoftware\.com\.br\/portal-parceiro\.html"[^>]*>.*Acessar meu Painel/);
   assert.match(landing, /id="lv-hero-phone-carousel"/);
   assert.match(landing, /id="lv-hero-phone-carousel"[\s\S]*assets\/help-manual\/mockups\/hero\/mobile-dashboard\.png/);
   assert.match(readFileSync('landing-vendas.js', 'utf8'), /initCarousel\('lv-hero-phone-carousel'\)/);
@@ -179,9 +179,9 @@ test('landing direciona o painel do parceiro para login autenticado', () => {
 
 test('landing possui metatags OpenGraph, Twitter, Geo e Schema.org JSON-LD estruturado', () => {
   const landing = readFileSync('landing-vendas.html', 'utf8');
-  assert.match(landing, /<link rel="canonical" href="https:\/\/sisweb-7ce82\.web\.app\/landing-vendas\.html">/);
+  assert.match(landing, /<link rel="canonical" href="https:\/\/siswebsoftware\.com\.br\/landing-vendas\.html">/);
   assert.match(landing, /<meta property="og:title"/);
-  assert.match(landing, /<meta property="og:image" content="https:\/\/sisweb-7ce82\.web\.app\/assets\/icons\/icon-512x512\.png"/);
+  assert.match(landing, /<meta property="og:image" content="https:\/\/siswebsoftware\.com\.br\/assets\/icons\/icon-512x512\.png"/);
   assert.match(landing, /<meta name="twitter:card"/);
   assert.match(landing, /<meta name="geo\.region" content="BR-PA"/);
   assert.match(landing, /"SoftwareApplication"/);

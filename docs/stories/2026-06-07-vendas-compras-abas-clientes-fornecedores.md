@@ -55,4 +55,4 @@ O usuario reportou que em `compras.html`, ao clicar na aba Fornecedores, o siste
 - Gates: `git diff --check`, `npm run lint`, `npm run typecheck` e `npm test` aprovados; suite completa com 93 testes.
 - Producao HTTP: `sw.js`, `vendas.html`, `compras.html`, `client.html` e `fornecedor.html` respondem 200 com `2026-06-07-embedded-tabs-v10`.
 - Smoke producao mobile `390x640`: Vendas e Compras mantiveram a rota do modulo, ativaram a aba `#clientes`, carregaram o iframe embutido e ficaram sem overflow horizontal.
-- Deploy: `firebase deploy --only hosting` concluido em `https://sisweb-7ce82.web.app`.
+- Deploy: `firebase deploy --only hosting` concluido em `https://siswebsoftware.com.br`.

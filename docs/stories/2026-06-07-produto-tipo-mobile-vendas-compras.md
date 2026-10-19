@@ -44,4 +44,4 @@ O usuario marcou no Browser o grupo `Tipo de Produto` em `vendas.html` no PWA. E
 - Validacao local via Chromium em `374x531` para `vendas.html` e `compras.html`: `bodyScrollWidth` igual ao viewport, radios com 18px, textos dentro dos labels e `anyOverflow: false`.
 - Validacao em producao no Browser em `374x531` para `vendas.html` e `compras.html`: radios com 18px, grupo em grid e `anyOverflow: false`.
 - Gates: `npm run lint`, `npm run typecheck`, `npm test` com 85 testes passando.
-- Deploy hosting executado em `https://sisweb-7ce82.web.app`.
+- Deploy hosting executado em `https://siswebsoftware.com.br`.

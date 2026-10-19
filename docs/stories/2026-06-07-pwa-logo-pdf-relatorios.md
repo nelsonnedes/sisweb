@@ -47,4 +47,4 @@ O usuario reportou que em PWA alguns PDFs e relatorios exibem os dados da empres
 - Gates: `git diff --check`, `npm run lint`, `npm run typecheck` e `npm test` aprovados; suite completa com 93 testes.
 - Producao: `sw.js`, `vendas.html`, `compras.html`, `client.html` e `fornecedor.html` respondem 200 com `2026-06-07-embedded-tabs-v10`.
 - Smoke producao: `window.SiswebCommercePdf.resolveCompanyLogoDataUrl` ativo em Vendas e Compras.
-- Deploy: `firebase deploy --only hosting` concluido em `https://sisweb-7ce82.web.app`.
+- Deploy: `firebase deploy --only hosting` concluido em `https://siswebsoftware.com.br`.

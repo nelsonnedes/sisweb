@@ -218,7 +218,7 @@ Expected: todos os comandos com exit code 0.
 
 Run: `firebase deploy --only hosting --project sisweb-7ce82`
 
-Expected: deploy concluído para `https://sisweb-7ce82.web.app`.
+Expected: deploy concluído para `https://siswebsoftware.com.br`.
 
 - [ ] **Step 4: Smoke online**
 

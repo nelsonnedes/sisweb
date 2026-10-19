@@ -59,7 +59,7 @@ Write-Host "DEPLOY FORCADO CONCLUIDO!" -ForegroundColor Green
 Write-Host ""
 Write-Host "PROXIMOS PASSOS:" -ForegroundColor Yellow
 Write-Host "1. Aguarde 2-3 minutos para propagacao completa" -ForegroundColor White
-Write-Host "2. Acesse seu site: https://sisweb-7ce82.web.app" -ForegroundColor White
+Write-Host "2. Acesse seu site: https://siswebsoftware.com.br" -ForegroundColor White
 Write-Host "3. Faca Ctrl+Shift+R para limpar cache do navegador" -ForegroundColor White
 Write-Host "4. Teste as funcionalidades de especies" -ForegroundColor White
 Write-Host ""

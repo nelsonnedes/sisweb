@@ -6,11 +6,11 @@
  * Valida rotas críticas, presença de scripts Firebase e assets referenciados.
  *
  * Uso:
- *   SISWEB_BASE_URL=https://sisweb-7ce82.web.app node tools/smoke-preview-hosting.mjs
+ *   SISWEB_BASE_URL=https://siswebsoftware.com.br node tools/smoke-preview-hosting.mjs
  *   SISWEB_BASE_URL=https://sisweb-7ce82--preview-abc.web.app node tools/smoke-preview-hosting.mjs
  */
 
-const DEFAULT_BASE_URL = 'https://sisweb-7ce82.web.app/';
+const DEFAULT_BASE_URL = 'https://siswebsoftware.com.br/';
 const baseUrl = new URL(process.env.SISWEB_BASE_URL || DEFAULT_BASE_URL);
 const timeoutMs = Number.parseInt(process.env.SISWEB_CHECK_TIMEOUT_MS || '15000', 10);
 const checkAssets = process.env.SISWEB_SMOKE_CHECK_ASSETS !== '0';

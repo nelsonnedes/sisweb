@@ -276,7 +276,7 @@ Expected: somente Hosting selecionado e validado.
 
 Run: `firebase deploy --only hosting --project sisweb-7ce82 --non-interactive`
 
-Expected: release completa em `https://sisweb-7ce82.web.app`.
+Expected: release completa em `https://siswebsoftware.com.br`.
 
 - [ ] **Step 5: Executar smoke autenticado**
 

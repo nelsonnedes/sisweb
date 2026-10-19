@@ -5,7 +5,7 @@
 - **Deploy:**
   - Commits `e4abbc0` + `908cb25` (bumps) + `17f098f` (JS/CSS) → push `origin/main` ✓
   - Build `hosting-dist` (478 arquivos) com modo resumo + `[hidden]` confirmados no artefato ✓
-  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://siswebsoftware.com.br` ✓
 - **Escopo:** `commerce-responsive.css`, `compras.js`, `vendas.html`, `vendas.js`, `tests/romaneio-preview-uso-trava.test.mjs` (+2 testes)
 
 ## Diagnóstico

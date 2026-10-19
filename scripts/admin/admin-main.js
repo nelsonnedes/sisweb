@@ -2870,13 +2870,13 @@
                             "PRECISA DE MAIS TEMPO PARA TESTAR?\n" +
                             "=====================================\n" +
                             "Se você sentir que precisa de mais alguns dias para avaliar todas as funcionalidades, nós podemos ajudar!\n" +
-                            "👉 Acesse o sistema em: https://sisweb-7ce82.web.app/\n" +
+                            "👉 Acesse o sistema em: https://siswebsoftware.com.br/\n" +
                             "Vá na aba 'Status da Assinatura' e clique no botão 'Solicitar Prorrogação'. Faremos uma análise rápida para liberar mais dias para você.\n\n" +
                             "=====================================\n" +
                             "QUER EFETIVAR SUA ASSINATURA?\n" +
                             "=====================================\n" +
                             "Caso já tenha tomado a sua decisão e queira garantir o acesso contínuo a todas as nossas ferramentas de gestão e emissão fiscal:\n" +
-                            "👉 Acesse o sistema em: https://sisweb-7ce82.web.app/\n" +
+                            "👉 Acesse o sistema em: https://siswebsoftware.com.br/\n" +
                             "Vá na aba 'Status da Assinatura' e escolha o plano que melhor se adequa ao momento do seu negócio.\n\n" +
                             "Se tiver qualquer dúvida, dificuldade técnica ou precisar de auxílio para escolher um plano, nossa equipe está à sua disposição!\n\n" +
                             "📞 Contatos para Suporte:\n" +
@@ -4619,7 +4619,7 @@
                 var safeCode = normalizeAdminPromoCode(code);
                 var origin = /^https?:\/\//i.test(String(window.location.origin || ""))
                     ? window.location.origin
-                    : "https://sisweb-7ce82.web.app";
+                    : "https://siswebsoftware.com.br";
                 var params = new URLSearchParams();
                 params.set("cupom", safeCode);
                 params.set("utm_source", source || "admin");

@@ -58,5 +58,5 @@ O usuario pediu uma nova analise completa em `vendas.html` e `compras.html`, cob
 - Browser local `319x531`: Produtos de Vendas e Compras com wrappers mobile-card e sem overflow real.
 - Teste focado inicial: `node --test tests\\commerce-responsive-pwa.test.mjs tests\\qa-visual-pwa-routes.test.mjs tests\\pwa-mobile-menu-session.test.mjs tests\\pwa-install-icon.test.mjs tests\\vendas-lista-pedidos-acoes.test.mjs` com 22 testes aprovados.
 - Gates finais: `npm run lint`, `npm run typecheck` e `npm test` aprovados; suite completa com 89 testes.
-- Deploy: `firebase deploy --only hosting` concluido para `https://sisweb-7ce82.web.app`.
+- Deploy: `firebase deploy --only hosting` concluido para `https://siswebsoftware.com.br`.
 - Producao validada: `sw.js`, `vendas.html`, `compras.html`, `commerce-responsive.css`, `vendas.js` e `compras.js` respondem 200 na versao `2026-06-07-commerce-pwa-audit-v6`.

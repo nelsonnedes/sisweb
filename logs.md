@@ -130,7 +130,7 @@ firebaseService.js?v=fdef24272f49:2342 ✅ Caminho de escrita resolvido
 
 firebaseService.js?v=fdef24272f49:2459 ✅ Dados salvos no Firebase
 
-notas-fiscais.html:1 Access to fetch at 'https://us-central1-sisweb-7ce82.cloudfunctions.net/nf\_enviarSEFAZ' from origin 'https://sisweb-7ce82.web.app' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+notas-fiscais.html:1 Access to fetch at 'https://us-central1-sisweb-7ce82.cloudfunctions.net/nf\_enviarSEFAZ' from origin 'https://siswebsoftware.com.br' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
 
 us-central1-sisweb-7ce82.cloudfunctions.net/nf\_enviarSEFAZ:1  Failed to load resource: net::ERR\_FAILED
 

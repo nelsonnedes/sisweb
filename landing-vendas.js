@@ -21,23 +21,27 @@ const TOOLTIPS = {
 };
 
 // Texto comercial para compartilhamento no WhatsApp
-const SHARE_COMMERCIAL_TEXT = `🪵 *Sisweb — Gestão Completa para Serrarias*
-🎯 *Sua madeireira do pátio à nota em um só sistema.*
+const SHARE_COMMERCIAL_TEXT = `🌲 *Sisweb — Gestão completa para serrarias*
+Do pátio à nota fiscal, em um só sistema.
 
-Chega de romaneio no papel, cubagem na calculadora e planilha paralela. O Sisweb unifica toda a sua operação:
+Chega de romaneio no papel, cubagem na calculadora e planilha paralela.
 
-🚛 *Romaneios Rápidos* — Toras e serrados com Enter contínuo e impressão em 1 clique
-⚖️ *Auditoria CONAMA 411* — Cubagem Francon e geométrica com resumo técnico de pacote
-🏷️ *Estoque com Plaqueta* — Cadeia de custódia e rastreabilidade total da tora à prancha
-📄 *NF-e, MDF-e & Financeiro* — Emissão integrada e juros por dia civil sem retrabalho
-📱 *No Bolso do Apontador* — Lançamento direto no celular, tablet ou computador
+✅ *Romaneios de toras e serrados* — lançamento contínuo e impressão em 1 clique
+✅ *Cubagem CONAMA 411* — Francon e geométrica com resumo técnico
+✅ *Estoque com plaqueta* — rastreabilidade da tora à prancha
+✅ *NF-e, MDF-e e financeiro* — emissão integrada, sem retrabalho
+✅ *No celular, tablet ou computador* — sua operação na palma da mão
 
-✨ *30 dias grátis* para testar no seu pátio
-🛡️ *Sem fidelidade* • 💚 *Feito no Pará*
+🎁 *30 dias grátis* para testar na sua serraria
+🔒 Sem fidelidade · 💚 Feito no Pará
 
-📊 *Simule sua economia:* https://sisweb-7ce82.web.app/landing-vendas.html#simulador
-🚀 *Comece seu teste grátis:* https://sisweb-7ce82.web.app/login.html?mode=register
-💬 *Dúvidas? Fale no WhatsApp:* (91) 99131-1049`;
+📊 *Simule sua economia:*
+https://siswebsoftware.com.br/landing-vendas.html#simulador
+
+🚀 *Crie sua conta grátis:*
+https://siswebsoftware.com.br/login.html?mode=register
+
+💬 *Fale com um consultor:* (91) 99131-1049`;
 
 (function(){
   const diagram = document.getElementById('lv-diagram');
@@ -235,7 +239,7 @@ function initShareButton(){
 
   // Copiar link da landing
   copyBtn.addEventListener('click', async ()=>{
-    const url = 'https://sisweb-7ce82.web.app/landing-vendas.html';
+    const url = 'https://siswebsoftware.com.br/landing-vendas.html';
     try{
       if(navigator.clipboard && navigator.clipboard.writeText){
         await navigator.clipboard.writeText(url);
@@ -303,7 +307,7 @@ async function loadActiveCoupons(){
     if (!coupons.length) { section.style.display = 'none'; return; }
     host.innerHTML = coupons.map(function(c){
       var code = String(c.code || '');
-      var link = 'https://sisweb-7ce82.web.app/subscription.html?cupom=' + encodeURIComponent(code);
+      var link = 'https://siswebsoftware.com.br/subscription.html?cupom=' + encodeURIComponent(code);
       return '<article class="lv-coupon-card">'
         + '<div class="lv-coupon-off">' + esc(c.discountText || 'Desconto') + '</div>'
         + '<div><span class="lv-coupon-code">' + esc(code) + '</span>' + urgencyBadge(c.expiresAt) + '</div>'

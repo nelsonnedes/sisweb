@@ -26,8 +26,8 @@ A causa era o bloqueio generico `scripts/**` no `firebase.json`, que protegia sc
 - Chrome pre-correcao: 404/MIME nos scripts do Admin.
 - Simulacao local do Firebase Hosting: apenas os dois scripts de `scripts/admin/` entram no pacote publico.
 - Producao pos-deploy:
-  - `https://sisweb-7ce82.web.app/scripts/admin/admin-ui.js` retorna 200 `text/javascript`.
-  - `https://sisweb-7ce82.web.app/scripts/admin/admin-main.js` retorna 200 `text/javascript`.
+  - `https://siswebsoftware.com.br/scripts/admin/admin-ui.js` retorna 200 `text/javascript`.
+  - `https://siswebsoftware.com.br/scripts/admin/admin-main.js` retorna 200 `text/javascript`.
 - Chrome pos-deploy: sem 404/MIME dos scripts do Admin.
 - Login empresa `jnmadeirasm...`: `index.html`, `estoque.html`, `vendas.html` e `compras.html` carregaram sem erros/warnings relevantes de console.
 - Login SuperAdmin corrigido em 2026-06-09: Admin carregou com `Admin Unificado`, guard oculto, perfil Super Admin e painel de Billing com status normal.

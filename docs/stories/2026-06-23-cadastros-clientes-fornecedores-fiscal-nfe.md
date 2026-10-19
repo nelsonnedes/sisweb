@@ -57,7 +57,7 @@ GPT-5 Codex
 - Normalizadores e handlers preservam aliases fiscais esperados pela NF-e.
 - Cachebuster atualizado para `2026-06-23-cadastro-fiscal-nfe-v1`.
 - Validações locais concluídas com sucesso.
-- Hosting publicado em `https://sisweb-7ce82.web.app`; smoke HTTP e `security:postdeploy` concluídos.
+- Hosting publicado em `https://siswebsoftware.com.br`; smoke HTTP e `security:postdeploy` concluídos.
 - Varredura posterior alinhou também `romaneiopct.html` e o modal dinâmico de `romaneiotora_modais.js`.
 - Revalidação final após a extensão: `npm test` com 178/178, smoke HTTP dos arquivos publicados e `security:postdeploy` com 37/37.
 - Correção visual posterior limitou altura dos modais longos de cliente/fornecedor, colocou campos em área rolável e manteve rodapé/botões visíveis em desktop e PWA.

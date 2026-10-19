@@ -66,7 +66,7 @@ Tambem foi solicitado estudo da aba Campanhas do `admin.html` para evoluir cupon
 - [x] Criar link publico por cupom ativo usando `subscription.html?cupom=CODIGO` enquanto a pagina comercial completa nao existir.
 - [x] No Admin, cada cupom ativo tem botoes para copiar link e abrir WhatsApp com texto pronto.
 - [ ] Evoluir para pagina publica dedicada, por exemplo:
-  - `https://sisweb-7ce82.web.app/campanha-sisweb.html?cupom=SISWEBMADEIRA&utm_source=whatsapp&utm_medium=social&utm_campaign=madeireiro`
+  - `https://siswebsoftware.com.br/campanha-sisweb.html?cupom=SISWEBMADEIRA&utm_source=whatsapp&utm_medium=social&utm_campaign=madeireiro`
 - [ ] Adicionar botoes para copiar texto comercial separado e abrir pagina publica para conferencia.
 - Se o usuario ainda nao estiver logado, a pagina publica deve preservar o cupom e levar para login/cadastro/assinatura sem perder o parametro.
 
@@ -134,8 +134,8 @@ Tambem foi solicitado estudo da aba Campanhas do `admin.html` para evoluir cupon
 - `firebase deploy --only "hosting,functions:validatePromoCode" --project sisweb-7ce82`
 - `firebase deploy --only "functions:listPromoCodesAdmin,functions:getPromoCodeAdmin,functions:upsertPromoCodeAdmin,functions:archivePromoCodeAdmin,functions:validatePromoCode,functions:submitSubscriptionRequest,functions:createPixPayment,functions:createPaymentPreference,hosting,database" --project sisweb-7ce82`
 - `firebase deploy --only hosting --project sisweb-7ce82`
-- Verificacao HTTP de `https://sisweb-7ce82.web.app/subscription.html?verify=promo-link-v1`
-- Verificacao HTTP de `https://sisweb-7ce82.web.app/admin.html?verify=promo-share-v4` carregando `admin-main.js?v=2026-06-10-promo-share-v1`
+- Verificacao HTTP de `https://siswebsoftware.com.br/subscription.html?verify=promo-link-v1`
+- Verificacao HTTP de `https://siswebsoftware.com.br/admin.html?verify=promo-share-v4` carregando `admin-main.js?v=2026-06-10-promo-share-v1`
 - Verificacao no browser interno de `admin.html?tab=campaign&verify=promo-share-v4-browser`: painel de campanhas visivel, acoes de cupom renderizadas e sem erros de console.
 - `firebase functions:list --project sisweb-7ce82`
 - Verificacao HTTP pos-cache de `admin.html`, `sw.js` e `scripts/admin/admin-main.js?v=2026-06-10-promo-crud-functions-v2`: scripts com cachebuster v2, service worker v2, novas funcoes administrativas presentes e nenhuma chamada direta a `system/promocodes` no Admin.

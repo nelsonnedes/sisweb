@@ -12,7 +12,7 @@ No painel admin (aba Segurança → Sentry), clicar em **Resolver** em uma issue
 falhava 2x com `Failed to load resource: 403` no console, sem feedback visível.
 
 ### Diagnóstico (E2E reproduzido)
-1. Login como `nedes1@hotmail.com` em `https://sisweb-7ce82.web.app/admin.html`.
+1. Login como `nedes1@hotmail.com` em `https://siswebsoftware.com.br/admin.html`.
 2. Aba Segurança → tabela `#sentryIssuesBody` → botão `[data-sentry-resolve]`.
 3. Interceptando `window.firebaseService.callFunction('sentryResolveIssue', …)`
    obteve-se a mensagem exata:

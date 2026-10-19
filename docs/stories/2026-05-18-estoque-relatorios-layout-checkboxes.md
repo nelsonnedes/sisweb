@@ -43,7 +43,7 @@ Padronizar o layout responsivo da aba Relatorios, reduzir conflitos de CSS em ta
 - `npm test` passou com 7 testes.
 - Smoke local no navegador em `http://127.0.0.1:5501/estoque.html?noRedirect=true` percorreu as abas Entrada, Saida, Consulta, Almoxarifado, Movimentacoes e Relatorios com `activeId` correto.
 - Medicao responsiva da aba Relatorios em 1280x720, 1024x768 e 390x844 nao detectou sobreposicao entre Tipo de Relatorio, Data Inicio, Data Fim e botoes, nem scroll horizontal da pagina.
-- Producao `https://sisweb-7ce82.web.app/estoque.html` foi acessada sem login funcional para smoke nao destrutivo; o fluxo exibiu login/avisos de permissao, entao a validacao completa de abas foi feita localmente.
+- Producao `https://siswebsoftware.com.br/estoque.html` foi acessada sem login funcional para smoke nao destrutivo; o fluxo exibiu login/avisos de permissao, entao a validacao completa de abas foi feita localmente.
 
 ## Notas de seguranca
 - Nenhum script de migracao ou escrita em dados reais deve ser executado.

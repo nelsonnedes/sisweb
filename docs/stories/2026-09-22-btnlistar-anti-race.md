@@ -6,7 +6,7 @@
   - Commit `b70bf5d` → push `origin/main` ✓
   - Sem bump de `?v=` (só HTML, servido no-cache) ✓
   - Build `hosting-dist` (478 arquivos) com botão defensivo confirmado no artefato ✓
-  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://siswebsoftware.com.br` ✓
 - **Escopo:** `romaneiopct.html`, `romaneiotl.html`, `romaneiotora.html`, `tests/romaneios-edit-save-flow.test.mjs` (atualizado), `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Sintoma (produção):** `Uncaught ReferenceError: abrirListaRomaneios is not defined` ao clicar Listar no PCT.
 

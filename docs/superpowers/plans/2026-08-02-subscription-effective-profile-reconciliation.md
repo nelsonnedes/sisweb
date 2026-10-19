@@ -331,7 +331,7 @@ Expected: release live concluída sem Functions, Rules, Storage ou Database.
 
 - [x] **Step 6: Repetir smoke live e registrar evidência**
 
-Confirmar os quatro cenários do Preview no domínio `https://sisweb-7ce82.web.app/` e atualizar a story.
+Confirmar os quatro cenários do Preview no domínio `https://siswebsoftware.com.br/` e atualizar a story.
 
 - [ ] **Step 7: Commit documental final**
 

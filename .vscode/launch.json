@@ -2,9 +2,9 @@
     "configurations": [
         {
             "type": "chrome",
-            "name": "https://sisweb-7ce82.web.app/folha_pagamento/folha.html",
+            "name": "https://siswebsoftware.com.br/folha_pagamento/folha.html",
             "request": "launch",
-            "url": "https://sisweb-7ce82.web.app/folha_pagamento/folha.html"
+            "url": "https://siswebsoftware.com.br/folha_pagamento/folha.html"
         }
     ]
 }

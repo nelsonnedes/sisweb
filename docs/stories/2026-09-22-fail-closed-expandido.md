@@ -5,7 +5,7 @@
 - **Deploy:**
   - Commit `fd78559` → push `origin/main` ✓
   - Build `hosting-dist` (478 arquivos) com código novo confirmado no artefato ✓
-  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://siswebsoftware.com.br` ✓
 - **Escopo:** `compras.js` (`excluirPedido` fallback), `romaneio-manager.js` (`saveData`/`deleteData`, `excluirRomaneioTora`), `tests/romaneio-preview-uso-trava.test.mjs` (+2 testes)
 - **Fora de escopo (mapeado p/ próximo round):** `excluirPedido` vendas (exige rollback de estoque+financeiro), produtos/fornecedores/carregos (vendas+compras), cleanups financeiros silenciosos, legado `romaneio-firebase-service` offline→success.
 

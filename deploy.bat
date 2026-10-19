@@ -57,7 +57,7 @@ echo ========================================
 echo ✅ DEPLOY CONCLUÍDO COM SUCESSO!
 echo ========================================
 echo.
-echo 🌐 URL do sistema: https://sisweb-7ce82.web.app
+echo 🌐 URL do sistema: https://siswebsoftware.com.br
 echo 🔗 URL alternativa: https://sisweb-7ce82.firebaseapp.com
 echo.
 echo 🎯 Páginas principais disponíveis:

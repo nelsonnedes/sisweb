@@ -16,7 +16,7 @@ Use quando precisar:
 
 - Projeto: `sisweb-7ce82`.
 - Billing account vinculada: `010952-939008-9EF759`.
-- Hosting ativo: `https://sisweb-7ce82.web.app`.
+- Hosting ativo: `https://siswebsoftware.com.br`.
 - Budget operacional com Pub/Sub: `Firebase Project sisweb-7ce82`.
 - Topico Pub/Sub operacional: `projects/sisweb-7ce82/topics/sisweb-cloud-billing-budget-alerts`.
 - Function ativa para sininho/dashboard: `ingestCloudBillingBudgetNotification`.

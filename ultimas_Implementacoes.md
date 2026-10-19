@@ -1,7 +1,7 @@
 # 📋 Últimas Implementações — Sisweb Admin Panel
 > Conversação: `3f2d847f-ab1b-4b31-a049-643c6ebdf7e7`
 > Período: **maio/2026**
-> Deploy final: ✅ **https://sisweb-7ce82.web.app**
+> Deploy final: ✅ **https://siswebsoftware.com.br**
 
 ---
 
@@ -49,7 +49,7 @@
 - Implementado envio de e-mail de ativação para novos assinantes aprovados pelo admin.
 - **Criptografia frontend → backend:** credenciais (email/senha SMTP) transmitidas via chave criptografada para evitar exposição em texto plano.
 - E-mail inclui:
-  - Link do sistema: `https://sisweb-7ce82.web.app/`
+  - Link do sistema: `https://siswebsoftware.com.br/`
   - Contatos de suporte: `nelsonnedesbrito@gmail.com`
   - Telefone/WhatsApp: `(91) 9 91311049`
 - Senha de App Gmail configurada: `nzui mpbn mjsv sfzq`
@@ -60,7 +60,7 @@
 
 ### O que foi feito
 - Diagnóstico e resolução de erros `535 Authentication Failed` no envio de e-mails.
-- Configuração correta do App Password do Gmail para o app cadastrado em `https://sisweb-7ce82.web.app/`.
+- Configuração correta do App Password do Gmail para o app cadastrado em `https://siswebsoftware.com.br/`.
 - Validação do fluxo completo de envio via `nodemailer` no backend Firebase Functions.
 
 ---
@@ -361,7 +361,7 @@ bootstrap()
 ```
 firebase deploy --only hosting
 ✅ hosting[sisweb-7ce82]: release complete
-🌐 https://sisweb-7ce82.web.app
+🌐 https://siswebsoftware.com.br
 ```
 
 ---

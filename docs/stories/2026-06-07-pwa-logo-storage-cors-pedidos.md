@@ -54,5 +54,5 @@ Ao imprimir Lista de Pedidos ou Detalhes do Pedido em Vendas/Compras no PWA, a l
 - Gates: `git diff --check`, `npm run lint`, `npm run typecheck` e `npm test` aprovados; suite completa com 94/94 testes.
 - Producao HTTP: `sw.js`, `vendas.html`, `compras.html`, `commerce-pdf-share.js` e `firebaseService.js` respondem 200 com `2026-06-07-pwa-logo-cors-v11`.
 - Producao smoke: em `vendas.html?verify=pwa-logo-cors-v11`, `resolveCompanyLogoDataUrl({ logoUrl: URL tokenizada })` chamou `firebaseService.getStorageDataURL('companies/1749492103278/profile/logo/1779188923523_Logo_JN.png')` e retornou DataURL.
-- Deploy: `firebase deploy --only hosting` concluido em `https://sisweb-7ce82.web.app`.
+- Deploy: `firebase deploy --only hosting` concluido em `https://siswebsoftware.com.br`.
 - Pos-inventario 2026-06-09: logs apontavam `Can't determine Firebase Database URL` em `getCompanyLogoDataUrl`; corrigido em `functions/index.js`, validado com `npm test` 118/118 e publicado com `firebase deploy --only "functions:getCompanyLogoDataUrl,functions:ingestCloudBillingBudgetNotification" --project sisweb-7ce82`.

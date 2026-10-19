@@ -31,7 +31,7 @@ O usuario reportou que no Super Admin o suporte aparece no dropdown de engrenage
 - `npm run typecheck` passou.
 - `npm test` passou com 78 testes.
 - Verificacao Playwright mobile em harness temporario confirmou topbar, ordem sininho/engrenagem, logout na sidebar e cards mobile.
-- Deploy Hosting executado em `https://sisweb-7ce82.web.app`.
+- Deploy Hosting executado em `https://siswebsoftware.com.br`.
 - Validacao pos-deploy confirmou `commerce-responsive` em Vendas/Compras, `menu-component.js` com quick actions e `sw.js` na versao `2026-06-07-commerce-pwa-menu-v1`.
 
 ## Validacoes obrigatorias

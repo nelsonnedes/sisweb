@@ -52,14 +52,14 @@ MOBILE_PASTE_Y = 68           # Posição Y inicial no template (distância do t
 REQUIRE_LOGIN = True
 
 # Credenciais de teste via env (nunca commitar senha real)
-LOGIN_URL = "https://sisweb-7ce82.web.app/login.html"
+LOGIN_URL = "https://siswebsoftware.com.br/login.html"
 LOGIN_EMAIL = os.environ.get("SISWEB_TEST_EMAIL", "")
 LOGIN_PASSWORD = os.environ.get("SISWEB_TEST_PASSWORD", "")
 
 # ------------------------------------------------------------------------------
 # LISTA DE ROTAS / URLS DO SISTEMA PARA PROCESSAMENTO EM LOTE
 # ------------------------------------------------------------------------------
-BASE_URL = "https://sisweb-7ce82.web.app"
+BASE_URL = "https://siswebsoftware.com.br"
 
 # Telas públicas e módulos internos essenciais
 URLS_TO_CAPTURE = [

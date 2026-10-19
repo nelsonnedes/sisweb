@@ -54,7 +54,7 @@ O usuario logou em producao e apontou que, em `compras.html`, o modal `Detalhes 
 - Agente de Vendas reforcou markup de detalhes, lista, produtos, relatorios, carrinho, contas e teste focado de acoes.
 - Teste focado: `node --test tests\\commerce-responsive-pwa.test.mjs tests\\qa-visual-pwa-routes.test.mjs tests\\pwa-mobile-menu-session.test.mjs tests\\pwa-install-icon.test.mjs tests\\vendas-lista-pedidos-acoes.test.mjs` com 22 testes aprovados.
 - Gates finais: `npm run lint`, `npm run typecheck` e `npm test` aprovados; suite completa com 89 testes.
-- Deploy: `firebase deploy --only hosting` concluido para `https://sisweb-7ce82.web.app`.
+- Deploy: `firebase deploy --only hosting` concluido para `https://siswebsoftware.com.br`.
 - Producao validada por HTTP: `sw.js`, `vendas.html`, `compras.html`, `commerce-responsive.css`, `vendas.js` e `compras.js` respondem 200 na versao `2026-06-07-commerce-pwa-detail-modal-v7`.
 - Browser em producao `319x531`: modal `Detalhes do Pedido` de Compras sem celulas problematicas; `Total` e `Status` com largura de card de cerca de `255px`.
 - Browser em producao `319x531`: modal `Detalhes do Pedido` de Vendas sem celulas problematicas; `Total` e `Status` com largura de card de cerca de `255px`.

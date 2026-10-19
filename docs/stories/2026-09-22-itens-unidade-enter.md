@@ -6,7 +6,7 @@
   - Commit `9fbb43c` (+ min-quantidade junto) → push `origin/main` ✓
   - `inject-cachebusters`: bump `vendas.js?v=a50c234f1495` ✓
   - Build `hosting-dist` (478 arquivos) com código novo confirmado no artefato ✓
-  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://siswebsoftware.com.br` ✓
 - **Escopo:** `vendas.html`, `compras.html`, `vendas.js` (resets), `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Fora de escopo:** validações de quantidade (intactas no JS).
 

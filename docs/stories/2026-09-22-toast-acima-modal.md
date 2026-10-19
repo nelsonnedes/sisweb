@@ -5,7 +5,7 @@
 - **Deploy:**
   - Commits `7c8e5dc` + `02c457b` (bumps toast.js) → push `origin/main` ✓
   - Build `hosting-dist` (478 arquivos) ✓
-  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://sisweb-7ce82.web.app` ✓
+  - `firebase deploy --only hosting --project sisweb-7ce82` — release complete em `https://siswebsoftware.com.br` ✓
 - **Escopo:** `vendas.html`, `compras.html`, `modules/core/toast.js`, `tests/romaneio-preview-uso-trava.test.mjs` (+1 teste)
 - **Sintoma:** com Lista de Pedidos aberta, toasts abriam por baixo (invisíveis).
 

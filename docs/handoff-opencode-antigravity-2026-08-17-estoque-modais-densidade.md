@@ -89,5 +89,5 @@
   - Relatórios de Posição do Estoque, Espécies e Movimentações renderizando com cards métricos (`stock-summary-card`) e zero erros no console.
 - **Validação Pré-Merge (`npm run validate:pr`)**: **6/6 etapas APROVADAS (PASS)**.
 - **Cachebusters Injetados**: `node tools/inject-cachebusters.mjs` atualizado nos HTMLs.
-- **Deploy em Produção**: Firebase Hosting (`https://sisweb-7ce82.web.app`).
+- **Deploy em Produção**: Firebase Hosting (`https://siswebsoftware.com.br`).
 - **Post-Deploy Security Check (`npm run security:postdeploy`)**: **37/37 checks aprovados**.

@@ -56,7 +56,7 @@ O usuario reportou que, no PC, imprimir dentro de "Detalhes do Pedido" carrega a
 - `node --check commerce-pdf-share.js`, `node --check firebaseService.js`, `node --check functions\index.js`, `node --check tests\commerce-responsive-pwa.test.mjs`, `node --check tests\company-logo-storage-policy.test.mjs` sem erros.
 - Testes focados: `node --test tests\commerce-responsive-pwa.test.mjs tests\company-logo-storage-policy.test.mjs tests\qa-visual-pwa-routes.test.mjs tests\pwa-mobile-menu-session.test.mjs tests\pwa-install-icon.test.mjs tests\support-backend.test.mjs` => 46/46.
 - Gates: `npm run lint`, `npm run typecheck`, `npm test` => 97/97.
-- Deploy: `firebase deploy --only functions:getCompanyLogoDataUrl` criou a callable `getCompanyLogoDataUrl(us-central1)`; `firebase deploy --only hosting` concluido em `https://sisweb-7ce82.web.app`.
+- Deploy: `firebase deploy --only functions:getCompanyLogoDataUrl` criou a callable `getCompanyLogoDataUrl(us-central1)`; `firebase deploy --only hosting` concluido em `https://siswebsoftware.com.br`.
 - Producao: `vendas.html` e `compras.html` servem `commerce-pdf-share.js`, `firebaseService.js`, `vendas.js` e `compras.js` com `v=2026-06-07-print-context-v13`; `sw.js` publica `2026-06-07-print-context-v13`.
 - Producao verificada por HTTP: `firebaseService.js?v=2026-06-07-print-context-v13` contem `getCompanyLogoDataUrl`/`isTenantLogoPath`; `commerce-pdf-share.js?v=2026-06-07-print-context-v13` contem `preparePrintOptions(options = {}) { return options || {}; }`.
 - Navegador interno em producao: `vendas.html?verify=logo-cors-v13` abriu autenticado; Lista de Pedidos selecionou 1 pedido e o clique de imprimir nao gerou `firebasestorage.googleapis.com`, `connection.ts`, `getBytes` ou `getStorageDataURL` no console.

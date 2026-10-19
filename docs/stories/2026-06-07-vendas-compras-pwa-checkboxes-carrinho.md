@@ -51,6 +51,6 @@ O usuario marcou novos pontos no Browser em `vendas.html` e `compras.html`: chec
 - Auditoria local em `374x531` percorreu Vendas/Compras: inicial, Novo Pedido, Romaneio, Lista de Pedidos, Produtos, Modal Produto e Relatorios, sem overflow horizontal, sem checkbox fora do padrao e sem cards estourando.
 - Validacao controlada do carrinho com dados ficticios em Vendas e Compras: celulas `Produto`, `Quantidade`, `Preco Unit.`, `Total` e `Acoes` sem overflow; acoes ocupando largura total do card.
 - Gates: `node --test tests/qa-visual-pwa-routes.test.mjs tests/commerce-responsive-pwa.test.mjs tests/pwa-install-icon.test.mjs tests/pwa-mobile-menu-session.test.mjs`, `npm run lint`, `npm run typecheck`, `npm test` com 86 testes passando.
-- Deploy hosting executado em `https://sisweb-7ce82.web.app`.
+- Deploy hosting executado em `https://siswebsoftware.com.br`.
 - Pos-deploy: `sw.js` publica `2026-06-07-romaneio-cart-mobile-v1`; `commerce-responsive.css` em producao contem regras de checkbox compacto, `.romaneio-actions`, `.commerce-cart-table-wrap`, grid de cards e acoes em largura total.
 - Browser em producao: `vendas.html` e `compras.html` carregam `commerce-responsive.css?v=2026-06-07-romaneio-cart-mobile-v1`, contem `.romaneio-actions` e nao apresentam overflow horizontal em viewport pequeno.

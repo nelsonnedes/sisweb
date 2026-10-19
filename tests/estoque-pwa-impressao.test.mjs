@@ -85,7 +85,7 @@ test('estoque resolve logo multitenant antes de montar cabecalho HTML', async ()
   const calls = [];
   const context = {
     window: {
-      location: { origin: 'https://sisweb-7ce82.web.app' },
+      location: { origin: 'https://siswebsoftware.com.br' },
       firebaseService: {
         async getStorageDownloadURL(path) {
           calls.push({ type: 'getStorageDownloadURL', path });

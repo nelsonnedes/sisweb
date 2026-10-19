@@ -49,7 +49,7 @@ Em Folha de Pagamento > Lancamentos, o botao Imprimir gera o recibo individual e
 - `git diff --check` sem erro; apenas avisos LF/CRLF do Windows.
 - `firebase deploy --only hosting --project sisweb-7ce82`
 - Validacao visual com recibo sintetico em retrato e paisagem: 0 sobreposicoes em linhas, celulas e blocos principais.
-- Verificacao do arquivo publicado em `https://sisweb-7ce82.web.app/folha_pagamento/folha-relatorios.js`.
+- Verificacao do arquivo publicado em `https://siswebsoftware.com.br/folha_pagamento/folha-relatorios.js`.
 - Verificacao da versao publicada confirmou `omitPageSize`, ausencia de `popup=yes` e abertura por `_blank`.
 - Producao recarregada em `folha.html`, filtro Abril/2026 aplicado e Fabio Da Silva visivel com o botao de impressao do lancamento real.
 - Autoajuste reaproveitado nos dois fluxos: botao Imprimir dos lancamentos e Gerar Relatorios > Demonstrativo Individual.

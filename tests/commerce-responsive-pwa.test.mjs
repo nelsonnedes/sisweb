@@ -258,7 +258,7 @@ test('pdf PWA prioriza logoStoragePath e nao faz fetch CORS da URL tokenizada do
   const tokenUrl = `https://firebasestorage.googleapis.com/v0/b/sisweb-7ce82.firebasestorage.app/o/${encodeURIComponent(storagePath)}?alt=media&token=abc`;
   const context = {
     window: {
-      location: { origin: 'https://sisweb-7ce82.web.app' },
+      location: { origin: 'https://siswebsoftware.com.br' },
       jspdf: { jsPDF: FakeDoc },
       firebaseService: {
         async getStorageDataURL(path) {
@@ -319,7 +319,7 @@ test('HTML de impressao converte logo do Storage para DataURL antes de montar ca
   const logoDataUrl = 'data:image/png;base64,iVBORw0KGgo=';
   const context = {
     window: {
-      location: { origin: 'https://sisweb-7ce82.web.app' },
+      location: { origin: 'https://siswebsoftware.com.br' },
       firebaseService: {
         async getStorageDataURL(path) {
           calls.push({ type: 'getStorageDataURL', path });

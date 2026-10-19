@@ -47,7 +47,7 @@ Permitir que o SuperAdmin conceda um teste gratuito de 30 dias para clientes cad
 - `npm test`: 138/138 OK.
 - Deploy Functions: `grantAdminFreeTrial` publicado no projeto `sisweb-7ce82`.
 - Segurança do deploy: `grantAdminFreeTrial` ficou usando `SMTP_PASS` via Secret Manager, sem variaveis locais sensiveis no ambiente da Function.
-- Deploy Hosting: publicado em `https://sisweb-7ce82.web.app`.
+- Deploy Hosting: publicado em `https://siswebsoftware.com.br`.
 - Verificacao remota HTTP: `admin.html`, `admin-main.js` e `firebaseService.js` carregam versao cacheada atual com botao/dialog/wrapper do Trial 30d.
 - Verificacao no navegador: aba Assinaturas carregou 7 registros e exibiu `Trial 30d` para 2 clientes elegiveis; nenhuma concessao real foi acionada.
 - Correcao posterior: `admin-main.js` e `admin.html` publicados com cachebuster `2026-06-11-admin-trial-v2`.
