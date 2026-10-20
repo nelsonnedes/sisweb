@@ -1217,7 +1217,6 @@ async function imprimirRelatorioProdutosCompra(lista) {
                 title: 'Lista de Produtos',
                 company: dadosEmpresa,
                 badgeText: 'Compras',
-                subtitle: `Emitido em ${new Date().toLocaleDateString('pt-BR')}`,
                 bodyHtml
             };
             const prepared = typeof helper.preparePrintOptions === 'function'
@@ -3967,7 +3966,6 @@ function exportarRelatorioComprasPDF() {
                 title: 'Relatório de Compras',
                 company: dadosEmpresa,
                 badgeText: 'Compras',
-                subtitle: periodoLabel,
                 metaRows,
                 bodyHtml,
                 compact: comprasRelatorioAtual.length > 18,
@@ -4285,10 +4283,8 @@ async function gerarHTMLImpressaoPedidoCompra(pedido) {
         <section class="sisweb-print-info-grid">
             <div class="sisweb-print-info-box">
                 <h3>Dados do pedido</h3>
-                <p><strong>Número:</strong> ${htmlEscape(pedido.numero || '-')}</p>
-                <p><strong>Data:</strong> ${htmlEscape(formatDate(pedido.data))}</p>
+                <p><strong>Data do pedido:</strong> ${htmlEscape(formatDate(pedido.data))}</p>
                 <p><strong>Status:</strong> ${htmlEscape(getStatusLabel(pedido.status))}</p>
-                <p><strong>Emissão:</strong> ${htmlEscape(new Date().toLocaleDateString('pt-BR'))} ${htmlEscape(new Date().toLocaleTimeString('pt-BR'))}</p>
             </div>
             <div class="sisweb-print-info-box">
                 <h3>Dados do fornecedor</h3>
@@ -4352,10 +4348,10 @@ async function gerarHTMLImpressaoPedidoCompra(pedido) {
 
     if (typeof helper.buildPrintDocument === 'function') {
         const printOptions = {
-            title: `Pedido de Compra Nº ${pedido.numero || '-'}`,
+            title: 'Pedido de Compra',
+            documentTitle: `Pedido de Compra Nº ${pedido.numero || 's/n'}`,
             company: dadosEmpresa,
             badgeText: 'Compras',
-            subtitle: `Emitido em ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}`,
             documentNumber: pedido.numero || '',
             bodyHtml,
             compact: ((pedido.itens || []).length + Math.max(0, (pedido.contasPagar || []).length - 3)) > 20
@@ -4443,10 +4439,8 @@ async function imprimirPedido(pedidoId) {
             <section class="sisweb-print-info-grid">
                 <div class="sisweb-print-info-box">
                     <h3>Dados do pedido</h3>
-                    <p><strong>Número:</strong> ${htmlEscape(pedido.numero || '-')}</p>
-                    <p><strong>Data:</strong> ${htmlEscape(formatDate(pedido.data))}</p>
+                    <p><strong>Data do pedido:</strong> ${htmlEscape(formatDate(pedido.data))}</p>
                     <p><strong>Status:</strong> ${htmlEscape(getStatusLabel(pedido.status))}</p>
-                    <p><strong>Emissão:</strong> ${htmlEscape(new Date().toLocaleDateString('pt-BR'))} ${htmlEscape(new Date().toLocaleTimeString('pt-BR'))}</p>
                 </div>
                 <div class="sisweb-print-info-box">
                     <h3>Dados do fornecedor</h3>
@@ -4510,10 +4504,10 @@ async function imprimirPedido(pedidoId) {
 
         if (typeof helper.printHtmlDocument === 'function') {
             const printOptions = {
-                title: `Pedido de Compra Nº ${pedido.numero || '-'}`,
+                title: 'Pedido de Compra',
+                documentTitle: `Pedido de Compra Nº ${pedido.numero || 's/n'}`,
                 company: dadosEmpresa,
                 badgeText: 'Compras',
-                subtitle: `Emitido em ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}`,
                 documentNumber: pedido.numero || '',
                 bodyHtml,
                 compact: ((pedido.itens || []).length + Math.max(0, (pedido.contasPagar || []).length - 3)) > 20,

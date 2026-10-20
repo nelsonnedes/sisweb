@@ -375,6 +375,17 @@
 
     function getPrintStyles(extraCss = '') {
         return `
+            :root {
+                --sw-brand: #0f172a;
+                --sw-brand-dark: #1e293b;
+                --sw-border: #dbe3ec;
+                --sw-surface: #ffffff;
+                --sw-surface-2: #f8fafc;
+                --sw-text-1: #111827;
+                --sw-on-brand: #ffffff;
+                --sw-input-bg: #ffffff;
+                --sw-input-border: #cbd5e1;
+            }
             @page {
                 margin: 10mm;
             }
@@ -431,7 +442,7 @@
 
             .sisweb-print-header {
                 display: grid;
-                grid-template-columns: 92px minmax(0, 1fr) 190px;
+                grid-template-columns: 92px minmax(0, 1fr) minmax(190px, 240px);
                 gap: 14px;
                 align-items: center;
                 padding: 12px 14px;
@@ -525,6 +536,7 @@
                 font-size: 15px;
                 font-weight: 800;
                 line-height: 1.15;
+                overflow-wrap: anywhere;
             }
 
             .sisweb-print-section {
@@ -743,11 +755,12 @@
 
     function buildPrintDocument(options = {}) {
         const title = options.title || 'Relatorio';
+        const documentTitle = options.documentTitle || title;
         const printedAt = options.printedAt || new Date();
         const footer = options.footerHtml || `
             <footer class="sisweb-print-footer">
                 <div>Documento gerado eletronicamente pelo Sisweb</div>
-                <div>Impresso em: ${escapeHtml(printedAt.toLocaleDateString('pt-BR'))} as ${escapeHtml(printedAt.toLocaleTimeString('pt-BR'))}</div>
+                <div>Impresso em: ${escapeHtml(printedAt.toLocaleDateString('pt-BR'))} às ${escapeHtml(printedAt.toLocaleTimeString('pt-BR'))}</div>
             </footer>
         `;
         return `<!doctype html>
@@ -755,7 +768,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${escapeHtml(title)}</title>
+    <title>${escapeHtml(documentTitle)}</title>
     <style>${getPrintStyles(options.extraCss || '')}</style>
 </head>
 <body class="sisweb-commerce-print">

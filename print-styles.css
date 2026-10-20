@@ -1259,6 +1259,7 @@ body[data-print-mode="sem-preco"] .no-print-unit-price {
         height: 10px !important;
     }
 }
+#listaModal .client-action-button i {
     width: 13px !important;
     height: 13px !important;
     line-height: 13px !important;

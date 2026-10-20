@@ -11003,10 +11003,8 @@ async function gerarHTMLImpressaoPedido(pedido) {
         <section class="sisweb-print-info-grid">
             <div class="sisweb-print-info-box">
                 <h3>Dados do pedido</h3>
-                <p><strong>Número:</strong> ${htmlEscape(pedido.numero || '-')}</p>
-                <p><strong>Data:</strong> ${htmlEscape(formatDate(pedido.data))}</p>
+                <p><strong>Data do pedido:</strong> ${htmlEscape(formatDate(pedido.data))}</p>
                 <p><strong>Status:</strong> ${htmlEscape(statusLabel)}</p>
-                <p><strong>Emissão:</strong> ${htmlEscape(new Date().toLocaleDateString('pt-BR'))} ${htmlEscape(new Date().toLocaleTimeString('pt-BR'))}</p>
             </div>
             <div class="sisweb-print-info-box">
                 <h3>Dados do cliente</h3>
@@ -11075,10 +11073,10 @@ async function gerarHTMLImpressaoPedido(pedido) {
 
     if (typeof helper.buildPrintDocument === 'function') {
         const printOptions = {
-            title: `Pedido de Venda Nº ${pedido.numero || '-'}`,
+            title: 'Pedido de Venda',
+            documentTitle: `Pedido de Venda Nº ${pedido.numero || 's/n'}`,
             company: dadosEmpresa,
             badgeText: 'Vendas',
-            subtitle: `Emitido em ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}`,
             documentNumber: pedido.numero || '',
             bodyHtml,
             compact: contentScore > 20
