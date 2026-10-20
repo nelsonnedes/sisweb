@@ -421,7 +421,7 @@
   },
   "emulators": {
     "database": {
-      "port": 9000
+      "port": 9300
     },
     "auth": {
       "port": 9099

@@ -15,14 +15,14 @@ Abra `http://127.0.0.1:5000`. Para o frontend apontar para os emuladores, no con
 localStorage.setItem('__SISWEB_FIREBASE_CONFIG__', JSON.stringify({
   apiKey: 'demo-key',
   authDomain: 'demo-sisweb-sandbox.firebaseapp.com',
-  databaseURL: 'http://127.0.0.1:9000?ns=demo-sisweb-sandbox',
+  databaseURL: 'http://127.0.0.1:9300?ns=demo-sisweb-sandbox',
   projectId: 'demo-sisweb-sandbox',
   storageBucket: 'demo-sisweb-sandbox.appspot.com',
   appId: '1:demo:web:demo'
 }));
 localStorage.setItem('__SISWEB_EMULATORS__', JSON.stringify({
   auth: 'http://127.0.0.1:9099',
-  database: { host: '127.0.0.1', port: 9000 },
+  database: { host: '127.0.0.1', port: 9300 },
   storage: { host: '127.0.0.1', port: 9199 },
   functions: { host: '127.0.0.1', port: 5001 }
 }));

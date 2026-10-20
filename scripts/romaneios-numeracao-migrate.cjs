@@ -164,8 +164,8 @@ async function main() {
   if (apply && !backupFile) throw new Error('--apply exige --backup <arquivo>.');
 
   envGuard();
-  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    throw new Error('Defina GOOGLE_APPLICATION_CREDENTIALS (sem service-account hardcoded).');
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.FIREBASE_DATABASE_EMULATOR_HOST) {
+    throw new Error('Defina GOOGLE_APPLICATION_CREDENTIALS ou FIREBASE_DATABASE_EMULATOR_HOST.');
   }
   admin.initializeApp({ databaseURL: process.env.FIREBASE_DATABASE_URL });
   const db = admin.database();
