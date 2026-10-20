@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
     <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
-    <script src="js/romaneio-numero.js?v=1"></script>
+    <script src="js/romaneio-numero.js?v=e1f2a3b4c5d6"></script>
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -2876,14 +2876,16 @@
             };
             // Numeração sequencial de exibição ("Nº 1, 2, ...") — display only.
             // id/numero (chaves) nunca mudam; preserva em edição.
-            try {
-                const RU = window.RomaneioDataUtils;
-                if (RU && typeof RU.numeroExibicaoValido === 'function' && typeof RU.proximoNumeroExibicao === 'function') {
-                    const atual = RU.numeroExibicaoValido(registroEmEdicao ? registroEmEdicao.numeroExibicao : 0);
-                    if (atual > 0) dataObj.numeroExibicao = atual;
-                    else dataObj.numeroExibicao = RU.proximoNumeroExibicao(romaneiosEdicaoBase);
-                }
-            } catch (_) {}
+            if (window.SISWEB_ROMANEIO_SEQUENCE !== true) {
+                try {
+                    const RU = window.RomaneioDataUtils;
+                    if (RU && typeof RU.numeroExibicaoValido === 'function' && typeof RU.proximoNumeroExibicao === 'function') {
+                        const atual = RU.numeroExibicaoValido(registroEmEdicao ? registroEmEdicao.numeroExibicao : 0);
+                        if (atual > 0) dataObj.numeroExibicao = atual;
+                        else dataObj.numeroExibicao = RU.proximoNumeroExibicao(romaneiosEdicaoBase);
+                    }
+                } catch (_) {}
+            }
             // Salvar romaneio (PRIORIZANDO FIREBASE SERVICE MODULAR)
             console.log('💾 Salvando Romaneio PES...', dataObj);
             
@@ -5007,13 +5009,15 @@
             let profileCompColPx = comprimentosUnicos.length >= 18 ? 12 : (comprimentosUnicos.length >= 14 ? 14 : (comprimentosUnicos.length >= 10 ? 16 : 18));
             let profileScale = comprimentosUnicos.length >= 18 ? 0.88 : (comprimentosUnicos.length >= 14 ? 0.91 : (comprimentosUnicos.length >= 10 ? 0.94 : 0.97));
             // MOBILE: janela aberta DEPOIS do conteúdo (abrir antes exibe about:blank vazio).
+            const numeroFmtPesPrint = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+                ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '') : '';
             const printContent = `
                 <!DOCTYPE html>
                 <html lang="pt-BR">
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>ROMANEIO DE PÉS - ${clienteNome}</title>
+                    <title>ROMANEIO DE PÉS - ${numeroFmtPesPrint || clienteNome}</title>
                     <style>
                         body { font-family: Arial, sans-serif; margin: 0; padding: 16px; color: var(--sw-text-1) ; }
                         .header { display: flex; gap: 14px; align-items: center; border-bottom: 2px solid #0d2339; padding-bottom: 10px; margin-bottom: 10px; }
@@ -5255,7 +5259,7 @@
                                     <div class="company-details">Telefone: ${companyPhone}</div>
                                 </div>
                             </div>
-                            <div class="title">ROMANEIO DE PÉS</div>
+                            <div class="title">ROMANEIO DE PÉS${numeroFmtPesPrint ? ' - ' + numeroFmtPesPrint : ''}</div>
                             <div class="meta">
                                 <div class="meta-row">
                                     <span class="meta-label">Cliente:</span>

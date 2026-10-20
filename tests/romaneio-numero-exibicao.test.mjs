@@ -65,6 +65,11 @@ test('saves atribuem numeroExibicao sem tocar nas chaves', () => {
   for (const [nm, s] of [['pct', pct], ['tl', tl], ['tora', tora], ['pes', pesHtml]]) {
     assert.ok(!/numeroExibicao\s*=\s*[`'"]Nº/.test(s), `${nm}: sem prefixo gravado`);
   }
+  for (const [nm, s] of [['pct', pct], ['tl', tl], ['tora', tora], ['pes', pesHtml]]) {
+    assert.ok(/SISWEB_ROMANEIO_SEQUENCE !== true/.test(s), `${nm}: numeração local desativada no modo oficial`);
+  }
+  const numero = readFileSync(new URL('../js/romaneio-numero.js', import.meta.url), 'utf8');
+  assert.ok(/current && root\.SISWEB_ROMANEIO_SEQUENCE !== true/.test(numero), 'modo oficial sempre reserva no servidor');
 });
 
 test('displays usam formatarNumeroExibicao com fallback legado', () => {
@@ -76,6 +81,29 @@ test('displays usam formatarNumeroExibicao com fallback legado', () => {
   const comprasHtml = readFileSync(new URL('../compras.html', import.meta.url), 'utf8');
   assert.ok(/romaneio-table-enhancements\.js\?v=[0-9a-f]{12}/.test(vendasHtml), 'vendas carrega módulo');
   assert.ok(/romaneio-table-enhancements\.js\?v=[0-9a-f]{12}/.test(comprasHtml), 'compras carrega módulo');
+});
+
+test('financeiro e impressao exibem o numero sequencial sem trocar a chave tecnica', () => {
+  const financas = readFileSync(new URL('../financas.js', import.meta.url), 'utf8');
+  const modalTl = readFileSync(new URL('../modules/modals/modal-lista-romaneios.js', import.meta.url), 'utf8');
+  const modalPct = readFileSync(new URL('../modules/romaneiopct/modal-lista-romaneios-pct.js', import.meta.url), 'utf8');
+  assert.ok(/conta\.romaneioNumero/.test(financas), 'financeiro prioriza numero do romaneio');
+  assert.ok(/documentoExibicao/.test(financas), 'financeiro usa o numero do romaneio na coluna de documento');
+  assert.ok(/origem:\s*'romaneio_tl'[\s\S]{0,300}romaneioNumero/.test(modalTl), 'TL grava numero na conta');
+  assert.ok(/origem:\s*'romaneio_pct'[\s\S]{0,300}romaneioNumero/.test(modalPct), 'PCT grava numero na conta');
+
+  const printTl = readFileSync(new URL('../modules/reports/imprimir-romaneio.js', import.meta.url), 'utf8');
+  const printPct = readFileSync(new URL('../modules/romaneiopct/imprimir-romaneio-pct.js', import.meta.url), 'utf8');
+  const pes = readFileSync(new URL('../romaneiopes.html', import.meta.url), 'utf8');
+  const toraManager = readFileSync(new URL('../romaneio-manager.js', import.meta.url), 'utf8');
+  assert.ok(/numeroImpressaoRomaneio/.test(printTl), 'TL/Tora usam numero na impressao');
+  assert.ok(/numeroSequencial: romaneio\.numeroSequencial/.test(printTl), 'Tora preserva numero ao carregar para impressao');
+  assert.ok(/numeroImpressao/.test(printPct), 'PCT usa numero na impressao');
+  assert.ok(/numeroFmtPesPrint/.test(pes), 'PES usa numero na impressao');
+  assert.ok(/numeroFmt/.test(toraManager), 'Tora exibe numero na lista canonica');
+  assert.ok(/function limparDescricaoRomaneioVendas/.test(vendas), 'Vendas limpa descricao tecnica');
+  assert.ok(/function resolverRomaneioProduto/.test(vendas), 'Vendas resolve rotulo completo do romaneio');
+  assert.ok(/numero: numeroRomaneioRegistro\(r\)/.test(vendas), 'Vendas grava numero oficial, nao chave tecnica');
 });
 
 test('vínculos continuam por id (display nunca vira chave)', () => {

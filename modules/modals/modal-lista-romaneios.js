@@ -1378,6 +1378,8 @@ window.ModalListaRomaneios = (function() {
                 categoria: 'Vendas',
                 origem: 'romaneio_tl',
                 origemId: romaneio.id,
+                romaneioNumero: (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+                    ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '') : '') || romaneio.numeroFormatado || romaneio.numero || romaneio.id || '',
                 romaneioData: normalizeDateInputValue(dataBaseRomaneio) || normalizeDateInputValue(new Date()),
                 romaneioCliente: obterNomeClienteRomaneio(romaneio) || romaneio.cliente,
                 romaneioEspecies: especies,

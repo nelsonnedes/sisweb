@@ -26,7 +26,7 @@ test('formata número de seis dígitos com fallbacks', () => {
   assert.equal(number.formatar({}), '');
 });
 
-test('reserva uma única vez com operationId determinístico', async () => {
+test('reserva com operationId determinístico e reenvia idempotente', async () => {
   const record = { id: 'TL_1778178288808_8wfqvkkt5' };
   await number.aplicar('tl', record);
   assert.equal(record.numeroSequencial, 142);
@@ -37,7 +37,8 @@ test('reserva uma única vez com operationId determinístico', async () => {
   assert.equal(calls[0].payload.tipo, 'tl');
   assert.match(calls[0].payload.operationId, /^rom-tl-/);
   await number.aplicar('tl', record);
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].payload.operationId, calls[0].payload.operationId);
 });
 
 test('sem flag não chama o backend', async () => {
@@ -50,6 +51,8 @@ test('sem flag não chama o backend', async () => {
 });
 
 test('integração chama o número na criação dos cinco tipos', () => {
+  const pctPage = fs.readFileSync('romaneiopct.html', 'utf8');
+  assert.match(pctPage, /setCompanyClaim,\s*callFunction,/, 'PCT expõe callFunction no firebaseService global');
   const tl = fs.readFileSync('modules/romaneio/salvar-romaneio.js', 'utf8');
   assert.match(tl, /SiswebRomaneioNumero\.aplicar\('tl'/);
   assert.match(fs.readFileSync('romaneiopct-tabela.js', 'utf8'), /SiswebRomaneioNumero\.aplicar\('pct'/);

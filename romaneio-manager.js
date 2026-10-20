@@ -732,6 +732,8 @@ class RomaneioManager {
         tbody.innerHTML = pageItems.map((r, idx) => {
             const globalIdx = startIdx + idx;
             const dataFmt = r.dataHora ? new Date(r.dataHora).toLocaleDateString('pt-BR') : '-';
+            const numeroFmt = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+                ? window.RomaneioDataUtils.formatarNumeroExibicao(r, '') : '';
             const nomeValue = r.fornecedor?.nome || r.cliente?.nome || r.fornecedor || r.cliente || 'Não informado';
             const nome = typeof nomeValue === 'object' ? 'Não informado' : String(nomeValue);
             const actionId = toInlineRomaneioArg(r.id);
@@ -788,7 +790,7 @@ class RomaneioManager {
 
             return `
                 <tr>
-                    <td data-label="Data" class="fw-bold text-dark">${escapeRomaneioHtml(dataFmt)}</td>
+                    <td data-label="Data" class="fw-bold text-dark">${numeroFmt ? `<div style="font-size:11px;font-weight:700;color:var(--sw-text-2);">${escapeRomaneioHtml(numeroFmt)}</div>` : ''}${escapeRomaneioHtml(dataFmt)}</td>
                     <td data-label="Cliente">${escapeRomaneioHtml(nome)}</td>
                     <td data-label="Espécies"><small class="text-muted">${escapeRomaneioHtml(resumo.substring(0, 30))}${resumo.length > 30 ? '...' : ''}</small></td>
                     <td data-label="Itens" class="text-center"><span class="badge bg-light text-dark border">${qtd}</span></td>

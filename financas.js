@@ -3872,6 +3872,7 @@ async function salvarContaReceber(event) {
                 pedidoNumero: contaOriginal.pedidoNumero || '', // ✅ PRESERVAR Nº do Pedido
                 documento: contaOriginal.documento || contaOriginal.pedidoNumero || '', // ✅ PRESERVAR documento se existir
                 numero: contaOriginal.numero || contaOriginal.pedidoNumero || '',
+                romaneioNumero: contaOriginal.romaneioNumero || '',
                 romaneioData: (contaOriginal.romaneioData ?? null),
                 romaneioCliente: (contaOriginal.romaneioCliente ?? null),
                 romaneioEspecies: Array.isArray(contaOriginal.romaneioEspecies) ? contaOriginal.romaneioEspecies : null,
@@ -4844,7 +4845,10 @@ async function carregarTabelaReceber(filtro = {}) {
         const jurosInfo = getContaJurosDisplay(conta);
 
         let tipoConta = 'Manual';
-        if (conta.origem === 'romaneio_tl' && conta.origemId) {
+        if ((conta.origem === 'romaneio_tl' || conta.origem === 'romaneio_pct') && conta.romaneioNumero) {
+            const sigla = conta.origem === 'romaneio_pct' ? 'PCT' : 'TL';
+            tipoConta = `${sigla} ${conta.romaneioNumero}`;
+        } else if (conta.origem === 'romaneio_tl' && conta.origemId) {
             const romaneioMatch = conta.origemId.match(/^TL_(\d+)_/);
             if (romaneioMatch) {
                 const timestamp = romaneioMatch[1];
@@ -4862,6 +4866,10 @@ async function carregarTabelaReceber(filtro = {}) {
             }
         }
 
+        const documentoExibicao = conta.pedidoNumero || conta.numero
+            || ((conta.origem === 'romaneio_tl' || conta.origem === 'romaneio_pct') ? tipoConta : '')
+            || '-';
+
         const prefsRow = getPrintPreferences('receber');
         const defCols = defaultPrintColumns.receber;
         const allowedRow = new Set(defCols);
@@ -4874,7 +4882,7 @@ async function carregarTabelaReceber(filtro = {}) {
             if (!visibleRow[colKey]) return;
             const cellLabel = labelMap[colKey] || colKey;
             switch (colKey) {
-                case 'pedidoNumero': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align:center;">${escapeFinanceHtml(conta.pedidoNumero || conta.numero || '-')}</td>`); break;
+                case 'pedidoNumero': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align:center;">${escapeFinanceHtml(documentoExibicao)}</td>`); break;
                 case 'cliente': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(nomeCliente)}</td>`); break;
                 case 'descricao': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}">${escapeFinanceHtml(conta.descricao || '-')}</td>`); break;
                 case 'valor': rowCells.push(`<td data-label="${escapeFinanceHtml(cellLabel)}" style="text-align: right;" ${tooltipValor}>${formatCurrency(valorExibir)}</td>`); break;

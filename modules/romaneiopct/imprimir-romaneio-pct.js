@@ -656,6 +656,9 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
     }
 
     const dataFormatada = formatarDataRomaneio(romaneio.dataEmissao || romaneio.data || romaneio.timestamp);
+    const numeroImpressao = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+        ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '')
+        : '';
     
     const especies = [...new Set(itens.map(item => item.especie))].filter(Boolean);
     const ua = navigator.userAgent || '';
@@ -706,7 +709,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Romaneio Pacote #${romaneio.id || 'N/A'}</title>
+            <title>Romaneio Pacote ${numeroImpressao || ('#' + (romaneio.id || 'N/A'))}</title>
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -1978,7 +1981,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         </div>
                     </div>
                     <!-- ✅ TÍTULO DO ROMANEIO LOGO APÓS O CABEÇALHO -->
-                    <div class="title">ROMANEIO DE PACOTE</div>
+                    <div class="title">ROMANEIO DE PACOTE${numeroImpressao ? ' - ' + numeroImpressao : ''}</div>
                     
                     <div class="customer-info">
                 <div class="info-row">
@@ -2117,7 +2120,7 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 <div id="pct-cont-pagebreak" style="display: none;"></div>
                 <div class="header-romaneio-container">
                     <div class="romaneio-principal">
-                        <div class="title">ROMANEIO DE PACOTE - CONTINUAÇÃO</div>
+                        <div class="title">ROMANEIO DE PACOTE - CONTINUAÇÃO${numeroImpressao ? ' - ' + numeroImpressao : ''}</div>
                         <div class="table-container">
                             <table class="items-table" id="pct-cont-table">
                                 ${tableHeadHtml}

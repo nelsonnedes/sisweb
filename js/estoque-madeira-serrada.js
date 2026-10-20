@@ -252,7 +252,8 @@
         setVal('emsPreco', item && (item.preco || item.precoVenda || item.price) ? String(item.preco != null ? item.preco : (item.precoVenda != null ? item.precoVenda : item.price)).replace('.', ',') : '');
         setVal('emsEstoque', item && item.estoque != null ? String(item.estoque) : (item && item.quantidade != null ? String(item.quantidade) : ''));
         setVal('emsUnidade', item ? unidadeCadastro(item.unidade || 'UN') : 'UN');
-        setVal('emsDescricao', item ? (item.descricao || '') : '');
+        var numeroEdit = numeroLegivel(item && item.romaneioNumero);
+        setVal('emsDescricao', item ? limparDescricaoRomaneio(item.descricao || '', numeroEdit) : '');
         setVal('emsEspecie', item ? (item.especie || '') : '');
         setVal('emsEspessura', item && item.espessura != null ? item.espessura : '');
         setVal('emsLargura', item && item.largura != null ? item.largura : '');
@@ -266,9 +267,19 @@
             if (item && item.romaneioId) {
                 var opt = document.createElement('option');
                 opt.value = String(item.romaneioId);
-                opt.textContent = item.romaneioNumero || 'Romaneio';
+                opt.textContent = numeroEdit ? 'Nº ' + numeroEdit : 'Romaneio';
                 romSel.appendChild(opt);
                 romSel.value = String(item.romaneioId);
+                resolverRomaneio(item).then(function (rom) {
+                    if (!rom) return;
+                    var numero = romNumero(rom);
+                    opt.textContent = romLabel(rom);
+                    if (!numero) return;
+                    item.romaneioNumero = numero;
+                    if (state.editingBase) state.editingBase.romaneioNumero = numero;
+                    var desc = document.getElementById('emsDescricao');
+                    if (desc) desc.value = limparDescricaoRomaneio(desc.value, numero);
+                });
             }
         }
         var romRadio = document.querySelector('input[name="emsTipo"][value="romaneio"]');
@@ -382,9 +393,11 @@
                     tipoProduto: tipo,
                 };
                 if (tipo === 'romaneio') {
+                    var numeroRomaneio = state.romaneio ? romNumero(state.romaneio) : (numeroLegivel(item.romaneioNumero) || '');
                     src.romaneioTipo = item.romaneioTipo || '';
                     src.romaneioId = getVal('emsRomSelect') || item.romaneioId || '';
-                    src.romaneioNumero = item.romaneioNumero || '';
+                    src.romaneioNumero = numeroRomaneio;
+                    src.descricao = limparDescricaoRomaneio(src.descricao, numeroRomaneio);
                 }
                 var payload = buildPayload(item, src);
                 assertNomeCodigo(payload, state.editingKey);
@@ -455,7 +468,7 @@
             tipoProduto: tipo,
             romaneioTipo: src.romaneioTipo != null ? src.romaneioTipo : (clean.romaneioTipo || ''),
             romaneioId: src.romaneioId != null ? src.romaneioId : (clean.romaneioId || ''),
-            romaneioNumero: src.romaneioNumero != null ? src.romaneioNumero : (clean.romaneioNumero || ''),
+            romaneioNumero: numeroLegivel(src.romaneioNumero != null ? src.romaneioNumero : clean.romaneioNumero),
             created: clean.created || now,
             updated: now,
         });
@@ -517,7 +530,42 @@
         state.romaneio = state.romaneios.find(function (r) { return romaneioKey(r) === key; }) || null;
         resetGroups();
     }
+    function numeroLegivel(value) {
+        var s = String(value == null ? '' : value).trim();
+        if (!s) return '';
+        var m = s.match(/^(?:N[º°]\s*)?(\d{1,6})$/i);
+        return m ? m[1].padStart(6, '0') : '';
+    }
+    function limparDescricaoRomaneio(text, numero) {
+        var s = String(text || '');
+        var tecnico = /\(\s*(?:N[º°]\s*)?(?:TL_|PCT_|PES_|TORA_)[^)]*\)/gi;
+        var negocio = /\(N[º°]\s*\d{1,6}\)/i;
+        s = s.replace(tecnico, '').replace(/\s{2,}/g, ' ').trim();
+        if (!numero) return s;
+        if (negocio.test(s)) return s.replace(negocio, '(Nº ' + numero + ')');
+        return s ? s + ' (Nº ' + numero + ')' : '(Nº ' + numero + ')';
+    }
+    async function resolverRomaneio(item) {
+        try {
+            var path = ROM_PATHS[item && item.romaneioTipo];
+            if (!path) {
+                var tipo = String(item && item.romaneioTipo || '').toLowerCase();
+                path = /pct/.test(tipo) ? 'romaneios/pct' : (/tl/.test(tipo) ? 'romaneios/tl' : (/pes/.test(tipo) ? 'romaneios/pes' : ''));
+            }
+            if (!path || !item || !item.romaneioId) return null;
+            var cached = state.romaneios.find(function (r) { return romaneioKey(r) === String(item.romaneioId); });
+            if (cached) return cached;
+            var res = await svc().loadFromFirebase(path);
+            var data = res && res.data !== undefined ? res.data : res;
+            return normalizeAnyList(data).find(function (r) { return romaneioKey(r) === String(item.romaneioId); }) || null;
+        } catch (_) { return null; }
+    }
     function romNumero(r) {
+        var fmt = String((r && r.numeroFormatado) || '').trim();
+        if (/^\d{6}$/.test(fmt)) return fmt;
+        var seq = r && (r.numeroSequencial ?? r.numeroExibicao ?? r.sequencial ?? r.seq);
+        var seqNum = parseInt(seq, 10);
+        if (seqNum > 0) return String(seqNum).padStart(6, '0');
         var n = String((r && (r.numeroExibicao || r.numeroRomaneio || r.numero)) || '').trim();
         if (/^(TL_|PCT_|PES_|TORA_)/i.test(n)) n = String((r && (r.sequencial || r.numeroSequencial || r.seq)) || '').trim();
         return n;

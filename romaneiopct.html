@@ -2799,6 +2799,7 @@
             setTenantId,
             getCurrentUid,
             setCompanyClaim,
+            callFunction,
             db,
             auth,
             app
@@ -2817,6 +2818,7 @@
             setTenantId,
             getCurrentUid,
             setCompanyClaim,
+            callFunction,
             getNamespacedPath: (path) => {
                 const base = String(path || '').replace(/^\/+/, '');
                 if (!base || /^companies\//.test(base) || /^users\//.test(base)) return base;
@@ -2954,8 +2956,8 @@
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
 
     <!-- ✅ CORREÇÃO CRÍTICA: Tabela com função adicionarItem -->
-    <script src="js/romaneio-numero.js?v=1"></script>
-    <script src="romaneiopct-tabela.js?v=9960874a1e6c"></script>
+    <script src="js/romaneio-numero.js?v=e1f2a3b4c5d6"></script>
+    <script src="romaneiopct-tabela.js?v=e1f2a3b4c5d6"></script>
     
     <!-- ✅ SISTEMA DE FORMATAÇÃO PCT UNIFICADO -->
     <script src="romaneiopct-formatacao.js?v=56c8fa2e012f"></script>
@@ -2967,7 +2969,7 @@
     <script src="commerce-pdf-share.js?v=ca04e7248a45"></script>
 
     <!-- 1. Sistema de impressão específico PCT -->
-    <script src="modules/romaneiopct/imprimir-romaneio-pct.js?v=2549ec6536e5"></script>
+    <script src="modules/romaneiopct/imprimir-romaneio-pct.js?v=c1d2e3f4a5b6"></script>
     
     <!-- 2. Sistema de preservação de propriedades financeiras PCT -->
     <script src="modules/romaneiopct/preservar-propriedades-financeiras.js?v=557f1791c0db"></script>

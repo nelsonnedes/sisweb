@@ -41,7 +41,7 @@
     async function aplicar(tipo, record) {
         if (!record || typeof record !== 'object') return record;
         const current = formatar(record);
-        if (current) return record;
+        if (current && root.SISWEB_ROMANEIO_SEQUENCE !== true) return record;
         const result = await reservar(tipo, record.id || record.numero);
         if (!result) return record;
         record.numeroSequencial = result.numeroSequencial;

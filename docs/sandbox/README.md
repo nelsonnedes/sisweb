@@ -61,6 +61,6 @@ Dry-run é o padrão. `--apply` exige backup e ambiente explícito.
 ## 4. Limitações atuais
 
 - O CSP de algumas páginas ainda referencia produção; valide no emulador e ajuste o CSP do build sandbox antes de testes E2E completos.
-- O callable `romaneioReservarNumero` ainda não foi ligado aos formulários.
+- O callable `romaneioReservarNumero` está ligado aos formulários e validado no emulador; falta deploy no projeto sandbox real.
 - O backfill ainda não foi aplicado em nenhum banco.
 - Não copie `.env`, `service-account.json`, `hosting-dist/` ou `node_modules/` entre produção e sandbox.

@@ -58,6 +58,16 @@ test('módulo usa o core canônico e mantém paginação da página', () => {
   assert.match(vendas, /function volumeSerradoProduto/);
 });
 
+test('edicao e preview nao exibem chave tecnica do romaneio', () => {
+  assert.match(js, /function numeroLegivel/);
+  assert.match(js, /function limparDescricaoRomaneio/);
+  assert.match(js, /function resolverRomaneio/);
+  assert.match(js, /opt\.textContent = romLabel\(rom\)/);
+  assert.match(js, /src\.descricao = limparDescricaoRomaneio/);
+  assert.match(js, /romaneioNumero: numeroLegivel\(src\.romaneioNumero/);
+  assert.match(js, /romaneioNumero: romNumero\(rom\)/);
+});
+
 test('core canônico replica fórmulas do Vendas e trata zero/ppp', () => {
   const sb = {};
   vm.createContext(sb);

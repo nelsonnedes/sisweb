@@ -16,6 +16,15 @@ window.ImprimirRomaneio = (function() {
     'use strict';
     const legacyKey = ['b','i','t','o','l','a'].join('');
 
+    function numeroImpressaoRomaneio(romaneio) {
+        try {
+            const fmt = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+                ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '')
+                : '';
+            return fmt || (romaneio && (romaneio.numeroFormatado || romaneio.numero || romaneio.id)) || '';
+        } catch (_) { return ''; }
+    }
+
     // ✅ CONFIGURAÇÕES DE IMPRESSÃO
     const TIPOS_IMPRESSAO = {
         COMPLETO: 'completo',
@@ -384,6 +393,11 @@ window.ImprimirRomaneio = (function() {
 
         return {
             id: romaneio.id || romaneio.romaneioId || romaneio.key || romaneio.firebaseKey || romaneioId,
+            numero: romaneio.numero,
+            numeroSequencial: romaneio.numeroSequencial,
+            numeroFormatado: romaneio.numeroFormatado,
+            numeroExibicao: romaneio.numeroExibicao,
+            legacyId: romaneio.legacyId,
             fornecedor,
             cliente: romaneio.cliente || '',
             data: romaneio.data || romaneio.timestamp || new Date().toISOString(),
@@ -638,13 +652,14 @@ window.ImprimirRomaneio = (function() {
             </tr>
         `;
 
+        const numeroImpressao = numeroImpressaoRomaneio(romaneio);
         const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Romaneio Tora - ${nomeFornecedor}</title>
+    <title>Romaneio Tora - ${numeroImpressao || nomeFornecedor}</title>
     <style>
         ${gerarEstilosImpressaoTora(tipo)}
         /* Ocultar elementos desnecessários na impressão */
@@ -692,7 +707,7 @@ window.ImprimirRomaneio = (function() {
             </div>
         </div>
         <div class="divider"></div>
-        <div class="title">ROMANEIO DE TORAS</div>
+        <div class="title">ROMANEIO DE TORAS${numeroImpressao ? ' - ' + numeroImpressao : ''}</div>
         <div class="customer-info">
             <div class="info-row">
                 <div class="info-label">Fornecedor:</div>
@@ -1002,13 +1017,14 @@ window.ImprimirRomaneio = (function() {
         
         // Logo carregada com sucesso - removidos logs de debug
         
+        const numeroImpressao = numeroImpressaoRomaneio(romaneio);
         const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Romaneio TL - ${typeof romaneio.cliente === 'object' ? (romaneio.cliente.nome || romaneio.cliente.name) : (romaneio.cliente || 'Romaneio')}</title>
+    <title>Romaneio TL - ${numeroImpressao || (typeof romaneio.cliente === 'object' ? (romaneio.cliente.nome || romaneio.cliente.name) : (romaneio.cliente || 'Romaneio'))}</title>
     <style>
         ${gerarEstilosImpressao(tipo)}
     </style>
@@ -1046,7 +1062,7 @@ window.ImprimirRomaneio = (function() {
 
             <div class="divider"></div>
             
-            <div class="title">ROMANEIO DE TODA LARGURA</div>
+            <div class="title">ROMANEIO DE TODA LARGURA${numeroImpressao ? ' - ' + numeroImpressao : ''}</div>
             
             <div class="customer-info">
                 <div class="info-row">

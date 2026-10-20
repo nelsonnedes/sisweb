@@ -1695,6 +1695,8 @@ window.ModalListaRomaneiosPCT = (function() {
                 tipo: 'receber',
                 origem: 'romaneio_pct',
                 origemId: romaneio.id,
+                romaneioNumero: (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+                    ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '') : '') || romaneio.numeroFormatado || romaneio.numero || romaneio.id || '',
                 romaneioData: dataRomaneioISO,
                 romaneioCliente: romaneio.cliente || 'Cliente não informado',
                 romaneioEspecies: especies,

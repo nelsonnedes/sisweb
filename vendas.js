@@ -5083,6 +5083,45 @@ function resetProdutoRomaneioFields() {
 
 let romaneiosProdutoCache = {};
 
+function numeroRomaneioLegivel(value) {
+    const m = String(value == null ? '' : value).trim().match(/^(?:N[º°]\s*)?(\d{1,6})$/i);
+    return m ? m[1].padStart(6, '0') : '';
+}
+function numeroRomaneioRegistro(r) {
+    if (!r || typeof r !== 'object') return '';
+    try {
+        const RU = window.RomaneioDataUtils;
+        if (RU && typeof RU.formatarNumeroExibicao === 'function') {
+            const fmt = numeroRomaneioLegivel(RU.formatarNumeroExibicao(r, ''));
+            if (fmt) return fmt;
+        }
+    } catch (_) {}
+    return numeroRomaneioLegivel(r.numeroFormatado) || numeroRomaneioLegivel(r.numeroSequencial)
+        || numeroRomaneioLegivel(r.numeroExibicao) || '';
+}
+function limparDescricaoRomaneioVendas(text, numero) {
+    let s = String(text || '').replace(/\(\s*(?:N[º°]\s*)?(?:TL_|PCT_|PES_|TORA_)[^)]*\)/gi, '')
+        .replace(/\s{2,}/g, ' ').trim();
+    const fmt = numeroRomaneioLegivel(numero);
+    if (!fmt) return s;
+    const negocio = /\(N[º°]\s*\d{1,6}\)/i;
+    if (negocio.test(s)) return s.replace(negocio, `(Nº ${fmt})`);
+    return s ? `${s} (Nº ${fmt})` : `(Nº ${fmt})`;
+}
+async function resolverRomaneioProduto(produto) {
+    try {
+        const tipo = produto && produto.romaneioTipo;
+        const id = produto && produto.romaneioId;
+        if (!tipo || !id) return null;
+        let lista = romaneiosProdutoCache[tipo];
+        if (!Array.isArray(lista)) {
+            lista = await getRomaneiosMerged(tipo) || [];
+            romaneiosProdutoCache[tipo] = lista;
+        }
+        return lista.find(r => String(r && (r.id || r.firebaseKey || r.numero)) === String(id)) || null;
+    } catch (_) { return null; }
+}
+
 function rotuloRomaneioProduto(r) {
     let dataFormatada = '';
     try { dataFormatada = (typeof formatRomaneioDateLabel === 'function') ? formatRomaneioDateLabel(r) : (r.data || ''); } catch (_) { dataFormatada = r.data || ''; }
@@ -5115,13 +5154,8 @@ function rotuloRomaneioProduto(r) {
             }
         }
     } catch (_) {}
-    const numero = r.numero || r.id || 's/n';
-    // Exibe "Nº N" quando houver numeroExibicao; senão legado. Display only.
-    let numeroFmt = String(numero);
-    try {
-        const RU2 = window.RomaneioDataUtils;
-        if (RU2 && typeof RU2.formatarNumeroExibicao === 'function') numeroFmt = RU2.formatarNumeroExibicao(r, numero);
-    } catch (_) {}
+    let numeroFmt = numeroRomaneioRegistro(r);
+    numeroFmt = numeroFmt ? `Nº ${numeroFmt}` : 's/n';
     let rotuloFinal = `${dataFormatada} - ${clienteNome} - ${volumeTotal} m³ - ${numeroFmt}`;
     // Espelha o aviso de pedidos ("USADO Ped."): romaneio já em estoque.
     // Match por qualquer chave (id/key/número) dos dois lados.
@@ -5244,7 +5278,7 @@ function lerDimsProdutoRomaneio() {
             const tipo = s1?.dataset?.tipo || str('produtoRomaneioTipo');
             const lista = (tipo && romaneiosProdutoCache[tipo]) || [];
             const r = (!isNaN(idx) && lista[idx]) ? lista[idx] : null;
-            if (r) return { id: String(r.id || r.firebaseKey || r.numero || ''), numero: String(r.numero || r.id || '') };
+            if (r) return { id: String(r.id || r.firebaseKey || r.numero || ''), numero: numeroRomaneioRegistro(r) };
         } catch (_) {}
         return { id: str('produtoRomaneioId'), numero: '' };
     })();
@@ -5335,7 +5369,7 @@ async function carregarItensProdutoRomaneio() {
         const itens = rom ? (Array.isArray(rom.itens) ? rom.itens : (Array.isArray(rom.items) ? rom.items : [])) : [];
         __previewProdutoRomaneioItens = itens.filter(i => i && typeof i === 'object');
         const ridReal = rom ? String(rom.id || rom.firebaseKey || rom.numero || rid) : String(rid);
-        const numeroRom = rom ? String(rom.numero || rom.id || rid) : String(rid);
+        const numeroRom = rom ? numeroRomaneioRegistro(rom) : '';
         __previewProdutoRomaneioMeta = { tipo, rid: ridReal, numero: numeroRom };
         // Acumula grupos (multi-romaneio, mesmo de tipos diferentes); ignora repetidos
         try {
@@ -6001,6 +6035,7 @@ async function salvarProduto(event) {
                 produto.romaneioTipo = d.tipo;
                 produto.romaneioId = d.romaneioId;
                 produto.romaneioNumero = d.romaneioNumero;
+                produto.descricao = limparDescricaoRomaneioVendas(produto.descricao, d.romaneioNumero);
                 produto.especie = d.especie;
                 produto.espessura = d.espessura;
                 produto.largura = d.largura;
@@ -6443,7 +6478,7 @@ function editarProduto(produtoId) {
     document.getElementById('produtoEstoque').value = produto.estoque || 0;
     document.getElementById('produtoUnidade').value = unidadeCadastro(produto.unidade || 'UN');
     const descEl = document.getElementById('produtoDescricao');
-    if (descEl) descEl.value = produto.descricao || '';
+    if (descEl) descEl.value = limparDescricaoRomaneioVendas(produto.descricao || '', produto.romaneioNumero);
 
     try {
         resetProdutoRomaneioFields();
@@ -6459,18 +6494,34 @@ function editarProduto(produtoId) {
             set('produtoRomaneioTipo', produto.romaneioTipo || '');
             // Romaneio select é recarregado sob demanda; guarda ids para persistência
             const sel = document.getElementById('produtoRomaneioId');
+            if (sel) sel.dataset.tipo = produto.romaneioTipo || '';
             if (sel && produto.romaneioId) {
                 sel.innerHTML = '';
                 const opt = document.createElement('option');
+                const numeroAtual = numeroRomaneioLegivel(produto.romaneioNumero);
                 opt.value = String(produto.romaneioId);
-                opt.textContent = produto.romaneioNumero || 'Romaneio';
+                opt.textContent = numeroAtual ? `Nº ${numeroAtual}` : 'Romaneio';
                 sel.appendChild(opt);
+                sel.value = String(produto.romaneioId);
+                resolverRomaneioProduto(produto).then(rom => {
+                    if (!rom) return;
+                    const lista = romaneiosProdutoCache[produto.romaneioTipo] || [];
+                    const idx = lista.indexOf(rom);
+                    opt.textContent = rotuloRomaneioProduto(rom);
+                    if (idx >= 0) opt.value = String(idx);
+                    sel.value = opt.value;
+                    const s2 = document.getElementById('produtoRomaneioId2');
+                    if (s2) { s2.dataset.tipo = produto.romaneioTipo || ''; s2.innerHTML = sel.innerHTML; s2.value = opt.value; }
+                    const numero = numeroRomaneioRegistro(rom);
+                    if (numero && descEl) descEl.value = limparDescricaoRomaneioVendas(descEl.value, numero);
+                });
             }
             try {
                 const t2 = document.getElementById('produtoRomaneioTipo2');
                 if (t2) t2.value = produto.romaneioTipo || '';
                 const s2 = document.getElementById('produtoRomaneioId2');
                 if (s2 && sel) s2.innerHTML = sel.innerHTML;
+                if (s2 && sel) s2.dataset.tipo = sel.dataset.tipo || '';
             } catch (_) {}
             set('produtoEspecie', produto.especie || '');
             set('produtoEspessura', produto.espessura ?? '');

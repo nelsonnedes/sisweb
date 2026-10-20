@@ -430,15 +430,17 @@ window.SalvarRomaneio = (function() {
         // Numeração sequencial de exibição ("Nº 1, 2, ...") — display only.
         // Preserva em edição; senão max+1 do cache local (id/chave nunca mudam).
         let numeroExibicao = 0;
-        try {
-            const RU = window.RomaneioDataUtils;
-            if (RU && typeof RU.numeroExibicaoValido === 'function') {
-                if (isEdicao) numeroExibicao = RU.numeroExibicaoValido(getCurrentRomaneioData()?.numeroExibicao);
-                if (!(numeroExibicao > 0) && typeof RU.proximoNumeroExibicao === 'function') {
-                    numeroExibicao = RU.proximoNumeroExibicao(listarRomaneiosTlCache());
+        if (window.SISWEB_ROMANEIO_SEQUENCE !== true) {
+            try {
+                const RU = window.RomaneioDataUtils;
+                if (RU && typeof RU.numeroExibicaoValido === 'function') {
+                    if (isEdicao) numeroExibicao = RU.numeroExibicaoValido(getCurrentRomaneioData()?.numeroExibicao);
+                    if (!(numeroExibicao > 0) && typeof RU.proximoNumeroExibicao === 'function') {
+                        numeroExibicao = RU.proximoNumeroExibicao(listarRomaneiosTlCache());
+                    }
                 }
-            }
-        } catch (_) { numeroExibicao = 0; }
+            } catch (_) { numeroExibicao = 0; }
+        }
         
         return {
             id: romaneioId,

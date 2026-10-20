@@ -968,14 +968,16 @@ async function salvarRomaneio() {
 
         // Numeração sequencial de exibição ("Nº 1, 2, ...") — display only.
         // id/numero (chaves) nunca mudam; preserva em edição.
-        try {
-            const RU = window.RomaneioDataUtils;
-            if (RU && typeof RU.numeroExibicaoValido === 'function' && typeof RU.proximoNumeroExibicao === 'function') {
-                romaneio.numeroExibicao = numeroExibicaoAnterior > 0 ? numeroExibicaoAnterior : RU.proximoNumeroExibicao(romaneios);
-                const idxSync = romaneios.findIndex(r => r.id === romaneioId || r.firebaseKey === romaneioId);
-                if (idxSync !== -1) romaneios[idxSync] = romaneio;
-            }
-        } catch (_) {}
+        if (window.SISWEB_ROMANEIO_SEQUENCE !== true) {
+            try {
+                const RU = window.RomaneioDataUtils;
+                if (RU && typeof RU.numeroExibicaoValido === 'function' && typeof RU.proximoNumeroExibicao === 'function') {
+                    romaneio.numeroExibicao = numeroExibicaoAnterior > 0 ? numeroExibicaoAnterior : RU.proximoNumeroExibicao(romaneios);
+                    const idxSync = romaneios.findIndex(r => r.id === romaneioId || r.firebaseKey === romaneioId);
+                    if (idxSync !== -1) romaneios[idxSync] = romaneio;
+                }
+            } catch (_) {}
+        }
         
         // Salvar usando o RomaneioManager (Firebase + localStorage)
         let salvoComSucesso = false;
