@@ -955,6 +955,9 @@ async function salvarRomaneio() {
             // Encontrar e substituir o romaneio existente
             const index = romaneios.findIndex(r => r.id === romaneioId || r.firebaseKey === romaneioId);
             if (index !== -1) {
+                if (window.SiswebRomaneioNumero && typeof window.SiswebRomaneioNumero.preservar === 'function') {
+                    window.SiswebRomaneioNumero.preservar(romaneio, romaneios[index]);
+                }
                 romaneios[index] = romaneio;
                 console.log(`✏️ Romaneio atualizado no índice ${index}`);
             } else {

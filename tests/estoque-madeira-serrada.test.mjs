@@ -66,6 +66,10 @@ test('edicao e preview nao exibem chave tecnica do romaneio', () => {
   assert.match(js, /src\.descricao = limparDescricaoRomaneio/);
   assert.match(js, /romaneioNumero: numeroLegivel\(src\.romaneioNumero/);
   assert.match(js, /romaneioNumero: romNumero\(rom\)/);
+  assert.match(js, /Romaneio já adicionado ao estoque/);
+  assert.match(js, /Já em estoque — desativado/);
+  assert.match(js, /function romaneioItemInfo/);
+  assert.match(js, /box\.innerHTML = banner \+ rows/);
 });
 
 test('core canônico replica fórmulas do Vendas e trata zero/ppp', () => {
@@ -92,7 +96,7 @@ test('edição preserva tipo romaneio e não zera volume/km', () => {
   assert.match(js, /var tipo = item && item\.tipoProduto === 'romaneio' \? 'romaneio' : 'manual'/);
   assert.match(js, /romRadio\.disabled = false/);
   assert.match(js, /tipo === 'romaneio' \? 'm³'/);
-  assert.match(js, /volume = calculado > 0/);
+  assert.match(js, /volume = \(tipo === 'romaneio' && Number\(src\.volumeM3\) > 0\)/);
   assert.match(js, /metrosLineares: ml/);
   assert.match(js, /created: clean\.created \|\| now/);
   assert.match(js, /estoque = volume/);

@@ -1270,7 +1270,9 @@ async function salvarPreRomaneio() {
         updatedAt: nowIso,
         atualizadoEm: nowIso
     };
-    if (!preRomaneioEmEdicao && window.SiswebRomaneioNumero) {
+    if (preRomaneioEmEdicao && window.SiswebRomaneioNumero && typeof window.SiswebRomaneioNumero.preservar === 'function') {
+        window.SiswebRomaneioNumero.preservar(payload, preRomaneioEmEdicao);
+    } else if (!preRomaneioEmEdicao && window.SiswebRomaneioNumero) {
         await window.SiswebRomaneioNumero.aplicar('pre_' + String(currentTab || '').toLowerCase(), payload);
     }
     const saveLocalPreRomaneio = function(record) {

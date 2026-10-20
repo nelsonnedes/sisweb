@@ -444,9 +444,14 @@
                     
                     // Definir estado de edição
                     window.romaneioEmEdicao = {
+                        ...romaneio,
                         id: romaneio.id,
                         indice: romaneioIndex,
                         numero: romaneio.numero,
+                        numeroSequencial: romaneio.numeroSequencial,
+                        numeroFormatado: romaneio.numeroFormatado,
+                        numeroExibicao: romaneio.numeroExibicao,
+                        legacyId: romaneio.legacyId,
                         data: romaneio.data,
                         dataEmissao: romaneio.dataEmissao,
                         timestamp: romaneio.timestamp

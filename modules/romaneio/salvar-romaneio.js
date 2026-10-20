@@ -154,7 +154,9 @@ window.SalvarRomaneio = (function() {
             
             // Preparar dados para salvamento
             const romaneioCompleto = prepararDadosSalvamento(dadosRomaneio, isEdicao);
-            if (!isEdicao && window.SiswebRomaneioNumero) {
+            if (isEdicao && window.SiswebRomaneioNumero && typeof window.SiswebRomaneioNumero.preservar === 'function') {
+                window.SiswebRomaneioNumero.preservar(romaneioCompleto, currentRomaneioData || getCurrentRomaneioData());
+            } else if (!isEdicao && window.SiswebRomaneioNumero) {
                 await window.SiswebRomaneioNumero.aplicar('tl', romaneioCompleto);
             }
             

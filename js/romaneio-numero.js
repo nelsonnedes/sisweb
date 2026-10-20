@@ -50,5 +50,13 @@
         return record;
     }
 
-    root.SiswebRomaneioNumero = { formatar, reservar, aplicar };
+    function preservar(record, anterior) {
+        if (!record || typeof record !== 'object' || !anterior || typeof anterior !== 'object') return record;
+        ['numeroSequencial', 'numeroFormatado', 'numeroExibicao', 'legacyId'].forEach(function (key) {
+            if (record[key] == null && anterior[key] != null) record[key] = anterior[key];
+        });
+        return record;
+    }
+
+    root.SiswebRomaneioNumero = { formatar, reservar, aplicar, preservar };
 })(typeof window !== 'undefined' ? window : globalThis);

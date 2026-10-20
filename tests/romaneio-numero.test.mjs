@@ -26,6 +26,20 @@ test('formata número de seis dígitos com fallbacks', () => {
   assert.equal(number.formatar({}), '');
 });
 
+test('preserva numero oficial na edicao', () => {
+  const record = { id: 'TL_1' };
+  number.preservar(record, {
+    numeroSequencial: 12,
+    numeroFormatado: '000012',
+    numeroExibicao: 12,
+    legacyId: 'TL_1',
+  });
+  assert.equal(record.numeroSequencial, 12);
+  assert.equal(record.numeroFormatado, '000012');
+  assert.equal(record.numeroExibicao, 12);
+  assert.equal(record.legacyId, 'TL_1');
+});
+
 test('reserva com operationId determinístico e reenvia idempotente', async () => {
   const record = { id: 'TL_1778178288808_8wfqvkkt5' };
   await number.aplicar('tl', record);
@@ -65,6 +79,9 @@ test('integração chama o número na criação dos cinco tipos', () => {
   assert.match(fs.readFileSync('romaneiopes.html', 'utf8'), /SiswebRomaneioNumero\.aplicar\('pes'/);
   assert.match(fs.readFileSync('romaneiotora_tabela.js', 'utf8'), /SiswebRomaneioNumero\.aplicar\('tora'/);
   assert.match(fs.readFileSync('preromaneio.js', 'utf8'), /SiswebRomaneioNumero\.aplicar\('pre_'/);
+  for (const file of ['modules/romaneio/salvar-romaneio.js', 'romaneiopct-tabela.js', 'romaneiopes.html', 'romaneiotora_tabela.js', 'preromaneio.js']) {
+    assert.match(fs.readFileSync(file, 'utf8'), /SiswebRomaneioNumero\.preservar/, `${file} preserva número na edição`);
+  }
 });
 
 test('listas dos cinco tipos exibem o número formatado', () => {

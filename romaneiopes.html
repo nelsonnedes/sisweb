@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
     <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
-    <script src="js/romaneio-numero.js?v=e1f2a3b4c5d6"></script>
+    <script src="js/romaneio-numero.js?v=1207d57792ad"></script>
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -1490,7 +1490,7 @@
     <script src="romaneios-client-save-fix.js?v=95d795703c1c"></script>
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
     <script src="pre-romaneio-selector.js?v=25012edb1794"></script>
-    <script src="romaneio-table-enhancements.js?v=290d67a3557c"></script>
+    <script src="romaneio-table-enhancements.js?v=345b343df434"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="romaneio-print-config.js?v=2f548339d316"></script>
     <script src="commerce-pdf-share.js?v=ca04e7248a45"></script>
@@ -2889,7 +2889,9 @@
             // Salvar romaneio (PRIORIZANDO FIREBASE SERVICE MODULAR)
             console.log('💾 Salvando Romaneio PES...', dataObj);
             
-            if (!registroEmEdicao && window.SiswebRomaneioNumero) {
+            if (registroEmEdicao && window.SiswebRomaneioNumero && typeof window.SiswebRomaneioNumero.preservar === 'function') {
+                window.SiswebRomaneioNumero.preservar(dataObj, registroEmEdicao);
+            } else if (!registroEmEdicao && window.SiswebRomaneioNumero) {
                 await window.SiswebRomaneioNumero.aplicar('pes', dataObj);
             }
             if (!window.firebaseService || typeof window.firebaseService.saveToFirebase !== 'function') {

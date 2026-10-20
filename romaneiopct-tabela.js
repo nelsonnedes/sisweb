@@ -1346,7 +1346,9 @@ async function salvarRomaneio() {
         };
         
         // ✅ CARREGAR ROMANEIOS EXISTENTES (Firebase primeiro, localStorage como fallback)
-        if (!window.romaneioEmEdicao && window.SiswebRomaneioNumero) {
+        if (window.romaneioEmEdicao && window.SiswebRomaneioNumero && typeof window.SiswebRomaneioNumero.preservar === 'function') {
+            window.SiswebRomaneioNumero.preservar(romaneio, window.romaneioEmEdicao);
+        } else if (!window.romaneioEmEdicao && window.SiswebRomaneioNumero) {
             await window.SiswebRomaneioNumero.aplicar('pct', romaneio);
         }
         let romaneios = [];
