@@ -1402,7 +1402,6 @@
             <div class="romaneio-items-filters no-print">
                 <input type="text" id="toraItemFilterEspecie" placeholder="Espécie: filtrar..." autocomplete="off">
                 <input type="text" id="toraItemFilterDimensoes" class="romaneio-filter-dims" placeholder="Dimensões: 5, 5x12" inputmode="decimal" autocomplete="off">
-                <label class="romaneio-items-selectall"><input type="checkbox" id="toraItemSelectAll"> Selecionar todos</label>
                 <button type="button" class="btn btn-danger romaneio-bulk-delete" id="toraItemDeleteSelected" disabled>Excluir selecionados (<span id="toraItemSelectedCount">0</span>)</button>
             </div>
 
@@ -1411,7 +1410,7 @@
             <table id="romaneioTable" class="table">
                 <thead>
                     <tr>
-                        <th>Plaqueta</th>
+                        <th><label class="romaneio-check-head" for="toraItemSelectAll"><input type="checkbox" class="romaneio-item-check no-print" id="toraItemSelectAll" aria-label="Selecionar todos"></label> <span>Plaqueta</span></th>
                         <th>Custódia</th>
                         <th>AUTEF</th>
                         <th>Espécie</th>
@@ -1993,7 +1992,7 @@
     <script src="coordenador-inicializacao.js?v=013c48db2ca9"></script>
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
     <script src="js/unidades.js?v=f304e0544290"></script>
-    <script src="romaneiotora.js?v=e3039ba067b0"></script>
+    <script src="romaneiotora.js?v=17c72de81306"></script>
     <script src="js/romaneio-numero.js?v=1207d57792ad"></script>
     <script src="modules/core/romaneio-item-tools.js?v=7bcf2521ddc5"></script>
     <script src="romaneiotora_tabela.js?v=76141589b1c2"></script>

@@ -40,3 +40,35 @@ test('tabelas carregam o helper e a barra de filtros', () => {
     assert.ok(html.includes('romaneio-items-filters'), `${file} tem filtros`);
   }
 });
+
+test('selecionar todos fica no cabecalho da primeira coluna', () => {
+  const pages = [
+    ['romaneiotl.html', ['tlItemSelectAll'], 'Espécie'],
+    ['romaneiopct.html', ['pctItemSelectAll'], 'Espécie'],
+    ['romaneiopes.html', ['pesItemSelectAll'], 'Espécie'],
+    ['romaneiotora.html', ['toraItemSelectAll'], 'Plaqueta'],
+    ['preromaneio.html', ['preSerradosItemSelectAll', 'preTorasItemSelectAll'], null]
+  ];
+  for (const [file, ids, label] of pages) {
+    const html = fs.readFileSync(file, 'utf8');
+    assert.ok(!html.includes('romaneio-items-selectall'), `${file} nao tem selecionar todos na barra`);
+    for (const id of ids) {
+      assert.match(html, new RegExp(`<label class="romaneio-check-head" for="${id}"><input[^>]+id="${id}"[^>]*></label>\\s*<span>`, 'i'), `${file} ${id} no cabecalho`);
+    }
+    if (label) assert.ok(html.includes(`</label> <span>${label}</span>`), `${file} rotulo apos checkbox`);
+  }
+});
+
+test('totais usam a lista filtrada em todas as tabelas', () => {
+  const checks = [
+    ['modules/items/renderizar-tabela.js', [/atualizarTotais\(items\)/, /items = tlFilteredItems\(items\)/]],
+    ['romaneiopct-tabela.js', [/atualizarTotais\(itensFiltrados\)/, /pctFilteredItems\(Array\.isArray\(itensBase\)/]],
+    ['romaneiopes.html', [/atualizarTotais\(lista\)/, /pesFilteredItems\(Array\.isArray\(lista\)/]],
+    ['romaneiotora.js', [/const itens = toraFilteredItems\(todosItens\)/]],
+    ['preromaneio.js', [/atualizarTotais\(visiveis\)/, /preFilteredItems\(Array\.isArray\(lista\)/]]
+  ];
+  for (const [file, patterns] of checks) {
+    const src = fs.readFileSync(file, 'utf8');
+    for (const pattern of patterns) assert.match(src, pattern, `${file} ${pattern}`);
+  }
+});

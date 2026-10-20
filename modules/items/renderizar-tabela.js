@@ -87,6 +87,9 @@ window.RenderizarTabela = (function() {
         }
         especie.addEventListener('input', applyFilters);
         dims.addEventListener('input', applyFilters);
+        const selectAllHead = all && all.closest ? all.closest('.romaneio-check-head') : null;
+        if (selectAllHead) selectAllHead.addEventListener('click', function (event) { event.stopPropagation(); });
+        if (all) all.addEventListener('click', function (event) { event.stopPropagation(); });
         if (all) all.addEventListener('change', function () {
             const items = tlFilteredItems(window.AdicionarItem ? window.AdicionarItem.obterItens() : (window.romaneioItems || []));
             tlSelecionados.clear();
@@ -189,8 +192,8 @@ window.RenderizarTabela = (function() {
             // Renderizar itens
             renderizarItens(itensPagina, startIndex, items.length, todosItens);
             
-            // Atualizar totais
-            atualizarTotais(todosItens);
+            // Atualizar totais (refletem o filtro ativo)
+            atualizarTotais(items);
             
             // Renderizar controles de pagina��ǜo (se necessǭrio)
             renderizarPaginacao(items.length);
@@ -345,11 +348,10 @@ window.RenderizarTabela = (function() {
     function atualizarTotais(items) {
         console.log('🔢 Calculando totais...');
         
-        // Verificar se items é válido
-        if (!items || !Array.isArray(items)) {
-            console.log('⚠️ Items inválido ou vazio, usando array vazio');
-            items = [];
+        if (!Array.isArray(items)) {
+            items = window.AdicionarItem ? window.AdicionarItem.obterItens() : (window.romaneioItems || []);
         }
+        items = tlFilteredItems(items);
         
         let totalVolume = 0;
         let totalValue = 0;

@@ -87,6 +87,9 @@ function pctBindFiltros() {
     }
     especie.addEventListener('input', apply);
     dims.addEventListener('input', apply);
+    const selectAllHead = all && all.closest ? all.closest('.romaneio-check-head') : null;
+    if (selectAllHead) selectAllHead.addEventListener('click', function (event) { event.stopPropagation(); });
+    if (all) all.addEventListener('click', function (event) { event.stopPropagation(); });
     if (all) all.addEventListener('change', function () {
         const items = pctFilteredItems(window.romaneioItems || []);
         pctSelecionados.clear();
@@ -900,6 +903,7 @@ function reconstruirTabela() {
         `;
         renderizarPaginacao(0);
         pctAtualizarSelecaoUI([]);
+        atualizarTotais([]);
         return;
     }
 
@@ -910,6 +914,7 @@ function reconstruirTabela() {
         renderizarPaginacao(0);
         pctAtualizarSelecaoUI([]);
         pctBindFiltros();
+        atualizarTotais([]);
         return;
     }
     sincronizarItensPorPaginaPCT();
@@ -964,6 +969,7 @@ function reconstruirTabela() {
     pctAtualizarSelecaoUI(itensFiltrados);
     pctBindFiltros();
     aplicarEstilosTabela();
+    atualizarTotais(itensFiltrados);
 }
 
 // ✅ FUNÇÃO DE PAGINAÇÃO - PADRONIZADA ROMANEIOTL
@@ -1133,10 +1139,11 @@ function irParaPaginaPCT(pagina) {
     }
 }
 
-function atualizarTotais() {
+function atualizarTotais(itensBase) {
     console.log('🧮 Atualizando totais PCT');
+    const itens = pctFilteredItems(Array.isArray(itensBase) ? itensBase : (window.romaneioItems || []));
     
-    if (!window.romaneioItems || window.romaneioItems.length === 0) {
+    if (itens.length === 0) {
         const elPacotes = document.getElementById('totalPacotes');
         const elPecas   = document.getElementById('totalPecas');
         const elVolume  = document.getElementById('totalVolume');
@@ -1154,7 +1161,7 @@ function atualizarTotais() {
     let totalVolume = 0;
     let totalValor = 0;
     
-    window.romaneioItems.forEach(item => {
+    itens.forEach(item => {
         const qtd = parseInt(item.quantidade) || 0;
         const ppp = parseInt(item.pecasPorPacote) || 1;
         

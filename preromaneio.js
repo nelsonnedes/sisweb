@@ -14,20 +14,20 @@ let itemEmEdicaoIndex = -1;
 let preFilterEspecie = '';
 let preFilterDims = { ok: true, values: [] };
 const preSelecionados = new Set();
-let preFiltersBound = false;
 function prePrefix() { return currentTab === 'TORA' ? 'preToras' : 'preSerrados'; }
 function preItemKey(item) {
     try { if (window.SiswebRomaneioItens && window.SiswebRomaneioItens.ensureItemKey) return window.SiswebRomaneioItens.ensureItemKey(item); } catch (_) {}
     return String((item && (item.id || item.timestamp || item.__romaneioItemKey)) || '');
 }
-function preFilteredItems() {
+function preFilteredItems(source) {
+    const base = Array.isArray(source) ? source : romaneioItens;
     const RU = window.SiswebRomaneioItens;
-    if (!RU) return romaneioItens.slice();
+    if (!RU) return base.slice();
     const isTora = currentTab === 'TORA';
     const fields = isTora
         ? [function (it) { return it.rodo || it.diametro; }, 'comprimento']
         : [function (it) { return it.espessura || it.bitola; }, 'largura', 'comprimento'];
-    return romaneioItens.filter(function (item) {
+    return base.filter(function (item) {
         if (!RU.matchEspecie(item, preFilterEspecie)) return false;
         return RU.matchDimensoes(item, preFilterDims.values, fields);
     });
@@ -47,15 +47,14 @@ function preAtualizarSelecaoUI(visiveis) {
     }
 }
 function preBindFiltros() {
-    if (preFiltersBound) return;
     const p = prePrefix();
     const especie = document.getElementById(p + 'ItemFilterEspecie');
     const dims = document.getElementById(p + 'ItemFilterDimensoes');
     const all = document.getElementById(p + 'ItemSelectAll');
     const del = document.getElementById(p + 'ItemDeleteSelected');
     const tbody = document.getElementById(currentTab === 'TORA' ? 'tbody-toras' : 'tbody-serrados');
-    if (!especie || !dims || !tbody) return;
-    preFiltersBound = true;
+    if (!especie || !dims || !tbody || tbody.dataset.preFiltersBound === '1') return;
+    tbody.dataset.preFiltersBound = '1';
     function apply() {
         preFilterEspecie = String(especie.value || '');
         const parsed = window.SiswebRomaneioItens ? window.SiswebRomaneioItens.parseDimensoes(dims.value) : { ok: true, values: [] };
@@ -67,6 +66,9 @@ function preBindFiltros() {
     }
     especie.addEventListener('input', apply);
     dims.addEventListener('input', apply);
+    const selectAllHead = all && all.closest ? all.closest('.romaneio-check-head') : null;
+    if (selectAllHead) selectAllHead.addEventListener('click', function (event) { event.stopPropagation(); });
+    if (all) all.addEventListener('click', function (event) { event.stopPropagation(); });
     if (all) all.addEventListener('change', function () {
         const visiveis = preFilteredItems();
         preSelecionados.clear();
@@ -514,7 +516,6 @@ async function mudarAba(tab) {
     preFilterEspecie = '';
     preFilterDims = { ok: true, values: [] };
     preSelecionados.clear();
-    preFiltersBound = false;
     ['preSerrados', 'preToras'].forEach(function (p) {
         var e = document.getElementById(p + 'ItemFilterEspecie');
         var d = document.getElementById(p + 'ItemFilterDimensoes');
@@ -774,6 +775,7 @@ function renderizarTabela() {
         renderizarPaginacao(0);
         preAtualizarSelecaoUI([]);
         preBindFiltros();
+        atualizarTotais([]);
         return;
     }
 
@@ -784,6 +786,7 @@ function renderizarTabela() {
         renderizarPaginacao(0);
         preAtualizarSelecaoUI([]);
         preBindFiltros();
+        atualizarTotais([]);
         return;
     }
     
@@ -861,6 +864,7 @@ function renderizarTabela() {
     renderizarPaginacao(totalItens);
     preAtualizarSelecaoUI(visiveis);
     preBindFiltros();
+    atualizarTotais(visiveis);
 }
 
 function renderizarPaginacao(totalItens) {
@@ -1099,13 +1103,14 @@ async function removerItem(index) {
     }
 }
 
-function atualizarTotais() {
-    const qtd = romaneioItens.length;
-    const vol = romaneioItens.reduce((acc, i) => acc + i.volume, 0);
-    const val = romaneioItens.reduce((acc, i) => acc + i.total, 0);
-    const pes = romaneioItens.reduce((acc, i) => acc + (parseFloat(i.totalPes) || 0), 0);
-    const area = romaneioItens.reduce((acc, i) => acc + (parseFloat(i.areaM2) || 0), 0);
-    const ml = romaneioItens.reduce((acc, i) => acc + (parseFloat(i.metrosLineares) || 0), 0);
+function atualizarTotais(lista) {
+    const base = preFilteredItems(Array.isArray(lista) ? lista : romaneioItens);
+    const qtd = base.length;
+    const vol = base.reduce((acc, i) => acc + i.volume, 0);
+    const val = base.reduce((acc, i) => acc + i.total, 0);
+    const pes = base.reduce((acc, i) => acc + (parseFloat(i.totalPes) || 0), 0);
+    const area = base.reduce((acc, i) => acc + (parseFloat(i.areaM2) || 0), 0);
+    const ml = base.reduce((acc, i) => acc + (parseFloat(i.metrosLineares) || 0), 0);
     const volDec = (currentTab === 'PCT') ? 4 : 3;
     
     const _elTotalItens = document.getElementById('totalItens');

@@ -147,6 +147,9 @@ function toraBindFiltros() {
     }
     especie.addEventListener('input', apply);
     dims.addEventListener('input', apply);
+    const selectAllHead = all && all.closest ? all.closest('.romaneio-check-head') : null;
+    if (selectAllHead) selectAllHead.addEventListener('click', function (event) { event.stopPropagation(); });
+    if (all) all.addEventListener('click', function (event) { event.stopPropagation(); });
     if (all) all.addEventListener('change', function () {
         const visiveis = toraFilteredItems(window.romaneioItems);
         toraSelecionados.clear();
@@ -2468,9 +2471,10 @@ function renderizarResumoRomaneio() {
     const summaryContainer = document.getElementById('resumoRomaneioContainer');
     if (!summaryContainer) return;
     
-    const itens = window.romaneioItems || [];
+    const todosItens = window.romaneioItems || [];
+    const itens = toraFilteredItems(todosItens);
     
-    if (itens.length === 0) {
+    if (todosItens.length === 0) {
         summaryContainer.innerHTML = '';
         return;
     }
