@@ -128,6 +128,10 @@ function isRomaneioBusinessKey(key) {
     return /^romaneios\/(tora|pct|tl|pes)(\/|$)/.test(getCanonicalBusinessKey(key));
 }
 
+function unidadeTexto(u) {
+    try { return window.SiswebUnidades ? SiswebUnidades.texto(u) : String(u || ''); } catch (_) { return String(u || ''); }
+}
+
 function persistLocalValue(storageKey, data) {
     try {
         if (window.SiswebStorage && typeof window.SiswebStorage.write === 'function') {

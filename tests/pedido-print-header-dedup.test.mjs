@@ -18,6 +18,10 @@ test('pedido de venda/compra imprime numero e datas uma unica vez', () => {
   assert.match(print, /Impresso em: .* às /);
 });
 
+test('compras define unidadeTexto para visualizacao de pedidos', () => {
+  assert.match(compras, /function unidadeTexto\(u\)/);
+});
+
 test('print standalone define tokens e evita titulo quebrado', () => {
   assert.match(print, /:root \{\s*--sw-brand:/);
   assert.match(print, /\.sisweb-print-title \{[\s\S]*?overflow-wrap: anywhere/);
