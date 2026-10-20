@@ -550,5 +550,6 @@
   "utils.js",
   "validation-system.js",
   "vendas.html",
-  "vendas.js"
+  "vendas.js",
+  "js/romaneio-numero.js"
 ]

@@ -74,6 +74,9 @@ function readSandboxEnvironment() {
 const SANDBOX_ENV = readSandboxEnvironment();
 const FIREBASE_CONFIG = SANDBOX_ENV ? SANDBOX_ENV.config : PRODUCTION_FIREBASE_CONFIG;
 const EMULATORS = SANDBOX_ENV ? SANDBOX_ENV.emulators : null;
+try {
+    if (SANDBOX_ENV && typeof window !== 'undefined') window.SISWEB_ROMANEIO_SEQUENCE = true;
+} catch (_) {}
 
 // ─── Singleton Initialization ─────────────────────────────────────────────────
 let _app = null;

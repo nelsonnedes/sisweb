@@ -414,6 +414,9 @@ window.ModalListaRomaneios = (function() {
 
         tbody.innerHTML = romaneiosToShow.map(romaneio => {
             const data = formatDateLabel(romaneio.dataEmissao || romaneio.data || romaneio.timestamp);
+            const numeroFmt = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+                ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '')
+                : '';
             const clienteCompleto = obterNomeClienteRomaneio(romaneio) || 'N/A';
             const cliente = truncateText(clienteCompleto, 64);
             
@@ -427,7 +430,7 @@ window.ModalListaRomaneios = (function() {
             
             return `
                 <tr>
-                    <td data-label="Data" title="${escapeHtml(data)}">${escapeHtml(data)}</td>
+                    <td data-label="Data" title="${escapeHtml(data)}">${numeroFmt ? `<div style="font-size:11px;font-weight:700;color:var(--sw-text-2);">${escapeHtml(numeroFmt)}</div>` : ''}${escapeHtml(data)}</td>
                     <td data-label="Cliente" title="${escapeHtml(clienteCompleto)}">${escapeHtml(cliente)}</td>
                     <td data-label="Espécies" title="${escapeHtml(especiesCompletas || 'N/A')}">${escapeHtml(especies)}</td>
                     <td data-label="Itens" style="text-align: center;">${totalItens}</td>

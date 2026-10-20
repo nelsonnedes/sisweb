@@ -1346,6 +1346,9 @@ async function salvarRomaneio() {
         };
         
         // ✅ CARREGAR ROMANEIOS EXISTENTES (Firebase primeiro, localStorage como fallback)
+        if (!window.romaneioEmEdicao && window.SiswebRomaneioNumero) {
+            await window.SiswebRomaneioNumero.aplicar('pct', romaneio);
+        }
         let romaneios = [];
         
         // ✅ PRIORIDADE 1: Tentar carregar do Firebase

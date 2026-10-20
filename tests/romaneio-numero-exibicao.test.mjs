@@ -41,7 +41,7 @@ test('proximoNumeroExibicao: max+1, ignora legados', () => {
 });
 
 test('formatarNumeroExibicao: prefixo só no display, nunca gravado', () => {
-  assert.equal(formatarNumeroExibicao({ numeroExibicao: 4 }, 'PCT_x'), 'Nº 4');
+  assert.equal(formatarNumeroExibicao({ numeroExibicao: 4 }, 'PCT_x'), 'Nº 000004');
   assert.equal(formatarNumeroExibicao({}, 'PCT_x'), 'PCT_x');
   assert.equal(formatarNumeroExibicao({ numeroExibicao: 0 }, 'TL_y'), 'TL_y');
 });

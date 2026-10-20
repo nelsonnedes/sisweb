@@ -925,6 +925,9 @@ async function salvarRomaneio() {
         console.log("📋 Romaneio construído:", romaneio);
         
         // Carregar lista atual usando o RomaneioManager
+        if (!isEdicao && window.SiswebRomaneioNumero) {
+            await window.SiswebRomaneioNumero.aplicar('tora', romaneio);
+        }
         let romaneios = [];
         if (window.romaneioToraManager) {
             romaneios = await window.romaneioToraManager.getData('romaneios/tora');

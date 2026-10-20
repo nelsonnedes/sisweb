@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
     <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
+    <script src="js/romaneio-numero.js?v=1"></script>
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
         (function () {
@@ -2886,6 +2887,9 @@
             // Salvar romaneio (PRIORIZANDO FIREBASE SERVICE MODULAR)
             console.log('💾 Salvando Romaneio PES...', dataObj);
             
+            if (!registroEmEdicao && window.SiswebRomaneioNumero) {
+                await window.SiswebRomaneioNumero.aplicar('pes', dataObj);
+            }
             if (!window.firebaseService || typeof window.firebaseService.saveToFirebase !== 'function') {
                 notifyUser('FirebaseService indisponível. Recarregue a página antes de salvar.');
                 return;
@@ -4252,8 +4256,10 @@
                     ? (typeof romaneio.especie === 'object' ? (romaneio.especie.nome || romaneio.especie.name) : romaneio.especie) 
                     : 'N/A';
                 
+                const numeroFmtPes = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+                    ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '') : '';
                 row.innerHTML = `
-                    <td data-label="Data">${formatRomaneioDatePes(romaneio)}</td>
+                    <td data-label="Data">${numeroFmtPes ? `<div style="font-size:11px;font-weight:700;color:var(--sw-text-2);">${numeroFmtPes}</div>` : ''}${formatRomaneioDatePes(romaneio)}</td>
                     <td data-label="Cliente">${clienteNome}</td>
                     <td data-label="Espécie">${especieNome}</td>
                     <td data-label="Volume" style="text-align: right;">${formatarVolume(volumeTotal)}</td>

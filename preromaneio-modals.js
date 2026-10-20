@@ -1112,8 +1112,10 @@ function renderRomaneiosList(list = null) {
             value = (item.totalValue || 0).toString();
         }
 
+        const numeroFmtPre = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+            ? window.RomaneioDataUtils.formatarNumeroExibicao(item, '') : '';
         tr.innerHTML = `
-            <td>${date}</td>
+            <td>${numeroFmtPre ? `<div style="font-size:11px;font-weight:700;color:var(--sw-text-2);">${numeroFmtPre}</div>` : ''}${date}</td>
             <td>${client}</td>
             <td>${type}</td>
             <td style="text-align: right;">${volume} ${type === 'PES' ? 'pés³' : 'm³'}</td>

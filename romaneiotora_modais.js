@@ -2914,8 +2914,10 @@ async function renderRomaneioList(filter = '') {
                 debugInfo = ` title="Firebase Key: ${romaneio.firebaseKey} | ID: ${romaneio.id}"`;
             }
             
+            const numeroFmtTora = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+                ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '') : '';
             tr.innerHTML = `
-                <td style="padding: 10px;"${debugInfo}>${dataFormatada}</td>
+                <td style="padding: 10px;"${debugInfo}>${numeroFmtTora ? `<div style="font-size:11px;font-weight:700;color:var(--sw-text-2);">${numeroFmtTora}</div>` : ''}${dataFormatada}</td>
                 <td style="padding: 10px; font-weight: 500;"${debugInfo}>${fornecedor}</td>
                 <td style="padding: 10px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${especies}">${especies}</td>
                 <td style="padding: 10px; text-align: center;">${numItens}</td>

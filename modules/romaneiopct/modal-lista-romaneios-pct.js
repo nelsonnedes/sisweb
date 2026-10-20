@@ -781,6 +781,9 @@ window.ModalListaRomaneiosPCT = (function() {
             }
             
             const dataFormatada = formatDateLabel(romaneio.dataEmissao || romaneio.data || romaneio.timestamp);
+            const numeroFmt = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+                ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '')
+                : '';
             
             // ✅ CORREÇÃO: Buscar volume e valor nos campos corretos do Firebase
             let volume = 0;
@@ -837,7 +840,7 @@ window.ModalListaRomaneiosPCT = (function() {
             
             const row = document.createElement("tr");
             row.innerHTML = `
-<td data-label="Data">${dataFormatada}</td>
+<td data-label="Data">${numeroFmt ? `<div style="font-size:11px;font-weight:700;color:var(--sw-text-2);">${numeroFmt}</div>` : ''}${dataFormatada}</td>
 <td data-label="Cliente">${clienteNome}</td>
 <td data-label="Espécies">${especiesTexto}</td>
 <td data-label="Itens" style="text-align: center;">${romaneio.itens ? romaneio.itens.length : 0}</td>

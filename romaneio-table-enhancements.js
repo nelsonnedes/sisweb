@@ -390,8 +390,12 @@
 
     function formatarNumeroExibicao(r, fallback) {
         try {
-            const n = r && typeof r === 'object' ? numeroExibicaoValido(r.numeroExibicao) : 0;
-            if (n > 0) return 'Nº ' + n;
+            if (r && typeof r === 'object') {
+                const formatted = String(r.numeroFormatado || '').trim();
+                if (/^\d{6}$/.test(formatted)) return 'Nº ' + formatted;
+                const n = numeroExibicaoValido(r.numeroSequencial) || numeroExibicaoValido(r.numeroExibicao);
+                if (n > 0) return 'Nº ' + String(n).padStart(6, '0');
+            }
         } catch (_) {}
         return String(fallback ?? '').trim();
     }

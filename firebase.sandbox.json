@@ -8,6 +8,7 @@
     ],
     "ignore": [
       "firebase.json",
+      "firebase.sandbox.json",
       "hosting-files.json",
       "package.json",
       "package-lock.json",

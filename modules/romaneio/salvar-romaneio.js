@@ -154,6 +154,9 @@ window.SalvarRomaneio = (function() {
             
             // Preparar dados para salvamento
             const romaneioCompleto = prepararDadosSalvamento(dadosRomaneio, isEdicao);
+            if (!isEdicao && window.SiswebRomaneioNumero) {
+                await window.SiswebRomaneioNumero.aplicar('tl', romaneioCompleto);
+            }
             
             // Salvar no Firebase/localStorage
             const resultado = await executarSalvamento(romaneioCompleto, isEdicao);
