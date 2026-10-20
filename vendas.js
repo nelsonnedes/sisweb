@@ -83,14 +83,16 @@ function obterIdEstavelRomaneioVendas(romaneio) {
 }
 
 function obterNumeroExibicaoRomaneioVendas(romaneio, fallbackId) {
-    if (!romaneio || typeof romaneio !== 'object') return String(fallbackId || '—');
-    const legado = romaneio.numero || romaneio.numeroRomaneio || romaneio.id || romaneio.firebaseKey || fallbackId || '—';
-    // Numeração sequencial ("Nº N") quando existir; senão legado. Display only.
+    if (!romaneio || typeof romaneio !== 'object') return 's/n';
     try {
         const RU = window.RomaneioDataUtils;
-        if (RU && typeof RU.formatarNumeroExibicao === 'function') return RU.formatarNumeroExibicao(romaneio, legado);
+        if (RU && typeof RU.formatarNumeroExibicao === 'function') {
+            const fmt = RU.formatarNumeroExibicao(romaneio, '');
+            if (fmt) return fmt;
+        }
     } catch (_) {}
-    return String(legado);
+    const numero = String(romaneio.numeroFormatado || romaneio.numeroSequencial || romaneio.numeroExibicao || '').trim();
+    return numero || 's/n';
 }
 
 function chaveCategoriaPreviewVendas(especie, categoria) {

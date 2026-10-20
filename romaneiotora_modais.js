@@ -5180,9 +5180,12 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
             Preco: item.preco,
             Valor: item.valor
         }));
+        const numeroExport = (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+            ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneioParaExportar, '')
+            : '') || romaneioParaExportar.numeroFormatado || 's/n';
         const resumo = [
             ['Empresa', nomeEmpresa],
-            ['Romaneio', romaneioParaExportar.numeroRomaneio || romaneioParaExportar.id || romaneioId],
+            ['Romaneio', numeroExport],
             ['Fornecedor/Cliente', fornecedorNome || '-'],
             ['Data', dataFormatada],
             ['Volume bruto total', volumeBrutoTotal],
@@ -5195,7 +5198,7 @@ async function exportarRomaneioExcelFirebase(romaneioId) {
         XLSX.utils.sheet_add_json(worksheet, linhas, { origin: -1 });
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Romaneio');
-        XLSX.writeFile(workbook, `romaneio_${romaneioId || 'tora'}.xlsx`);
+        XLSX.writeFile(workbook, `romaneio_${String(numeroExport).replace(/[^\w-]/g, '') || 'tora'}.xlsx`);
         try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
         window.__toraExportInFlight = false;
         __toraNotify('Excel gerado com sucesso.', 'success');

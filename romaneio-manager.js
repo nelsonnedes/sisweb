@@ -1077,10 +1077,13 @@ window.imprimirRomaneioTora = async function(romaneioId, tipo = 'completo') {
             <td>${i.volumeLiquido || 0}</td>
         </tr>`).join('');
         
+const numeroImp = (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
+    ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '')
+    : '') || romaneio.numeroFormatado || 's/n';
 const html = `
         <!doctype html>
         <html lang="pt-BR">
-        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Romaneio ${romaneioId}</title>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Romaneio ${numeroImp}</title>
         <style>table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:8px}.hdr{display:flex;gap:12px;align-items:center;margin-bottom:12px}.hdr-logo{width:72px;height:72px;border:1px solid #ddd;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center}.hdr-logo img{width:100%;height:100%;object-fit:contain}.hdr-fallback{background:var(--sw-brand-dark);color:var(--sw-on-brand);width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700}.hdr-info{font-size:12px;line-height:1.35}.hdr-name{font-size:18px;font-weight:700}.sisweb-print-back{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:10px 12px;border:1px solid var(--sw-border);border-radius:6px;background:var(--sw-surface-2);}@media print{.sisweb-print-back{display:none !important;}}</style>
         </head>
         <body>
@@ -1093,7 +1096,7 @@ const html = `
                     <div>Telefone: ${companyPhone}</div>
                 </div>
             </div>
-            <h1>Romaneio ${romaneioId}</h1>
+            <h1>Romaneio ${numeroImp}</h1>
             <p><strong>Fornecedor:</strong> ${romaneio.fornecedor?.nome || romaneio.cliente?.nome}</p>
             <p><strong>Data:</strong> ${romaneio.dataHora}</p>
             <table>
@@ -1195,7 +1198,8 @@ window.editarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
     
     const tituloPagina = document.querySelector('.main-title, h1, h2');
     if (tituloPagina) {
-        tituloPagina.innerHTML = `✏️ Editando Romaneio: ${romaneio.numero || romaneio.id}`;
+        const numeroEdicao = (window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function' ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '') : '') || romaneio.numeroFormatado || 's/n';
+        tituloPagina.innerHTML = `Editando Romaneio: ${numeroEdicao}`;
     }
     
     // Atualizar UI do formulário (se existir na página)

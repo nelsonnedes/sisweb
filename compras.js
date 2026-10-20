@@ -635,14 +635,16 @@ function obterIdEstavelRomaneioCompra(r) {
 }
 
 function obterNumeroExibicaoRomaneioCompra(r, fallbackId) {
-    if (!r || typeof r !== 'object') return String(fallbackId || '—');
-    const legado = r.numero || r.numeroRomaneio || r.id || r.firebaseKey || fallbackId || '—';
-    // Numeração sequencial ("Nº N") quando existir; senão legado. Display only.
+    if (!r || typeof r !== 'object') return 's/n';
     try {
         const RU = window.RomaneioDataUtils;
-        if (RU && typeof RU.formatarNumeroExibicao === 'function') return RU.formatarNumeroExibicao(r, legado);
+        if (RU && typeof RU.formatarNumeroExibicao === 'function') {
+            const fmt = RU.formatarNumeroExibicao(r, '');
+            if (fmt) return fmt;
+        }
     } catch (_) {}
-    return String(legado);
+    const numero = String(r.numeroFormatado || r.numeroSequencial || r.numeroExibicao || '').trim();
+    return numero || 's/n';
 }
 
 function __rcStatusEhCancelado(status) {
