@@ -5972,12 +5972,7 @@ async function adicionarEstoqueManuel() {
         }
     }
     if (precisaFallback) {
-        try {
-            if (typeof saveData === 'function') {
-                __rvSaveDataRemoteOk = false;
-                await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
-            }
-        } catch (_) {}
+        try { ToastManager.error('Alguns itens não foram gravados no servidor. Nenhum nó inteiro foi sobrescrito; tente novamente os restantes.', 'Falha ao gravar', 8000); } catch (_) {}
     }
     try {
         const svcInv = window.firebaseService || window.FirebaseService;
@@ -6090,9 +6085,7 @@ async function salvarProduto(event) {
                 console.warn('⚠️ Erro ao salvar produto no Firebase:', e);
             }
         } else {
-            __rvSaveDataRemoteOk = false;
-            await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
-            produtoRemotoOk = __rvSaveDataRemoteOk;
+            produtoRemotoOk = false;
         }
         try {
             const storageKey = getStorageKey('produtos');
@@ -6200,14 +6193,22 @@ async function excluirProdutosSelecionados() {
         LoadingManager.show('Excluindo produtos...');
         const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
         const idSet = new Set(ids.map(String));
-        window.produtos = (window.produtos || []).filter(p => !idSet.has(String(p && p.id)));
-        __rvSaveDataRemoteOk = false;
-        await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
-        if (!__rvSaveDataRemoteOk) {
+        const svcDel = window.firebaseService || window.FirebaseService;
+        let deleteOk = !!(svcDel && typeof svcDel.removeFromFirebase === 'function');
+        if (deleteOk) {
+            try {
+                for (const id of ids) {
+                    const res = await svcDel.removeFromFirebase(`produtos/${String(id)}`);
+                    if (res && res.success === false) { deleteOk = false; break; }
+                }
+            } catch (_) { deleteOk = false; }
+        }
+        if (!deleteOk) {
             try { window.produtos = backupProdutos; } catch (_) {}
             ToastManager.error('Não foi possível excluir no servidor. Verifique sua conexão e permissões.', 'Falha ao excluir', 8000);
             return;
         }
+        window.produtos = (window.produtos || []).filter(p => !idSet.has(String(p && p.id)));
         produtosSelecionados.clear();
         atualizarSelectProdutos();
         carregarTabelaProdutos(document.getElementById('searchProdutos')?.value || '');
@@ -6560,15 +6561,21 @@ async function excluirProduto(produtoId) {
     try {
         const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
         const eraEspecie = !!(window.__vendasEspeciesIds instanceof Set && window.__vendasEspeciesIds.has(String(produtoId)));
-        // Comparação tolerante a tipo (id numérico vs string)
-        window.produtos = window.produtos.filter(p => String(p && p.id) !== String(produtoId));
-        __rvSaveDataRemoteOk = false;
-        await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
-        if (!__rvSaveDataRemoteOk) {
+        const svcDel = window.firebaseService || window.FirebaseService;
+        let deleteOk = !!(svcDel && typeof svcDel.removeFromFirebase === 'function');
+        if (deleteOk) {
+            try {
+                const res = await svcDel.removeFromFirebase(`produtos/${String(produtoId)}`);
+                if (res && res.success === false) deleteOk = false;
+            } catch (_) { deleteOk = false; }
+        }
+        if (!deleteOk) {
             try { window.produtos = backupProdutos; } catch (_) {}
             ToastManager.error('Não foi possível excluir o produto no servidor. Verifique sua conexão e permissões e tente novamente.', 'Falha ao excluir', 8000);
             return;
         }
+        // Comparação tolerante a tipo (id numérico vs string)
+        window.produtos = window.produtos.filter(p => String(p && p.id) !== String(produtoId));
         
         atualizarSelectProdutos();
         carregarTabelaProdutos();

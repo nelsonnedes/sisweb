@@ -4849,23 +4849,10 @@ async function carregarTabelaReceber(filtro = {}) {
             const sigla = conta.origem === 'romaneio_pct' ? 'PCT' : 'TL';
             tipoConta = `${sigla} ${conta.romaneioNumero}`;
         } else if (conta.origem === 'romaneio_tl' && conta.origemId) {
-            const romaneioMatch = conta.origemId.match(/^TL_(\d+)_/);
-            if (romaneioMatch) {
-                const timestamp = romaneioMatch[1];
-                tipoConta = `TL N° ${timestamp}`;
-            } else {
-                tipoConta = `TL N° ${conta.origemId}`;
-            }
+            tipoConta = 'TL';
         } else if (conta.origem === 'romaneio_pct' && conta.origemId) {
-            const romaneioId = conta.origemId;
-            if (/^\d+$/.test(romaneioId)) {
-                tipoConta = `PCT N° ${romaneioId}`;
-            } else {
-                const romMatch = romaneioId.match(/(\d+)/);
-                if (romMatch) tipoConta = `PCT N° ${romMatch[1]}`; else tipoConta = `PCT N° ${romaneioId}`;
-            }
+            tipoConta = 'PCT';
         }
-
         const documentoExibicao = conta.pedidoNumero || conta.numero
             || ((conta.origem === 'romaneio_tl' || conta.origem === 'romaneio_pct') ? tipoConta : '')
             || '-';

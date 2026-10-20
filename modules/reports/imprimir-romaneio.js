@@ -21,7 +21,7 @@ window.ImprimirRomaneio = (function() {
             const fmt = window.RomaneioDataUtils && typeof window.RomaneioDataUtils.formatarNumeroExibicao === 'function'
                 ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '')
                 : '';
-            return fmt || (romaneio && (romaneio.numeroFormatado || romaneio.numero || romaneio.id)) || '';
+            return fmt || (romaneio && romaneio.numeroFormatado) || '';
         } catch (_) { return ''; }
     }
 
