@@ -78,10 +78,11 @@ function collect(company, tenant, type, paths) {
       const fullPath = `companies/${tenant}/${nodePath}/${key}`;
       const previous = byId.get(id);
       if (previous) {
+        previous.aliases.push(fullPath);
         warnings.push({ type, path: fullPath, reason: 'espelho/duplicado de id', duplicateOf: previous.path });
         continue;
       }
-      byId.set(id, { key, id, record, path: fullPath, nodePath });
+      byId.set(id, { key, id, record, path: fullPath, nodePath, aliases: [] });
     }
   }
   return { records: Array.from(byId.values()), warnings };
@@ -112,16 +113,15 @@ function planType(records, type) {
     }
     if (number > MAX_NUMERO) throw new Error(`Numeração excedeu ${MAX_NUMERO} em ${type}.`);
     used.add(number);
-    const base = item.path;
+    const bases = [item.path].concat(item.aliases || []);
     const legacyNumber = num(record.numeroExibicao);
-    const patch = {
-      [`${base}/legacyId`]: record.legacyId || item.key,
-      [`${base}/numeroSequencial`]: number,
-      [`${base}/numeroFormatado`]: pad(number),
-      [`${base}/numeroExibicao`]: number,
-    };
-    if (legacyNumber && legacyNumber !== number) {
-      patch[`${base}/numeroExibicaoLegado`] = legacyNumber;
+    const patch = {};
+    for (const base of bases) {
+      patch[`${base}/legacyId`] = record.legacyId || item.key;
+      patch[`${base}/numeroSequencial`] = number;
+      patch[`${base}/numeroFormatado`] = pad(number);
+      patch[`${base}/numeroExibicao`] = number;
+      if (legacyNumber && legacyNumber !== number) patch[`${base}/numeroExibicaoLegado`] = legacyNumber;
     }
     changes.push({ type, id: item.id, path: item.path, numero: number, numeroFormatado: pad(number), preserved, legacyId: record.legacyId || item.key, patch });
     if (preserved && record.numeroSequencial && record.numeroFormatado === pad(number)) unchanged.push(item.id);

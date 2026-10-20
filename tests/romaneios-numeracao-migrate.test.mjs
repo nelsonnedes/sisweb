@@ -46,6 +46,7 @@ test('deduplica espelhos canônico/legado por id', () => {
   assert.equal(result.records.length, 1);
   assert.equal(result.warnings.length, 1);
   assert.equal(result.records[0].path, 'companies/tenant/romaneios/tl/x');
+  assert.equal(result.records[0].aliases[0], 'companies/tenant/romaneiosTl/x');
 });
 
 test('pré-romaneio separa famílias pelo campo tipo e não inventa tipo ausente', () => {
