@@ -56,6 +56,7 @@ test('módulo usa o core canônico e mantém paginação da página', () => {
   assert.doesNotMatch(js, /estoqueDetalhado/);
   assert.match(vendas, /function temDimsSerrado/);
   assert.match(vendas, /function volumeSerradoProduto/);
+  assert.match(vendas, /for \(const prod of criadosProdutos\)/, 'Vendas grava produtos por item, sem substituir o nó inteiro');
 });
 
 test('edicao e preview nao exibem chave tecnica do romaneio', () => {

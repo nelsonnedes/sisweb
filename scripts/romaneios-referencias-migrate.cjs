@@ -144,6 +144,7 @@ async function main() {
   const tenant = String(arg('--tenant', '') || '').trim();
   if (!tenant) throw new Error('Informe --tenant.');
   const apply = has('--apply');
+  const orphanMode = String(arg('--orphan', '') || '').trim().toLowerCase();
   const backupFile = arg('--backup', '');
   const reportFile = arg('--report', `tmp/romaneios-referencias-${tenant}-${apply ? 'apply' : 'dry-run'}.json`);
   if (apply && !backupFile) throw new Error('--apply exige --backup <arquivo>.');
@@ -168,7 +169,19 @@ async function main() {
     roots[root] = Object.keys(patches).length - before;
   }
 
-  const report = { tenant, applied: apply, createdAt: new Date().toISOString(), mapSize: map.size, roots, totalPatches: Object.keys(patches).length, unmatched };
+  let orphanPatches = 0;
+  if (orphanMode === 's/n') {
+    const seen = new Set();
+    for (const item of unmatched) {
+      if (!item || !item.path || seen.has(item.path)) continue;
+      seen.add(item.path);
+      patches[item.path] = 's/n';
+      patches[`${item.path}Legado`] = item.value;
+      orphanPatches++;
+    }
+  }
+
+  const report = { tenant, applied: apply, createdAt: new Date().toISOString(), mapSize: map.size, roots, totalPatches: Object.keys(patches).length, orphanPatches, unmatched };
   writeJson(reportFile, report);
   console.log(`--- ${apply ? 'APLICAÇÃO' : 'DRY-RUN'} ---`);
   console.log(`Mapa de referências: ${map.size}`);

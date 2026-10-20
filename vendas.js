@@ -5715,6 +5715,7 @@ async function adicionarEstoqueGruposRomaneio() {
     const meta = __previewProdutoRomaneioMeta || {};
     const usedCodes = new Set((window.produtos || []).map(p => String(p.codigo || '').trim()).filter(Boolean));
     let criados = 0, volumeTotal = 0, puladosTravados = 0;
+    const criadosProdutos = [];
     for (const g of grupos) {
         if (!(g.volume > 0)) continue;
         const grid = g.romaneioId || meta.rid;
@@ -5762,22 +5763,30 @@ async function adicionarEstoqueGruposRomaneio() {
         };
         try { sanearIndefinidosFirebase(prod); } catch (_) {}
         window.produtos.push(prod);
+        criadosProdutos.push(prod);
         try { window.__produtosNovosIds.add(String(prod.id)); } catch (_) {}
         try { registrarIdsProdutosRaw([prod]); } catch (_) {}
         criados++;
         volumeTotal = Math.round((volumeTotal + qVol) * 1000) / 1000;
     }
-    // Save ÚNICO em lote (antes: 1 round-trip por grupo = lento no mobile).
-    let saveOk = false;
+    // Grava somente os registros criados: nunca substitui o nó inteiro de produtos.
+    let saveOk = true;
+    const savedIds = new Set();
     try {
-        if (typeof saveData === 'function') {
-            __rvSaveDataRemoteOk = false;
-            await saveData('produtos', filtrarProdutosPersistiveis(window.produtos));
-            saveOk = !!__rvSaveDataRemoteOk;
+        const svcProd = window.firebaseService || window.FirebaseService;
+        if (svcProd && typeof svcProd.saveToFirebase === 'function') {
+            for (const prod of criadosProdutos) {
+                const res = await svcProd.saveToFirebase('produtos', String(prod.id), prod);
+                if (res && res.success === false) { saveOk = false; break; }
+                savedIds.add(String(prod.id));
+            }
+        } else {
+            saveOk = false;
         }
     } catch (_) { saveOk = false; }
     if (!saveOk) {
-        try { ToastManager.error('Itens aplicados localmente, mas a gravação no servidor falhou. Verifique a conexão.', 'Falha ao gravar', 8000); } catch (_) {}
+        window.produtos = (window.produtos || []).filter(p => savedIds.has(String(p && p.id)) || !criadosProdutos.some(c => String(c.id) === String(p && p.id)));
+        try { ToastManager.error('Alguns itens não foram gravados no servidor. Os itens salvos foram mantidos; tente novamente os restantes.', 'Falha ao gravar', 8000); } catch (_) {}
     }
     try {
         const svcInv = window.firebaseService || window.FirebaseService;

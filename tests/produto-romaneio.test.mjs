@@ -137,7 +137,8 @@ test('adicionar estoque romaneio: trava + loading + save único em lote', () => 
   const fim = src.indexOf('\nfunction renderPreviewProdutoManuel()', ini);
   const fluxo = ini >= 0 && fim > ini ? src.slice(ini, fim) : '';
   assert.ok(fluxo.length > 0, 'fluxo localizado');
-  assert.ok(!/saveToFirebase\('produtos'/.test(fluxo), 'sem save por item no fluxo de grupos');
+  assert.ok(/saveToFirebase\('produtos', String\(prod\.id\), prod\)/.test(fluxo), 'save por item no fluxo de grupos');
+  assert.ok(!/await saveData\('produtos', filtrarProdutosPersistiveis\(window\.produtos\)\)/.test(fluxo), 'não substitui o nó inteiro de produtos');
   assert.ok(/await saveData\('produtos', filtrarProdutosPersistiveis/.test(src), 'save único em lote');
   // Cards do preview com classe (layout ordenado desktop/mobile)
   assert.ok(/class="grupo-rom-card"/.test(src), 'cards com classe');

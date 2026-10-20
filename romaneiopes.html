@@ -2842,8 +2842,8 @@
             }
 
             const numeroInput = document.getElementById('romaneioNumero');
-            const generatedNumero = `PES_${Date.now()}`;
-            const numeroRomaneio = (numeroInput && String(numeroInput.value || '').trim()) || generatedNumero;
+            const generatedNumero = `PES_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+            const numeroDigitado = (numeroInput && String(numeroInput.value || '').trim()) || '';
             const romaneiosEdicaoBase = await loadRomaneiosPesCompany();
             const registroEmEdicao = romaneioEmEdicao !== null
                 ? romaneiosEdicaoBase.find(r => String(r.id) === String(romaneioEmEdicao))
@@ -2857,8 +2857,9 @@
             const clienteNome = selectedClient.nome || selectedClient.name || 'Cliente sem nome';
             const clienteId = selectedClient.id || selectedClient.cpfCnpj || selectedClient.nome || selectedClient.name || '';
             const dataObj = {
-                id: (registroEmEdicao && registroEmEdicao.id) ? String(registroEmEdicao.id) : numeroRomaneio,
-                numero: (registroEmEdicao && registroEmEdicao.numero) ? String(registroEmEdicao.numero) : numeroRomaneio,
+                id: (registroEmEdicao && registroEmEdicao.id) ? String(registroEmEdicao.id) : generatedNumero,
+                numero: (registroEmEdicao && registroEmEdicao.numero) ? String(registroEmEdicao.numero) : generatedNumero,
+                numeroDigitado: (registroEmEdicao && registroEmEdicao.numeroDigitado) || numeroDigitado,
                 data: dataRomaneio,
                 dataEmissao: dataRomaneio,
                 clienteId: String(clienteId || ''),

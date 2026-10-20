@@ -79,6 +79,9 @@ test('integração chama o número na criação dos cinco tipos', () => {
   assert.match(fs.readFileSync('romaneiopes.html', 'utf8'), /SiswebRomaneioNumero\.aplicar\('pes'/);
   assert.match(fs.readFileSync('romaneiotora_tabela.js', 'utf8'), /SiswebRomaneioNumero\.aplicar\('tora'/);
   assert.match(fs.readFileSync('preromaneio.js', 'utf8'), /SiswebRomaneioNumero\.aplicar\('pre_'/);
+  const pes = fs.readFileSync('romaneiopes.html', 'utf8');
+  assert.match(pes, /generatedNumero = `PES_\$\{Date\.now\(\)\}_/);
+  assert.match(pes, /numeroDigitado/);
   for (const file of ['modules/romaneio/salvar-romaneio.js', 'romaneiopct-tabela.js', 'romaneiopes.html', 'romaneiotora_tabela.js', 'preromaneio.js']) {
     assert.match(fs.readFileSync(file, 'utf8'), /SiswebRomaneioNumero\.preservar/, `${file} preserva número na edição`);
   }
