@@ -2284,6 +2284,13 @@
 
         <section id="romaneio-items-section">
             <h2>Itens do Romaneio</h2>
+            <div class="romaneio-items-filters no-print">
+                <input type="text" id="pctItemFilterEspecie" placeholder="Espécie: filtrar..." autocomplete="off">
+                <input type="text" id="pctItemFilterDimensoes" class="romaneio-filter-dims" placeholder="Dimensões: 5, 5x12, 5x12x300" inputmode="decimal" autocomplete="off">
+                <label class="romaneio-items-selectall"><input type="checkbox" id="pctItemSelectAll"> Selecionar todos</label>
+                <button type="button" class="btn btn-danger romaneio-bulk-delete" id="pctItemDeleteSelected" disabled>Excluir selecionados (<span id="pctItemSelectedCount">0</span>)</button>
+            </div>
+
             <div class="itens-container">
                 <div class="table-responsive" style="overflow-x: auto; max-width: 100%;">
                     <table id="romaneioTable" class="table table-striped table-bordered">
@@ -2957,7 +2964,8 @@
 
     <!-- ✅ CORREÇÃO CRÍTICA: Tabela com função adicionarItem -->
     <script src="js/romaneio-numero.js?v=1207d57792ad"></script>
-    <script src="romaneiopct-tabela.js?v=5589eb454bcb"></script>
+    <script src="modules/core/romaneio-item-tools.js?v=7bcf2521ddc5"></script>
+    <script src="romaneiopct-tabela.js?v=a8af24c26895"></script>
     
     <!-- ✅ SISTEMA DE FORMATAÇÃO PCT UNIFICADO -->
     <script src="romaneiopct-formatacao.js?v=56c8fa2e012f"></script>

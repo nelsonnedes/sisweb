@@ -10,7 +10,93 @@ let romaneioId = null;
 let preRomaneioEmEdicao = null;
 let clienteSelecionado = null;
 let fornecedorSelecionado = null; // Para Tora
-let itemEmEdicaoIndex = -1; // -1 = nenhum item em edição
+let itemEmEdicaoIndex = -1;
+let preFilterEspecie = '';
+let preFilterDims = { ok: true, values: [] };
+const preSelecionados = new Set();
+let preFiltersBound = false;
+function prePrefix() { return currentTab === 'TORA' ? 'preToras' : 'preSerrados'; }
+function preItemKey(item) {
+    try { if (window.SiswebRomaneioItens && window.SiswebRomaneioItens.ensureItemKey) return window.SiswebRomaneioItens.ensureItemKey(item); } catch (_) {}
+    return String((item && (item.id || item.timestamp || item.__romaneioItemKey)) || '');
+}
+function preFilteredItems() {
+    const RU = window.SiswebRomaneioItens;
+    if (!RU) return romaneioItens.slice();
+    const isTora = currentTab === 'TORA';
+    const fields = isTora
+        ? [function (it) { return it.rodo || it.diametro; }, 'comprimento']
+        : [function (it) { return it.espessura || it.bitola; }, 'largura', 'comprimento'];
+    return romaneioItens.filter(function (item) {
+        if (!RU.matchEspecie(item, preFilterEspecie)) return false;
+        return RU.matchDimensoes(item, preFilterDims.values, fields);
+    });
+}
+function preAtualizarSelecaoUI(visiveis) {
+    const p = prePrefix();
+    const count = document.getElementById(p + 'ItemSelectedCount');
+    if (count) count.textContent = String(preSelecionados.size);
+    const btn = document.getElementById(p + 'ItemDeleteSelected');
+    if (btn) btn.disabled = preSelecionados.size === 0;
+    const all = document.getElementById(p + 'ItemSelectAll');
+    if (all && visiveis) {
+        const keys = (visiveis || []).map(preItemKey).filter(Boolean);
+        const sel = keys.filter(function (k) { return preSelecionados.has(k); }).length;
+        all.checked = keys.length > 0 && sel === keys.length;
+        all.indeterminate = sel > 0 && sel < keys.length;
+    }
+}
+function preBindFiltros() {
+    if (preFiltersBound) return;
+    const p = prePrefix();
+    const especie = document.getElementById(p + 'ItemFilterEspecie');
+    const dims = document.getElementById(p + 'ItemFilterDimensoes');
+    const all = document.getElementById(p + 'ItemSelectAll');
+    const del = document.getElementById(p + 'ItemDeleteSelected');
+    const tbody = document.getElementById(currentTab === 'TORA' ? 'tbody-toras' : 'tbody-serrados');
+    if (!especie || !dims || !tbody) return;
+    preFiltersBound = true;
+    function apply() {
+        preFilterEspecie = String(especie.value || '');
+        const parsed = window.SiswebRomaneioItens ? window.SiswebRomaneioItens.parseDimensoes(dims.value) : { ok: true, values: [] };
+        if (parsed.ok) preFilterDims = parsed;
+        dims.classList.toggle('is-invalid', !parsed.ok);
+        paginaAtual = 1;
+        preSelecionados.clear();
+        renderizarTabela();
+    }
+    especie.addEventListener('input', apply);
+    dims.addEventListener('input', apply);
+    if (all) all.addEventListener('change', function () {
+        const visiveis = preFilteredItems();
+        preSelecionados.clear();
+        if (all.checked) visiveis.forEach(function (it) { const k = preItemKey(it); if (k) preSelecionados.add(k); });
+        renderizarTabela();
+    });
+    tbody.addEventListener('change', function (ev) {
+        const input = ev.target && ev.target.closest ? ev.target.closest('.romaneio-item-check') : null;
+        if (!input) return;
+        const key = String(input.dataset.itemKey || '');
+        if (!key) return;
+        if (input.checked) preSelecionados.add(key); else preSelecionados.delete(key);
+        preAtualizarSelecaoUI(preFilteredItems());
+    });
+    if (del) del.addEventListener('click', async function () {
+        if (!preSelecionados.size) return;
+        const indices = romaneioItens.map(function (it, i) { return preSelecionados.has(preItemKey(it)) ? i : -1; }).filter(function (i) { return i >= 0; }).sort(function (a, b) { return b - a; });
+        const confirmado = typeof confirmDialog === 'function'
+            ? await confirmDialog({ title: 'Excluir itens', message: 'Confirma a exclusão de ' + indices.length + ' item(ns) selecionado(s)?', danger: true, confirmLabel: 'Excluir' })
+            : false;
+        if (!confirmado) return;
+        const emEdicao = itemEmEdicaoIndex >= 0 ? romaneioItens[itemEmEdicaoIndex] : null;
+        indices.forEach(function (i) { romaneioItens.splice(i, 1); });
+        preSelecionados.clear();
+        if (emEdicao) itemEmEdicaoIndex = romaneioItens.indexOf(emEdicao);
+        renderizarTabela();
+        atualizarTotais();
+    });
+}
+ // -1 = nenhum item em edição
 
 // Paginação da Tabela Principal
 const ITENS_POR_PAGINA_INICIAL = 5;
@@ -425,6 +511,16 @@ async function mudarAba(tab) {
 
     currentTab = tab;
     window.currentTab = currentTab;
+    preFilterEspecie = '';
+    preFilterDims = { ok: true, values: [] };
+    preSelecionados.clear();
+    preFiltersBound = false;
+    ['preSerrados', 'preToras'].forEach(function (p) {
+        var e = document.getElementById(p + 'ItemFilterEspecie');
+        var d = document.getElementById(p + 'ItemFilterDimensoes');
+        if (e) e.value = '';
+        if (d) { d.value = ''; d.classList.remove('is-invalid'); }
+    });
     
     // Atualizar botões
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
@@ -676,13 +772,23 @@ function renderizarTabela() {
         const cols = isTora ? 18 : 10;
         tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center" style="padding: 20px; color: #999;">Nenhum item adicionado.</td></tr>`;
         renderizarPaginacao(0);
+        preAtualizarSelecaoUI([]);
+        preBindFiltros();
         return;
     }
 
     aplicarOrdenacaoTabelaPreRomaneio();
+    const visiveis = preFilteredItems();
+    if (visiveis.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${isTora ? 18 : 10}" class="text-center" style="padding: 20px; color: #999;">Nenhum item encontrado para os filtros.</td></tr>`;
+        renderizarPaginacao(0);
+        preAtualizarSelecaoUI([]);
+        preBindFiltros();
+        return;
+    }
     
     // Paginação
-    const totalItens = romaneioItens.length;
+    const totalItens = visiveis.length;
     const totalPaginas = Math.max(1, Math.ceil(totalItens / itensPorPagina));
     
     if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
@@ -690,11 +796,11 @@ function renderizarTabela() {
     
     const inicio = (paginaAtual - 1) * itensPorPagina;
     const fim = inicio + itensPorPagina;
-    const itensPagina = romaneioItens.slice(inicio, fim);
+    const itensPagina = visiveis.slice(inicio, fim);
     
     itensPagina.forEach((item, idx) => {
         // Índice real no array principal
-        const indexReal = inicio + idx;
+        const indexReal = romaneioItens.indexOf(item);
         const tr = document.createElement('tr');
         
         if (isTora) {
@@ -702,7 +808,7 @@ function renderizarTabela() {
             const descontoValor = parseFloat(item.desconto) || 0;
             const geo = normalizarCamposGeoTora(item);
             tr.innerHTML = `
-                <td data-label="Plaqueta">${item.placa || item.plaqueta || '-'}</td>
+                <td data-label="Plaqueta"><input type="checkbox" class="romaneio-item-check no-print" data-item-key="${String(preItemKey(item)).replace(/"/g, '&quot;')}"${preSelecionados.has(preItemKey(item)) ? ' checked' : ''} aria-label="Selecionar item"> ${item.placa || item.plaqueta || '-'}</td>
                 <td data-label="Custódia">${geo.custodia || '-'}</td>
                 <td data-label="AUTEF">${geo.autef || item.autef || '-'}</td>
                 <td data-label="Espécie">${item.especie}</td>
@@ -732,7 +838,7 @@ function renderizarTabela() {
             const volDec = (currentTab === 'PCT') ? 4 : 3;
             const isPes = currentTab === 'PES';
             tr.innerHTML = `
-                <td data-label="Espécie">${item.especie}</td>
+                <td data-label="Espécie"><input type="checkbox" class="romaneio-item-check no-print" data-item-key="${String(preItemKey(item)).replace(/"/g, '&quot;')}"${preSelecionados.has(preItemKey(item)) ? ' checked' : ''} aria-label="Selecionar item"> ${item.especie}</td>
                 <td data-label="Comp." class="text-center">${isPes ? formatDecimalBR(item.comprimento, 2, 'mm') : item.comprimento}</td>
                 <td data-label="Espessura" class="text-center">${isPes ? formatDecimalBR((item.espessura ?? 0), 2, 'mm') : (item.espessura ?? 0)}</td>
                 <td data-label="Larg." class="text-center">${isPes ? formatDecimalBR(item.largura, 2, 'mm') : item.largura}</td>
@@ -753,6 +859,8 @@ function renderizarTabela() {
     });
     
     renderizarPaginacao(totalItens);
+    preAtualizarSelecaoUI(visiveis);
+    preBindFiltros();
 }
 
 function renderizarPaginacao(totalItens) {

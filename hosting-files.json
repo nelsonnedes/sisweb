@@ -399,6 +399,7 @@
   "modules/core/responsive-manager.js",
   "modules/core/romaneio-list-columns.js",
   "modules/core/romaneio-messages.js",
+  "modules/core/romaneio-item-tools.js",
   "modules/core/sisweb-data.js",
   "modules/core/stock-table-columns.js",
   "modules/core/toast.js",

@@ -161,7 +161,7 @@ window.ExcluirItem = (function() {
             
             // Resetar paginação se necessário
             if (window.RenderizarTabela && window.RenderizarTabela.resetarPaginacao) {
-                const stats = window.RenderizarTabela.obterEstatisticas();
+                const stats = window.RenderizarTabela.obterEstatisticasPaginacao ? window.RenderizarTabela.obterEstatisticasPaginacao() : null;
                 if (stats && stats.totalItens === 0) {
                     window.RenderizarTabela.resetarPaginacao();
                 }
@@ -276,7 +276,6 @@ window.ExcluirItem = (function() {
             if (window.AdicionarItem && window.AdicionarItem.obterItens) {
                 const items = window.AdicionarItem.obterItens();
                 items.splice(index, 1);
-                window.AdicionarItem.definirItens(items);
             } else if (window.romaneioItems && Array.isArray(window.romaneioItems)) {
                 window.romaneioItems.splice(index, 1);
             }

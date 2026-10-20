@@ -3890,3 +3890,61 @@ html body #romaneioListModal .table-responsive {
     min-width: 0 !important;
     max-width: 100% !important;
 }
+
+/* Filtros e seleção de itens (romaneios e pré-romaneios) */
+.romaneio-items-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+}
+.romaneio-items-filters input[type="text"] {
+    min-height: 36px;
+    max-width: 240px;
+    padding: 7px 10px;
+}
+.romaneio-items-filters .romaneio-filter-dims {
+    max-width: 220px;
+}
+.romaneio-items-selectall {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+}
+.romaneio-items-selectall input,
+.romaneio-item-check {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px;
+    min-height: 16px;
+    margin: 0;
+    padding: 0;
+}
+.romaneio-bulk-delete {
+    min-height: 36px;
+    white-space: nowrap;
+}
+.romaneio-bulk-delete:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+@media (max-width: 768px) {
+    .romaneio-items-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .romaneio-items-filters input[type="text"],
+    .romaneio-items-filters .romaneio-filter-dims {
+        max-width: none;
+        width: 100%;
+    }
+}
+@media print {
+    .romaneio-items-filters,
+    .romaneio-item-check {
+        display: none !important;
+    }
+}

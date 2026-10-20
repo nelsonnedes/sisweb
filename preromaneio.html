@@ -770,10 +770,17 @@
 
             <div class="buttons-container">
                 <button type="button" class="btn-adicionar" onclick="adicionarItemSerrado()"><i class="fas fa-plus"></i> Adicionar Item</button>
-                <button type="button" class="btn-limpar" onclick="limparFormularioSerrado()"><i class="fas fa-eraser"></i> Limpar</button>
+                <button type="button" class="btn-limpar" onclick="limparFormularioSerrado()"
+><i class="fas fa-eraser"></i> Limpar</button>
             </div>
 
-            <div class="table-responsive">
+                        <div class="romaneio-items-filters no-print">
+                <input type="text" id="preSerradosItemFilterEspecie" placeholder="Espécie: filtrar..." autocomplete="off">
+                <input type="text" id="preSerradosItemFilterDimensoes" class="romaneio-filter-dims" placeholder="Dimensões: 5, 5x12, 5x12x300" inputmode="decimal" autocomplete="off">
+                <label class="romaneio-items-selectall"><input type="checkbox" id="preSerradosItemSelectAll"> Selecionar todos</label>
+                <button type="button" class="btn btn-danger romaneio-bulk-delete" id="preSerradosItemDeleteSelected" disabled>Excluir selecionados (<span id="preSerradosItemSelectedCount">0</span>)</button>
+            </div>
+<div class="table-responsive">
                 <table id="tabela-serrados">
                     <thead>
                         <tr>
@@ -896,10 +903,17 @@
 
             <div class="buttons-container">
                 <button type="button" class="btn-adicionar" onclick="adicionarItemTora()"><i class="fas fa-plus"></i> Adicionar Tora</button>
-                <button type="button" class="btn-limpar" onclick="limparFormularioTora()"><i class="fas fa-eraser"></i> Limpar</button>
+                <button type="button" class="btn-limpar" onclick="limparFormularioTora()"
+><i class="fas fa-eraser"></i> Limpar</button>
             </div>
 
-            <div class="table-responsive">
+                        <div class="romaneio-items-filters no-print">
+                <input type="text" id="preTorasItemFilterEspecie" placeholder="Espécie: filtrar..." autocomplete="off">
+                <input type="text" id="preTorasItemFilterDimensoes" class="romaneio-filter-dims" placeholder="Dimensões: 5, 5x12" inputmode="decimal" autocomplete="off">
+                <label class="romaneio-items-selectall"><input type="checkbox" id="preTorasItemSelectAll"> Selecionar todos</label>
+                <button type="button" class="btn btn-danger romaneio-bulk-delete" id="preTorasItemDeleteSelected" disabled>Excluir selecionados (<span id="preTorasItemSelectedCount">0</span>)</button>
+            </div>
+<div class="table-responsive">
                 <table id="tabela-toras">
                     <thead>
                         <tr>
@@ -1517,7 +1531,8 @@ import './firebase-compat-bridge.js?v=d6c28d76d1de';  // compat shim
     <script src="romaneio-table-enhancements.js?v=345b343df434"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
     <script src="js/romaneio-numero.js?v=1207d57792ad"></script>
-    <script src="preromaneio.js?v=6a91f4f78e51"></script>
+    <script src="modules/core/romaneio-item-tools.js?v=7bcf2521ddc5"></script>
+    <script src="preromaneio.js?v=31ef69bc0e3b"></script>
 
 </body>
 </html>

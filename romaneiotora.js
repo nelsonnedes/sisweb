@@ -97,6 +97,89 @@ window.species = window.species || []; // Para armazenar a lista de espécies
 window.editingClientId = window.editingClientId || null; // Para controlar edição de clientes
 window.editingSpeciesId = window.editingSpeciesId || null; // Para controlar edição de espécies
 window.romaneioItems = window.romaneioItems || []; // Itens do romaneio atual
+let toraFilterEspecie = '';
+let toraFilterDims = { ok: true, values: [] };
+const toraSelecionados = new Set();
+let toraFiltersBound = false;
+function toraItemKey(item) {
+    try { if (window.SiswebRomaneioItens && window.SiswebRomaneioItens.ensureItemKey) return window.SiswebRomaneioItens.ensureItemKey(item); } catch (_) {}
+    return String((item && (item.id || item.timestamp || item.__romaneioItemKey)) || '');
+}
+function toraFilteredItems(items) {
+    const lista = Array.isArray(items) ? items : (window.romaneioItems || []);
+    const RU = window.SiswebRomaneioItens;
+    if (!RU) return lista.slice();
+    return lista.filter(function (item) {
+        if (!RU.matchEspecie(item, toraFilterEspecie)) return false;
+        return RU.matchDimensoes(item, toraFilterDims.values, [function (it) { return it.rodo || it.diametro; }, 'comprimento']);
+    });
+}
+function toraAtualizarSelecaoUI(visiveis) {
+    const count = document.getElementById('toraItemSelectedCount');
+    if (count) count.textContent = String(toraSelecionados.size);
+    const btn = document.getElementById('toraItemDeleteSelected');
+    if (btn) btn.disabled = toraSelecionados.size === 0;
+    const all = document.getElementById('toraItemSelectAll');
+    if (all && visiveis) {
+        const keys = (visiveis || []).map(toraItemKey).filter(Boolean);
+        const sel = keys.filter(function (k) { return toraSelecionados.has(k); }).length;
+        all.checked = keys.length > 0 && sel === keys.length;
+        all.indeterminate = sel > 0 && sel < keys.length;
+    }
+}
+function toraBindFiltros() {
+    if (toraFiltersBound) return;
+    const especie = document.getElementById('toraItemFilterEspecie');
+    const dims = document.getElementById('toraItemFilterDimensoes');
+    const all = document.getElementById('toraItemSelectAll');
+    const del = document.getElementById('toraItemDeleteSelected');
+    const tbody = document.querySelector('#romaneioTable tbody');
+    if (!especie || !dims || !tbody) return;
+    toraFiltersBound = true;
+    function apply() {
+        toraFilterEspecie = String(especie.value || '');
+        const parsed = window.SiswebRomaneioItens ? window.SiswebRomaneioItens.parseDimensoes(dims.value) : { ok: true, values: [] };
+        if (parsed.ok) toraFilterDims = parsed;
+        dims.classList.toggle('is-invalid', !parsed.ok);
+        window.currentPage = 1;
+        toraSelecionados.clear();
+        updateTableBody();
+    }
+    especie.addEventListener('input', apply);
+    dims.addEventListener('input', apply);
+    if (all) all.addEventListener('change', function () {
+        const visiveis = toraFilteredItems(window.romaneioItems);
+        toraSelecionados.clear();
+        if (all.checked) visiveis.forEach(function (it) { const k = toraItemKey(it); if (k) toraSelecionados.add(k); });
+        updateTableBody();
+    });
+    tbody.addEventListener('change', function (ev) {
+        const input = ev.target && ev.target.closest ? ev.target.closest('.romaneio-item-check') : null;
+        if (!input) return;
+        const key = String(input.dataset.itemKey || '');
+        if (!key) return;
+        if (input.checked) toraSelecionados.add(key); else toraSelecionados.delete(key);
+        toraAtualizarSelecaoUI(toraFilteredItems(window.romaneioItems));
+    });
+    if (del) del.addEventListener('click', async function () {
+        if (!toraSelecionados.size) return;
+        if (Number.isInteger(window.itemEditandoIndex)) {
+            if (window.ToastManager && ToastManager.warning) ToastManager.warning('Finalize a edição do item antes de excluir selecionados.');
+            return;
+        }
+        const itens = window.romaneioItems || [];
+        const indices = itens.map(function (it, i) { return toraSelecionados.has(toraItemKey(it)) ? i : -1; }).filter(function (i) { return i >= 0; }).sort(function (a, b) { return b - a; });
+        const confirmado = typeof confirmDialog === 'function'
+            ? await confirmDialog({ title: 'Excluir itens', message: 'Confirma a exclusão de ' + indices.length + ' item(ns) selecionado(s)?', danger: true, confirmLabel: 'Excluir' })
+            : false;
+        if (!confirmado) return;
+        indices.forEach(function (i) { itens.splice(i, 1); });
+        toraSelecionados.clear();
+        updateTableBody();
+        try { if (typeof salvarEstadoRomaneioEmEdicao === 'function') salvarEstadoRomaneioEmEdicao(); } catch (_) {}
+    });
+}
+
 window.itemEmEdicao = window.itemEmEdicao || false; // Variável global para controlar edição de item
 window.isSavingRomaneio = window.isSavingRomaneio || false; // Flag para evitar chamadas múltiplas
 
@@ -2110,22 +2193,34 @@ function updateTableBody(tbody) {
             if (typeof updatePagination === 'function') {
                 updatePagination();
             }
+            toraAtualizarSelecaoUI([]);
             return;
         }
         
         console.log(`📊 Renderizando ${window.romaneioItems.length} itens na tabela`);
         aplicarOrdenacaoTabelaTora();
+        const itensFiltrados = toraFilteredItems(window.romaneioItems);
+        if (itensFiltrados.length === 0) {
+            window.currentPage = 1;
+            const emptyRow = tbody.insertRow();
+            emptyRow.innerHTML = '<td colspan="18" class="text-center text-muted">Nenhum item encontrado para os filtros</td>';
+            renderizarResumoRomaneio();
+            if (typeof updatePagination === 'function') updatePagination();
+            toraAtualizarSelecaoUI([]);
+            toraBindFiltros();
+            return;
+        }
         
         // Paginação
         const itemsPerPage = window.itemsPerPage || 10;
         const currentPage = window.currentPage || 1;
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        const itemsToShow = window.romaneioItems.slice(startIndex, endIndex);
+        const itemsToShow = itensFiltrados.slice(startIndex, endIndex);
         
         // Renderizar cada item
         itemsToShow.forEach((item, index) => {
-            const globalIndex = startIndex + index;
+            const globalIndex = window.romaneioItems.indexOf(item);
             const row = tbody.insertRow();
             const geo = normalizarCamposGeoTora(item);
             
@@ -2154,7 +2249,7 @@ function updateTableBody(tbody) {
             // Ordem das colunas conforme cabeçalho (sem M³ Bruto):
             // Plaqueta | Custódia | AUTEF | Espécie | Rodo | Comprimento | Oco 1 | Oco 2 | Desconto | M³ Líquido | Geo | Preço | Valor | Ações
             row.innerHTML = `
-                <td data-label="Plaqueta">${item.plaqueta || '-'}</td>
+                <td data-label="Plaqueta"><input type="checkbox" class="romaneio-item-check no-print" data-item-key="${String(toraItemKey(item)).replace(/"/g, '&quot;')}"${toraSelecionados.has(toraItemKey(item)) ? ' checked' : ''} aria-label="Selecionar item"> ${item.plaqueta || '-'}</td>
                 <td data-label="Custódia">${geo.custodia || '-'}</td>
                 <td data-label="AUTEF">${geo.autef || item.autef || '-'}</td>
                 <td data-label="Espécie">${item.especie || '-'}</td>
@@ -2184,6 +2279,8 @@ function updateTableBody(tbody) {
         });
         
         // Atualizar paginação se necessário
+        toraAtualizarSelecaoUI(itensFiltrados);
+        toraBindFiltros();
         updatePagination();
         
         // Atualizar resumo (Totais e Médias)
@@ -2212,7 +2309,7 @@ function updatePagination() {
         
         const itens = window.romaneioItems || [];
         const itemsPerPage = window.itemsPerPage || 10;
-        const totalPages = Math.max(1, Math.ceil(itens.length / itemsPerPage));
+        const totalPages = Math.max(1, Math.ceil(toraFilteredItems(window.romaneioItems).length / itemsPerPage));
         
         // ✅ VALIDAR currentPage
         if (window.currentPage > totalPages) {
@@ -2460,7 +2557,7 @@ function changePage(page) {
     if (page < 1 || !window.romaneioItems) return;
     
     const itemsPerPage = window.itemsPerPage || 10;
-    const totalPages = Math.ceil(window.romaneioItems.length / itemsPerPage);
+    const totalPages = Math.ceil(toraFilteredItems(window.romaneioItems).length / itemsPerPage);
     
     if (page > totalPages) return;
     
@@ -2504,7 +2601,7 @@ function removerItemFallback(index) {
             
             // Ajustar página atual se necessário
             const itemsPerPage = window.itemsPerPage || 10;
-            const totalPages = Math.ceil(window.romaneioItems.length / itemsPerPage);
+            const totalPages = Math.ceil(toraFilteredItems(window.romaneioItems).length / itemsPerPage);
             if (window.currentPage > totalPages && totalPages > 0) {
                 window.currentPage = totalPages;
             }

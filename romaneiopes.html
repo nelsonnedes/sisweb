@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
     <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
+    <script src="modules/core/romaneio-item-tools.js?v=7bcf2521ddc5"></script>
     <script src="js/romaneio-numero.js?v=1207d57792ad"></script>
     <script>
         // Bootstrap de tema (anti-FOUC): aplica data-theme antes da pintura.
@@ -1169,6 +1170,13 @@
 
         <section id="romaneio-items-section">
             <h2>Itens do Romaneio</h2>
+            <div class="romaneio-items-filters no-print">
+                <input type="text" id="pesItemFilterEspecie" placeholder="Espécie: filtrar..." autocomplete="off">
+                <input type="text" id="pesItemFilterDimensoes" class="romaneio-filter-dims" placeholder="Dimensões (mm): 5, 5x12, 5x12x300" inputmode="decimal" autocomplete="off">
+                <label class="romaneio-items-selectall"><input type="checkbox" id="pesItemSelectAll"> Selecionar todos</label>
+                <button type="button" class="btn btn-danger romaneio-bulk-delete" id="pesItemDeleteSelected" disabled>Excluir selecionados (<span id="pesItemSelectedCount">0</span>)</button>
+            </div>
+
             <div class="itens-container">
                 <div class="table-responsive" style="overflow-x: auto; max-width: 100%;">
                     <table id="romaneioTable" class="table table-striped table-bordered">
@@ -1498,7 +1506,15 @@
     <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
     <script src="modules/core/romaneio-list-columns.js?v=396ded91f759" data-page="pes" data-target="romaneioListBody"></script>
     <script>
-        let itens = [];
+        let itens = [];        let pesFilterEspecie = '';
+        let pesFilterDims = { ok: true, values: [] };
+        const pesSelecionados = new Set();
+        let pesFiltersBound = false;
+        function pesItemKey(item) { try { if (window.SiswebRomaneioItens && window.SiswebRomaneioItens.ensureItemKey) return window.SiswebRomaneioItens.ensureItemKey(item); } catch (_) {} return String((item && (item.id || item.timestamp || item.__romaneioItemKey)) || ''); }
+        function pesFilteredItems() { const RU=window.SiswebRomaneioItens; if(!RU) return itens.slice(); return itens.filter(function(item){ if(!RU.matchEspecie(item,pesFilterEspecie)) return false; return RU.matchDimensoes(item,pesFilterDims.values,[function(it){return it.espessura||it[legacyKey];},'largura','comprimento']); }); }
+        function pesAtualizarSelecaoUI(visiveis) { const count=document.getElementById('pesItemSelectedCount'); if(count) count.textContent=String(pesSelecionados.size); const btn=document.getElementById('pesItemDeleteSelected'); if(btn) btn.disabled=pesSelecionados.size===0; const all=document.getElementById('pesItemSelectAll'); if(all&&visiveis){const keys=(visiveis||[]).map(pesItemKey).filter(Boolean);const sel=keys.filter(function(k){return pesSelecionados.has(k);}).length;all.checked=keys.length>0&&sel===keys.length;all.indeterminate=sel>0&&sel<keys.length;} }
+        function pesBindFiltros() { if(pesFiltersBound) return; const especie=document.getElementById('pesItemFilterEspecie'); const dims=document.getElementById('pesItemFilterDimensoes'); const all=document.getElementById('pesItemSelectAll'); const del=document.getElementById('pesItemDeleteSelected'); const tbody=document.getElementById('romaneioTableBody'); if(!especie||!dims||!tbody) return; pesFiltersBound=true; function apply(){pesFilterEspecie=String(especie.value||'');const parsed=window.SiswebRomaneioItens?window.SiswebRomaneioItens.parseDimensoes(dims.value):{ok:true,values:[]};if(parsed.ok)pesFilterDims=parsed;dims.classList.toggle('is-invalid',!parsed.ok);itensTablePage=1;pesSelecionados.clear();renderizarTabelaPes();} especie.addEventListener('input',apply);dims.addEventListener('input',apply); if(all) all.addEventListener('change',function(){const visiveis=pesFilteredItems();pesSelecionados.clear();if(all.checked)visiveis.forEach(function(it){const k=pesItemKey(it);if(k)pesSelecionados.add(k);});renderizarTabelaPes();}); tbody.addEventListener('change',function(ev){const input=ev.target&&ev.target.closest?ev.target.closest('.romaneio-item-check'):null;if(!input)return;const key=String(input.dataset.itemKey||'');if(!key)return;if(input.checked)pesSelecionados.add(key);else pesSelecionados.delete(key);pesAtualizarSelecaoUI(pesFilteredItems());}); if(del) del.addEventListener('click',async function(){if(!pesSelecionados.size)return;const indices=itens.map(function(it,i){return pesSelecionados.has(pesItemKey(it))?i:-1;}).filter(function(i){return i>=0;}).sort(function(a,b){return b-a;});const confirmado=typeof confirmDialog==='function'?await confirmDialog({title:'Excluir itens',message:'Confirma a exclusão de '+indices.length+' item(ns) selecionado(s)?',danger:true,confirmLabel:'Excluir'}): false;if(!confirmado)return;const emEdicao=itemEmEdicaoIndex>=0?itens[itemEmEdicaoIndex]:null;indices.forEach(function(i){itens.splice(i,1);});pesSelecionados.clear();if(emEdicao)itemEmEdicaoIndex=itens.indexOf(emEdicao);atualizarTabela();atualizarTotais();}); }
+
         let itemEmEdicaoIndex = -1; // Para controlar edição de itens
         let preco = 0;
         const legacyKey = ['b','i','t','o','l','a'].join('');
@@ -1565,18 +1581,19 @@
             tbody.innerHTML = '';
             configurarTabelaPesOrdenavel();
             aplicarOrdenacaoTabelaPes();
-            const totalItems = itens.length;
+            const itensFiltrados = pesFilteredItems();
+            const totalItems = itensFiltrados.length;
             const totalPages = Math.max(1, Math.ceil(totalItems / itensTablePerPage));
             if (itensTablePage > totalPages) itensTablePage = totalPages;
             if (itensTablePage < 1) itensTablePage = 1;
             const start = (itensTablePage - 1) * itensTablePerPage;
             const end = start + itensTablePerPage;
-            const pageItems = itens.slice(start, end);
+            const pageItems = itensFiltrados.slice(start, end);
             pageItems.forEach((item, pageIdx) => {
-                const indexReal = start + pageIdx;
+                const indexReal = itens.indexOf(item);
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td data-label="Espécie">${item.especie || ''}</td>
+                    <td data-label="Espécie"><input type="checkbox" class="romaneio-item-check no-print" data-item-key="${String(pesItemKey(item)).replace(/"/g, '&quot;')}"${pesSelecionados.has(pesItemKey(item)) ? ' checked' : ''} aria-label="Selecionar item"> ${item.especie || ''}</td>
                     <td data-label="Esp. (mm)">${formatarMilimetros(toNumberValue(item.espessura || item[legacyKey] || 0))}</td>
                     <td data-label="Larg. (mm)">${formatarMilimetros(toNumberValue(item.largura || 0))}</td>
                     <td data-label="Comp. (mm)">${formatarMilimetros(toNumberValue(item.comprimento || 0))}</td>
@@ -1608,6 +1625,8 @@
                 `;
             }
             renderizarPaginacaoItensPes(totalItems);
+            pesAtualizarSelecaoUI(itensFiltrados);
+            pesBindFiltros();
             atualizarTotais();
         }
 

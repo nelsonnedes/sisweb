@@ -29,6 +29,104 @@ window.RenderizarTabela = (function() {
         if (OPCOES_ITENS_POR_PAGINA.includes(saved)) itensPorPagina = saved;
     } catch (_) {}
 
+    let tlFilterEspecie = '';
+    let tlFilterDims = { ok: true, values: [] };
+    const tlSelecionados = new Set();
+    let tlFiltersBound = false;
+
+    function tlItemKey(item) {
+        try {
+            if (window.SiswebRomaneioItens && typeof window.SiswebRomaneioItens.ensureItemKey === 'function') return window.SiswebRomaneioItens.ensureItemKey(item);
+        } catch (_) {}
+        return String((item && (item.id || item.timestamp || item.__romaneioItemKey)) || '');
+    }
+    function tlFilteredItems(items) {
+        const RU = window.SiswebRomaneioItens;
+        if (!RU) return items.slice();
+        return (items || []).filter(function (item) {
+            if (!RU.matchEspecie(item, tlFilterEspecie)) return false;
+            return RU.matchDimensoes(item, tlFilterDims.values, [
+                function (it) { return it.espessura || it[legacyKey]; },
+                'largura',
+                'comprimento'
+            ]);
+        });
+    }
+    function tlAtualizarSelecaoUI(visiveis) {
+        const count = document.getElementById('tlItemSelectedCount');
+        if (count) count.textContent = String(tlSelecionados.size);
+        const btn = document.getElementById('tlItemDeleteSelected');
+        if (btn) btn.disabled = tlSelecionados.size === 0;
+        const all = document.getElementById('tlItemSelectAll');
+        if (all && visiveis) {
+            const visiveisKeys = visiveis.map(tlItemKey).filter(Boolean);
+            const selectedVisible = visiveisKeys.filter(function (k) { return tlSelecionados.has(k); }).length;
+            all.checked = visiveisKeys.length > 0 && selectedVisible === visiveisKeys.length;
+            all.indeterminate = selectedVisible > 0 && selectedVisible < visiveisKeys.length;
+        }
+    }
+    function tlBindFiltros() {
+        if (tlFiltersBound) return;
+        const especie = document.getElementById('tlItemFilterEspecie');
+        const dims = document.getElementById('tlItemFilterDimensoes');
+        const all = document.getElementById('tlItemSelectAll');
+        const del = document.getElementById('tlItemDeleteSelected');
+        const tbody = document.getElementById('romaneioTableBody');
+        if (!especie || !dims || !tbody) return;
+        tlFiltersBound = true;
+        function applyFilters() {
+            tlFilterEspecie = String(especie.value || '');
+            const parsed = window.SiswebRomaneioItens
+                ? window.SiswebRomaneioItens.parseDimensoes(dims.value)
+                : { ok: true, values: [] };
+            if (parsed.ok) tlFilterDims = parsed;
+            dims.classList.toggle('is-invalid', !parsed.ok);
+            paginaAtual = 1;
+            tlSelecionados.clear();
+            renderizarTabela();
+        }
+        especie.addEventListener('input', applyFilters);
+        dims.addEventListener('input', applyFilters);
+        if (all) all.addEventListener('change', function () {
+            const items = tlFilteredItems(window.AdicionarItem ? window.AdicionarItem.obterItens() : (window.romaneioItems || []));
+            tlSelecionados.clear();
+            if (all.checked) items.forEach(function (item) { var k = tlItemKey(item); if (k) tlSelecionados.add(k); });
+            renderizarTabela();
+        });
+        tbody.addEventListener('change', function (event) {
+            const input = event.target && event.target.closest ? event.target.closest('.romaneio-item-check') : null;
+            if (!input) return;
+            const key = String(input.dataset.itemKey || '');
+            if (!key) return;
+            if (input.checked) tlSelecionados.add(key); else tlSelecionados.delete(key);
+            tlAtualizarSelecaoUI(tlFilteredItems(window.AdicionarItem ? window.AdicionarItem.obterItens() : (window.romaneioItems || [])));
+        });
+        if (del) del.addEventListener('click', async function () {
+            if (!tlSelecionados.size) return;
+            const items = window.AdicionarItem ? window.AdicionarItem.obterItens() : (window.romaneioItems || []);
+            const indices = items.map(function (item, index) { return tlSelecionados.has(tlItemKey(item)) ? index : -1; }).filter(function (i) { return i >= 0; }).sort(function (a, b) { return b - a; });
+            const before = items.length;
+            try {
+                let ok;
+                if (window.ExcluirItem && typeof window.ExcluirItem.excluirMultiplosItens === 'function') {
+                    ok = await window.ExcluirItem.excluirMultiplosItens(indices);
+                } else {
+                    indices.forEach(function (i) { items.splice(i, 1); });
+                    ok = true;
+                }
+                if (ok === false && items.length === before) return;
+            } catch (_) {}
+            tlSelecionados.clear();
+            const countEl = document.getElementById('tlItemSelectedCount');
+            if (countEl) countEl.textContent = '0';
+            const delBtn = document.getElementById('tlItemDeleteSelected');
+            if (delBtn) delBtn.disabled = true;
+            const allEl = document.getElementById('tlItemSelectAll');
+            if (allEl) { allEl.checked = false; allEl.indeterminate = false; }
+            renderizarTabela();
+        });
+    }
+
     const TL_TABLE_SORT_COLUMNS = [
         { key: 'especie' },
         { key: 'comprimento', type: 'number' },
@@ -73,11 +171,12 @@ window.RenderizarTabela = (function() {
         
         try {
             // Obter itens do módulo AdicionarItem
-            const items = window.AdicionarItem ? window.AdicionarItem.obterItens() : (window.romaneioItems || []);
+            const todosItens = window.AdicionarItem ? window.AdicionarItem.obterItens() : (window.romaneioItems || []);
             configurarTabelaOrdenavel();
             aplicarOrdenacaoTabela();
+            const items = tlFilteredItems(todosItens);
             
-            console.log(`📋 Total de itens: ${items.length}`);
+            console.log(`�Y"< Total de itens: ${items.length}`);
             
             let itensPagina;
             let startIndex = 0;
@@ -88,13 +187,14 @@ window.RenderizarTabela = (function() {
             itensPagina = items.slice(startIndex, startIndex + itensPorPagina);
             
             // Renderizar itens
-            renderizarItens(itensPagina, startIndex, items.length);
+            renderizarItens(itensPagina, startIndex, items.length, todosItens);
             
             // Atualizar totais
-            atualizarTotais(items);
+            atualizarTotais(todosItens);
             
-            // Renderizar controles de paginação (se necessário)
+            // Renderizar controles de pagina��ǜo (se necessǭrio)
             renderizarPaginacao(items.length);
+            tlBindFiltros();
             
             console.log(`✅ Tabela renderizada: ${itensPagina.length} itens exibidos`);
             
@@ -107,7 +207,7 @@ window.RenderizarTabela = (function() {
     /**
      * Renderizar itens na tabela
      */
-    function renderizarItens(items, startIndex, totalItems) {
+    function renderizarItens(items, startIndex, totalItems, todosItens) {
         const tbody = document.getElementById('romaneioTableBody');
         
         if (!tbody) {
@@ -120,16 +220,19 @@ window.RenderizarTabela = (function() {
                 <tr>
                     <td colspan="9" style="text-align: center; padding: 20px; color: #666;">
                         <i class="fas fa-folder-open" style="font-size: 28px; margin-bottom: 8px; display: block; color: #8d9aa8;"></i>
-                        Nenhum item adicionado ao romaneio
+                        ${(todosItens || []).length ? 'Nenhum item encontrado para os filtros' : 'Nenhum item adicionado ao romaneio'}
                     </td>
                 </tr>
             `;
+            tlAtualizarSelecaoUI([]);
             return;
         }
         
         // Renderizar cada item da página
         const linhasTabela = items.map((item, index) => {
-            const indiceGlobal = startIndex + index + 1;
+            const indiceReal = (todosItens || items).indexOf(item);
+            const itemKey = tlItemKey(item);
+            const itemChecked = tlSelecionados.has(itemKey) ? ' checked' : '';
             // ✅ SEMPRE RECALCULAR VOLUME E VALOR - não usar valores que podem estar incorretos
             const volumeIndividual = calcularVolume(item);
             const volumeTotal = volumeIndividual * (item.quantidade || 1);
@@ -137,7 +240,7 @@ window.RenderizarTabela = (function() {
             
             return `
                 <tr>
-                    <td data-label="Espécie">${item.especie || 'N/A'}</td>
+                    <td data-label="Espécie"><input type="checkbox" class="romaneio-item-check no-print" data-item-key="${String(itemKey).replace(/"/g, '&quot;')}"${itemChecked} aria-label="Selecionar item"> ${item.especie || 'N/A'}</td>
                     <td data-label="Comprimento">${item.comprimento ? item.comprimento.toFixed(2) : '0.00'}</td>
                     <td data-label="Espessura">${(item.espessura || item[legacyKey]) ? (item.espessura || item[legacyKey]).toFixed(1) : '0.0'}</td>
                     <td data-label="Largura">${item.largura ? item.largura.toFixed(1) : '0.0'}</td>
@@ -146,10 +249,10 @@ window.RenderizarTabela = (function() {
                     <td data-label="Preço Unit.">${formatarMoedaBrasileira(item.preco || 0)}</td>
                     <td data-label="Valor Total">${formatarMoedaBrasileira(valorTotal)}</td>
                     <td data-label="Ações">
-                        <button class="btn-editar" onclick="editarItem(${indiceGlobal - 1})" title="Editar item">
+                        <button class="btn-editar" onclick="editarItem(${indiceReal})" title="Editar item">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn-excluir" onclick="excluirItem(${indiceGlobal - 1})" title="Excluir item">
+                        <button class="btn-excluir" onclick="excluirItem(${indiceReal})" title="Excluir item">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -158,6 +261,7 @@ window.RenderizarTabela = (function() {
         }).join('');
         
         tbody.innerHTML = linhasTabela;
+        tlAtualizarSelecaoUI(items);
     }
 
     /**

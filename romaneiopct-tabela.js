@@ -37,6 +37,88 @@ window.isAddingItem = false;
 window.isSavingRomaneio = false;
 window.currentPage = 1;
 window.itemsPerPage = 5;
+let pctFilterEspecie = '';
+let pctFilterDims = { ok: true, values: [] };
+const pctSelecionados = new Set();
+let pctFiltersBound = false;
+
+function pctItemKey(item) {
+    try { if (window.SiswebRomaneioItens && window.SiswebRomaneioItens.ensureItemKey) return window.SiswebRomaneioItens.ensureItemKey(item); } catch (_) {}
+    return String((item && (item.id || item.timestamp || item.__romaneioItemKey)) || '');
+}
+function pctFilteredItems(items) {
+    const RU = window.SiswebRomaneioItens;
+    if (!RU) return (items || []).slice();
+    return (items || []).filter(function (item) {
+        if (!RU.matchEspecie(item, pctFilterEspecie)) return false;
+        return RU.matchDimensoes(item, pctFilterDims.values, ['espessura', 'largura', 'comprimento']);
+    });
+}
+function pctAtualizarSelecaoUI(visiveis) {
+    const count = document.getElementById('pctItemSelectedCount');
+    if (count) count.textContent = String(pctSelecionados.size);
+    const btn = document.getElementById('pctItemDeleteSelected');
+    if (btn) btn.disabled = pctSelecionados.size === 0;
+    const all = document.getElementById('pctItemSelectAll');
+    if (all && visiveis) {
+        const keys = visiveis.map(pctItemKey).filter(Boolean);
+        const sel = keys.filter(function (k) { return pctSelecionados.has(k); }).length;
+        all.checked = keys.length > 0 && sel === keys.length;
+        all.indeterminate = sel > 0 && sel < keys.length;
+    }
+}
+function pctBindFiltros() {
+    if (pctFiltersBound) return;
+    const especie = document.getElementById('pctItemFilterEspecie');
+    const dims = document.getElementById('pctItemFilterDimensoes');
+    const all = document.getElementById('pctItemSelectAll');
+    const del = document.getElementById('pctItemDeleteSelected');
+    const tbody = document.getElementById('romaneioTableBody');
+    if (!especie || !dims || !tbody) return;
+    pctFiltersBound = true;
+    function apply() {
+        pctFilterEspecie = String(especie.value || '');
+        const parsed = window.SiswebRomaneioItens ? window.SiswebRomaneioItens.parseDimensoes(dims.value) : { ok: true, values: [] };
+        if (parsed.ok) pctFilterDims = parsed;
+        dims.classList.toggle('is-invalid', !parsed.ok);
+        window.currentPage = 1;
+        pctSelecionados.clear();
+        reconstruirTabela();
+    }
+    especie.addEventListener('input', apply);
+    dims.addEventListener('input', apply);
+    if (all) all.addEventListener('change', function () {
+        const items = pctFilteredItems(window.romaneioItems || []);
+        pctSelecionados.clear();
+        if (all.checked) items.forEach(function (it) { const k = pctItemKey(it); if (k) pctSelecionados.add(k); });
+        reconstruirTabela();
+    });
+    tbody.addEventListener('change', function (ev) {
+        const input = ev.target && ev.target.closest ? ev.target.closest('.romaneio-item-check') : null;
+        if (!input) return;
+        const key = String(input.dataset.itemKey || '');
+        if (!key) return;
+        if (input.checked) pctSelecionados.add(key); else pctSelecionados.delete(key);
+        pctAtualizarSelecaoUI(pctFilteredItems(window.romaneioItems || []));
+    });
+    if (del) del.addEventListener('click', async function () {
+        if (!pctSelecionados.size) return;
+        const itens = window.romaneioItems || [];
+        const indices = itens.map(function (it, i) { return pctSelecionados.has(pctItemKey(it)) ? i : -1; }).filter(function (i) { return i >= 0; }).sort(function (a, b) { return b - a; });
+        const confirmado = typeof confirmDialog === 'function'
+            ? await confirmDialog({ title: 'Excluir itens', message: 'Confirma a exclusão de ' + indices.length + ' item(ns) selecionado(s)?', danger: true, confirmLabel: 'Excluir' })
+            : false;
+        if (!confirmado) return;
+        const emEdicao = Number.isInteger(window.itemEmEdicao) && window.itemEmEdicao >= 0 ? itens[window.itemEmEdicao] : null;
+        indices.forEach(function (i) { itens.splice(i, 1); });
+        pctSelecionados.clear();
+        if (emEdicao) window.itemEmEdicao = itens.indexOf(emEdicao);
+        if (typeof atualizarTotais === 'function') atualizarTotais();
+        reconstruirTabela();
+        try { if (typeof salvarEstadoRomaneioEmEdicao === 'function') salvarEstadoRomaneioEmEdicao(); } catch (_) {}
+    });
+}
+
 
 const PCT_TABLE_SORT_COLUMNS = [
     { key: 'especie' },
@@ -817,16 +899,25 @@ function reconstruirTabela() {
             </tr>
         `;
         renderizarPaginacao(0);
+        pctAtualizarSelecaoUI([]);
         return;
     }
 
     aplicarOrdenacaoTabelaPCT();
+    const itensFiltrados = pctFilteredItems(window.romaneioItems);
+    if (itensFiltrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:#666;">Nenhum item encontrado para os filtros</td></tr>';
+        renderizarPaginacao(0);
+        pctAtualizarSelecaoUI([]);
+        pctBindFiltros();
+        return;
+    }
     sincronizarItensPorPaginaPCT();
     
     const ITENS_POR_PAGINA = window.itemsPerPage || 5;
     let itensPagina;
     let totalPaginas = 1;
-    totalPaginas = Math.ceil(window.romaneioItems.length / ITENS_POR_PAGINA);
+    totalPaginas = Math.ceil(itensFiltrados.length / ITENS_POR_PAGINA);
     if (window.currentPage > totalPaginas && totalPaginas > 0) {
         window.currentPage = totalPaginas;
     } else if (window.currentPage < 1) {
@@ -834,7 +925,7 @@ function reconstruirTabela() {
     }
     const startIndex = (window.currentPage - 1) * ITENS_POR_PAGINA;
     const endIndex = startIndex + ITENS_POR_PAGINA;
-    itensPagina = window.romaneioItems.slice(startIndex, endIndex);
+    itensPagina = itensFiltrados.slice(startIndex, endIndex);
     
     // ✅ GERAR LINHAS DA TABELA COM COLUNA PECASPORPACOTE - USAR ITENS PÁGINADOS
     for (let i = 0; i < itensPagina.length; i++) {
@@ -845,7 +936,7 @@ function reconstruirTabela() {
         const realIndex = window.romaneioItems.indexOf(item);
         
         row.innerHTML = `
-            <td data-label="Espécie">${item.especie || 'N/A'}</td>
+            <td data-label="Espécie"><input type="checkbox" class="romaneio-item-check no-print" data-item-key="${String(pctItemKey(item)).replace(/"/g, '&quot;')}"${pctSelecionados.has(pctItemKey(item)) ? ' checked' : ''} aria-label="Selecionar item"> ${item.especie || 'N/A'}</td>
             <td data-label="Comprimento">${formatarNumeroDecimal(item.comprimento || 0, 0)}</td>
             <td data-label="Espessura">${formatarNumeroDecimal(item.espessura || 0, 2)}</td>
             <td data-label="Largura">${formatarNumeroDecimal(item.largura || 0, 2)}</td>
@@ -869,7 +960,9 @@ function reconstruirTabela() {
     }
     
     // ✅ ATUALIZAR PAGINAÇÃO - PADRONIZADA ROMANEIOTL
-    renderizarPaginacao(window.romaneioItems.length);
+    renderizarPaginacao(itensFiltrados.length);
+    pctAtualizarSelecaoUI(itensFiltrados);
+    pctBindFiltros();
     aplicarEstilosTabela();
 }
 
@@ -1029,7 +1122,7 @@ function renderizarPaginacao(totalItens) {
 
 // ✅ FUNÇÃO PARA IR PARA PÁGINA ESPECÍFICA
 function irParaPaginaPCT(pagina) {
-    const totalItens = window.romaneioItems ? window.romaneioItems.length : 0;
+    const totalItens = pctFilteredItems(window.romaneioItems || []).length;
     const itensPorPagina = window.itemsPerPage || 5;
     const totalPaginas = Math.ceil(totalItens / itensPorPagina);
     
