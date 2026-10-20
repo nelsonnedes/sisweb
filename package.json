@@ -14,7 +14,10 @@
     "security:postdeploy": "node tools/security/post-deploy-security-check.mjs",
     "audit:company-logos": "node scripts/audit-company-logos-storage.cjs",
     "migrate:company-logos": "node scripts/migrate-company-logos-to-storage.cjs",
-    "test:finance-whitelist": "node test/finance-whitelist-audit.test.mjs --ci"
+    "test:finance-whitelist": "node test/finance-whitelist-audit.test.mjs --ci",
+    "sandbox:guard:emulator": "node scripts/assert-firebase-env.mjs --env emulator --project demo-sisweb-sandbox",
+    "sandbox:emulators": "firebase emulators:start --config firebase.sandbox.json --project demo-sisweb-sandbox",
+    "sandbox:deploy": "node scripts/assert-firebase-env.mjs --env sandbox --project sisweb-sandbox-romaneios && firebase deploy --config firebase.sandbox.json --project sisweb-sandbox-romaneios"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.1",

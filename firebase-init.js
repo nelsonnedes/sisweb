@@ -11,7 +11,7 @@
 
 // ─── SDK Imports ──────────────────────────────────────────────────────────────
 import { initializeApp, getApps } from "./firebase/sdk/firebase-app.js";
-import { getDatabase, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, goOnline, goOffline } from "./firebase/sdk/firebase-database.js";
+import { getDatabase, connectDatabaseEmulator, ref, set, get, remove, child, onValue, off, push, update, serverTimestamp, query, orderByChild, limitToLast, goOnline, goOffline } from "./firebase/sdk/firebase-database.js";
 import {
     getAuth,
     createUserWithEmailAndPassword,
@@ -19,6 +19,7 @@ import {
     signInAnonymously,
     signOut,
     onAuthStateChanged,
+    connectAuthEmulator,
     setPersistence,
     browserSessionPersistence,
     browserLocalPersistence,
@@ -30,11 +31,11 @@ import {
     updateProfile as firebaseUpdateProfile,
     updateCurrentUser
 } from "./firebase/sdk/firebase-auth.js";
-import { getFunctions, httpsCallable } from "./firebase/sdk/firebase-functions.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject, getBlob } from "./firebase/sdk/firebase-storage.js";
+import { getFunctions, httpsCallable, connectFunctionsEmulator } from "./firebase/sdk/firebase-functions.js";
+import { getStorage, connectStorageEmulator, ref as storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject, getBlob } from "./firebase/sdk/firebase-storage.js";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const FIREBASE_CONFIG = {
+const PRODUCTION_FIREBASE_CONFIG = {
     apiKey: "AIzaSyCe5-eh5wS49YswbHEonvKHGQicNnjKfsU",
     authDomain: "sisweb-7ce82.firebaseapp.com",
     databaseURL: "https://sisweb-7ce82-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -44,6 +45,35 @@ const FIREBASE_CONFIG = {
     appId: "1:240003261222:web:1aeaf919ddc7e5c691d7e7",
     measurementId: "G-FTC6JZ5ZGX"
 };
+
+function isProductionHost(host) {
+    const h = String(host || '').toLowerCase();
+    return h === 'siswebsoftware.com.br' || h.endsWith('.siswebsoftware.com.br')
+        || h === 'sisweb-7ce82.web.app' || h === 'sisweb-7ce82.firebaseapp.com';
+}
+function readSandboxJson(key) {
+    try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : '';
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (_) { return null; }
+}
+function readSandboxEnvironment() {
+    if (typeof window === 'undefined') return null;
+    if (isProductionHost(window.location && window.location.hostname)) return null;
+    const config = (window.__SISWEB_FIREBASE_CONFIG__ && typeof window.__SISWEB_FIREBASE_CONFIG__ === 'object'
+        ? window.__SISWEB_FIREBASE_CONFIG__
+        : readSandboxJson('__SISWEB_FIREBASE_CONFIG__'));
+    if (!config || !config.projectId || String(config.projectId) === 'sisweb-7ce82') return null;
+    const emulators = (window.__SISWEB_EMULATORS__ && typeof window.__SISWEB_EMULATORS__ === 'object'
+        ? window.__SISWEB_EMULATORS__
+        : readSandboxJson('__SISWEB_EMULATORS__'));
+    return { config, emulators: emulators || null };
+}
+const SANDBOX_ENV = readSandboxEnvironment();
+const FIREBASE_CONFIG = SANDBOX_ENV ? SANDBOX_ENV.config : PRODUCTION_FIREBASE_CONFIG;
+const EMULATORS = SANDBOX_ENV ? SANDBOX_ENV.emulators : null;
 
 // ─── Singleton Initialization ─────────────────────────────────────────────────
 let _app = null;
@@ -70,6 +100,22 @@ function ensureInitialized() {
     _db = getDatabase(app);
     _storage = getStorage(app);
     _functions = getFunctions(app);
+    if (EMULATORS) {
+        try {
+            if (EMULATORS.auth) connectAuthEmulator(_auth, String(EMULATORS.auth));
+            if (EMULATORS.database) {
+                connectDatabaseEmulator(_db, EMULATORS.database.host || '127.0.0.1', Number(EMULATORS.database.port) || 9000);
+            }
+            if (EMULATORS.storage) {
+                connectStorageEmulator(_storage, EMULATORS.storage.host || '127.0.0.1', Number(EMULATORS.storage.port) || 9199);
+            }
+            if (EMULATORS.functions) {
+                connectFunctionsEmulator(_functions, EMULATORS.functions.host || '127.0.0.1', Number(EMULATORS.functions.port) || 5001);
+            }
+        } catch (e) {
+            console.warn('firebase-init: falha ao conectar emuladores de sandbox:', e?.message || e);
+        }
+    }
 
     // ─── Window globals (backward compat) ─────────────────────────────
     try {
