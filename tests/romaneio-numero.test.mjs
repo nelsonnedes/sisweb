@@ -50,6 +50,12 @@ test('sem flag não chama o backend', async () => {
   assert.equal(result.numeroFormatado, undefined);
 });
 
+test('producao ativa a numeracao sequencial oficial', () => {
+  const init = fs.readFileSync('firebase-init.js', 'utf8');
+  assert.match(init, /if \(typeof window !== 'undefined'\) window\.SISWEB_ROMANEIO_SEQUENCE = true;/);
+  assert.doesNotMatch(init, /SANDBOX_ENV && typeof window !== 'undefined'\) window\.SISWEB_ROMANEIO_SEQUENCE/);
+});
+
 test('integração chama o número na criação dos cinco tipos', () => {
   const pctPage = fs.readFileSync('romaneiopct.html', 'utf8');
   assert.match(pctPage, /setCompanyClaim,\s*callFunction,/, 'PCT expõe callFunction no firebaseService global');
