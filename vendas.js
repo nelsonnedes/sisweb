@@ -6200,7 +6200,7 @@ async function excluirProdutosSelecionados() {
         if (deleteOk) {
             try {
                 for (const id of ids) {
-                    const res = await svcDel.removeFromFirebase(`produtos/${String(id)}`);
+                    const res = await svcDel.removeFromFirebase(`produtos/${chavePersistidaProduto(id)}`);
                     if (res && res.success === false) { deleteOk = false; break; }
                 }
             } catch (_) { deleteOk = false; }
@@ -6210,6 +6210,7 @@ async function excluirProdutosSelecionados() {
             ToastManager.error('Não foi possível excluir no servidor. Verifique sua conexão e permissões.', 'Falha ao excluir', 8000);
             return;
         }
+        invalidarCacheLocalProdutos();
         window.produtos = (window.produtos || []).filter(p => !idSet.has(String(p && p.id)));
         produtosSelecionados.clear();
         atualizarSelectProdutos();
@@ -6555,6 +6556,22 @@ function editarProduto(produtoId) {
     try { renderPreviewProdutoManuel(); } catch (_) {}
 }
 
+function chavePersistidaProduto(produtoId) {
+    const p = (window.produtos || []).find(item => String(item && item.id) === String(produtoId));
+    return String((p && (p.firebaseKey || p.__key || p.key)) || produtoId || '').trim();
+}
+function invalidarCacheLocalProdutos() {
+    try {
+        const namespaced = getStorageKey('produtos');
+        if (namespaced) localStorage.removeItem(namespaced);
+        if (namespaced !== 'produtos') localStorage.removeItem('produtos');
+    } catch (_) {}
+    try {
+        const svcInv = window.firebaseService || window.FirebaseService;
+        if (svcInv && typeof svcInv.invalidateReadCacheForPath === 'function') svcInv.invalidateReadCacheForPath('produtos');
+    } catch (_) {}
+}
+
 async function excluirProduto(produtoId) {
     if (!await confirmDialog({ title: 'Excluir produto', message: 'Deseja excluir este produto? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' })) {
         return;
@@ -6568,7 +6585,7 @@ async function excluirProduto(produtoId) {
         let deleteOk = !!(svcDel && typeof svcDel.removeFromFirebase === 'function');
         if (deleteOk) {
             try {
-                const res = await svcDel.removeFromFirebase(`produtos/${String(produtoId)}`);
+                const res = await svcDel.removeFromFirebase(`produtos/${chavePersistidaProduto(produtoId)}`);
                 if (res && res.success === false) deleteOk = false;
             } catch (_) { deleteOk = false; }
         }
@@ -6577,6 +6594,7 @@ async function excluirProduto(produtoId) {
             ToastManager.error('Não foi possível excluir o produto no servidor. Verifique sua conexão e permissões e tente novamente.', 'Falha ao excluir', 8000);
             return;
         }
+        invalidarCacheLocalProdutos();
         // Comparação tolerante a tipo (id numérico vs string)
         window.produtos = window.produtos.filter(p => String(p && p.id) !== String(produtoId));
         
@@ -7831,7 +7849,8 @@ async function getData(key) {
                             .filter(k => k !== '_metadata' && k !== 'metadata')
                             .map(itemKey => ({
                                 id: (firebaseData[itemKey] && firebaseData[itemKey].id) ? firebaseData[itemKey].id : itemKey,
-                                ...firebaseData[itemKey]
+                                ...firebaseData[itemKey],
+                                firebaseKey: itemKey
                             }))
                             .filter(item => item && typeof item === 'object');
                         console.log(`✅ ${convertedArray.length} itens convertidos`);

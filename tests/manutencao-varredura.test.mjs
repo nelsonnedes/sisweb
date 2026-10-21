@@ -16,6 +16,9 @@ test('deletes: remoto primeiro com gate, sem filtro prematuro', () => {
   const forn = R('../fornecedor-modals.js');
   assert.ok(/remotoOk/.test(forn), 'fornecedor exige sucesso remoto');
   assert.ok(/String\(p && p\.id\) !== String\(produtoId\)/.test(vendas), 'vendas excluirProduto compara com String()');
+  assert.ok(/function chavePersistidaProduto/.test(vendas), 'vendas usa a chave real do Firebase');
+  assert.ok(/firebaseKey: itemKey/.test(vendas), 'vendas preserva firebaseKey ao converter produtos');
+  assert.ok(/invalidarCacheLocalProdutos\(\)/.test(vendas), 'vendas invalida cache local apos excluir');
   const nf = R('../nf-naturezas.js');
   assert.ok(/Fail-closed/.test(nf), 'naturezas fail-closed');
   assert.ok(/String\(n && n\.id\) !== String\(id\)/.test(nf), 'naturezas compara com String()');
