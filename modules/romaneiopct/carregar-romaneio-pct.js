@@ -578,7 +578,8 @@
      * ✅ FUNÇÃO DE CLONAGEM DO ROMANEIO PCT
      */
     async function clonarRomaneio(id, romaneios = null, dadosPreCarregados = null) {
-        console.log('📋 PCT: Clonando romaneio:', id);
+        console.log('�Y"< PCT: Clonando romaneio:', id);
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Clonando romaneio...'); } catch (_) {}
         try {
             await carregarRomaneio(id, romaneios, dadosPreCarregados);
 
@@ -607,13 +608,15 @@
             }
             return true;
         } catch (err) {
-            console.error('❌ Erro ao clonar romaneio PCT:', err);
+            console.error('�?O Erro ao clonar romaneio PCT:', err);
             notifyUser('Erro ao clonar romaneio: ' + err.message);
             return false;
+        } finally {
+            try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
         }
     }
 
-    // ✅ EXPOR FUNÇÕES GLOBALMENTE
+    // �o. EXPOR FUN���ES GLOBALMENTE
     window.carregarRomaneio = carregarRomaneio;
     window.clonarRomaneioPCT = clonarRomaneio;
     window.CarregarRomaneioPCT = {

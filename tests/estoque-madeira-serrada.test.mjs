@@ -21,6 +21,10 @@ test('página: busca, Novo Produto, tabela padrão Vendas e modal completo', () 
   assert.match(html, /id="emsSearch"/);
   assert.match(html, /id="emsNewBtn"[\s\S]*Novo Produto/);
   assert.match(html, /id="emsTableBody"/);
+  assert.match(html, /id="emsSelectAll"/);
+  assert.match(html, /id="emsSelectAllMobile"/);
+  assert.match(html, /id="emsPrintSelectedBtn"/);
+  assert.match(html, /id="emsDeleteSelectedBtn"/);
   assert.match(html, /id="emsModal"/);
   assert.match(html, /name="emsTipo" value="manual"/);
   assert.match(html, /name="emsTipo" value="romaneio"/);
@@ -53,6 +57,10 @@ test('módulo usa o core canônico e mantém paginação da página', () => {
   assert.match(js, /ems-modal-open/);
   assert.match(js, /function disponibilidade/);
   assert.match(js, /function buildPayload/);
+  assert.match(js, /function removeSelected/);
+  assert.match(js, /function printSelected/);
+  assert.match(js, /function toggleSelectAll/);
+  assert.match(js, /selected: new Set/);
   assert.doesNotMatch(js, /estoqueDetalhado/);
   assert.match(vendas, /function temDimsSerrado/);
   assert.match(vendas, /function volumeSerradoProduto/);

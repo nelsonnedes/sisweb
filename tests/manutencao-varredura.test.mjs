@@ -31,7 +31,7 @@ test('feedback: saves e deletes com loading e trava auto-expirante', () => {
   assert.ok(/LoadingManager\.show\('Salvando romaneio\.\.\.'\)/.test(tora), 'tora mostra loading');
   assert.ok(/btnSalvar/.test(tora), 'tora desabilita botão');
   const pct = R('../romaneiopct-tabela.js');
-  assert.ok(/LoadingManager\.show\('Salvando romaneio\.\.\.'\)/.test(pct), 'pct mostra loading');
+  assert.ok(/(?:LoadingManager|SiswebLoading)\.show\('Salvando romaneio\.\.\.'\)/.test(pct), 'pct mostra loading');
   const tl = R('../modules/romaneio/salvar-romaneio.js');
   assert.ok(/LoadingManager\.show\('Salvando romaneio\.\.\.'\)/.test(tl), 'tl mostra loading');
   assert.ok(/__salvarPedidoVendaTs/.test(vendas), 'vendas trava duplo-save');

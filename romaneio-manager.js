@@ -1248,6 +1248,8 @@ window.excluirRomaneioTora = async function(id) {
 };
 
 window.clonarRomaneioTora = async function(romaneioId, dadosPreCarregados = null) {
+    try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Clonando romaneio...'); } catch (_) {}
+    try {
     const manager = window.romaneioToraManager;
     const sid = String(romaneioId || '').trim();
     let romaneio = dadosPreCarregados || null;
@@ -1331,6 +1333,9 @@ window.clonarRomaneioTora = async function(romaneioId, dadosPreCarregados = null
         window.__toast(msg, 'success');
     } else {
         notifyUser(msg);
+    }
+    } finally {
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
     }
 };
 

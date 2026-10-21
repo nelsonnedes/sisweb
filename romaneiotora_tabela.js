@@ -1213,6 +1213,7 @@ async function salvarRomaneio() {
             console.log(`📅 Timestamp da última atualização: ${window.ultimaAtualizacaoRomaneio}`);
             console.log("🔄 Flag de atualização necessária ativada");
             
+            try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
             // Perguntar antes de limpar (paridade TL)
             if (await confirmDialog({ title: 'Novo romaneio', message: 'Romaneio salvo com sucesso!\n\nDeseja limpar o formulário para criar um novo romaneio?', confirmLabel: 'Limpar formulário' })) {
                 limparFormulario();

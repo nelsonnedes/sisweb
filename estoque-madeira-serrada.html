@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="styles/sisweb-tokens.css?v=48ded6f95e02">
     <link rel="stylesheet" href="styles/shell-theme.css?v=8c3beb0909c8">
     <link rel="stylesheet" href="styles/content-theme.css?v=db8b0cf45fdc">
-    <link rel="stylesheet" href="layout-comum.css?v=c8c40e4b104d">
+    <link rel="stylesheet" href="layout-comum.css?v=2556d04c47cf">
     <link rel="stylesheet" href="commerce-responsive.css?v=25cdcbb70daf">
     <link rel="stylesheet" href="ui-components.css?v=182b0b8037bb">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
@@ -49,6 +49,10 @@
         .ems-empty { text-align:center; padding:18px; color:var(--sw-text-2); font-style:italic; }
         .ems-actions { white-space:nowrap; text-align:center; }
         .ems-actions .btn { width:32px; height:32px; padding:0; justify-content:center; }
+        .ems-select-col { width:44px; min-width:44px; text-align:center; }
+        .ems-select-col input { width:18px; height:18px; cursor:pointer; }
+        .ems-selectall-mobile { display:none; }
+        .actions-bar .btn:disabled { opacity:.5; cursor:not-allowed; }
         .ems-dims { font-family:monospace; font-size:12px; }
         .ems-stock { text-align:right; font-weight:700; white-space:nowrap; }
 
@@ -88,6 +92,8 @@
         @media (max-width:768px) {
             .actions-bar { flex-direction:column; }
             .search-box, .actions-bar .btn { width:100%; }
+            .ems-selectall-mobile { display:inline-flex; align-items:center; gap:8px; margin:2px 0 10px; font-weight:700; color:var(--sw-text-2); cursor:pointer; }
+            .ems-selectall-mobile input { width:20px; height:20px; }
             .form-row { flex-direction:column; }
             #emsModal { padding:8px; }
             #emsModal .modal-content { max-height:calc(100dvh - 16px); }
@@ -109,13 +115,21 @@
                 <i class="fas fa-search"></i>
                 <input type="text" id="emsSearch" placeholder="Buscar por código, nome, espécie, dimensões ou unidade...">
             </div>
+            <button type="button" id="emsPrintSelectedBtn" class="btn btn-primary" disabled><i class="fas fa-print"></i> Imprimir (<span id="emsPrintSelectedCount">0</span>)</button>
+            <button type="button" id="emsDeleteSelectedBtn" class="btn btn-danger" disabled><i class="fas fa-trash"></i> Excluir (<span id="emsDeleteSelectedCount">0</span>)</button>
             <button type="button" id="emsNewBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Produto</button>
         </div>
+
+        <label class="ems-selectall-mobile" for="emsSelectAllMobile">
+            <input type="checkbox" id="emsSelectAllMobile" aria-label="Selecionar todos">
+            <span>Selecionar todos</span>
+        </label>
 
         <div class="table-responsive mobile-cards commerce-orders-table-wrap">
             <table class="table commerce-orders-table" id="emsTable">
                 <thead>
                     <tr>
+                        <th class="ems-select-col"><input type="checkbox" id="emsSelectAll" aria-label="Selecionar todos"></th>
                         <th>Código</th>
                         <th>Nome</th>
                         <th class="text-right">Preço</th>
@@ -126,7 +140,7 @@
                     </tr>
                 </thead>
                 <tbody id="emsTableBody">
-                    <tr><td colspan="7" class="ems-empty">Carregando...</td></tr>
+                    <tr><td colspan="8" class="ems-empty">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -238,10 +252,10 @@
         import * as svc from './firebaseService.js?v=fdef24272f49';
         if (!window.firebaseService) window.firebaseService = svc;
     </script>
-    <script src="js/sisweb-loading.js?v=58a3a6d83224"></script>
+    <script src="js/sisweb-loading.js?v=35ac49f361cc"></script>
     <script src="js/unidades.js?v=f304e0544290"></script>
     <script src="js/estoque-serrado-core.js?v=5788b2cad261"></script>
-    <script src="js/estoque-madeira-serrada.js?v=f41b4f948fe1"></script>
+    <script src="js/estoque-madeira-serrada.js?v=4d3716c276fd"></script>
     <script src="commerce-responsive.js?v=ecda54bb2077"></script>
 </body>
 </html>

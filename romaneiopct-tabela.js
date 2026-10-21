@@ -1349,7 +1349,7 @@ async function salvarRomaneio() {
         
         window.isSavingRomaneio = true;
         // Feedback durante o bloco Firebase (lento no mobile); trava já existe acima.
-        try { if (typeof LoadingManager !== 'undefined' && LoadingManager.show) LoadingManager.show('Salvando romaneio...'); } catch (_) {}
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Salvando romaneio...'); } catch (_) {}
 
         console.log("💾 Iniciando salvamento do romaneio PCT");
         
@@ -1630,6 +1630,7 @@ async function salvarRomaneio() {
         });
         
         notifyUser('Romaneio salvo com sucesso!');
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
 
         // Perguntar antes de limpar (paridade TL)
         if (await confirmDialog({ title: 'Novo romaneio', message: 'Romaneio salvo com sucesso!\n\nDeseja limpar o formulário para criar um novo romaneio?', confirmLabel: 'Limpar formulário' })) {
@@ -1641,7 +1642,7 @@ async function salvarRomaneio() {
         notifyUser('Erro ao salvar romaneio: ' + error.message);
     } finally {
         window.isSavingRomaneio = false;
-        try { if (typeof LoadingManager !== 'undefined' && LoadingManager.hide) LoadingManager.hide(); } catch (_) {}
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
     }
 }
 

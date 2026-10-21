@@ -17,7 +17,7 @@
     var CSS = ''
         + '#' + OVERLAY_ID + '{position:fixed;top:0;left:0;width:100%;height:100%;'
         + 'background:rgba(255,255,255,0.8);display:none;justify-content:center;'
-        + 'align-items:center;flex-direction:column;z-index:99999;backdrop-filter:blur(2px);}'
+        + 'align-items:center;flex-direction:column;z-index:9999995;backdrop-filter:blur(2px);}'
         + '#' + OVERLAY_ID + '.active{display:flex;}'
         + 'html[data-theme="dark"] #' + OVERLAY_ID + '{background:rgba(0,0,0,0.7);}'
         + '#' + OVERLAY_ID + ' .loading-spinner{display:block;box-sizing:border-box;width:40px;height:40px;border:4px solid var(--sw-border,#ccc);'

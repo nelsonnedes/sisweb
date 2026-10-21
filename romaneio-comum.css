@@ -4228,3 +4228,7 @@ html body #romaneioListModal .table-responsive {
         grid-template-columns: 1fr !important;
     }
 }
+
+body.romaneio-page #globalLoadingOverlay {
+    z-index: 10000060 !important;
+}

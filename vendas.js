@@ -6561,6 +6561,7 @@ async function excluirProduto(produtoId) {
     }
     
     try {
+        LoadingManager.show('Excluindo produto...');
         const backupProdutos = Array.isArray(window.produtos) ? window.produtos.slice() : [];
         const eraEspecie = !!(window.__vendasEspeciesIds instanceof Set && window.__vendasEspeciesIds.has(String(produtoId)));
         const svcDel = window.firebaseService || window.FirebaseService;
@@ -6591,6 +6592,8 @@ async function excluirProduto(produtoId) {
     } catch (error) {
         console.error('Erro ao excluir produto:', error);
         ToastManager.error('Erro ao excluir produto: ' + error.message, 'Erro');
+    } finally {
+        try { LoadingManager.hide(); } catch (_) {}
     }
 }
 
@@ -11229,6 +11232,10 @@ const LoadingManager = {
      * @param {string} text - Texto a exibir
      */
     show(text = 'Carregando...') {
+        if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') {
+            window.SiswebLoading.show(text);
+            return;
+        }
         const overlay = document.getElementById('loadingOverlay');
         const textElement = document.getElementById('loadingText');
         
@@ -11246,6 +11253,10 @@ const LoadingManager = {
      * Ocultar loading global
      */
     hide() {
+        if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') {
+            window.SiswebLoading.hide();
+            return;
+        }
         const overlay = document.getElementById('loadingOverlay');
         if (overlay) {
             overlay.classList.remove('active');

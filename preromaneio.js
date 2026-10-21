@@ -1301,6 +1301,13 @@ function __preSetBtn(busy) {
         }
     } catch (_) {}
 }
+function __preLoading(show, txt) {
+    try {
+        if (!window.SiswebLoading) return;
+        if (show) window.SiswebLoading.show(txt || 'Carregando...');
+        else window.SiswebLoading.hide();
+    } catch (_) {}
+}
 async function salvarPreRomaneio() {
     if (romaneioItens.length === 0) {
         notifyUser('Adicione itens antes de salvar.');
@@ -1350,6 +1357,7 @@ async function salvarPreRomaneio() {
     if (__preRomaneioSaving) return;
     __preRomaneioSaving = true;
     __preSetBtn(true);
+    __preLoading(true, 'Salvando pré-romaneio...');
     try {
         const svc = window.firebaseServiceTL || window.firebaseService || window.FirebaseService;
         if (svc && typeof svc.setTenantId === 'function') {
@@ -1417,6 +1425,7 @@ async function salvarPreRomaneio() {
             if (result && result.success) {
                 saveLocalPreRomaneio(dataToSave);
                 __preNotify('Pré-Romaneio salvo com sucesso!', 'success');
+                __preLoading(false);
                 __preSetBtn(false);
                 __preRomaneioSaving = false;
                 // Perguntar antes de limpar (paridade TL)
@@ -1437,10 +1446,12 @@ async function salvarPreRomaneio() {
         } catch (e) {
             console.error(e);
             __preNotify('Erro ao salvar no Firebase: ' + e.message, 'error');
+            __preLoading(false);
             __preSetBtn(false);
             __preRomaneioSaving = false;
         }
     } else {
+        __preLoading(false);
         __preSetBtn(false);
         __preRomaneioSaving = false;
         notifyUser('Serviço Firebase indisponível. Verifique a conexão.');

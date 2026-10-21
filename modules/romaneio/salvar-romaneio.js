@@ -165,6 +165,7 @@ window.SalvarRomaneio = (function() {
             
             if (resultado.success) {
                 notificarSucesso(resultado, isEdicao);
+                    try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
                     limparFormularioAposSalvamento();
                     // Forçar atualização da lista de romaneios após salvamento/edição
                     if (typeof window.forcarAtualizacaoListaAposEdicao === 'function') {
@@ -890,7 +891,8 @@ window.SalvarRomaneio = (function() {
      * Carrega todos os dados e itens no formulário, mas limpa o ID para salvar como novo registro
      */
     async function clonarRomaneio(romaneioId, dadosPreCarregados = null) {
-        console.log('📋 Clonando romaneio TL:', romaneioId);
+        console.log('�Y"< Clonando romaneio TL:', romaneioId);
+        try { if (window.SiswebLoading && typeof window.SiswebLoading.show === 'function') window.SiswebLoading.show('Clonando romaneio...'); } catch (_) {}
         try {
             let romaneio = dadosPreCarregados;
             const sid = String(romaneioId || '').trim();
@@ -930,14 +932,16 @@ window.SalvarRomaneio = (function() {
             }
             return true;
         } catch (err) {
-            console.error('❌ Erro ao clonar romaneio TL:', err);
+            console.error('�?O Erro ao clonar romaneio TL:', err);
             mostrarErro('Erro ao clonar romaneio');
             return false;
+        } finally {
+            try { if (window.SiswebLoading && typeof window.SiswebLoading.hide === 'function') window.SiswebLoading.hide(); } catch (_) {}
         }
     }
 
     /**
-     * Preencher formulário para edição
+     * Preencher formulǭrio para edi��ǜo
      */
     function preencherFormularioEdicao(romaneio) {
         console.log('📝 Preenchendo formulário para edição:', romaneio);

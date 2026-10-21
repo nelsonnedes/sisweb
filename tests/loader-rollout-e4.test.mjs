@@ -9,6 +9,9 @@ const pesHtml = readFileSync('romaneiopes.html', 'utf8');
 const toraHtml = readFileSync('romaneiotora.html', 'utf8');
 const tlModal = readFileSync('modules/modals/modal-lista-romaneios.js', 'utf8');
 const manager = readFileSync('romaneio-manager.js', 'utf8');
+const preHtml = readFileSync('preromaneio.html', 'utf8');
+const preJs = readFileSync('preromaneio.js', 'utf8');
+const preModals = readFileSync('preromaneio-modals.js', 'utf8');
 
 test('E4: TL/PES/TORA carregam o helper de loading', () => {
   for (const [nome, src] of [['tl', tlHtml], ['pes', pesHtml], ['tora', toraHtml]]) {
@@ -40,4 +43,11 @@ test('E4: wrappers TORA escondem loader no settle (sem quebrar toast)', () => {
   assert.match(manager, /__hideLoader\(\)/);
   assert.match(manager, /Não foi possível excluir o romaneio no servidor\./);
   assert.match(manager, /Não foi possível excluir no servidor\. Verifique sua conexão\./);
+});
+
+test('E4: pre-romaneio carrega helper e usa loader em salvar/excluir', () => {
+  assert.match(preHtml, /js\/sisweb-loading\.js\?v=[0-9a-f]{12}/);
+  assert.match(preJs, /__preLoading\(true, 'Salvando pr/);
+  assert.match(preModals, /SiswebLoading\.show\('Excluindo pr/);
+  assert.match(preModals, /SiswebLoading\.hide\(\)/);
 });

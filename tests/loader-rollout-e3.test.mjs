@@ -21,6 +21,14 @@ test('E3: romaneiopct carrega o helper de loading', () => {
   assert.match(pctHtml, /js\/sisweb-loading\.js\?v=[0-9a-f]{12}/);
 });
 
+test('E3: exclusao individual de produto usa loader com finally', () => {
+  const i = vendasJs.indexOf('async function excluirProduto(produtoId)');
+  assert.ok(i !== -1);
+  const tail = vendasJs.slice(i, i + 2500);
+  assert.match(tail, /LoadingManager\.show\('Excluindo produto\.\.\.'\)/);
+  assert.match(tail, /finally \{\s+try \{ LoadingManager\.hide\(\)/);
+});
+
 test('E3: delete de romaneio PCT mostra/esconde loader (finally)', () => {
   const i = listaPct.indexOf('async function deleteRomaneio(romaneioId)');
   assert.ok(i !== -1);

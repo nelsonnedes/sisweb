@@ -10,7 +10,7 @@
     var state = {
         tenant: '', items: [], filtered: [], page: 1, pageSize: PAGE_DEFAULT,
         editingKey: '', editingBase: null, stage: [], groups: [], romaneios: [], romaneio: null,
-        modalOpen: false, bodyOverflow: ''
+        selected: new Set(), modalOpen: false, bodyOverflow: ''
     };
 
     function svc() { return window.firebaseService || window.FirebaseService || null; }
@@ -119,6 +119,8 @@
             state.items = normalizeList(data).sort(function (a, b) {
                 return nomeProduto(a).localeCompare(nomeProduto(b), 'pt-BR');
             });
+            var loadedKeys = new Set(state.items.map(recordKey));
+            state.selected.forEach(function (k) { if (!loadedKeys.has(k)) state.selected.delete(k); });
             render();
         } catch (e) { toast('Erro ao carregar estoque: ' + (e && e.message ? e.message : e), 'error'); }
         finally { loading(false); }
@@ -141,13 +143,18 @@
     function applyFilter() {
         var q = String((document.getElementById('emsSearch') || {}).value || '').trim();
         var base = visibleItems();
-        if (!q) { state.filtered = base; return; }
-        var qn = norm(q);
-        state.filtered = base.filter(function (p) { return productBlob(p).indexOf(qn) >= 0; });
-        state.filtered.sort(function (a, b) {
-            var ea = norm(a.codigo) === qn ? 0 : 1, eb = norm(b.codigo) === qn ? 0 : 1;
-            return ea - eb || nomeProduto(a).localeCompare(nomeProduto(b), 'pt-BR');
-        });
+        if (!q) {
+            state.filtered = base;
+        } else {
+            var qn = norm(q);
+            state.filtered = base.filter(function (p) { return productBlob(p).indexOf(qn) >= 0; });
+            state.filtered.sort(function (a, b) {
+                var ea = norm(a.codigo) === qn ? 0 : 1, eb = norm(b.codigo) === qn ? 0 : 1;
+                return ea - eb || nomeProduto(a).localeCompare(nomeProduto(b), 'pt-BR');
+            });
+        }
+        var filteredKeys = new Set(state.filtered.map(recordKey));
+        state.selected.forEach(function (k) { if (!filteredKeys.has(k)) state.selected.delete(k); });
     }
     function renderPagination(total, pages) {
         var pag = document.getElementById('emsPagination'); if (!pag) return;
@@ -177,15 +184,17 @@
         var ini = (state.page - 1) * state.pageSize, slice = state.filtered.slice(ini, ini + state.pageSize);
         if (!slice.length) {
             var msg = !state.items.length ? 'Nenhum produto no estoque.' : (visibleItems().length ? 'Nenhum produto encontrado.' : 'Nenhum produto no estoque.');
-            tbody.innerHTML = '<tr><td colspan="7" class="ems-empty">' + msg + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="ems-empty">' + msg + '</td></tr>';
         } else {
             tbody.innerHTML = slice.map(function (p) {
-                var key = escJs(recordKey(p));
+                var rawKey = recordKey(p);
+                var key = escJs(rawKey);
                 var serrado = C.temDimsSerrado(p);
                 var estoque = serrado ? fmt(num(p.pecas), 0) : (fmt(num(p.estoque != null ? p.estoque : p.quantidade), 3) + ' ' + unidadeTexto(p.unidade || 'UN'));
                 var ml = serrado ? fmt(C.metrosLineares(p), 2) + ' LN' : '-';
                 var vol = serrado ? fmt(C.volumeProduto(p), 3) + ' m³' : '-';
                 return '<tr>' +
+                    '<td data-label="Selecionar" class="ems-select-col"><input type="checkbox" class="ems-row-check" aria-label="Selecionar produto"' + (state.selected.has(rawKey) ? ' checked' : '') + ' onchange="EstoqueMadeiraSerrada.toggleSelect(\'' + key + '\', this.checked)"></td>' +
                     '<td data-label="Código">' + esc(p.codigo || '—') + '</td>' +
                     '<td data-label="Nome">' + esc(nomeProduto(p)) + '</td>' +
                     '<td data-label="Preço" class="ems-stock">' + esc(money(p.preco != null ? p.preco : (p.precoVenda != null ? p.precoVenda : p.price))) + '</td>' +
@@ -199,6 +208,101 @@
             }).join('');
         }
         renderPagination(total, pages);
+        updateSelectionUI();
+    }
+
+    function selectedKeys() {
+        return Array.from(state.selected).filter(function (k) {
+            return state.items.some(function (p) { return recordKey(p) === k; });
+        });
+    }
+    function updateSelectionUI() {
+        var count = state.selected.size;
+        var printCount = document.getElementById('emsPrintSelectedCount');
+        var deleteCount = document.getElementById('emsDeleteSelectedCount');
+        if (printCount) printCount.textContent = String(count);
+        if (deleteCount) deleteCount.textContent = String(count);
+        var printBtn = document.getElementById('emsPrintSelectedBtn');
+        var deleteBtn = document.getElementById('emsDeleteSelectedBtn');
+        if (printBtn) printBtn.disabled = count === 0;
+        if (deleteBtn) deleteBtn.disabled = count === 0;
+        var visibleKeys = state.filtered.map(recordKey);
+        var selectedVisible = visibleKeys.filter(function (k) { return state.selected.has(k); }).length;
+        ['emsSelectAll', 'emsSelectAllMobile'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.checked = visibleKeys.length > 0 && selectedVisible === visibleKeys.length;
+            el.indeterminate = selectedVisible > 0 && selectedVisible < visibleKeys.length;
+        });
+    }
+    function toggleSelect(key, checked) {
+        key = String(key || '');
+        if (!key) return;
+        if (checked) state.selected.add(key); else state.selected.delete(key);
+        updateSelectionUI();
+    }
+    function toggleSelectAll(checked) {
+        state.filtered.forEach(function (p) {
+            var key = recordKey(p);
+            if (!key) return;
+            if (checked) state.selected.add(key); else state.selected.delete(key);
+        });
+        render();
+    }
+    function printSelected() {
+        var keys = new Set(selectedKeys());
+        var items = state.items.filter(function (p) { return keys.has(recordKey(p)); });
+        if (!items.length) { toast('Selecione ao menos um produto para imprimir.', 'warning'); return; }
+        var empresa = {};
+        try { empresa = JSON.parse(localStorage.getItem('company_info') || '{}') || {}; } catch (_) {}
+        var nomeEmpresa = String(empresa.nome || empresa.name || empresa.razaoSocial || 'Lista de Madeira Serrada em Estoque');
+        var cnpj = String(empresa.cnpj || empresa.cpfCnpj || '');
+        var linhas = items.map(function (p) {
+            var serrado = C.temDimsSerrado(p);
+            var estoque = serrado ? fmt(num(p.pecas), 0) : (fmt(num(p.estoque != null ? p.estoque : p.quantidade), 3) + ' ' + unidadeTexto(p.unidade || 'UN'));
+            var ml = serrado ? fmt(C.metrosLineares(p), 2) + ' LN' : '-';
+            var vol = serrado ? fmt(C.volumeProduto(p), 3) + ' m³' : '-';
+            return '<tr><td>' + esc(p.codigo || '-') + '</td><td>' + esc(nomeProduto(p)) + '</td><td class="num">' +
+                esc(money(p.preco != null ? p.preco : (p.precoVenda != null ? p.precoVenda : p.price))) + '</td><td class="num">' +
+                esc(estoque) + '</td><td class="num">' + esc(ml) + '</td><td class="num">' + esc(vol) + '</td></tr>';
+        }).join('');
+        var win = window.open('', '_blank');
+        if (!win) { toast('Não foi possível abrir a janela de impressão.', 'error'); return; }
+        win.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Lista de Madeira Serrada em Estoque</title>' +
+            '<style>body{font-family:Arial,sans-serif;color:#111;margin:24px}h1{font-size:18px;margin:0 0 4px}.meta{font-size:12px;color:#555;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #bbb;padding:6px 8px;text-align:left}th{background:#eee}.num{text-align:right;white-space:nowrap}@media print{body{margin:8mm}}</style></head><body>' +
+            '<h1>' + esc(nomeEmpresa) + '</h1><div class="meta">Lista de Madeira Serrada em Estoque' + (cnpj ? ' · CNPJ ' + esc(cnpj) : '') + ' · ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
+            '<table><thead><tr><th>Código</th><th>Nome</th><th>Preço</th><th>Estoque</th><th>M. Linear</th><th>Volume (m³)</th></tr></thead><tbody>' + linhas + '</tbody></table></body></html>');
+        win.document.close();
+        try { win.focus(); win.print(); } catch (_) {}
+    }
+    async function removeSelected() {
+        var keys = selectedKeys();
+        if (!keys.length) { toast('Selecione ao menos um produto para excluir.', 'warning'); return; }
+        var ok = true;
+        try {
+            ok = typeof window.confirmDialog === 'function'
+                ? await window.confirmDialog({ title: 'Excluir produtos', message: 'Excluir ' + keys.length + ' produto(s) selecionado(s)? Esta ação não pode ser desfeita.', danger: true, confirmLabel: 'Excluir' })
+                : window.confirm('Excluir ' + keys.length + ' produto(s) selecionado(s)?');
+        } catch (_) { ok = true; }
+        if (!ok) return;
+        loading(true, 'Excluindo produtos...');
+        var failed = 0;
+        try {
+            var s = await waitSvc();
+            for (var i = 0; i < keys.length; i++) {
+                var res = await s.removeFromFirebase(NODE + '/' + keys[i]);
+                if (res && res.success === false) failed++;
+            }
+        } catch (e) {
+            failed = keys.length;
+        } finally {
+            state.selected.clear();
+            invalidate();
+            try { await load(); } catch (_) {}
+            loading(false);
+        }
+        if (failed) toast('Não foi possível excluir todos os produtos selecionados.', 'error');
+        else toast(keys.length + ' produto(s) excluído(s).', 'success');
     }
 
     function setVal(id, v) { var el = document.getElementById(id); if (el) el.value = v == null ? '' : v; }
@@ -759,6 +863,7 @@
         if (!ok) return;
         loading(true, 'Excluindo...');
         try {
+            state.selected.delete(String(key));
             var s = svc();
             var res = await s.removeFromFirebase(NODE + '/' + key);
             if (res && res.success === false) throw new Error(res.error || 'Falha ao excluir.');
@@ -771,6 +876,10 @@
     function bind() {
         if (state.bound) return; state.bound = true;
         var search = document.getElementById('emsSearch'); if (search) search.addEventListener('input', function () { state.page = 1; render(); });
+        var selectAll = document.getElementById('emsSelectAll'); if (selectAll) selectAll.addEventListener('change', function () { toggleSelectAll(selectAll.checked); });
+        var selectAllMobile = document.getElementById('emsSelectAllMobile'); if (selectAllMobile) selectAllMobile.addEventListener('change', function () { toggleSelectAll(selectAllMobile.checked); });
+        var printSelectedBtn = document.getElementById('emsPrintSelectedBtn'); if (printSelectedBtn) printSelectedBtn.addEventListener('click', printSelected);
+        var deleteSelectedBtn = document.getElementById('emsDeleteSelectedBtn'); if (deleteSelectedBtn) deleteSelectedBtn.addEventListener('click', removeSelected);
         var novo = document.getElementById('emsNewBtn'); if (novo) novo.addEventListener('click', function () { openModal(null); });
         var close = document.getElementById('emsCloseModal'); if (close) close.addEventListener('click', closeModal);
         var cancel = document.getElementById('emsCancelBtn'); if (cancel) cancel.addEventListener('click', closeModal);
@@ -800,7 +909,7 @@
         var modal = document.getElementById('emsModal'); if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
         document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
     }
-    window.EstoqueMadeiraSerrada = { reload: load, edit: edit, remove: remove, open: function () { openModal(null); } };
+    window.EstoqueMadeiraSerrada = { reload: load, edit: edit, remove: remove, toggleSelect: toggleSelect, removeSelected: removeSelected, printSelected: printSelected, open: function () { openModal(null); } };
     function boot() { try { bind(); } catch (_) {} load(); }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
 })();

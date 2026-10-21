@@ -1205,6 +1205,14 @@ async function excluirPreRomaneio(id) {
     if (!idStr) return;
     const __preDelKey = 'pre-del:' + idStr;
     if (!__preModalBegin(__preDelKey)) return;
+    const __preLoader = (show) => {
+        try {
+            if (!window.SiswebLoading) return;
+            if (show) window.SiswebLoading.show('Excluindo pré-romaneio...');
+            else window.SiswebLoading.hide();
+        } catch (_) {}
+    };
+    __preLoader(true);
 
     // Chaves candidatas: a chave real no Firebase pode divergir do id
     // normalizado (id/key/firebaseKey/numero). Delete é idempotente.
@@ -1265,6 +1273,7 @@ async function excluirPreRomaneio(id) {
         // Fail-closed: sem confirmação do servidor, mantém na lista.
         if (!ok) {
             __preModalNotify('Não foi possível excluir no servidor. Verifique sua conexão e permissões.' + (ultimoErro ? ' (' + ultimoErro.slice(0, 120) + ')' : ''), 'error');
+            __preLoader(false);
             __preModalEnd(__preDelKey);
             return;
         }
@@ -1273,10 +1282,12 @@ async function excluirPreRomaneio(id) {
         cachedRomaneios = cachedRomaneios.filter(r => !chaves.includes(String(r.id)));
         renderRomaneiosList(cachedRomaneios);
         __preModalNotify('Pré-Romaneio excluído com sucesso.', 'success');
+        __preLoader(false);
         __preModalEnd(__preDelKey);
     } catch (error) {
         console.error('Erro ao excluir:', error);
         __preModalNotify('Erro ao excluir registro: ' + error.message, 'error');
+        __preLoader(false);
         __preModalEnd(typeof __preDelKey !== 'undefined' ? __preDelKey : null);
     }
 }
