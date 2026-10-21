@@ -3948,3 +3948,283 @@ html body #romaneioListModal .table-responsive {
         display: none !important;
     }
 }
+
+.form-buttons,
+.buttons-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin: 18px 0 0 !important;
+    padding: 12px !important;
+    background: var(--sw-surface-2);
+    border: 1px solid var(--sw-border);
+    border-radius: 10px;
+}
+.form-buttons > button,
+.form-buttons > .btn,
+.form-buttons > a.btn,
+.buttons-container > button,
+.buttons-container > .btn,
+.buttons-container > a.btn {
+    flex: 0 0 auto;
+    height: 38px !important;
+    min-height: 38px !important;
+    margin: 0 !important;
+    white-space: nowrap;
+}
+.pre-romaneio-group {
+    flex: 1 1 520px;
+    justify-content: flex-end;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    margin-left: auto !important;
+    padding-left: 12px;
+    border-left: 1px solid var(--sw-border);
+}
+.pre-romaneio-left {
+    flex: 1 1 220px;
+    min-width: 0;
+    gap: 8px !important;
+}
+.pre-romaneio-group select,
+.pre-romaneio-left select {
+    flex: 1 1 150px;
+    width: auto !important;
+    min-width: 120px !important;
+    height: 38px !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+}
+.pre-romaneio-group .btn-carregar,
+.pre-romaneio-group .btn-salvar,
+.pre-romaneio-group .btn-listar {
+    flex: 0 0 auto;
+    min-width: 120px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    margin: 0 !important;
+    padding: 0 14px !important;
+    white-space: nowrap;
+}
+.romaneio-items-title {
+    margin: 22px 0 10px !important;
+    font-size: 18px !important;
+    line-height: 1.3;
+}
+.romaneio-items-filters {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 0 12px !important;
+    padding: 10px 12px !important;
+    background: var(--sw-surface-2);
+    border: 1px solid var(--sw-border);
+    border-radius: 10px;
+}
+.romaneio-items-filters input[type="text"] {
+    flex: 1 1 180px;
+    width: auto;
+    max-width: none;
+    height: 38px;
+    min-height: 38px;
+    margin: 0 !important;
+    padding: 7px 10px;
+}
+.romaneio-items-filters .romaneio-filter-dims {
+    flex: 1 1 220px;
+    max-width: none;
+}
+.romaneio-items-filters input.is-invalid {
+    border-color: var(--sw-danger, #dc2626) !important;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, .18);
+}
+.romaneio-items-filters .romaneio-bulk-delete {
+    flex: 0 0 auto;
+    height: 38px;
+    min-height: 38px;
+    margin-left: auto !important;
+}
+#tlItemDeleteSelected,
+#pctItemDeleteSelected,
+#pesItemDeleteSelected,
+#toraItemDeleteSelected,
+#preSerradosItemDeleteSelected,
+#preTorasItemDeleteSelected {
+    background: var(--sw-danger, #dc2626) !important;
+    border: 1px solid var(--sw-danger, #dc2626) !important;
+    color: var(--sw-on-brand, #fff) !important;
+}
+#tlItemDeleteSelected:not(:disabled):hover,
+#pctItemDeleteSelected:not(:disabled):hover,
+#pesItemDeleteSelected:not(:disabled):hover,
+#toraItemDeleteSelected:not(:disabled):hover,
+#preSerradosItemDeleteSelected:not(:disabled):hover,
+#preTorasItemDeleteSelected:not(:disabled):hover {
+    filter: brightness(.9);
+}
+#romaneioTable thead th .romaneio-check-head,
+#tabela-serrados thead th .romaneio-check-head,
+#tabela-toras thead th .romaneio-check-head {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0 !important;
+    width: 16px;
+    height: 16px;
+    margin: 0 6px 0 0 !important;
+    vertical-align: middle;
+}
+#romaneioTable thead th .romaneio-check-head + span,
+#tabela-serrados thead th .romaneio-check-head + span,
+#tabela-toras thead th .romaneio-check-head + span {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1.2;
+}
+
+@media (max-width: 1100px) and (min-width: 769px) {
+    .pre-romaneio-group {
+        flex-basis: 100%;
+        justify-content: flex-start;
+        padding-left: 0;
+        border-left: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-buttons,
+    .buttons-container {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+        margin-top: 16px !important;
+        padding: 10px !important;
+    }
+    .form-buttons > button,
+    .form-buttons > .btn,
+    .form-buttons > a.btn,
+    .buttons-container > button,
+    .buttons-container > .btn,
+    .buttons-container > a.btn,
+    .pre-romaneio-group .btn-carregar,
+    .pre-romaneio-group .btn-salvar,
+    .pre-romaneio-group .btn-listar {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        justify-content: center;
+    }
+    .pre-romaneio-group {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
+        padding-left: 0;
+        border-left: 0;
+        margin-left: 0 !important;
+        white-space: normal;
+    }
+    .pre-romaneio-left {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        width: 100%;
+        min-width: 0;
+        gap: 6px !important;
+    }
+    .pre-romaneio-group select,
+    .pre-romaneio-left select {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+    .romaneio-items-filters {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+        padding: 10px !important;
+    }
+    .romaneio-items-filters input[type="text"],
+    .romaneio-items-filters .romaneio-filter-dims {
+        width: 100% !important;
+        max-width: none;
+    }
+    .romaneio-items-filters .romaneio-bulk-delete {
+        grid-column: 1 / -1;
+        width: 100%;
+        margin-left: 0 !important;
+        justify-content: center;
+    }
+    html body #romaneioTable thead,
+    html body #tabela-serrados thead,
+    html body #tabela-toras thead {
+        display: block !important;
+        width: 100% !important;
+    }
+    html body #romaneioTable thead tr,
+    html body #tabela-serrados thead tr,
+    html body #tabela-toras thead tr {
+        position: static !important;
+        top: auto !important;
+        left: auto !important;
+        display: flex !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 4px 8px !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+    html body #romaneioTable thead th,
+    html body #tabela-serrados thead th,
+    html body #tabela-toras thead th {
+        display: none !important;
+    }
+    html body #romaneioTable thead th:first-child,
+    html body #tabela-serrados thead th:first-child,
+    html body #tabela-toras thead th:first-child {
+        display: flex !important;
+        align-items: center !important;
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        color: var(--sw-text-3) !important;
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+        letter-spacing: .4px !important;
+        text-transform: uppercase !important;
+        white-space: nowrap !important;
+    }
+    html body #romaneioTable tbody tr td[data-label="Espécie"]:not([colspan]),
+    html body #tabela-serrados tbody tr td[data-label="Espécie"]:not([colspan]),
+    html body #tabela-toras tbody tr td[data-label="Plaqueta"]:not([colspan]) {
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+    }
+    html body #romaneioTable tbody tr td[data-label="Espécie"]:not([colspan])::before,
+    html body #tabela-serrados tbody tr td[data-label="Espécie"]:not([colspan])::before,
+    html body #tabela-toras tbody tr td[data-label="Plaqueta"]:not([colspan])::before {
+        margin-right: auto !important;
+    }
+    html body #romaneioTable tbody tr td[data-label="Espécie"]:not([colspan]) .romaneio-item-check,
+    html body #tabela-serrados tbody tr td[data-label="Espécie"]:not([colspan]) .romaneio-item-check,
+    html body #tabela-toras tbody tr td[data-label="Plaqueta"]:not([colspan]) .romaneio-item-check {
+        flex: 0 0 16px !important;
+        margin: 0 !important;
+    }
+}
+
+@media (max-width: 560px) {
+    .romaneio-items-filters {
+        grid-template-columns: 1fr !important;
+    }
+}

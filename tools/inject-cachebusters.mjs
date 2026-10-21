@@ -38,6 +38,7 @@ function processHtml(filePath) {
     // Regex: <script src="CAMINHO?v=QUALQUER_COISA">
     // Também captura document.write('<script src="...") e import('./...')
     const scriptTagRegex = /(<script[^>]*src\s*=\s*["'])([^"']+?)(\?v=[^"'\s]*)?(["'][^>]*>)/gi;
+    const styleTagRegex = /(<link[^>]*href\s*=\s*["'])([^"']+?\.css)(\?v=[^"'\s]*)?(["'][^>]*>)/gi;
     const docWriteRegex = /(document\.write\s*\(\s*['"]<script[^>]*src\s*=\s*["'])([^"']+?)(\?v=[^"'\s]*)?(["'][^>]*><\\\/script>['"]\s*\))/gi;
     const importRegex = /(import\s*\(\s*['"]\.\/)([^"']+?)(\?v=[^"'\s]*)?(["'][\s)]*\))/gi;
     // Regex: import { ... } from './file.js?v=...'
@@ -55,6 +56,19 @@ function processHtml(filePath) {
         const absPath = join(ROOT, srcPath);
         const h = hashFile(absPath);
         if (!h) return match; // arquivo não encontrado, deixa como está
+
+        const newV = `?v=${h}`;
+        changed = changed || (existingV !== newV);
+        return `${prefix}${srcPath}${newV}${suffix}`;
+    });
+
+    // 1b) Links de stylesheet locais
+    html = html.replace(styleTagRegex, (match, prefix, srcPath, existingV, suffix) => {
+        if (srcPath.startsWith('http') || srcPath.startsWith('//')) return match;
+
+        const absPath = join(ROOT, srcPath);
+        const h = hashFile(absPath);
+        if (!h) return match;
 
         const newV = `?v=${h}`;
         changed = changed || (existingV !== newV);

@@ -556,7 +556,7 @@ async function mudarAba(tab) {
             if (labelQuantidade) labelQuantidade.textContent = 'Quantidade (peças):';
         } else {
             if (groupPecas) groupPecas.style.display = 'block';
-            colPecas.forEach(el => el.style.setProperty('display', 'table-cell', 'important'));
+            colPecas.forEach(el => el.style.removeProperty('display'));
             if (labelQuantidade) labelQuantidade.textContent = (tab === 'PCT') ? 'Quantidade (pacotes):' : 'Quantidade (peças):';
         }
         

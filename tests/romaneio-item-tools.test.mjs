@@ -38,6 +38,7 @@ test('tabelas carregam o helper e a barra de filtros', () => {
     const html = fs.readFileSync(file, 'utf8');
     assert.ok(html.includes('romaneio-item-tools.js'), `${file} carrega helper`);
     assert.ok(html.includes('romaneio-items-filters'), `${file} tem filtros`);
+    assert.ok(html.includes('romaneio-items-title'), `${file} tem titulo padronizado`);
   }
 });
 
