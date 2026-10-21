@@ -3983,15 +3983,16 @@ html body #romaneioListModal .table-responsive {
     border-left: 1px solid var(--sw-border);
 }
 .pre-romaneio-left {
-    flex: 1 1 220px;
+    flex: 0 1 auto;
     min-width: 0;
     gap: 8px !important;
 }
 .pre-romaneio-group select,
 .pre-romaneio-left select {
-    flex: 1 1 150px;
-    width: auto !important;
-    min-width: 120px !important;
+    flex: 0 0 240px;
+    width: 240px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
     height: 38px !important;
     margin: 0 !important;
     padding: 0 10px !important;
