@@ -4233,3 +4233,29 @@ html body #romaneioListModal .table-responsive {
 body.romaneio-page #globalLoadingOverlay {
     z-index: 10000060 !important;
 }
+
+#listaModal .action-button,
+#romaneioListModal .action-button {
+    background-color: var(--sw-brand) !important;
+    border-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
+}
+#listaModal .action-button:hover,
+#romaneioListModal .action-button:hover {
+    background-color: var(--sw-brand) !important;
+    border-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
+    filter: brightness(.88);
+}
+#listaModal .action-button.delete-button,
+#romaneioListModal .action-button.delete-button {
+    background-color: var(--sw-danger) !important;
+    border-color: var(--sw-danger) !important;
+    color: var(--sw-on-brand) !important;
+}
+#listaModal .action-button.import-button,
+#romaneioListModal .action-button.import-button {
+    background-color: var(--sw-brand) !important;
+    border-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
+}

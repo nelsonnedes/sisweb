@@ -762,7 +762,7 @@ class RomaneioManager {
                         <button class="action-button clone-button" onclick="window.clonarRomaneioTora(${actionId})" title="Clonar Romaneio">
                             <i class="fas fa-copy"></i>
                         </button>
-                        <button class="action-button import-button" onclick="window.SiswebImportarRomaneio.open('tora',String(${actionId}))" title="Importar Itens" aria-label="Importar Itens" style="background:var(--sw-success);color:var(--sw-on-brand);">
+                        <button class="action-button import-button" onclick="window.SiswebImportarRomaneio.open('tora',String(${actionId}))" title="Importar Itens" aria-label="Importar Itens">
                             <i class="fas fa-file-import"></i>
                         </button>
                         <div class="print-dropdown" style="display: inline-block; position: relative;">

@@ -6199,9 +6199,16 @@ async function excluirProdutosSelecionados() {
         let deleteOk = !!(svcDel && typeof svcDel.removeFromFirebase === 'function');
         if (deleteOk) {
             try {
-                for (const id of ids) {
-                    const res = await svcDel.removeFromFirebase(`produtos/${chavePersistidaProduto(id)}`);
-                    if (res && res.success === false) { deleteOk = false; break; }
+                if (typeof svcDel.updatePaths === 'function') {
+                    const updates = {};
+                    ids.forEach(id => { updates[`produtos/${chavePersistidaProduto(id)}`] = null; });
+                    const res = await svcDel.updatePaths(updates);
+                    if (!res || res.success === false) deleteOk = false;
+                } else {
+                    for (const id of ids) {
+                        const res = await svcDel.removeFromFirebase(`produtos/${chavePersistidaProduto(id)}`);
+                        if (res && res.success === false) { deleteOk = false; break; }
+                    }
                 }
             } catch (_) { deleteOk = false; }
         }

@@ -234,13 +234,27 @@
         state.items = [];
         renderPreview();
     }
+    async function refreshList(type) {
+        try {
+            if (type === 'tl' && window.ModalListaRomaneios && typeof window.ModalListaRomaneios.refresh === 'function') {
+                await window.ModalListaRomaneios.refresh();
+            } else if (type === 'pct' && window.ModalListaRomaneiosPCT && typeof window.ModalListaRomaneiosPCT.forcarRefreshFirebase === 'function') {
+                await window.ModalListaRomaneiosPCT.forcarRefreshFirebase();
+            } else if (type === 'pes' && typeof window.showRomaneiosList === 'function') {
+                await window.showRomaneiosList();
+            } else if (type === 'tora' && window.romaneioToraManager && typeof window.romaneioToraManager.openModal === 'function') {
+                await window.romaneioToraManager.openModal();
+            }
+        } catch (_) {}
+    }
     async function importItems() {
         if (!state.targetRecord) { toast('Romaneio de destino não encontrado.', 'error'); return; }
         if (!state.items.length) { toast('Carregue itens para importar.', 'warning'); return; }
         var s = svc();
         if (!s || typeof s.saveToFirebase !== 'function') { toast('Firebase indisponível.', 'error'); return; }
         var key = recordKey(state.targetRecord);
-        if (!key) { toast('Chave do romaneio de destino não encontrada.', 'error'); return; }
+        if (!key) { toast('Chave do romaneio de destino nǜo encontrada.', 'error'); return; }
+        var started = Date.now();
         loading(true, 'Importando itens...');
         try {
             var target = Object.assign({}, state.targetRecord);
@@ -255,11 +269,14 @@
             var evt = { tl: 'TL', pct: 'Pct', pes: 'Pes', tora: 'Tora' }[state.targetType];
             try { window.dispatchEvent(new CustomEvent('romaneios' + evt + ':updated', { detail: { id: key, action: 'import' } })); } catch (_) {}
             try { window.dispatchEvent(new CustomEvent('romaneios:updated', { detail: { id: key, type: state.targetType, action: 'import' } })); } catch (_) {}
-            toast(state.items.length + ' item(ns) importado(s) para o romaneio ' + LABELS[state.targetType] + '.', 'success');
             close();
+            await refreshList(state.targetType);
+            toast(state.items.length + ' item(ns) importado(s) para o romaneio ' + LABELS[state.targetType] + '.', 'success');
         } catch (e) {
             toast('Erro ao importar: ' + (e && e.message ? e.message : e), 'error');
         } finally {
+            var remaining = 700 - (Date.now() - started);
+            if (remaining > 0) await new Promise(function (resolve) { setTimeout(resolve, remaining); });
             loading(false);
         }
     }

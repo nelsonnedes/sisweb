@@ -36,7 +36,7 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="romaneio-comum.css?v=a7bac2a1bf32">
+    <link rel="stylesheet" href="romaneio-comum.css?v=43d54513d6fd">
     <link rel="stylesheet" href="species-modal-standard.css?v=5394d4aa2579">
     <script src="js/sisweb-theme.js?v=4cb247ce57d4"></script>
 <script src="menu-component.js?v=769c7dd6b998"></script>
@@ -1504,7 +1504,7 @@
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pes" data-target="clientListBody"></script>
     <script src="js/sisweb-loading.js?v=35ac49f361cc"></script>
     <script src="modules/core/romaneio-list-columns.js?v=396ded91f759" data-page="pes" data-target="romaneioListBody"></script>
-    <script src="modules/core/importar-romaneio.js?v=a8fa8bc1c753"></script>
+    <script src="modules/core/importar-romaneio.js?v=b008f96aeecc"></script>
     <script>
         let itens = [];        let pesFilterEspecie = '';
         let pesFilterDims = { ok: true, values: [] };
@@ -4304,7 +4304,7 @@
                         <button class="action-button clone-button" onclick="clonarRomaneio(${index})" title="Clonar Romaneio">
                             <i class="fas fa-copy"></i>
                         </button>
-                        <button class="action-button import-button" onclick="window.SiswebImportarRomaneio.open('pes','${String(romaneio.firebaseKey || romaneio.id || romaneio.numero || '')}')" title="Importar Itens" aria-label="Importar Itens" style="background:var(--sw-success);color:var(--sw-on-brand);">
+                        <button class="action-button import-button" onclick="window.SiswebImportarRomaneio.open('pes','${String(romaneio.firebaseKey || romaneio.id || romaneio.numero || '')}')" title="Importar Itens" aria-label="Importar Itens">
                             <i class="fas fa-file-import"></i>
                         </button>
                         <div class="dropdown">
