@@ -231,7 +231,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 .lv-ecosystem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .lv-eco-card{background:var(--lv-card);border:1px solid var(--lv-areia);border-radius:var(--lv-radius);padding:16px}
 .lv-eco-card i{color:var(--lv-mata);font-size:1.1rem}
-.lv-eco-card h4{margin:8px 0 2px;font-size:0.98rem;color:var(--lv-casca)}
+.lv-eco-card h3{margin:8px 0 2px;font-size:0.98rem;color:var(--lv-casca)}
 .lv-eco-card span{font-size:0.7rem;color:var(--lv-muted);text-transform:uppercase;letter-spacing:.05em;font-family:ui-monospace,Menlo,Consolas,monospace}
 .lv-eco-card p{font-size:0.85rem;color:#4A3D2C;margin:6px 0 0}
 .lv-eco-card-muted{border-style:dashed;background:transparent}
@@ -650,7 +650,7 @@ html[data-theme="dark"] .lv-benefit-list li,
 html[data-theme="dark"] .lv-sim-gain-item{color:var(--sw-text-2)}
 html[data-theme="dark"] .lv-card h3,
 html[data-theme="dark"] .lv-flow-step h3,
-html[data-theme="dark"] .lv-eco-card h4,
+html[data-theme="dark"] .lv-eco-card h3,
 html[data-theme="dark"] .lv-step h4,
 html[data-theme="dark"] .lv-benefit-col h3,
 html[data-theme="dark"] .lv-benefit-list strong,
