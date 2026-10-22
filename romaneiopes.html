@@ -1504,6 +1504,7 @@
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pes" data-target="clientListBody"></script>
     <script src="js/sisweb-loading.js?v=35ac49f361cc"></script>
     <script src="modules/core/romaneio-list-columns.js?v=396ded91f759" data-page="pes" data-target="romaneioListBody"></script>
+    <script src="modules/core/importar-romaneio.js?v=a8fa8bc1c753"></script>
     <script>
         let itens = [];        let pesFilterEspecie = '';
         let pesFilterDims = { ok: true, values: [] };
@@ -4302,6 +4303,9 @@
                         </button>
                         <button class="action-button clone-button" onclick="clonarRomaneio(${index})" title="Clonar Romaneio">
                             <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="action-button import-button" onclick="window.SiswebImportarRomaneio.open('pes','${String(romaneio.firebaseKey || romaneio.id || romaneio.numero || '')}')" title="Importar Itens" aria-label="Importar Itens" style="background:var(--sw-success);color:var(--sw-on-brand);">
+                            <i class="fas fa-file-import"></i>
                         </button>
                         <div class="dropdown">
                             <button class="action-button print-button" onclick="togglePrintMenu(this, event)" title="Imprimir">

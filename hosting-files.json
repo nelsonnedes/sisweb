@@ -397,6 +397,7 @@
   "modules/core/legacy-deprecation.js",
   "modules/core/navegacao-enter.js",
   "modules/core/responsive-manager.js",
+  "modules/core/importar-romaneio.js",
   "modules/core/romaneio-list-columns.js",
   "modules/core/romaneio-messages.js",
   "modules/core/romaneio-item-tools.js",

@@ -854,6 +854,9 @@ window.ModalListaRomaneiosPCT = (function() {
                         <button class="action-button clone-button" onclick="window.ModalListaRomaneiosPCT.clonarRomaneio('${romaneio.id}')" title="Clonar Romaneio">
                             <i class="fas fa-copy"></i>
                         </button>
+                        <button class="action-button import-button" onclick="window.SiswebImportarRomaneio.open('pct','${romaneio.id}')" title="Importar Itens" aria-label="Importar Itens" style="background:var(--sw-success);color:var(--sw-on-brand);">
+                            <i class="fas fa-file-import"></i>
+                        </button>
                         <div class="dropdown">
                             <button class="action-button print-button" onclick="window.ModalListaRomaneiosPCT.togglePrintDropdown(this)" title="Imprimir Romaneio">
                                         <i class="fas fa-print"></i>
