@@ -1918,18 +1918,21 @@ window.ImprimirRomaneio = (function() {
             return acc;
         }, { pecas: 0, metrosLineares: 0, volume: 0 });
 
-        const speciesTotals = {};
+        const dimensionTotals = {};
+        const dimKeyOf = (row) => `${row.especie}||${row.espessura}||${row.largura}`;
         rows.forEach(row => {
-            if (!speciesTotals[row.especie]) speciesTotals[row.especie] = { pecas: 0, metrosLineares: 0, volume: 0 };
-            speciesTotals[row.especie].pecas += row.pecas;
-            speciesTotals[row.especie].metrosLineares += row.metrosLineares;
-            speciesTotals[row.especie].volume += row.volume;
+            const key = dimKeyOf(row);
+            if (!dimensionTotals[key]) dimensionTotals[key] = { pecas: 0, metrosLineares: 0, volume: 0 };
+            dimensionTotals[key].pecas += row.pecas;
+            dimensionTotals[key].metrosLineares += row.metrosLineares;
+            dimensionTotals[key].volume += row.volume;
         });
-        const subtotalRow = (especie) => {
-            const s = speciesTotals[especie] || { pecas: 0, metrosLineares: 0, volume: 0 };
+        const subtotalRow = (row) => {
+            const s = dimensionTotals[dimKeyOf(row)] || { pecas: 0, metrosLineares: 0, volume: 0 };
+            const dim = `${row.espessura.toLocaleString('pt-BR')} x ${row.largura.toLocaleString('pt-BR')} cm`;
             return `
                 <tr class="subtotal-especie-row">
-                    <td colspan="4"><strong>Subtotal ${especie}</strong></td>
+                    <td colspan="4"><strong>Subtotal ${row.especie} — ${dim}</strong></td>
                     <td class="number"><strong>${s.pecas}</strong></td>
                     <td class="number"><strong>${s.metrosLineares.toFixed(2).replace('.', ',')} LN</strong></td>
                     <td class="number"><strong>${s.volume.toFixed(3).replace('.', ',')} m³</strong></td>
@@ -1955,10 +1958,11 @@ window.ImprimirRomaneio = (function() {
                 <tbody>
         `;
 
-        let especieAtual = null;
+        let dimAtual = null;
         rows.forEach(row => {
-            if (especieAtual !== null && row.especie !== especieAtual) html += subtotalRow(especieAtual);
-            especieAtual = row.especie;
+            const key = dimKeyOf(row);
+            if (dimAtual && key !== dimKeyOf(dimAtual)) html += subtotalRow(dimAtual);
+            dimAtual = row;
             const pppTexto = row.pppVariado ? '—' : (row.ppp || '—');
             html += `
                 <tr>
@@ -1973,8 +1977,7 @@ window.ImprimirRomaneio = (function() {
                 </tr>
             `;
         });
-        if (especieAtual !== null) html += subtotalRow(especieAtual);
-        
+        if (dimAtual) html += subtotalRow(dimAtual);
         html += `
                     <tr class="total-geral-row">
                         <td colspan="4"><strong>Total Geral</strong></td>

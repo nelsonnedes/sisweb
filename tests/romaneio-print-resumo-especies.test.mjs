@@ -6,23 +6,23 @@ const tl = fs.readFileSync('modules/reports/imprimir-romaneio.js', 'utf8');
 const pct = fs.readFileSync('modules/romaneiopct/imprimir-romaneio-pct.js', 'utf8');
 const pes = fs.readFileSync('romaneiopes.html', 'utf8');
 
-test('resumo TL tem pecas por pacote e subtotal por especie', () => {
-  assert.match(tl, /Pçs\/Pac\./);
+test('resumo TL tem pecas por pacote e subtotal por dimensao', () => {
+  assert.ok(tl.includes('Pçs/Pac.'));
   assert.match(tl, /subtotal-especie-row/);
-  assert.match(tl, /Subtotal \$\{especie\}/);
-  assert.match(tl, /const pppTexto = row\.pppVariado/);
+  assert.ok(tl.includes('Subtotal ${row.especie}'));
+  assert.match(tl, /const dimKeyOf =/);
 });
 
-test('resumo PCT tem pecas por pacote e subtotal por especie', () => {
-  assert.match(pct, /Pçs\/Pac\./);
+test('resumo PCT tem pecas por pacote e subtotal por dimensao', () => {
+  assert.ok(pct.includes('Pçs/Pac.'));
   assert.match(pct, /subtotal-especie-row/);
-  assert.match(pct, /Subtotal \$\{especie\}/);
-  assert.match(pct, /pppVariado/);
+  assert.ok(pct.includes('Subtotal ${row.especie}'));
+  assert.match(pct, /const pppTexto = row\.observacao/);
 });
 
-test('resumo PES tem pecas por pacote e subtotal por especie', () => {
-  assert.match(pes, /Pçs\/Pac\./);
+test('resumo PES tem pecas por pacote e subtotal por dimensao', () => {
+  assert.ok(pes.includes('Pçs/Pac.'));
   assert.match(pes, /subtotal-especie-row/);
-  assert.match(pes, /Subtotal \$\{especie\}/);
-  assert.match(pes, /speciesDimTotals/);
+  assert.ok(pes.includes('Subtotal ${row.especie}'));
+  assert.match(pes, /const dimKeyPes =/);
 });

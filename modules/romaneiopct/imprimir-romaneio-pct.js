@@ -2183,18 +2183,21 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
         acc.volume += row.volume;
         return acc;
     }, { pecas: 0, metrosLineares: 0, volume: 0 });
-    const speciesTotals = {};
+    const dimensionTotals = {};
+    const dimKeyOf = (row) => `${row.especie}||${row.espessura}||${row.largura}`;
     resumoRows.forEach(row => {
-        if (!speciesTotals[row.especie]) speciesTotals[row.especie] = { pecas: 0, metrosLineares: 0, volume: 0 };
-        speciesTotals[row.especie].pecas += row.pecas;
-        speciesTotals[row.especie].metrosLineares += row.metrosLineares;
-        speciesTotals[row.especie].volume += row.volume;
+        const key = dimKeyOf(row);
+        if (!dimensionTotals[key]) dimensionTotals[key] = { pecas: 0, metrosLineares: 0, volume: 0 };
+        dimensionTotals[key].pecas += row.pecas;
+        dimensionTotals[key].metrosLineares += row.metrosLineares;
+        dimensionTotals[key].volume += row.volume;
     });
-    const subtotalRow = (especie) => {
-        const s = speciesTotals[especie] || { pecas: 0, metrosLineares: 0, volume: 0 };
+    const subtotalRow = (row) => {
+        const s = dimensionTotals[dimKeyOf(row)] || { pecas: 0, metrosLineares: 0, volume: 0 };
+        const dim = `${row.espessura.toLocaleString('pt-BR')} x ${row.largura.toLocaleString('pt-BR')} cm`;
         return `
             <tr class="subtotal-especie-row">
-                <td colspan="4"><strong>Subtotal ${especie}</strong></td>
+                <td colspan="4"><strong>Subtotal ${row.especie} — ${dim}</strong></td>
                 <td class="number"><strong>${s.pecas}</strong></td>
                 <td class="number"><strong>${s.metrosLineares.toFixed(2).replace('.', ',')} LN</strong></td>
                 <td class="number"><strong>${s.volume.toFixed(3).replace('.', ',')} m³</strong></td>
@@ -2218,11 +2221,12 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
             </thead>
             <tbody>
     `;
-    let especieAtual = null;
+    let dimAtual = null;
     resumoRows.forEach(row => {
-        if (especieAtual !== null && row.especie !== especieAtual) cardHtml += subtotalRow(especieAtual);
-        especieAtual = row.especie;
-        const pppTexto = row.pppVariado ? '—' : (row.ppp || '—');
+        const key = dimKeyOf(row);
+        if (dimAtual && key !== dimKeyOf(dimAtual)) cardHtml += subtotalRow(dimAtual);
+        dimAtual = row;
+        const pppTexto = row.observacao || (row.pppVariado ? '—' : (row.ppp || '—'));
         cardHtml += `
             <tr>
                 <td>${row.especie}</td>
@@ -2232,11 +2236,11 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 <td class="number">${row.pecas}</td>
                 <td class="number">${row.metrosLineares.toFixed(2).replace('.', ',')} LN</td>
                 <td class="number">${row.volume.toFixed(3).replace('.', ',')} m³</td>
-                <td class="number">${pppTexto}${row.observacao ? `<div class="pkg-note">${row.observacao}</div>` : ''}</td>
+                <td class="number">${pppTexto}</td>
             </tr>
         `;
     });
-    if (especieAtual !== null) cardHtml += subtotalRow(especieAtual);
+    if (dimAtual) cardHtml += subtotalRow(dimAtual);
     cardHtml += `
                 <tr class="total-geral-row">
                     <td colspan="4"><strong>Total Geral</strong></td>

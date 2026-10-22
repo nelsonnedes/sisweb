@@ -4953,18 +4953,21 @@
                 return acc;
             }, { qtd: 0, pes: 0, m3: 0, ml: 0 });
             const speciesDimTotals = {};
+            const dimKeyPes = (row) => `${row.especie}||${row.espessura}||${row.largura}`;
             resumoDimRows.forEach((row) => {
-                if (!speciesDimTotals[row.especie]) speciesDimTotals[row.especie] = { qtd: 0, ml: 0, m3: 0, pes: 0 };
-                speciesDimTotals[row.especie].qtd += row.qtd;
-                speciesDimTotals[row.especie].ml += row.ml;
-                speciesDimTotals[row.especie].m3 += row.m3;
-                speciesDimTotals[row.especie].pes += row.pes;
+                const key = dimKeyPes(row);
+                if (!speciesDimTotals[key]) speciesDimTotals[key] = { qtd: 0, ml: 0, m3: 0, pes: 0 };
+                speciesDimTotals[key].qtd += row.qtd;
+                speciesDimTotals[key].ml += row.ml;
+                speciesDimTotals[key].m3 += row.m3;
+                speciesDimTotals[key].pes += row.pes;
             });
-            const subtotalEspecieRow = (especie) => {
-                const s = speciesDimTotals[especie] || { qtd: 0, ml: 0, m3: 0, pes: 0 };
+            const subtotalEspecieRow = (row) => {
+                const s = speciesDimTotals[dimKeyPes(row)] || { qtd: 0, ml: 0, m3: 0, pes: 0 };
+                const dim = `${formatarMilimetros(row.espessura)} x ${formatarMilimetros(row.largura)}`;
                 return `
                     <tr class="subtotal-especie-row">
-                        <td colspan="4"><strong>Subtotal ${especie}</strong></td>
+                        <td colspan="4"><strong>Subtotal ${row.especie} — ${dim}</strong></td>
                         <td class="num"><strong>${formatarNumero(s.qtd, 0)}</strong></td>
                         <td class="num"><strong>${formatarNumero(s.ml, 3)} LN</strong></td>
                         <td class="num"><strong>${formatarNumero(s.m3, 3)} m³ / ${formatarPes(s.pes)}</strong></td>
@@ -4988,10 +4991,11 @@
                     </thead>
                     <tbody>
             `;
-            let especieDimAtual = null;
+            let dimAtualPes = null;
             resumoDimRows.forEach((row) => {
-                if (especieDimAtual !== null && row.especie !== especieDimAtual) resumoDimCards += subtotalEspecieRow(especieDimAtual);
-                especieDimAtual = row.especie;
+                const key = dimKeyPes(row);
+                if (dimAtualPes && key !== dimKeyPes(dimAtualPes)) resumoDimCards += subtotalEspecieRow(dimAtualPes);
+                dimAtualPes = row;
                 const pppTexto = row.pppVariado ? '—' : (row.ppp || '—');
                 resumoDimCards += `
                     <tr>
@@ -5006,7 +5010,7 @@
                     </tr>
                 `;
             });
-            if (especieDimAtual !== null) resumoDimCards += subtotalEspecieRow(especieDimAtual);
+            if (dimAtualPes) resumoDimCards += subtotalEspecieRow(dimAtualPes);
             resumoDimCards += `
                         <tr class="total-row">
                             <td colspan="4"><strong>Total Geral</strong></td>
