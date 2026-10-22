@@ -2861,76 +2861,160 @@
                             showActionMessage("Este usuário não possui um endereço de e-mail cadastrado.", "error");
                             return;
                         }
-                        
+                        if (!window.AdminUI || typeof window.AdminUI.modal !== "function") {
+                            showActionMessage("Interface de notificação indisponível.", "error");
+                            return;
+                        }
+
                         var nomeCliente = uName || "Cliente";
                         var targetUid = String(user.uid || user.id || user.userId || "").trim();
-                        var subject = "Sua experiência com a plataforma Sisweb";
-                        var internalMessage = "Enviamos orientações sobre prorrogação, renovação e suporte. Abra seu e-mail cadastrado para conferir os próximos passos.";
-                        var body = "Olá " + nomeCliente + ",\n\n" +
-                            "Esperamos que esteja aproveitando ao máximo a plataforma Sisweb! 🚀\n\n" +
-                            "Gostaríamos de saber como tem sido a sua experiência. O Sisweb foi desenvolvido para impulsionar a gestão da sua empresa com ferramentas modernas e eficientes.\n\n" +
-                            "=====================================\n" +
-                            "PRECISA DE MAIS TEMPO PARA TESTAR?\n" +
-                            "=====================================\n" +
-                            "Se você sentir que precisa de mais alguns dias para avaliar todas as funcionalidades, nós podemos ajudar!\n" +
-                            "👉 Acesse o sistema em: https://siswebsoftware.com.br/\n" +
-                            "Vá na aba 'Status da Assinatura' e clique no botão 'Solicitar Prorrogação'. Faremos uma análise rápida para liberar mais dias para você.\n\n" +
-                            "=====================================\n" +
-                            "QUER EFETIVAR SUA ASSINATURA?\n" +
-                            "=====================================\n" +
-                            "Caso já tenha tomado a sua decisão e queira garantir o acesso contínuo a todas as nossas ferramentas de gestão e emissão fiscal:\n" +
-                            "👉 Acesse o sistema em: https://siswebsoftware.com.br/\n" +
-                            "Vá na aba 'Status da Assinatura' e escolha o plano que melhor se adequa ao momento do seu negócio.\n\n" +
-                            "Se tiver qualquer dúvida, dificuldade técnica ou precisar de auxílio para escolher um plano, nossa equipe está à sua disposição!\n\n" +
-                            "📞 Contatos para Suporte:\n" +
-                            "E-mail: nelsonnedesbrito@gmail.com\n" +
-                            "WhatsApp: (91) 99131-1049\n\n" +
-                            "Atenciosamente,\n" +
-                            "Equipe Sisweb";
-
-                        if (window.AdminUI && typeof window.AdminUI.toast === "function") {
-                            window.AdminUI.toast("Enviando e-mail para " + email + "...", "info");
-                        } else {
-                            showActionMessage("Enviando e-mail para " + email + "...", "info");
-                        }
-
-                        btnNotify.disabled = true;
-                        var originalHtml = btnNotify.innerHTML;
-                        btnNotify.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span> Enviando...</span>';
-
-                        try {
-                            if (!window.firebaseService || typeof window.firebaseService.sendSubscriptionEmail !== "function") {
-                                throw new Error("Serviço de e-mail (sendSubscriptionEmail) indisponível no cliente.");
+                        var templates = {
+                            atual: {
+                                subject: "Sua experiência com a plataforma Sisweb",
+                                internal: "Enviamos orientações sobre prorrogação, renovação e suporte. Abra seu e-mail cadastrado para conferir os próximos passos.",
+                                body: "Olá " + nomeCliente + ",\n\n" +
+                                    "Esperamos que esteja aproveitando ao máximo a plataforma Sisweb!\n\n" +
+                                    "Gostaríamos de saber como tem sido a sua experiência. O Sisweb foi desenvolvido para impulsionar a gestão da sua empresa com ferramentas modernas e eficientes.\n\n" +
+                                    "PRECISA DE MAIS TEMPO PARA TESTAR?\n" +
+                                    "Se precisar de mais alguns dias para avaliar todas as funcionalidades, acesse o sistema em https://siswebsoftware.com.br/, vá em Status da Assinatura e clique em Solicitar Prorrogação.\n\n" +
+                                    "QUER EFETIVAR SUA ASSINATURA?\n" +
+                                    "Acesse Status da Assinatura e escolha o plano que melhor se adequa ao momento do seu negócio.\n\n" +
+                                    "Se tiver qualquer dúvida ou precisar de auxílio, nossa equipe está à disposição.\n" +
+                                    "E-mail: nelsonnedesbrito@gmail.com\n" +
+                                    "WhatsApp: (91) 99131-1049\n\n" +
+                                    "Atenciosamente,\nEquipe Sisweb"
+                            },
+                            empresa: {
+                                subject: "Complete o cadastro da sua empresa no Sisweb",
+                                internal: "Orientações enviadas para cadastro completo da empresa e liberação das rotinas fiscais e financeiras.",
+                                body: "Olá " + nomeCliente + ",\n\n" +
+                                    "Para usar o Sisweb por completo, o primeiro passo é cadastrar os dados da sua empresa.\n\n" +
+                                    "Acesse o menu Configurações/Empresa e preencha razão social, CNPJ, endereço, telefone, e-mail e logo.\n\n" +
+                                    "Com o cadastro completo, o sistema libera corretamente emissão fiscal, financeiro, relatórios, romaneios e demais rotinas da madeireira.\n\n" +
+                                    "Se precisar de ajuda, fale com nosso suporte:\n" +
+                                    "E-mail: nelsonnedesbrito@gmail.com\n" +
+                                    "WhatsApp: (91) 99131-1049\n\n" +
+                                    "Atenciosamente,\nEquipe Sisweb"
+                            },
+                            fluxo: {
+                                subject: "Fluxo correto de alimentação de dados no Sisweb",
+                                internal: "Enviado roteiro completo do fluxo operacional, do cadastro de fornecedores à emissão de NF-e e MDF-e.",
+                                body: "Olá " + nomeCliente + ",\n\n" +
+                                    "Para aproveitar o Sisweb com agilidade de ponta a ponta, siga esta sequência:\n\n" +
+                                    "1. Cadastre os fornecedores.\n" +
+                                    "2. Importe as espécies de madeira.\n" +
+                                    "3. Importe o romaneio de toras.\n" +
+                                    "4. Faça a Entrada de Toras no Estoque.\n" +
+                                    "5. Cadastre os clientes.\n" +
+                                    "6. Digite o romaneio de madeiras serradas.\n" +
+                                    "7. Importe o romaneio para o pedido de venda ou de compra.\n" +
+                                    "8. Configure a forma de pagamento: parcelas ou à vista.\n" +
+                                    "9. Ao aprovar e entregar o pedido, o financeiro é gerado.\n" +
+                                    "10. Dê baixa das toras em Saída de Toras no Estoque.\n" +
+                                    "11. Anexe o romaneio de madeira serrada para calcular o rendimento.\n" +
+                                    "12. Importe o romaneio de madeira serrada para a NF-e.\n" +
+                                    "13. Importe a NF-e para emitir o MDF-e.\n\n" +
+                                    "Seguindo esse fluxo, os dados circulam sem retrabalho e o controle fica completo, do pátio à nota fiscal.\n\n" +
+                                    "Suporte:\nE-mail: nelsonnedesbrito@gmail.com\nWhatsApp: (91) 99131-1049\n\n" +
+                                    "Atenciosamente,\nEquipe Sisweb"
+                            },
+                            personalizada: {
+                                subject: "Mensagem da equipe Sisweb",
+                                internal: "Mensagem personalizada enviada ao cliente pela equipe Sisweb.",
+                                body: ""
                             }
+                        };
+                        var wrapper = document.createElement("div");
+                        wrapper.innerHTML = '<div style="display:grid;gap:10px;">' +
+                            '<div style="font-size:13px;color:var(--sw-text-2);">Para: <strong>' + escapeHtmlSafe(email) + '</strong></div>' +
+                            '<label style="font-size:13px;font-weight:600;" for="notifyEmailTemplate">Mensagem</label>' +
+                            '<select id="notifyEmailTemplate" class="modal-field-value" style="width:100%;box-sizing:border-box;">' +
+                                '<option value="atual">Mensagem atual — prorrogação e planos</option>' +
+                                '<option value="empresa">Orientar cadastro da empresa</option>' +
+                                '<option value="fluxo">Orientar fluxo correto de dados</option>' +
+                                '<option value="personalizada">Mensagem personalizada</option>' +
+                            '</select>' +
+                            '<label style="font-size:13px;font-weight:600;" for="notifyEmailSubject">Assunto</label>' +
+                            '<input id="notifyEmailSubject" type="text" class="modal-field-value" style="width:100%;box-sizing:border-box;" maxlength="160">' +
+                            '<label style="font-size:13px;font-weight:600;" for="notifyEmailBody">Conteúdo do e-mail</label>' +
+                            '<textarea id="notifyEmailBody" class="modal-field-value" rows="14" style="width:100%;box-sizing:border-box;resize:vertical;"></textarea>' +
+                            '<div style="font-size:12px;color:var(--sw-text-3);">Você pode ajustar o texto antes de enviar.</div>' +
+                        '</div>';
+                        var tplSelect = wrapper.querySelector('#notifyEmailTemplate');
+                        var subjectInput = wrapper.querySelector('#notifyEmailSubject');
+                        var bodyInput = wrapper.querySelector('#notifyEmailBody');
+                        function applyTemplate(key) {
+                            var tpl = templates[key] || templates.atual;
+                            subjectInput.value = tpl.subject;
+                            bodyInput.value = tpl.body;
+                            if (key === 'personalizada') {
+                                subjectInput.value = tpl.subject;
+                                bodyInput.value = '';
+                                bodyInput.focus();
+                            }
+                        }
+                        tplSelect.addEventListener('change', function() { applyTemplate(tplSelect.value); });
+                        applyTemplate('atual');
 
-                            var result = await window.firebaseService.sendSubscriptionEmail({
-                                targetUid: targetUid,
-                                email: email,
-                                subject: subject,
-                                body: body,
-                                notificationMessage: internalMessage
-                            });
-
-                            if (result && result.success) {
-                                if (window.AdminUI && typeof window.AdminUI.toast === "function") {
-                                    window.AdminUI.toast("E-mail enviado com sucesso para " + email, "success");
-                                } else {
-                                    showActionMessage("E-mail enviado com sucesso para " + email, "success");
+                        var modalPromise = window.AdminUI.modal({
+                            title: "Notificar cliente por e-mail",
+                            width: "640px",
+                            body: wrapper,
+                            actions: [
+                                { label: "Cancelar", action: "close" },
+                                {
+                                    label: '<i class="fas fa-envelope"></i> Enviar e-mail',
+                                    className: "btn primary",
+                                    onClick: async function(overlay, resolve) {
+                                        var tpl = templates[tplSelect.value] || templates.atual;
+                                        var subject = String(subjectInput.value || '').trim() || tpl.subject;
+                                        var body = String(bodyInput.value || '').trim();
+                                        var internalMessage = tpl.internal;
+                                        if (!body) {
+                                            if (window.AdminUI && typeof window.AdminUI.toast === "function") window.AdminUI.toast("Digite a mensagem antes de enviar.", "error");
+                                            bodyInput.focus();
+                                            return;
+                                        }
+                                        var actionBtn = overlay.querySelector('.modal-actions .btn.primary');
+                                        if (actionBtn) { actionBtn.disabled = true; actionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
+                                        try {
+                                            if (!window.firebaseService || typeof window.firebaseService.sendSubscriptionEmail !== "function") {
+                                                throw new Error("Serviço de e-mail (sendSubscriptionEmail) indisponível no cliente.");
+                                            }
+                                            var result = await window.firebaseService.sendSubscriptionEmail({
+                                                targetUid: targetUid,
+                                                email: email,
+                                                subject: subject,
+                                                body: body,
+                                                notificationMessage: internalMessage
+                                            });
+                                            if (!result || !result.success) {
+                                                throw new Error((result && result.error) || "Falha desconhecida no envio.");
+                                            }
+                                            if (window.AdminUI && typeof window.AdminUI.toast === "function") {
+                                                window.AdminUI.toast("E-mail enviado com sucesso para " + email, "success");
+                                            } else {
+                                                showActionMessage("E-mail enviado com sucesso para " + email, "success");
+                                            }
+                                            overlay.classList.remove("active");
+                                            setTimeout(function() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 200);
+                                            resolve("sent");
+                                        } catch (err) {
+                                            console.error("[sendSubscriptionEmail]", err);
+                                            if (window.AdminUI && typeof window.AdminUI.toast === "function") {
+                                                window.AdminUI.toast("Erro ao enviar e-mail: " + (err.message || String(err)), "error");
+                                            } else {
+                                                showActionMessage("Erro ao enviar e-mail: " + (err.message || String(err)), "error");
+                                            }
+                                            if (actionBtn) { actionBtn.disabled = false; actionBtn.innerHTML = '<i class="fas fa-envelope"></i> Enviar e-mail'; }
+                                        }
+                                    }
                                 }
-                            } else {
-                                throw new Error((result && result.error) || "Falha desconhecida no envio.");
-                            }
-                        } catch (err) {
-                            console.error("[sendSubscriptionEmail]", err);
-                            if (window.AdminUI && typeof window.AdminUI.toast === "function") {
-                                window.AdminUI.toast("Erro ao enviar e-mail: " + (err.message || String(err)), "error");
-                            } else {
-                                showActionMessage("Erro ao enviar e-mail: " + (err.message || String(err)), "error");
-                            }
-                        } finally {
-                            btnNotify.disabled = false;
-                            btnNotify.innerHTML = originalHtml;
-                        }
+                            ]
+                        });
+                        modalPromise.catch(function(err) {
+                            showActionMessage((err && err.message) || "Erro ao abrir notificação.", "error");
+                        });
                     });
                     tdActions.appendChild(btnNotify);
                     if (canMutateSensitiveData()) {
