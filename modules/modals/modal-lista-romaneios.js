@@ -1579,7 +1579,7 @@ window.ModalListaRomaneios = (function() {
                 ) : calcularVolumeItemFallback(item);
             
             const quantidade = parseInt(item.quantidade) || 1;
-            const preco = parseFloat(item.preco || item.price) || 0;
+            const preco = parseFloat(item.preco ?? item.price ?? item.valorUnitario ?? item.precoUnitario) || 0;
             
             const volumeTotal = volumeIndividual * quantidade;
             const valorTotal = volumeTotal * preco;

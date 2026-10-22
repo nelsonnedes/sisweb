@@ -1504,7 +1504,7 @@
     <script src="modules/core/client-list-columns.js?v=4dcbe8e9c2f7" data-page="pes" data-target="clientListBody"></script>
     <script src="js/sisweb-loading.js?v=35ac49f361cc"></script>
     <script src="modules/core/romaneio-list-columns.js?v=396ded91f759" data-page="pes" data-target="romaneioListBody"></script>
-    <script src="modules/core/importar-romaneio.js?v=8e57784ead16"></script>
+    <script src="modules/core/importar-romaneio.js?v=d9bd376ccba8"></script>
     <script>
         let itens = [];        let pesFilterEspecie = '';
         let pesFilterDims = { ok: true, values: [] };
@@ -4269,12 +4269,14 @@
             pageItems.forEach((romaneio, pageIndex) => {
                 const index = start + pageIndex;
                 
-                const volumeTotal = romaneio.itens && romaneio.itens.length > 0 
-                    ? romaneio.itens.reduce((acc, item) => acc + (parseFloat(item.volume) || 0), 0) 
+                const itensListaPes = Array.isArray(romaneio.itens)
+                    ? romaneio.itens
+                    : (romaneio.itens && typeof romaneio.itens === 'object' ? Object.values(romaneio.itens) : []);
+                const volumeTotal = itensListaPes.length > 0
+                    ? itensListaPes.reduce((acc, item) => acc + (parseFloat(item.volume ?? item.volumeM3 ?? item.volumeTotal) || 0), 0)
                     : (romaneio.totalVolume || 0);
-                    
-                const valorTotal = romaneio.itens && romaneio.itens.length > 0 
-                    ? romaneio.itens.reduce((acc, item) => acc + (parseFloat(item.valor) || 0), 0) 
+                const valorTotal = itensListaPes.length > 0
+                    ? itensListaPes.reduce((acc, item) => acc + (parseFloat(item.valor ?? item.valorTotal ?? item.total) || 0), 0)
                     : (romaneio.totalValor || 0);
                 
                 const row = document.createElement('tr');

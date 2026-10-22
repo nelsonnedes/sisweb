@@ -785,47 +785,30 @@ window.ModalListaRomaneiosPCT = (function() {
                 ? window.RomaneioDataUtils.formatarNumeroExibicao(romaneio, '')
                 : '';
             
-            // ✅ CORREÇÃO: Buscar volume e valor nos campos corretos do Firebase
+            const itensLista = Array.isArray(romaneio.itens)
+                ? romaneio.itens
+                : (romaneio.itens && typeof romaneio.itens === 'object' ? Object.values(romaneio.itens) : []);
             let volume = 0;
             let valor = 0;
-            
-            // 🔍 TENTAR DIFERENTES CAMPOS PARA VOLUME - CORRIGIDO
-            // ✅ CORREÇÃO: Buscar primeiro em totais.volume (estrutura correta do salvamento)
-            if (romaneio.totais && romaneio.totais.volume) {
-                volume = parseFloat(romaneio.totais.volume);
-                console.log(`📏 PCT: Volume encontrado em totais.volume: ${volume}`);
-            }
-            // Fallbacks para outras estruturas
-            else if (romaneio.volumeTotal) volume = parseFloat(romaneio.volumeTotal);
-            else if (romaneio.volume) volume = parseFloat(romaneio.volume);
-            else if (romaneio.totalVolume) volume = parseFloat(romaneio.totalVolume);
-            else if (romaneio.itens && Array.isArray(romaneio.itens)) {
-                // 🔍 CALCULAR VOLUME DOS ITENS
-                volume = romaneio.itens.reduce((total, item) => {
-                    const itemVolume = item.volume || item.volumeItem || item.vol || 0;
-                    return total + (parseFloat(itemVolume) || 0);
+            if (itensLista.length > 0) {
+                volume = itensLista.reduce((total, item) => {
+                    const v = item && (item.volume != null ? item.volume : (item.volumeM3 != null ? item.volumeM3 : (item.volumeItem != null ? item.volumeItem : item.vol)));
+                    return total + (parseFloat(v) || 0);
                 }, 0);
-                console.log(`📏 PCT: Volume calculado dos itens: ${volume}`);
-            }
-            
-            // 🔍 TENTAR DIFERENTES CAMPOS PARA VALOR - CORRIGIDO
-            // ✅ CORREÇÃO: Buscar primeiro em totais.valor (estrutura correta do salvamento)
-            if (romaneio.totais && romaneio.totais.valor) {
-                valor = parseFloat(romaneio.totais.valor);
-                console.log(`💰 PCT: Valor encontrado em totais.valor: ${valor}`);
-            }
-            // Fallbacks para outras estruturas
-            else if (romaneio.valorTotal) valor = parseFloat(romaneio.valorTotal);
-            else if (romaneio.valor) valor = parseFloat(romaneio.valor);
-            else if (romaneio.totalValor) valor = parseFloat(romaneio.totalValor);
-            else if (romaneio.itens && Array.isArray(romaneio.itens)) {
-                // 🔍 CALCULAR VALOR DOS ITENS USANDO ESTRUTURA CORRETA
-                valor = romaneio.itens.reduce((total, item) => {
-                    // ✅ CORREÇÃO: Usar valorTotal dos itens (estrutura correta)
-                    const itemValor = item.valorTotal || item.valor || item.preco || item.price || item.valorItem || 0;
-                    return total + (parseFloat(itemValor) || 0);
+                valor = itensLista.reduce((total, item) => {
+                    const v = item && (item.valorTotal != null ? item.valorTotal : (item.valor != null ? item.valor : (item.total != null ? item.total : item.valorItem)));
+                    return total + (parseFloat(v) || 0);
                 }, 0);
-                console.log(`💰 PCT: Valor calculado dos itens: ${valor}`);
+            } else if (romaneio.totais && romaneio.totais.volume) {
+                volume = parseFloat(romaneio.totais.volume) || 0;
+            } else if (romaneio.volumeTotal) volume = parseFloat(romaneio.volumeTotal) || 0;
+            else if (romaneio.volume) volume = parseFloat(romaneio.volume) || 0;
+            else if (romaneio.totalVolume) volume = parseFloat(romaneio.totalVolume) || 0;
+            if (itensLista.length === 0) {
+                if (romaneio.totais && romaneio.totais.valor) valor = parseFloat(romaneio.totais.valor) || 0;
+                else if (romaneio.valorTotal) valor = parseFloat(romaneio.valorTotal) || 0;
+                else if (romaneio.valor) valor = parseFloat(romaneio.valor) || 0;
+                else if (romaneio.totalValor) valor = parseFloat(romaneio.totalValor) || 0;
             }
             
             // ✅ DEBUG DETALHADO PARA IDENTIFICAR ESTRUTURA

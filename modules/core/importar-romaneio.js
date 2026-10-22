@@ -69,6 +69,86 @@
             (vol ? ' · ' + fmt(vol, 3) + ' m³' : '') +
             (val ? ' · ' + money(val) : '');
     }
+    function itemVolume(it) {
+        return num(it && (it.volume != null ? it.volume : (it.volumeM3 != null ? it.volumeM3 : (it.volumeTotal != null ? it.volumeTotal : (it.volumeSerraria != null ? it.volumeSerraria : it.volumeLiquido)))));
+    }
+    function itemValue(it) {
+        return num(it && (it.valorTotal != null ? it.valorTotal : (it.valor != null ? it.valor : (it.total != null ? it.total : it.valorItem))));
+    }
+    function recalcTargetTotals(type, target, items) {
+        if (type === 'tl') {
+            var totalVolume = 0, totalValue = 0;
+            items.forEach(function (it) {
+                var qtd = parseInt(it && it.quantidade, 10) || 1;
+                var comp = num(it && it.comprimento);
+                var larg = num(it && it.largura);
+                var esp = num(it && (it.espessura != null ? it.espessura : it.bitola));
+                var unit = comp > 0 && larg > 0 && esp > 0 ? (comp * larg * esp) / 1000000 : itemVolume(it) / qtd;
+                var vol = unit * qtd;
+                var preco = num(it && (it.preco != null ? it.preco : (it.price != null ? it.price : (it.valorUnitario != null ? it.valorUnitario : it.precoUnitario))));
+                totalVolume += vol;
+                totalValue += vol * preco;
+            });
+            target.totalVolume = totalVolume;
+            target.totalValue = totalValue;
+            target.totalItens = items.length;
+            return;
+        }
+        if (type === 'pct') {
+            var pacotes = 0, pecas = 0, volume = 0, valor = 0;
+            items.forEach(function (it) {
+                var qtd = parseInt(it && it.quantidade, 10) || 0;
+                var ppp = parseInt(it && it.pecasPorPacote, 10) || 1;
+                pacotes += qtd;
+                pecas += parseInt(it && it.totalPecas, 10) || (qtd * ppp);
+                volume += itemVolume(it);
+                valor += itemValue(it);
+            });
+            target.totais = Object.assign({}, target.totais || {}, { pacotes: pacotes, pecas: pecas, volume: volume, valor: valor });
+            target.totalVolume = volume;
+            target.totalValor = valor;
+            target.totalItens = items.length;
+            return;
+        }
+        if (type === 'pes') {
+            var tQtd = 0, tPes = 0, tVol = 0, tArea = 0, tMl = 0, tVal = 0;
+            items.forEach(function (it) {
+                tQtd += parseInt(it && (it.quantidadePecas || it.quantidade), 10) || 0;
+                tPes += num(it && it.totalPes);
+                tVol += itemVolume(it);
+                tArea += num(it && it.areaM2);
+                tMl += num(it && it.metrosLineares);
+                tVal += itemValue(it);
+            });
+            target.totalQuantidade = tQtd;
+            target.totalPes = tPes;
+            target.totalVolume = tVol;
+            target.totalAreaM2 = tArea;
+            target.totalMetrosLineares = tMl;
+            target.totalValor = tVal;
+            target.totalItens = items.length;
+            return;
+        }
+        if (type === 'tora') {
+            var volLiq = 0, volBruto = 0, volGeo = 0, val = 0;
+            items.forEach(function (it) {
+                volLiq += num(it && (it.volumeLiquido != null ? it.volumeLiquido : (it.volumeSerraria != null ? it.volumeSerraria : it.volume)));
+                volBruto += num(it && (it.volumeBruto != null ? it.volumeBruto : it.volumeEstimado));
+                volGeo += num(it && it.volumeGeo);
+                val += itemValue(it);
+            });
+            target.totais = Object.assign({}, target.totais || {}, {
+                quantidadeItens: items.length,
+                volumeEstimado: volBruto,
+                volumeSerraria: volLiq,
+                volumeGeo: volGeo,
+                valorTotal: val
+            });
+            target.totalVolume = volLiq;
+            target.totalValor = val;
+            target.totalItens = items.length;
+        }
+    }
     async function loadCollection(type) {
         var s = svc();
         if (!s || typeof s.loadFromFirebase !== 'function') throw new Error('Firebase indisponível.');
@@ -294,6 +374,7 @@
             var merged = existing.concat(state.items.map(function (it) { return Object.assign({}, it); }));
             target[field] = merged;
             if (Array.isArray(target[otherField])) target[otherField] = merged;
+            recalcTargetTotals(state.targetType, target, merged);
             target.updatedAt = new Date().toISOString();
             target.atualizadoEm = target.updatedAt;
             var res = await s.saveToFirebase(PATHS[state.targetType], key, target);

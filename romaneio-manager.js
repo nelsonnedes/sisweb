@@ -742,12 +742,17 @@ class RomaneioManager {
             let qtd = 0;
             let vol = 0;
             let val = 0;
-            if (r.itens) {
-                const itens = Array.isArray(r.itens) ? r.itens : Object.values(r.itens);
+            const rawItens = r.itens != null ? r.itens : r.items;
+            const itens = rawItens && typeof rawItens === 'object' ? Object.values(rawItens) : [];
+            if (itens.length > 0) {
                 qtd = itens.length;
                 resumo = [...new Set(itens.map(i => i.especie || i.descricao || 'Item'))].join(', ');
-                vol = r.totais?.volumeSerraria || r.totais?.volumeTotal || itens.reduce((acc, i) => acc + (parseFloat(i.volumeLiquido)||0), 0);
-                val = r.totais?.valorTotal || itens.reduce((acc, i) => acc + (parseFloat(i.valorTotal)||parseFloat(i.valor)||0), 0);
+                vol = itens.reduce((acc, i) => acc + (parseFloat(i.volumeLiquido ?? i.volumeSerraria ?? i.volume) || 0), 0);
+                val = itens.reduce((acc, i) => acc + (parseFloat(i.valorTotal ?? i.valor ?? i.total) || 0), 0);
+            } else {
+                qtd = r.totais?.quantidadeItens || 0;
+                vol = r.totais?.volumeSerraria || r.totais?.volumeTotal || r.totalVolume || 0;
+                val = r.totais?.valorTotal || r.totalValor || 0;
             }
             
             // Renderização condicional de botões baseada no tipo

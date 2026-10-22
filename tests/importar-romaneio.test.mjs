@@ -4,6 +4,14 @@ import fs from 'node:fs';
 
 const moduleSrc = fs.readFileSync('modules/core/importar-romaneio.js', 'utf8');
 const hosting = fs.readFileSync('hosting-files.json', 'utf8');
+const pctModal = fs.readFileSync('modules/romaneiopct/modal-lista-romaneios-pct.js', 'utf8');
+const toraManager = fs.readFileSync('romaneio-manager.js', 'utf8');
+
+test('listas priorizam itens quando existem itens importados', () => {
+  assert.match(pctModal, /itensLista\.length > 0/);
+  assert.match(toraManager, /itens\.length > 0/);
+  assert.match(toraManager, /itens\.reduce\(\(acc, i\) => acc \+ \(parseFloat\(i\.volumeLiquido/);
+});
 
 test('modulo de importacao cobre tipos, filtro, preview e exclusao de item', () => {
   assert.match(moduleSrc, /romaneios\/tl/);
@@ -15,6 +23,9 @@ test('modulo de importacao cobre tipos, filtro, preview e exclusao de item', () 
   assert.match(moduleSrc, /existing\.concat/);
   assert.match(moduleSrc, /refreshList\(state\.targetType, target\)/);
   assert.match(moduleSrc, /patchListState\(window\.ModalListaRomaneiosPCT\.state, target\)/);
+  assert.match(moduleSrc, /function recalcTargetTotals/);
+  assert.match(moduleSrc, /target\.totais = Object\.assign\(\{\}, target\.totais \|\| \{\}, \{ pacotes: pacotes, pecas: pecas, volume: volume, valor: valor \}\)/);
+  assert.match(moduleSrc, /target\.totalVolume = volLiq/);
   assert.match(moduleSrc, /700 - \(Date\.now\(\) - started\)/);
   assert.ok(hosting.includes('"modules/core/importar-romaneio.js"'));
 });
