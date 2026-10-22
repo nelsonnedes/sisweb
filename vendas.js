@@ -6569,10 +6569,9 @@ async function resolverChavesProdutos(ids, svcDel) {
             const res = await svcDel.loadFromFirebase('produtos');
             const data = res && res.data !== undefined ? res.data : res;
             if (Array.isArray(data)) {
-                data.forEach(p => {
+                data.forEach((p, index) => {
                     if (!p || typeof p !== 'object') return;
-                    const key = String(p.firebaseKey || p.__key || p.id || '');
-                    if (!key) return;
+                    const key = String(index);
                     [p.id, p.codigo, p.code, p.sku, key].forEach(v => {
                         if (v != null && String(v).trim()) map[String(v).trim()] = key;
                     });
@@ -6614,7 +6613,9 @@ async function excluirProduto(produtoId) {
         let deleteOk = !!(svcDel && typeof svcDel.removeFromFirebase === 'function');
         if (deleteOk) {
             try {
-                const res = await svcDel.removeFromFirebase(`produtos/${chavePersistidaProduto(produtoId)}`);
+                const chaves = await resolverChavesProdutos([produtoId], svcDel);
+                const chave = chaves[0] || chavePersistidaProduto(produtoId);
+                const res = await svcDel.removeFromFirebase(`produtos/${chave}`);
                 if (res && res.success === false) deleteOk = false;
             } catch (_) { deleteOk = false; }
         }

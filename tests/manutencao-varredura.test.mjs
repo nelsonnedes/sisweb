@@ -21,6 +21,7 @@ test('deletes: remoto primeiro com gate, sem filtro prematuro', () => {
   assert.ok(/invalidarCacheLocalProdutos\(\)/.test(vendas), 'vendas invalida cache local apos excluir');
   assert.ok(/resolverChavesProdutos\(ids, svcDel\)/.test(vendas), 'vendas resolve as chaves reais antes do lote');
   assert.ok(/removeFromFirebase\(`produtos\/\$\{chave\}`\)/.test(vendas), 'vendas usa a mesma exclusao unitaria no lote');
+  assert.ok(/data\.forEach\(\(p, index\)[\s\S]{0,120}String\(index\)/.test(vendas), 'vendas usa o indice real de arrays do Firebase');
   const nf = R('../nf-naturezas.js');
   assert.ok(/Fail-closed/.test(nf), 'naturezas fail-closed');
   assert.ok(/String\(n && n\.id\) !== String\(id\)/.test(nf), 'naturezas compara com String()');
