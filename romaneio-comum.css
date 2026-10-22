@@ -4259,3 +4259,22 @@ body.romaneio-page #globalLoadingOverlay {
     border-color: var(--sw-brand) !important;
     color: var(--sw-on-brand) !important;
 }
+#listaModal .action-button:not(.delete-button),
+#romaneioListModal .action-button:not(.delete-button) {
+    background-color: var(--sw-brand) !important;
+    border-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
+}
+#listaModal .action-button:not(.delete-button):hover,
+#romaneioListModal .action-button:not(.delete-button):hover {
+    background-color: var(--sw-brand) !important;
+    border-color: var(--sw-brand) !important;
+    color: var(--sw-on-brand) !important;
+    filter: brightness(.88);
+}
+#listaModal .action-button.delete-button:not(.edit-button),
+#romaneioListModal .action-button.delete-button:not(.edit-button) {
+    background-color: var(--sw-danger) !important;
+    border-color: var(--sw-danger) !important;
+    color: var(--sw-on-brand) !important;
+}
