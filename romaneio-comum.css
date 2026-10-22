@@ -4278,3 +4278,17 @@ body.romaneio-page #globalLoadingOverlay {
     border-color: var(--sw-danger) !important;
     color: var(--sw-on-brand) !important;
 }
+
+@media (min-width: 769px) {
+    body.romaneio-tora-page .pre-romaneio-group {
+        flex-basis: 100%;
+        justify-content: flex-start;
+        margin-left: 0 !important;
+        padding: 8px 0 0;
+        border-left: 0;
+        border-top: 1px solid var(--sw-border);
+    }
+    body.romaneio-tora-page .pre-romaneio-left {
+        flex: 0 1 auto;
+    }
+}
