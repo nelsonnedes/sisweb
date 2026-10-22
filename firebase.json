@@ -163,6 +163,12 @@
       "session_export.json",
       "session_messages.json"
     ],
+    "rewrites": [
+      {
+        "source": "/robots.txt",
+        "destination": "/robots-public"
+      }
+    ],
     "headers": [
       {
         "source": "**",
@@ -276,7 +282,8 @@
       {
         "source": "robots.txt",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400" }
+          { "key": "Cache-Control", "value": "public, max-age=86400" },
+          { "key": "Content-Type", "value": "text/plain; charset=utf-8" }
         ]
       },
       {
