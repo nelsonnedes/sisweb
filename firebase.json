@@ -14,8 +14,6 @@
       "**/.*",
       "**/node_modules/**",
       "**/*.md",
-      "**/*.txt",
-      "!robots.txt",
       "**/*.pdf",
       "**/*.map",
       "docs/**",
