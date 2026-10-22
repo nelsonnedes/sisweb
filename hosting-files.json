@@ -375,6 +375,7 @@
   "js/estoque-madeira-serrada.js",
   "js/produtos-fiscais.js",
   "js/sisweb-theme.js",
+  "js/admin-theme-bootstrap.js",
   "js/sisweb-loading.js",
   "js/species.js",
   "landing-vendas.css",

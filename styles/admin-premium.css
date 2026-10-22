@@ -569,3 +569,19 @@
         @media (max-width: 640px) {
             .camp-funnel-label { min-width: 110px; font-size: 0.72rem; }
         }
+html[data-theme] body { padding: 0; }
+.panel input, .panel select, .panel textarea { min-width: 0; }
+.modal-container { max-height: calc(100dvh - 24px); overflow-y: auto; }
+.modal-close { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 768px) {
+    .shell { padding: 10px; padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+    .header { flex-wrap: wrap; }
+    .panel { padding: 12px; }
+    .btn { min-height: 44px; }
+    .panel input, .panel select, .panel textarea { font-size: 16px; }
+    .modal-container { max-height: calc(100dvh - 16px); }
+    .modal-actions { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .card, .modal-container, .camp-funnel-bar, .toast { transition: none !important; animation: none !important; }
+}

@@ -2324,6 +2324,10 @@
                 try {
                     var current = activePartnerDetail && activePartnerDetail.partner ? String(activePartnerDetail.partner.status || "active") : "active";
                     var next = current === "active" ? "blocked" : "active";
+                    var ok = window.AdminUI && typeof window.AdminUI.confirm === "function"
+                        ? await window.AdminUI.confirm(next === "blocked" ? "Bloquear este parceiro? Ele deixa de acessar o portal." : "Reativar este parceiro?", next === "blocked" ? "Bloquear parceiro" : "Reativar parceiro")
+                        : true;
+                    if (!ok) return;
                     var svc = await resolveAdminFirebaseService("setPartnerConfig");
                     var result = await svc.setPartnerConfig({ partnerId: activePartnerId, status: next });
                     var data = result && result.data ? result.data : result;
@@ -2825,8 +2829,7 @@
                     tdActions.style.flexWrap = "wrap";
                     tdActions.style.gap = "4px";
                     tdActions.style.alignItems = "center";
-                    tdActions.style.minWidth = "320px";
-                    var btnDetails = document.createElement("button");
+                                        var btnDetails = document.createElement("button");
                     btnDetails.type = "button";
                     btnDetails.className = "btn small";
                     btnDetails.textContent = "Detalhes";
@@ -4113,8 +4116,10 @@
                                         try { renderCompanyManagementTable(); } catch(_){}
                                         try { applySubscriptionsFilter(); } catch(_){}
                                         resolve("saved");
-                                        var ov=document.querySelector(".modal-overlay");
-                                        if(ov) ov.remove();
+                                        if (overlay && overlay.parentNode) {
+                                            overlay.classList.remove("active");
+                                            setTimeout(function(){ if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 200);
+                                        }
                                     } catch(e){
                                         showActionMessage((e && e.message) || "Erro ao salvar.", "error");
                                         if (btn) { btn.disabled = false; btn.innerHTML = "<i class=\"fas fa-save\"></i> Salvar alterações"; }
@@ -5185,6 +5190,7 @@
                 document.getElementById('reviewExtNote').value = '';
                 document.getElementById('reviewExtUid').value = req.uid;
                 document.getElementById('reviewExtRequestId').value = req.requestId;
+                bindReviewExtensionModalActions();
                 document.getElementById('reviewExtensionModal').classList.add('active');
             };
 
@@ -5193,6 +5199,9 @@
             };
 
             function bindReviewExtensionModalActions() {
+                if (window.__reviewExtBound) return;
+                window.__reviewExtBound = true;
+                var modal = document.getElementById("reviewExtensionModal");
                 var closeBtn = document.getElementById("reviewExtCloseBtn");
                 var cancelBtn = document.getElementById("reviewExtCancelBtn");
                 var rejectBtn = document.getElementById("reviewExtRejectBtn");
@@ -5201,8 +5210,15 @@
                 if (cancelBtn) cancelBtn.addEventListener("click", function() { window.closeReviewExtensionModal(); });
                 if (rejectBtn) rejectBtn.addEventListener("click", function() { window.submitReviewExtension(false); });
                 if (approveBtn) approveBtn.addEventListener("click", function() { window.submitReviewExtension(true); });
+                if (modal) modal.addEventListener("click", function(e) { if (e.target === modal) window.closeReviewExtensionModal(); });
+                document.addEventListener("keydown", function(e) {
+                    if (e.key === "Escape" && modal && modal.classList.contains("active")) window.closeReviewExtensionModal();
+                });
             }
+            bindReviewExtensionModalActions();
             window.submitReviewExtension = async function(approve) {
+                if (window.__reviewExtSubmitting) return;
+                window.__reviewExtSubmitting = true;
                 try {
                     if (!window.firebaseService || typeof window.firebaseService.reviewSubscriptionExtensionRequest !== 'function') {
                         showActionMessage("Serviço indisponível.", "error");
@@ -5211,7 +5227,6 @@
                     var uid = document.getElementById('reviewExtUid').value;
                     var requestId = document.getElementById('reviewExtRequestId').value;
                     var grantedDays = document.getElementById('reviewExtGrantedDays').value;
-                    bindReviewExtensionModalActions();
                     var reviewNote = document.getElementById('reviewExtNote').value;
                     
                     if (!uid || !requestId) return;
@@ -5235,12 +5250,20 @@
                     await loadUsersAndDashboard();
                     if (activeTab === "subscriptions") applySubscriptionsFilter();
                     if (activeTab === "status") await loadOpenExtensionRequests();
-                } catch (err) {
-                    showActionMessage((err && err.message) || "Erro ao revisar solicitação.", "error");
+} catch (err) {
+                    showActionMessage((err && err.message) || "Erro ao revisar solicita��ǜo.", "error");
+                } finally {
+                    window.__reviewExtSubmitting = false;
                 }
             };
 
+            var adminUsersLoadPromise = null;
             async function loadUsersAndDashboard(force) {
+                if (adminUsersLoadPromise) return adminUsersLoadPromise;
+                adminUsersLoadPromise = loadUsersAndDashboardInner(force);
+                try { return await adminUsersLoadPromise; } finally { adminUsersLoadPromise = null; }
+            }
+            async function loadUsersAndDashboardInner(force) {
                 if (!window.firebaseService || typeof window.firebaseService.getAll !== "function") return;
                 setDebugStatus("getAll(users)", "loading", "Buscando usuários");
                 var now = Date.now();
@@ -5250,10 +5273,10 @@
                     setDebugStatus("getAll(users)", "ok", "Cache local recente");
                     return;
                 }
-                lastLoadedAt = now;
-                var res = await window.firebaseService.getAll("users");
+                                var res = await window.firebaseService.getAll("users");
                 var map = res && res.success ? res.data : res;
                 allUsers = normalizeUsersFromMap(map);
+                lastLoadedAt = Date.now();
                 setDebugStatus("getAll(users)", "ok", "Total: " + String(allUsers.length));
                 try {
                     setDebugStatus("getAll(companies)", "loading", "Carregando empresas");
@@ -5709,7 +5732,8 @@
                         var btnDelete = document.createElement('button');
                         btnDelete.type = 'button';
                         btnDelete.className = 'btn danger small';
-                        btnDelete.innerHTML = '<i class="fas fa-trash"></i><span>Excluir</span>';
+                        btnDelete.innerHTML = '<i class="fas fa-trash"></i><span>Excluir usuário</span>';
+                        btnDelete.title = "Excluir usuário definitivamente";
                         btnDelete.addEventListener('click', function() {
                             deleteFromStatusFlow(req);
                         });
