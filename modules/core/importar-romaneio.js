@@ -238,8 +238,9 @@
         try {
             if (type === 'tl' && window.ModalListaRomaneios && typeof window.ModalListaRomaneios.refresh === 'function') {
                 await window.ModalListaRomaneios.refresh();
-            } else if (type === 'pct' && window.ModalListaRomaneiosPCT && typeof window.ModalListaRomaneiosPCT.forcarRefreshFirebase === 'function') {
-                await window.ModalListaRomaneiosPCT.forcarRefreshFirebase();
+            } else if (type === 'pct' && window.ModalListaRomaneiosPCT) {
+                if (typeof window.ModalListaRomaneiosPCT.loadRomaneios === 'function') await window.ModalListaRomaneiosPCT.loadRomaneios(true);
+                if (typeof window.ModalListaRomaneiosPCT.renderRomaneiosList === 'function') window.ModalListaRomaneiosPCT.renderRomaneiosList();
             } else if (type === 'pes' && typeof window.showRomaneiosList === 'function') {
                 await window.showRomaneiosList();
             } else if (type === 'tora' && window.romaneioToraManager && typeof window.romaneioToraManager.openModal === 'function') {
@@ -258,9 +259,12 @@
         loading(true, 'Importando itens...');
         try {
             var target = Object.assign({}, state.targetRecord);
-            var field = Array.isArray(target.itens) ? 'itens' : (Array.isArray(target.items) ? 'items' : (state.targetType === 'tl' ? 'items' : 'itens'));
-            var existing = Array.isArray(target[field]) ? target[field].slice() : [];
-            target[field] = existing.concat(state.items.map(function (it) { return Object.assign({}, it); }));
+            var field = state.targetType === 'tl' ? 'items' : 'itens';
+            var otherField = field === 'items' ? 'itens' : 'items';
+            var existing = (Array.isArray(target[field]) && target[field].length ? target[field] : (Array.isArray(target[otherField]) ? target[otherField] : [])).slice();
+            var merged = existing.concat(state.items.map(function (it) { return Object.assign({}, it); }));
+            target[field] = merged;
+            if (Array.isArray(target[otherField])) target[otherField] = merged;
             target.updatedAt = new Date().toISOString();
             target.atualizadoEm = target.updatedAt;
             var res = await s.saveToFirebase(PATHS[state.targetType], key, target);
