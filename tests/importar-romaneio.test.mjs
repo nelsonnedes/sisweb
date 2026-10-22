@@ -13,7 +13,8 @@ test('modulo de importacao cobre tipos, filtro, preview e exclusao de item', () 
   assert.match(moduleSrc, /irFilter/);
   assert.match(moduleSrc, /data-ir-remove/);
   assert.match(moduleSrc, /existing\.concat/);
-  assert.match(moduleSrc, /refreshList\(state\.targetType\)/);
+  assert.match(moduleSrc, /refreshList\(state\.targetType, target\)/);
+  assert.match(moduleSrc, /patchListState\(window\.ModalListaRomaneiosPCT\.state, target\)/);
   assert.match(moduleSrc, /700 - \(Date\.now\(\) - started\)/);
   assert.ok(hosting.includes('"modules/core/importar-romaneio.js"'));
 });

@@ -234,13 +234,42 @@
         state.items = [];
         renderPreview();
     }
-    async function refreshList(type) {
+    function sameRecord(r, target) {
+        if (!r || !target) return false;
+        const a = recordKey(r), b = recordKey(target);
+        if (a && b && a === b) return true;
+        return String(r.id || '') === String(target.id || '') && String(r.id || '') !== '';
+    }
+    function patchListState(listState, target) {
+        if (!listState) return false;
+        let changed = false;
+        ['romaneios', 'filteredRomaneios'].forEach(function (name) {
+            const arr = listState[name];
+            if (!Array.isArray(arr)) return;
+            for (let i = 0; i < arr.length; i++) {
+                if (sameRecord(arr[i], target)) { arr[i] = target; changed = true; }
+            }
+        });
+        return changed;
+    }
+    async function refreshList(type, target) {
         try {
-            if (type === 'tl' && window.ModalListaRomaneios && typeof window.ModalListaRomaneios.refresh === 'function') {
-                await window.ModalListaRomaneios.refresh();
+            if (type === 'tl' && window.ModalListaRomaneios) {
+                const changed = patchListState(window.ModalListaRomaneios.state, target);
+                if (changed && typeof window.ModalListaRomaneios.renderRomaneiosList === 'function') {
+                    window.ModalListaRomaneios.renderRomaneiosList();
+                } else if (typeof window.ModalListaRomaneios.refresh === 'function') {
+                    await window.ModalListaRomaneios.refresh();
+                }
             } else if (type === 'pct' && window.ModalListaRomaneiosPCT) {
-                if (typeof window.ModalListaRomaneiosPCT.loadRomaneios === 'function') await window.ModalListaRomaneiosPCT.loadRomaneios(true);
-                if (typeof window.ModalListaRomaneiosPCT.renderRomaneiosList === 'function') window.ModalListaRomaneiosPCT.renderRomaneiosList();
+                const changed = patchListState(window.ModalListaRomaneiosPCT.state, target);
+                if (changed && typeof window.ModalListaRomaneiosPCT.renderRomaneiosList === 'function') {
+                    window.ModalListaRomaneiosPCT.renderRomaneiosList();
+                    if (typeof window.ModalListaRomaneiosPCT.updateModalInfo === 'function') window.ModalListaRomaneiosPCT.updateModalInfo();
+                } else if (typeof window.ModalListaRomaneiosPCT.loadRomaneios === 'function') {
+                    await window.ModalListaRomaneiosPCT.loadRomaneios(true);
+                    if (typeof window.ModalListaRomaneiosPCT.renderRomaneiosList === 'function') window.ModalListaRomaneiosPCT.renderRomaneiosList();
+                }
             } else if (type === 'pes' && typeof window.showRomaneiosList === 'function') {
                 await window.showRomaneiosList();
             } else if (type === 'tora' && window.romaneioToraManager && typeof window.romaneioToraManager.openModal === 'function') {
@@ -274,7 +303,7 @@
             try { window.dispatchEvent(new CustomEvent('romaneios' + evt + ':updated', { detail: { id: key, action: 'import' } })); } catch (_) {}
             try { window.dispatchEvent(new CustomEvent('romaneios:updated', { detail: { id: key, type: state.targetType, action: 'import' } })); } catch (_) {}
             close();
-            await refreshList(state.targetType);
+            await refreshList(state.targetType, target);
             toast(state.items.length + ' item(ns) importado(s) para o romaneio ' + LABELS[state.targetType] + '.', 'success');
         } catch (e) {
             toast('Erro ao importar: ' + (e && e.message ? e.message : e), 'error');
