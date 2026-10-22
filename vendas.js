@@ -6199,16 +6199,11 @@ async function excluirProdutosSelecionados() {
         let deleteOk = !!(svcDel && typeof svcDel.removeFromFirebase === 'function');
         if (deleteOk) {
             try {
-                if (typeof svcDel.updatePaths === 'function') {
-                    const updates = {};
-                    ids.forEach(id => { updates[`produtos/${chavePersistidaProduto(id)}`] = null; });
-                    const res = await svcDel.updatePaths(updates);
-                    if (!res || res.success === false) deleteOk = false;
-                } else {
-                    for (const id of ids) {
-                        const res = await svcDel.removeFromFirebase(`produtos/${chavePersistidaProduto(id)}`);
-                        if (res && res.success === false) { deleteOk = false; break; }
-                    }
+                const chaves = await resolverChavesProdutos(ids, svcDel);
+                for (const chave of chaves) {
+                    if (!chave) { deleteOk = false; break; }
+                    const res = await svcDel.removeFromFirebase(`produtos/${chave}`);
+                    if (res && res.success === false) { deleteOk = false; break; }
                 }
             } catch (_) { deleteOk = false; }
         }
@@ -6566,6 +6561,33 @@ function editarProduto(produtoId) {
 function chavePersistidaProduto(produtoId) {
     const p = (window.produtos || []).find(item => String(item && item.id) === String(produtoId));
     return String((p && (p.firebaseKey || p.__key || p.key)) || produtoId || '').trim();
+}
+async function resolverChavesProdutos(ids, svcDel) {
+    const map = {};
+    try {
+        if (svcDel && typeof svcDel.loadFromFirebase === 'function') {
+            const res = await svcDel.loadFromFirebase('produtos');
+            const data = res && res.data !== undefined ? res.data : res;
+            if (Array.isArray(data)) {
+                data.forEach(p => {
+                    if (!p || typeof p !== 'object') return;
+                    const key = String(p.firebaseKey || p.__key || p.id || '');
+                    if (!key) return;
+                    [p.id, p.codigo, p.code, p.sku, key].forEach(v => {
+                        if (v != null && String(v).trim()) map[String(v).trim()] = key;
+                    });
+                });
+            } else if (data && typeof data === 'object') {
+                Object.keys(data).forEach(k => {
+                    const p = data[k] || {};
+                    [k, p.id, p.codigo, p.code, p.sku, p.firebaseKey].forEach(v => {
+                        if (v != null && String(v).trim()) map[String(v).trim()] = k;
+                    });
+                });
+            }
+        }
+    } catch (_) {}
+    return ids.map(id => map[String(id)] || chavePersistidaProduto(id));
 }
 function invalidarCacheLocalProdutos() {
     try {

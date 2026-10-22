@@ -19,7 +19,8 @@ test('deletes: remoto primeiro com gate, sem filtro prematuro', () => {
   assert.ok(/function chavePersistidaProduto/.test(vendas), 'vendas usa a chave real do Firebase');
   assert.ok(/firebaseKey: itemKey/.test(vendas), 'vendas preserva firebaseKey ao converter produtos');
   assert.ok(/invalidarCacheLocalProdutos\(\)/.test(vendas), 'vendas invalida cache local apos excluir');
-  assert.ok(/svcDel\.updatePaths\(updates\)/.test(vendas), 'vendas exclui lote em operacao atomica');
+  assert.ok(/resolverChavesProdutos\(ids, svcDel\)/.test(vendas), 'vendas resolve as chaves reais antes do lote');
+  assert.ok(/removeFromFirebase\(`produtos\/\$\{chave\}`\)/.test(vendas), 'vendas usa a mesma exclusao unitaria no lote');
   const nf = R('../nf-naturezas.js');
   assert.ok(/Fail-closed/.test(nf), 'naturezas fail-closed');
   assert.ok(/String\(n && n\.id\) !== String\(id\)/.test(nf), 'naturezas compara com String()');
