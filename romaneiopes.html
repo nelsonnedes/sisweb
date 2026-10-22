@@ -4823,10 +4823,15 @@
                         m3: 0,
                         m2: 0,
                         ml: 0,
-                        valor: 0
+                        valor: 0,
+                        ppp: null,
+                        pppVariado: false
                     });
                 }
                 const grp = resumoDimMap.get(chave);
+                const pppItem = parseInt(item.pecasPorPacote || item.pecas || 1, 10) || 1;
+                if (grp.ppp == null) grp.ppp = pppItem;
+                else if (grp.ppp !== pppItem) grp.pppVariado = true;
                 grp.qtd += item.quantidadePecas;
                 grp.pes += item.totalPes;
                 grp.m3 += item.volumeM3;
@@ -4947,6 +4952,26 @@
                 acc.ml += row.ml;
                 return acc;
             }, { qtd: 0, pes: 0, m3: 0, ml: 0 });
+            const speciesDimTotals = {};
+            resumoDimRows.forEach((row) => {
+                if (!speciesDimTotals[row.especie]) speciesDimTotals[row.especie] = { qtd: 0, ml: 0, m3: 0, pes: 0 };
+                speciesDimTotals[row.especie].qtd += row.qtd;
+                speciesDimTotals[row.especie].ml += row.ml;
+                speciesDimTotals[row.especie].m3 += row.m3;
+                speciesDimTotals[row.especie].pes += row.pes;
+            });
+            const subtotalEspecieRow = (especie) => {
+                const s = speciesDimTotals[especie] || { qtd: 0, ml: 0, m3: 0, pes: 0 };
+                return `
+                    <tr class="subtotal-especie-row">
+                        <td colspan="4"><strong>Subtotal ${especie}</strong></td>
+                        <td class="num"><strong>${formatarNumero(s.qtd, 0)}</strong></td>
+                        <td class="num"><strong>${formatarNumero(s.ml, 3)} LN</strong></td>
+                        <td class="num"><strong>${formatarNumero(s.m3, 3)} m³ / ${formatarPes(s.pes)}</strong></td>
+                        <td></td>
+                    </tr>
+                `;
+            };
             let resumoDimCards = `
                 <table class="resumo-dimensoes-table">
                     <thead>
@@ -4958,12 +4983,16 @@
                             <th>Peças</th>
                             <th>LN</th>
                             <th>Volume</th>
-                            <th>Observação/Pacote</th>
+                            <th>Pçs/Pac.</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
+            let especieDimAtual = null;
             resumoDimRows.forEach((row) => {
+                if (especieDimAtual !== null && row.especie !== especieDimAtual) resumoDimCards += subtotalEspecieRow(especieDimAtual);
+                especieDimAtual = row.especie;
+                const pppTexto = row.pppVariado ? '—' : (row.ppp || '—');
                 resumoDimCards += `
                     <tr>
                         <td>${row.especie}</td>
@@ -4973,10 +5002,11 @@
                         <td class="num">${formatarNumero(row.qtd, 0)}</td>
                         <td class="num">${formatarNumero(row.ml, 3)} LN</td>
                         <td class="num">${formatarNumero(row.m3, 3)} m³ / ${formatarPes(row.pes)}</td>
-                        <td></td>
+                        <td class="num">${pppTexto}</td>
                     </tr>
                 `;
             });
+            if (especieDimAtual !== null) resumoDimCards += subtotalEspecieRow(especieDimAtual);
             resumoDimCards += `
                         <tr class="total-row">
                             <td colspan="4"><strong>Total Geral</strong></td>
@@ -5106,6 +5136,7 @@
                         }
                         td.num { text-align: right; font-variant-numeric: tabular-nums; }
                         tfoot td { background: #f6f6f6; font-weight: bold; }
+                        .subtotal-especie-row td { background: #eef4fa; border-top: 2px solid #9db4c8; font-weight: bold; }
                         .section-title { font-weight: bold; font-size: 16px; margin: 16px 0 8px 0; }
                         .page-break { page-break-before: always; break-before: page; }
                         .resumo-conama {

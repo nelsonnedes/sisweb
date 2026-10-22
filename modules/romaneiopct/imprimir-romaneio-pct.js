@@ -2164,7 +2164,9 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                     pecas: dados.pecas || 0,
                     metrosLineares: (comprimento / 100) * (dados.pecas || 0),
                     volume: dados.volume || 0,
-                    observacao: dados.pacoteInfo || ''
+                    observacao: dados.pacoteInfo || '',
+                    ppp: dados.ppp || null,
+                    pppVariado: !!dados.pppVariado
                 });
             });
         });
@@ -2181,6 +2183,25 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
         acc.volume += row.volume;
         return acc;
     }, { pecas: 0, metrosLineares: 0, volume: 0 });
+    const speciesTotals = {};
+    resumoRows.forEach(row => {
+        if (!speciesTotals[row.especie]) speciesTotals[row.especie] = { pecas: 0, metrosLineares: 0, volume: 0 };
+        speciesTotals[row.especie].pecas += row.pecas;
+        speciesTotals[row.especie].metrosLineares += row.metrosLineares;
+        speciesTotals[row.especie].volume += row.volume;
+    });
+    const subtotalRow = (especie) => {
+        const s = speciesTotals[especie] || { pecas: 0, metrosLineares: 0, volume: 0 };
+        return `
+            <tr class="subtotal-especie-row">
+                <td colspan="4"><strong>Subtotal ${especie}</strong></td>
+                <td class="number"><strong>${s.pecas}</strong></td>
+                <td class="number"><strong>${s.metrosLineares.toFixed(2).replace('.', ',')} LN</strong></td>
+                <td class="number"><strong>${s.volume.toFixed(3).replace('.', ',')} m³</strong></td>
+                <td></td>
+            </tr>
+        `;
+    };
     let cardHtml = `
         <table class="resumo-dimensoes-table">
             <thead>
@@ -2192,12 +2213,16 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                     <th>Peças</th>
                     <th>LN</th>
                     <th>Volume</th>
-                    <th>Observação/Pacote</th>
+                    <th>Pçs/Pac.</th>
                 </tr>
             </thead>
             <tbody>
     `;
+    let especieAtual = null;
     resumoRows.forEach(row => {
+        if (especieAtual !== null && row.especie !== especieAtual) cardHtml += subtotalRow(especieAtual);
+        especieAtual = row.especie;
+        const pppTexto = row.pppVariado ? '—' : (row.ppp || '—');
         cardHtml += `
             <tr>
                 <td>${row.especie}</td>
@@ -2207,10 +2232,11 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                 <td class="number">${row.pecas}</td>
                 <td class="number">${row.metrosLineares.toFixed(2).replace('.', ',')} LN</td>
                 <td class="number">${row.volume.toFixed(3).replace('.', ',')} m³</td>
-                <td>${row.observacao}</td>
+                <td class="number">${pppTexto}${row.observacao ? `<div class="pkg-note">${row.observacao}</div>` : ''}</td>
             </tr>
         `;
     });
+    if (especieAtual !== null) cardHtml += subtotalRow(especieAtual);
     cardHtml += `
                 <tr class="total-geral-row">
                     <td colspan="4"><strong>Total Geral</strong></td>
@@ -2471,6 +2497,17 @@ async function gerarConteudoImpressao(romaneio, company, tipo) {
                         border: 1px solid #ffcdd2;
                         color: #c62828;
                     }
+                    .subtotal-especie-row td {
+                        background-color: #eef4fa !important;
+                        border-top: 2px solid #9db4c8 !important;
+                        font-weight: bold !important;
+                    }
+                    .pkg-note {
+                        font-size: 9px;
+                        font-weight: normal;
+                        color: #1f2937;
+                        margin-top: 1px;
+                    }
                     
                     /* ✅ CSS DUPLICADO REMOVIDO - JÁ DEFINIDO ACIMA COM MAIS DETALHES */
                 </style>
@@ -2703,7 +2740,9 @@ function groupItemsByEspecie(items) {
             groups[especie].dimensoes[dimensaoKey].comprimentos[compKey] = {
                 pecas: 0,
                 volume: 0,
-                pacoteInfo: ''
+                pacoteInfo: '',
+                ppp: null,
+                pppVariado: false
             };
         }
         
@@ -2712,8 +2751,11 @@ function groupItemsByEspecie(items) {
         const volumeTotalItem = volumeUnitario * totalPecasItem;
         
         // Atualizar dados do comprimento
-        groups[especie].dimensoes[dimensaoKey].comprimentos[compKey].pecas += totalPecasItem;
-        groups[especie].dimensoes[dimensaoKey].comprimentos[compKey].volume += volumeTotalItem;
+        const compDados = groups[especie].dimensoes[dimensaoKey].comprimentos[compKey];
+        compDados.pecas += totalPecasItem;
+        compDados.volume += volumeTotalItem;
+        if (compDados.ppp == null) compDados.ppp = pecasPorPacote;
+        else if (compDados.ppp !== pecasPorPacote) compDados.pppVariado = true;
         
         if (pecasPorPacote > 1) {
             const numPacotes = Math.ceil(totalPecasItem / pecasPorPacote);

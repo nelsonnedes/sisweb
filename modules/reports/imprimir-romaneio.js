@@ -1094,7 +1094,7 @@ window.ImprimirRomaneio = (function() {
 
         <!-- Resumo por Espessura e Espécies - NOVA PÁGINA -->
         <div class="resumo-dimensoes">
-            <h3 class="resumo-titulo">RESUMO POR ESPESSURA E ESPÉCIES</h3>
+            <h3 class="resumo-titulo">RESUMO POR DIMENSÕES E ESPÉCIES</h3>
             ${gerarResumoPorEspessura(romaneio.items)}
             
             <!-- Totais - LOGO ABAIXO DOS CARDS -->
@@ -1888,13 +1888,20 @@ window.ImprimirRomaneio = (function() {
                     comprimento,
                     volume: 0,
                     pecas: 0,
-                    metrosLineares: 0
+                    metrosLineares: 0,
+                    ppp: null,
+                    pppVariado: false
                 };
             }
             
             grupos[key].volume += volumeTotal;
             grupos[key].pecas += quantidade;
             grupos[key].metrosLineares += metrosLineares;
+            const pppItem = item.pecasPorPacote != null ? parseInt(item.pecasPorPacote, 10) : null;
+            if (pppItem > 0) {
+                if (grupos[key].ppp == null) grupos[key].ppp = pppItem;
+                else if (grupos[key].ppp !== pppItem) grupos[key].pppVariado = true;
+            }
         });
 
         const rows = Object.values(grupos).sort((a, b) =>
@@ -1911,6 +1918,26 @@ window.ImprimirRomaneio = (function() {
             return acc;
         }, { pecas: 0, metrosLineares: 0, volume: 0 });
 
+        const speciesTotals = {};
+        rows.forEach(row => {
+            if (!speciesTotals[row.especie]) speciesTotals[row.especie] = { pecas: 0, metrosLineares: 0, volume: 0 };
+            speciesTotals[row.especie].pecas += row.pecas;
+            speciesTotals[row.especie].metrosLineares += row.metrosLineares;
+            speciesTotals[row.especie].volume += row.volume;
+        });
+        const subtotalRow = (especie) => {
+            const s = speciesTotals[especie] || { pecas: 0, metrosLineares: 0, volume: 0 };
+            return `
+                <tr class="subtotal-especie-row">
+                    <td colspan="4"><strong>Subtotal ${especie}</strong></td>
+                    <td class="number"><strong>${s.pecas}</strong></td>
+                    <td class="number"><strong>${s.metrosLineares.toFixed(2).replace('.', ',')} LN</strong></td>
+                    <td class="number"><strong>${s.volume.toFixed(3).replace('.', ',')} m³</strong></td>
+                    <td></td>
+                </tr>
+            `;
+        };
+
         let html = `
             <table class="resumo-dimensoes-table">
                 <thead>
@@ -1922,13 +1949,17 @@ window.ImprimirRomaneio = (function() {
                         <th>Peças</th>
                         <th>LN</th>
                         <th>Volume</th>
-                        <th>Observação/Pacote</th>
+                        <th>Pçs/Pac.</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
 
+        let especieAtual = null;
         rows.forEach(row => {
+            if (especieAtual !== null && row.especie !== especieAtual) html += subtotalRow(especieAtual);
+            especieAtual = row.especie;
+            const pppTexto = row.pppVariado ? '—' : (row.ppp || '—');
             html += `
                 <tr>
                     <td>${row.especie}</td>
@@ -1938,10 +1969,11 @@ window.ImprimirRomaneio = (function() {
                     <td class="number">${row.pecas}</td>
                     <td class="number">${row.metrosLineares.toFixed(2).replace('.', ',')} LN</td>
                     <td class="number">${row.volume.toFixed(3).replace('.', ',')} m³</td>
-                    <td></td>
+                    <td class="number">${pppTexto}</td>
                 </tr>
             `;
         });
+        if (especieAtual !== null) html += subtotalRow(especieAtual);
         
         html += `
                     <tr class="total-geral-row">
@@ -2555,6 +2587,12 @@ window.ImprimirRomaneio = (function() {
             
             .subtotal-row td {
                 background-color: #f8f8f8;
+                font-weight: bold;
+                font-size: 10px;
+            }
+            .subtotal-especie-row td {
+                background-color: #eef4fa;
+                border-top: 2px solid #9db4c8;
                 font-weight: bold;
                 font-size: 10px;
             }
