@@ -828,7 +828,7 @@ window.ModalListaRomaneiosPCT = (function() {
 <td data-label="Espécies">${especiesTexto}</td>
 <td data-label="Itens" style="text-align: center;">${romaneio.itens ? romaneio.itens.length : 0}</td>
 <td data-label="Volume" style="text-align: right;">${volume > 0 ? volume.toFixed(3) : "0.000"} m³</td>
-<td data-label="Valor Total">${valor > 0 ? `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : "R$ 0,00"}</td>
+<td data-label="Valor Total">${valor > 0 ? `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "R$ 0,00"}</td>
 <td data-label="Ações" style="text-align: center;">
                     <div class="btn-group" style="display: flex; gap: 5px; justify-content: center;">
                         <button class="action-button edit-button" onclick="window.ModalListaRomaneiosPCT.editRomaneio('${romaneio.id}')" title="Editar Romaneio">
